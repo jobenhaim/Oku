@@ -1,0 +1,46 @@
+import React from 'react';
+import { 
+  Settings, 
+  ChevronLeft, 
+  Pause, 
+  Play, 
+  RotateCcw, 
+  Eraser, 
+  Pencil, 
+  Undo2, 
+  Check, 
+  Lightbulb,
+  Music,
+  Volume2,
+  Eye,
+  Trash2,
+  X,
+  ShoppingBag,
+  Diamond,
+  Video,
+  Smartphone,
+  Square
+} from 'lucide-react';
+
+export const Icons = {
+  Settings: (props: any) => <Settings {...props} />,
+  Back: (props: any) => <ChevronLeft {...props} />,
+  Pause: (props: any) => <Pause {...props} />,
+  Play: (props: any) => <Play {...props} />,
+  Reset: (props: any) => <RotateCcw {...props} />,
+  Erase: (props: any) => <Eraser {...props} />,
+  Pencil: (props: any) => <Pencil {...props} />,
+  Undo: (props: any) => <Undo2 {...props} />,
+  Check: (props: any) => <Check {...props} />,
+  Hint: (props: any) => <Lightbulb {...props} />,
+  Music: (props: any) => <Music {...props} />,
+  Sound: (props: any) => <Volume2 {...props} />,
+  Eye: (props: any) => <Eye {...props} />,
+  Trash: (props: any) => <Trash2 {...props} />,
+  Close: (props: any) => <X {...props} />,
+  Store: (props: any) => <ShoppingBag {...props} />,
+  Diamond: (props: any) => <Diamond {...props} />, // Using Diamond as Rhombus
+  Video: (props: any) => <Video {...props} />,
+  Vibration: (props: any) => <Smartphone {...props} />,
+  Square: (props: any) => <Square {...props} />,
+};
