@@ -1,588 +1,519 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Board, Cell, Difficulty, LevelProgress } from '../types';
-import { generateLevel, isValid, isGameSolved } from '../utils/sudoku';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Difficulty, AppSettings, Board, MoveLogEntry } from '../types';
+import { useSudokuBoard } from '../hooks/useSudokuBoard';
+import { useGameSkills } from '../hooks/useGameSkills';
+import { useGameTimer } from '../hooks/useGameTimer';
+import { SudokuGrid } from './game/SudokuGrid';
+import { GameControls } from './game/GameControls';
+import { NumberPad } from './game/NumberPad';
+import { WinModal } from './game/WinModal';
+import { generateReplayVideo, ReplayMove } from '../utils/replay';
 import { Storage } from '../utils/storage';
+import { sounds } from '../utils/sound';
 import { Icons } from './ui/Icons';
+import { formatTimeShort } from '../utils/constants';
 
 interface SudokuGameProps {
   difficulty: Difficulty;
   levelId: number;
   onBack: () => void;
+  onReturnToMenu: () => void;
   onComplete: () => void;
   onSettingsOpen: () => void;
-  onNextLevel: () => void;
-  settings: any;
+  settings: AppSettings;
   onEarnPoints: (amount: number) => void;
   currentPoints: number;
-  isSettingsOpen?: boolean;
-  backgroundClass?: string;
+  isSettingsOpen: boolean;
+  backgroundClass: string;
+  numberColor: string;
+  purchasedSkills: string[];
 }
 
-export const SudokuGame: React.FC<SudokuGameProps> = ({ 
-  difficulty, 
-  levelId, 
-  onBack, 
-  onComplete, 
+export const SudokuGame: React.FC<SudokuGameProps> = ({
+  difficulty,
+  levelId,
+  onBack,
+  onReturnToMenu,
+  onComplete,
   onSettingsOpen,
-  onNextLevel,
   settings,
   onEarnPoints,
   currentPoints,
-  isSettingsOpen = false,
-  backgroundClass = 'bg-paper'
+  isSettingsOpen,
+  backgroundClass,
+  numberColor,
+  purchasedSkills
 }) => {
-  const [board, setBoard] = useState<Board>([]);
-  const [solvedBoard, setSolvedBoard] = useState<number[][]>([]);
-  const [selectedCell, setSelectedCell] = useState<[number, number] | null>(null);
-  const [isPencilMode, setIsPencilMode] = useState(false);
-  const [history, setHistory] = useState<Board[]>([]);
-  const [timer, setTimer] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [isEnding, setIsEnding] = useState(false); // New state to block input before modal appears
-  const [loading, setLoading] = useState(true);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [isEnding, setIsEnding] = useState(false);
   const [earnedPoints, setEarnedPoints] = useState(0);
-  const [displayedPoints, setDisplayedPoints] = useState(0); // Animated points
   
-  // Transition states for pause menu interactions
-  const [isResuming, setIsResuming] = useState(false);
-  const [isRestarting, setIsRestarting] = useState(false);
-  const [isQuitting, setIsQuitting] = useState(false);
+  const [isGeneratingReplay, setIsGeneratingReplay] = useState(false);
+  const [replayUrl, setReplayUrl] = useState<string | null>(null);
+  const [showReplay, setShowReplay] = useState(false);
 
-  const timerRef = useRef<any>(null);
+  const [animatingSections, setAnimatingSections] = useState<Set<string>>(new Set());
+  const [showStartHint, setShowStartHint] = useState(false);
 
-  // Initialize Game Logic
-  const initializeGame = useCallback(() => {
-    setLoading(true);
-    setShowRestartConfirm(false);
-    setIsPaused(false);
-    setIsCompleted(false);
-    setIsEnding(false);
-    setIsResuming(false);
-    setIsRestarting(false);
-    setIsQuitting(false);
-    setHistory([]);
-    setEarnedPoints(0);
-    setDisplayedPoints(0);
-    
-    const savedProgress = Storage.getLevelProgress(difficulty, levelId);
-    
-    if (savedProgress && savedProgress.status === 'in-progress' && savedProgress.boardState) {
-      setBoard(savedProgress.boardState);
-      setTimer(savedProgress.timeElapsed);
-      const { solved } = generateLevel(difficulty, levelId); 
-      setSolvedBoard(solved);
-    } else {
-      const { initial, solved } = generateLevel(difficulty, levelId);
-      setBoard(initial);
-      setSolvedBoard(solved);
-      setTimer(0);
-    }
-    setLoading(false);
-  }, [difficulty, levelId]);
+  // Timer hook
+  const { timer, setTimer } = useGameTimer(
+      settings,
+      isPaused,
+      isCompleted,
+      isEnding,
+      isSettingsOpen,
+      0
+  );
 
-  useEffect(() => {
-    initializeGame();
-    return () => stopTimer();
-  }, [initializeGame]);
-
-  const handleRestart = () => {
-      setIsRestarting(true);
-      setTimeout(() => {
-        Storage.clearLevelProgress(difficulty, levelId);
-        initializeGame();
-      }, 300);
-  };
-
-  const handleResume = () => {
-      setIsResuming(true);
-      setTimeout(() => {
-          setIsPaused(false);
-          setIsResuming(false);
-      }, 300);
-  };
-  
-  const handleQuit = () => {
-      setIsQuitting(true);
-      setTimeout(() => {
-          onBack();
-      }, 300);
-  };
-
-  const handleNextLevelWithAnim = () => {
-      setIsQuitting(true); // Re-use quitting anim style for fading out
-      setTimeout(() => {
-          onNextLevel();
-      }, 300);
-  };
-
-  // Timer Logic
-  const startTimer = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setTimer((t) => t + 1);
-    }, 1000);
-  };
-
-  const stopTimer = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  };
-
-  useEffect(() => {
-    // Only run timer if NOT loading, NOT paused (menu), NOT completed, NOT asking restart, NOT ending, and NOT settings open
-    if (!loading && !isPaused && !isCompleted && !showRestartConfirm && !isEnding && !isSettingsOpen) {
-      startTimer();
-    } else {
-      stopTimer();
-    }
-    return () => stopTimer();
-  }, [loading, isPaused, isCompleted, showRestartConfirm, isEnding, isSettingsOpen]);
-
-  // Point Animation Effect
-  useEffect(() => {
-      if (isCompleted && earnedPoints > 0) {
-          let startTime: number;
-          const duration = 1500; // 1.5s animation
-
-          const animate = (time: number) => {
-              if (!startTime) startTime = time;
-              const elapsed = time - startTime;
-              const progress = Math.min(elapsed / duration, 1);
-              // Ease Out Quart
-              const ease = 1 - Math.pow(1 - progress, 4);
-              
-              setDisplayedPoints(Math.floor(ease * earnedPoints));
-
-              if (progress < 1) {
-                  requestAnimationFrame(animate);
-              } else {
-                  setDisplayedPoints(earnedPoints);
-              }
-          };
-          requestAnimationFrame(animate);
-      }
-  }, [isCompleted, earnedPoints]);
-
-  // Instant Save Logic
-  const saveProgressInstant = (currentBoard: Board) => {
-     if (loading || isCompleted) return;
-     const progress: LevelProgress = {
-        levelId,
-        difficulty,
-        status: 'in-progress',
-        timeElapsed: timer, // Note: Timer might be 1s behind due to interval, but acceptable
-        lastPlayed: Date.now(),
-        boardState: currentBoard,
-      };
-      Storage.saveLevelProgress(progress);
-  };
-
-  // Keep the interval save just in case for timer sync
-  useEffect(() => {
-    if (loading || isCompleted || showRestartConfirm || isEnding) return;
-    const save = setInterval(() => {
-      saveProgressInstant(board);
-    }, 5000);
-    return () => clearInterval(save);
-  }, [board, timer, difficulty, levelId, loading, isCompleted, showRestartConfirm, isEnding]);
-
-
-  // Calculate Conflicts
-  const conflicts = useMemo(() => {
-      const conf = new Set<string>();
-      if (loading || board.length === 0) return conf;
-
-      const rows = Array.from({length: 9}, () => new Map<number, number[]>());
-      const cols = Array.from({length: 9}, () => new Map<number, number[]>());
-      const boxes = Array.from({length: 9}, () => new Map<number, number[]>());
-
-      board.forEach((row, r) => {
-          row.forEach((cell, c) => {
-              if (cell.value !== null) {
-                  const val = cell.value;
-                  if (!rows[r].has(val)) rows[r].set(val, []);
-                  rows[r].get(val)!.push(c);
-                  
-                  if (!cols[c].has(val)) cols[c].set(val, []);
-                  cols[c].get(val)!.push(r);
-
-                  const b = Math.floor(r/3)*3 + Math.floor(c/3);
-                  if (!boxes[b].has(val)) boxes[b].set(val, []);
-                  boxes[b].get(val)!.push(r*9+c);
-              }
-          });
+  const saveProgress = (currentBoard: Board, scanUsesVal?: number, revealUsesVal?: number, moveLog?: MoveLogEntry[]) => {
+      if (isCompleted || isEnding) return;
+      Storage.saveLevelProgress({
+          levelId,
+          difficulty,
+          status: 'in-progress',
+          timeElapsed: timer,
+          boardState: currentBoard,
+          moveLog: moveLog,
+          lastPlayed: Date.now(),
+          scanUses: scanUsesVal !== undefined ? scanUsesVal : scanUses,
+          revealUses: revealUsesVal !== undefined ? revealUsesVal : revealUses,
       });
+  };
 
-      // Populate conflicts set
-      rows.forEach((rowMap, r) => rowMap.forEach((indices) => {
-          if (indices.length > 1) indices.forEach(c => conf.add(`${r}-${c}`));
-      }));
-      cols.forEach((colMap, c) => colMap.forEach((indices) => {
-          if (indices.length > 1) indices.forEach(r => conf.add(`${r}-${c}`));
-      }));
-      boxes.forEach((boxMap, b) => boxMap.forEach((indices) => {
-          if (indices.length > 1) indices.forEach(flat => {
-              const r = Math.floor(flat/9);
-              const c = flat%9;
-              conf.add(`${r}-${c}`);
+  const handleSectionComplete = useCallback((sections: string[]) => {
+      if (sections.length > 0) {
+          setAnimatingSections(prev => {
+              const next = new Set(prev);
+              sections.forEach(s => next.add(s));
+              return next;
           });
-      }));
-
-      return conf;
-  }, [board, loading]);
-
-  const handleCellClick = (row: number, col: number) => {
-    if (isPaused || isCompleted || isEnding || isSettingsOpen) return;
-    setSelectedCell([row, col]);
-  };
-
-  const getPointsForDifficulty = (diff: Difficulty) => {
-      switch(diff) {
-          case Difficulty.SuperEasy: return 5;
-          case Difficulty.Easy: return 10;
-          case Difficulty.Normal: return 20;
-          case Difficulty.Hard: return 30;
-          case Difficulty.Intense: return 40;
-          case Difficulty.Impossible: return 50;
-          default: return 0;
-      }
-  };
-
-  const handleNumberInput = (num: number) => {
-    if (!selectedCell || isPaused || isCompleted || isEnding || isSettingsOpen) return;
-    const [r, c] = selectedCell;
-    const currentCell = board[r][c];
-
-    if (currentCell.isFixed) return;
-
-    // Push to history
-    setHistory(prev => [...prev.slice(-20), JSON.parse(JSON.stringify(board))]);
-
-    // Create new board state safely
-    const newBoard = board.map(row => [...row]);
-    const newCell = { ...newBoard[r][c] };
-
-    if (isPencilMode) {
-      if (newCell.notes.includes(num)) {
-        newCell.notes = newCell.notes.filter(n => n !== num);
-      } else {
-        newCell.notes = [...newCell.notes, num].sort();
-      }
-    } else {
-      // Set value
-      if (newCell.value === num) {
-        newCell.value = null; 
-        newCell.isError = false;
-      } else {
-        newCell.value = num as any;
-        newCell.notes = [];
-
-        // Error Logic
-        const isHarderDifficulty = 
-            difficulty === Difficulty.Normal || 
-            difficulty === Difficulty.Hard || 
-            difficulty === Difficulty.Intense || 
-            difficulty === Difficulty.Impossible;
-
-        if (!isHarderDifficulty) {
-             newCell.isError = num !== solvedBoard[r][c];
-        } else {
-             newCell.isError = false; 
-        }
-      }
-    }
-    
-    newBoard[r][c] = newCell;
-    setBoard(newBoard);
-    
-    // INSTANT SAVE
-    saveProgressInstant(newBoard);
-
-    if (!isPencilMode && newCell.value) {
-       checkCompletion(newBoard);
-    }
-  };
-
-  const checkCompletion = (currentBoard: Board) => {
-      let filled = 0;
-      let correct = 0;
-      for(let r=0; r<9; r++) {
-          for(let c=0; c<9; c++) {
-              if (currentBoard[r][c].value !== null) {
-                  filled++;
-                  if (currentBoard[r][c].value === solvedBoard[r][c]) correct++;
-              }
-          }
-      }
-
-      if (filled === 81 && correct === 81) {
-          setIsEnding(true); // Freeze input
-          stopTimer(); // Freeze timer
-          
           setTimeout(() => {
-              setIsCompleted(true); // Show modal after delay
-              
-              const points = getPointsForDifficulty(difficulty);
-              setEarnedPoints(points);
-              onEarnPoints(points);
-              
-              const progress: LevelProgress = {
-                levelId,
-                difficulty,
-                status: 'completed',
-                timeElapsed: timer,
-                lastPlayed: Date.now(),
-                boardState: undefined, 
-              };
-              Storage.saveLevelProgress(progress);
+              setAnimatingSections(prev => {
+                  const next = new Set(prev);
+                  sections.forEach(s => next.delete(s));
+                  return next;
+              });
           }, 1000);
       }
+  }, []);
+
+  const handleGameComplete = (completedBoard: Board, completedMoveLog: MoveLogEntry[]) => {
+      if (isCompleted || isEnding) return;
+      setIsEnding(true);
+      sounds.playWin();
+      
+      setAnimatingSections(new Set(['full-board']));
+      setTimeout(() => {
+          setAnimatingSections(new Set());
+      }, 1500);
+      
+      let points = 0;
+      switch(difficulty) {
+          case Difficulty.SuperEasy: points = 5; break;
+          case Difficulty.Easy: points = 10; break;
+          case Difficulty.Normal: points = 15; break;
+          case Difficulty.Hard: points = 20; break;
+          case Difficulty.Intense: points = 30; break;
+          case Difficulty.Impossible: points = 50; break;
+      }
+      
+      onEarnPoints(points);
+      setEarnedPoints(points);
+      
+      Storage.saveLevelProgress({
+          levelId,
+          difficulty,
+          status: 'completed',
+          timeElapsed: timer,
+          boardState: completedBoard,
+          moveLog: completedMoveLog,
+          lastPlayed: Date.now(),
+          scanUses,
+          revealUses,
+      });
+      
+      if (settings.generateReplay) {
+          // Pass true to indicate auto-generation
+          generateReplay();
+      }
+      
+      setTimeout(() => {
+          setIsCompleted(true);
+          onComplete();
+      }, 1500);
   };
 
-  const handleErase = () => {
-    if (!selectedCell || isPaused || isEnding || isSettingsOpen) return;
-    const [r, c] = selectedCell;
-    if (board[r][c].isFixed) return;
+  const {
+      board,
+      setBoard,
+      solvedBoard,
+      initialBoardRef,
+      history,
+      setHistory,
+      moveLog,
+      isPencilMode,
+      setIsPencilMode,
+      selectedCell,
+      setSelectedCell,
+      activeNumber,
+      setActiveNumber,
+      conflicts,
+      numberCounts,
+      initializeBoard,
+      handleCellClick,
+      handleNumberInput,
+      handleUndo,
+      handleErase,
+      checkCompletion,
+      removeNotesFromPeers
+  } = useSudokuBoard({
+      difficulty,
+      levelId,
+      settings,
+      onComplete: handleGameComplete,
+      onBoardChange: (newBoard, currentMoveLog) => saveProgress(newBoard, undefined, undefined, currentMoveLog),
+      onSectionComplete: handleSectionComplete
+  });
 
-    setHistory(prev => [...prev, JSON.parse(JSON.stringify(board))]);
-    // Create new board state safely
-    const newBoard = board.map(row => [...row]);
-    newBoard[r][c].value = null;
-    newBoard[r][c].notes = [];
-    newBoard[r][c].isError = false;
-    setBoard(newBoard);
-    
-    // INSTANT SAVE
-    saveProgressInstant(newBoard);
-  };
+  const {
+      scanUses,
+      setScanUses,
+      isScanning,
+      scanCooldown,
+      revealUses,
+      setRevealUses,
+      revealingCell,
+      setRevealingCell,
+      animatingCell,
+      setAnimatingCell,
+      isAutoAvailable,
+      handleAutoFill,
+      handleScan,
+      handleReveal,
+  } = useGameSkills({
+      board,
+      setBoard,
+      solvedBoard,
+      setHistory,
+      moveLog,
+      selectedCell,
+      activeNumber,
+      settings,
+      difficulty,
+      removeNotesFromPeers,
+      checkCompletion,
+      onSaveProgress: (b, s, r, ml) => saveProgress(b, s, r, ml),
+      onSectionComplete: handleSectionComplete,
+      timer
+  });
 
-  const handleUndo = () => {
-    if (history.length === 0 || isPaused || isEnding || isSettingsOpen) return;
-    const previous = history[history.length - 1];
-    setBoard(previous);
-    setHistory(prev => prev.slice(0, -1));
-    
-    // INSTANT SAVE
-    saveProgressInstant(previous);
-  };
+  useEffect(() => {
+      const progress = Storage.getLevelProgress(difficulty, levelId);
+      if (progress && progress.status === 'in-progress' && progress.boardState) {
+          initializeBoard(progress.boardState, progress.moveLog);
+          setTimer(progress.timeElapsed);
+          
+          // Restore skills
+          if (progress.scanUses !== undefined) setScanUses(progress.scanUses);
+          else setScanUses(3);
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+          if (progress.revealUses !== undefined) setRevealUses(progress.revealUses);
+          else setRevealUses(1);
+      } else {
+          initializeBoard();
+          setTimer(0);
+          
+          // Reset skills
+          setScanUses(3);
+          setRevealUses(1);
+      }
+      setIsCompleted(false);
+      setIsEnding(false);
+      setIsPaused(false);
+      setShowRestartConfirm(false);
+      setReplayUrl(null);
+      setShowReplay(false);
+      setAnimatingSections(new Set());
+      
+      setShowStartHint(true);
+      const hintTimer = setTimeout(() => setShowStartHint(false), 5000);
+      return () => clearTimeout(hintTimer);
+  }, [difficulty, levelId, initializeBoard, setTimer, setScanUses, setRevealUses]);
+  
+  const generateReplay = () => {
+        if (isGeneratingReplay || replayUrl) return;
+        setIsGeneratingReplay(true);
+        
+        try {
+            let cleanMoves: ReplayMove[] = [];
+            
+            // 1. Try to use real history if available
+            if (moveLog.current.length > 0) {
+                const finalMoveMap = new Map<string, number>();
+                moveLog.current.forEach(move => {
+                    // Only include moves that match final solution
+                    if (solvedBoard[move.r] && solvedBoard[move.r][move.c] && move.v === solvedBoard[move.r][move.c]) {
+                        finalMoveMap.set(`${move.r}-${move.c}`, move.t);
+                    }
+                });
 
-  const getCellClass = (cell: Cell, r: number, c: number) => {
-    let classes = "w-full h-full flex items-center justify-center text-lg sm:text-2xl transition-all duration-200 cursor-pointer select-none relative ";
-    const borderR = (c + 1) % 3 === 0 && c !== 8 ? "border-r-2 border-stone-300" : "border-r border-stone-200";
-    const borderB = (r + 1) % 3 === 0 && r !== 8 ? "border-b-2 border-stone-300" : "border-b border-stone-200";
-    classes += `${borderR} ${borderB} `;
+                for(let r=0; r<9; r++) {
+                    for(let c=0; c<9; c++) {
+                        const cell = initialBoardRef.current[r][c];
+                        if (!cell.isFixed) {
+                            const t = finalMoveMap.get(`${r}-${c}`);
+                            if (t !== undefined) {
+                                cleanMoves.push({ row: r, col: c, value: solvedBoard[r][c], t });
+                            }
+                        }
+                    }
+                }
+                cleanMoves.sort((a, b) => (a.t || 0) - (b.t || 0));
+            }
 
-    const isConflict = conflicts.has(`${r}-${c}`);
-    const isError = cell.isError;
-    const isSelected = selectedCell ? (selectedCell[0] === r && selectedCell[1] === c) : false;
-    const isSameValue = selectedCell && cell.value !== null && board[selectedCell[0]][selectedCell[1]].value === cell.value;
-    const isRelated = selectedCell && (selectedCell[0] === r || selectedCell[1] === c || (Math.floor(selectedCell[0]/3) === Math.floor(r/3) && Math.floor(selectedCell[1]/3) === Math.floor(c/3)));
+            // Calculate total non-fixed cells (holes)
+            let totalHoles = 0;
+            if (initialBoardRef.current && initialBoardRef.current.length > 0) {
+                for(let r=0; r<9; r++) {
+                    for(let c=0; c<9; c++) {
+                        if (!initialBoardRef.current[r][c].isFixed) totalHoles++;
+                    }
+                }
+            }
 
-    // Background Priority
-    if (isError || isConflict) {
-        classes += "bg-red-100 ";
-        // If selected and error, show ring to denote selection
-        if (isSelected) classes += "ring-2 ring-blue-400 z-10 ";
-    } else if (isSelected) {
-        classes += "bg-blue-300 ";
-    } else if (settings.highlight && isSameValue) {
-        classes += "bg-blue-100 ";
-    } else if (settings.highlight && isRelated) {
-        classes += "bg-stone-100 ";
-    } else {
-        classes += "bg-white ";
-    }
-
-    // Text Color Priority
-    if (cell.isFixed) {
-        classes += "font-semibold text-stone-900 ";
-    } else {
-        // User Input
-        if (isSelected && !isError && !isConflict) {
-             classes += "font-medium text-white "; // White text on blue selection
-        } else {
-             classes += "font-medium text-blue-600 "; // Blue text even if error/conflict
+            // 2. Smart Fallback: If incomplete moves, reconstruct a "Zen" flow
+            if (cleanMoves.length < totalHoles) {
+                cleanMoves = [];
+                for(let r=0; r<9; r++) {
+                    for(let c=0; c<9; c++) {
+                        const cell = initialBoardRef.current[r][c];
+                        if (!cell.isFixed) {
+                            // Create artificial timestamp based on position to create a satisfying fill order
+                            cleanMoves.push({ row: r, col: c, value: solvedBoard[r][c], t: (r * 9 + c) * 100 });
+                        }
+                    }
+                }
+            }
+            
+            const isDark = document.documentElement.classList.contains('dark');
+            
+            // This promise resolves when the recording is complete
+            generateReplayVideo(initialBoardRef.current, cleanMoves, difficulty, levelId, isDark, timer)
+                .then(url => {
+                    setReplayUrl(url);
+                    setIsGeneratingReplay(false);
+                })
+                .catch(err => {
+                    console.error("Replay generation error:", err);
+                    setIsGeneratingReplay(false);
+                });
+        } catch (e) {
+            console.error("Replay preparation error:", e);
+            setIsGeneratingReplay(false);
         }
-    }
-    return classes;
   };
 
-  if (loading) return <div className="h-full w-full flex items-center justify-center">Loading...</div>;
+  const handleShareReplay = async () => {
+      if (!replayUrl) return;
+      try {
+          const blob = await fetch(replayUrl).then(r => r.blob());
+          const isMp4 = blob.type.includes('mp4');
+          const ext = isMp4 ? 'mp4' : 'webm';
+          const mime = isMp4 ? 'video/mp4' : 'video/webm';
+
+          const file = new File([blob], `Oku_${difficulty}_${levelId}.${ext}`, { type: mime });
+          if (navigator.share && navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                  files: [file],
+                  title: 'Oku Replay',
+                  text: `I solved Level ${levelId} (${difficulty}) in ${formatTimeShort(timer)}!`
+              });
+          } else {
+              const a = document.createElement('a');
+              a.href = replayUrl;
+              a.download = `sudoku_${difficulty}_${levelId}.${ext}`;
+              a.click();
+          }
+      } catch (e) {
+          console.error("Share failed", e);
+      }
+  };
+
+  const handleRestart = () => {
+      sounds.playClick();
+      Storage.clearLevelProgress(difficulty, levelId); 
+      initializeBoard(); 
+      setTimer(0); 
+      setScanUses(3); 
+      setRevealUses(1); 
+      setShowRestartConfirm(false); 
+      setIsPaused(false);
+      setAnimatingSections(new Set());
+      
+      setShowStartHint(true);
+      setTimeout(() => setShowStartHint(false), 5000);
+  };
+  
+  const handleBackgroundClick = (e: React.MouseEvent) => {
+      if (e.target === e.currentTarget) {
+          setSelectedCell(null);
+      }
+  };
+
+  // Determine if erase is possible for the selected cell (value or notes)
+  const canErase = !!selectedCell && (() => {
+      const [r, c] = selectedCell;
+      const cell = board[r][c];
+      return !cell.isFixed && (cell.value !== null || cell.notes.length > 0);
+  })();
+
+  const onCellClickWrapper = (e: React.MouseEvent, r: number, c: number) => {
+      handleCellClick(r, c, isPaused, isCompleted);
+  };
+
+  const onNumberClickWrapper = (e: React.MouseEvent, n: number) => {
+      handleNumberInput(n, isPaused, isCompleted);
+  };
 
   return (
-    <div className={`h-full flex flex-col max-w-lg mx-auto px-4 pt-6 pb-4 relative ${isQuitting ? 'animate-fade-out' : 'animate-fade-in'}`}>
-      {/* Header */}
-      <div className="flex justify-between items-start mb-14 relative">
-        <button onClick={handleQuit} className="p-2 rounded-full hover:bg-stone-200 transition z-10 -ml-2">
-          <Icons.Back className="w-6 h-6 text-stone-600" />
-        </button>
-        
-        {/* Centered Title - Moved down for Dynamic Island (~72px from top) */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center mt-12 pointer-events-none">
-            <span className="text-xs font-bold tracking-wider text-stone-400 uppercase text-center w-48">{difficulty} &bull; Level {levelId}</span>
-            <span className="text-xl font-medium tabular-nums text-stone-700">{formatTime(timer)}</span>
-        </div>
-        
-        <div className="flex flex-col items-end gap-1 z-10 -mr-2">
-            <div className="flex gap-1">
-                <button onClick={() => setIsPaused(true)} className="p-2 rounded-full hover:bg-stone-200 transition">
-                    <Icons.Pause className="w-6 h-6 text-stone-600" />
-                </button>
-                <button onClick={onSettingsOpen} className="p-2 rounded-full hover:bg-stone-200 transition">
-                    <Icons.Settings className="w-6 h-6 text-stone-600" />
-                </button>
-            </div>
-            {/* Points Display in Game */}
-            <div className="flex items-center gap-1 bg-stone-100 px-2 py-1 rounded-full mr-1">
-                <div className="text-blue-500">
-                    <Icons.Diamond className="w-3 h-3 fill-current" />
-                </div>
-                <span className="text-xs font-bold text-stone-600 tabular-nums">{currentPoints}</span>
-            </div>
-        </div>
-      </div>
+    <>
+      <div className="w-full flex justify-center px-6 pt-[70px] pb-4 relative z-40 shrink-0">
+          <div className="w-full max-w-md flex items-center justify-between relative">
+              {/* Left Column: Back Button */}
+              <button onClick={onBack} className="p-2 rounded-full hover:bg-stone-200/50 transition -ml-2 text-t-icon relative z-30">
+                  <Icons.Back className="w-6 h-6" />
+              </button>
 
-      {/* Board */}
-      <div className="aspect-square w-full bg-stone-300 border-2 border-stone-300 rounded-lg overflow-hidden shadow-sm">
-        <div className="grid grid-rows-9 h-full">
-          {board.map((row, rIndex) => (
-            <div key={rIndex} className="grid grid-cols-9 h-full">
-              {row.map((cell, cIndex) => (
-                <div 
-                    key={`${rIndex}-${cIndex}`} 
-                    className={getCellClass(cell, rIndex, cIndex)}
-                    onClick={() => handleCellClick(rIndex, cIndex)}
-                >
-                  {cell.value ? (
-                      <span>{cell.value}</span>
+              {/* Center Column: Title & Timer - Absolute Centered */}
+              <div className="flex flex-col items-center absolute left-0 right-0 pointer-events-none z-20">
+                  {settings.showTimer ? (
+                      <span className="text-xl font-bold text-t-primary tabular-nums leading-none">{formatTimeShort(timer)}</span>
                   ) : (
-                      <div className="grid grid-cols-3 w-full h-full p-0.5">
-                          {[1,2,3,4,5,6,7,8,9].map(n => (
-                              <div key={n} className="flex items-center justify-center text-[8px] sm:text-[10px] leading-none text-stone-500">
-                                  {cell.notes.includes(n) ? n : ''}
-                              </div>
-                          ))}
-                      </div>
+                      <span className="text-xl font-bold text-t-primary leading-none">Level {levelId}</span>
                   )}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Controls */}
-      <div className="mt-8 flex flex-col gap-4">
-        {/* Actions */}
-        <div className="flex justify-between px-4">
-            <button onClick={handleUndo} className="flex flex-col items-center gap-1 text-stone-500 active:scale-95 transition">
-                <div className="p-3 bg-white rounded-full shadow-sm border border-stone-100"><Icons.Undo className="w-5 h-5" /></div>
-                <span className="text-xs">Undo</span>
-            </button>
-            <button onClick={() => setIsPencilMode(!isPencilMode)} className={`flex flex-col items-center gap-1 active:scale-95 transition ${isPencilMode ? 'text-blue-500' : 'text-stone-500'}`}>
-                <div className={`p-3 rounded-full shadow-sm border border-stone-100 ${isPencilMode ? 'bg-blue-50 border-blue-200' : 'bg-white'}`}>
-                    <Icons.Pencil className="w-5 h-5" />
-                    {isPencilMode && <span className="absolute top-0 right-0 w-2 h-2 bg-blue-500 rounded-full"></span>}
-                </div>
-                <span className="text-xs">Pencil</span>
-            </button>
-            <button onClick={handleErase} className="flex flex-col items-center gap-1 text-stone-500 active:scale-95 transition">
-                <div className="p-3 bg-white rounded-full shadow-sm border border-stone-100"><Icons.Erase className="w-5 h-5" /></div>
-                <span className="text-xs">Erase</span>
-            </button>
-             <button className="flex flex-col items-center gap-1 text-stone-300 cursor-not-allowed">
-                <div className="p-3 bg-stone-50 rounded-full border border-stone-100"><Icons.Hint className="w-5 h-5" /></div>
-                <span className="text-xs">Hint</span>
-            </button>
-        </div>
-
-        {/* Numpad */}
-        <div className="grid grid-cols-9 gap-1 mt-2">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                <button
-                    key={num}
-                    onClick={() => handleNumberInput(num)}
-                    className="aspect-[4/5] flex items-center justify-center text-xl font-medium text-blue-600 bg-white rounded-lg shadow-sm border-b-2 border-stone-100 active:border-b-0 active:translate-y-[2px] transition-all"
-                >
-                    {num}
-                </button>
-            ))}
-        </div>
-      </div>
-
-      {/* Unified Pause & Restart Overlay */}
-      {(isPaused || showRestartConfirm) && (
-          <div className={`absolute inset-0 bg-stone-50/90 backdrop-blur-sm z-40 flex items-center justify-center 
-              ${(isResuming || isRestarting) ? 'animate-fade-out' : 'animate-fade-in'}`}>
+                  <span className="text-[10px] font-bold text-t-secondary uppercase tracking-widest mt-1">
+                    {difficulty} {settings.showTimer && `• ${levelId}`}
+                  </span>
+              </div>
               
+              {/* Right Column: Actions */}
+              <div className="flex items-center gap-1 relative z-30 -mr-2">
+                  <button onClick={() => { sounds.playClick(); setIsPaused(true); }} className="p-2 rounded-full hover:bg-stone-200/50 transition text-t-icon">
+                      <Icons.Pause className="w-6 h-6" />
+                  </button>
+                  <button onClick={onSettingsOpen} className="p-2 rounded-full hover:bg-stone-200/50 transition text-t-icon">
+                      <Icons.Settings className="w-6 h-6" />
+                  </button>
+              </div>
+          </div>
+      </div>
+
+      <div 
+          className="flex-1 w-full flex flex-col items-center justify-start relative cursor-default" 
+          onClick={handleBackgroundClick}
+      >
+         <SudokuGrid 
+             board={board}
+             selectedCell={selectedCell}
+             activeNumber={activeNumber}
+             conflicts={conflicts}
+             revealingCell={revealingCell}
+             animatingCell={animatingCell}
+             isScanning={isScanning}
+             animatingSections={animatingSections}
+             settings={settings}
+             numberColor={numberColor}
+             onCellClick={onCellClickWrapper}
+         />
+
+         {/* Number Pad - Wider [500px] to match grid */}
+         <div className="w-full max-w-[500px] px-2 mt-4 relative z-[100]" onClick={(e) => e.stopPropagation()}>
+             <NumberPad 
+                 activeNumber={activeNumber}
+                 numberCounts={numberCounts}
+                 isPencilMode={isPencilMode}
+                 numberColor={numberColor}
+                 onNumberClick={onNumberClickWrapper}
+             />
+         </div>
+
+         {/* Game Controls - Increased spacing (mt-10) */}
+         <div className="w-full max-w-md px-6 mt-10 relative z-[100]" onClick={(e) => e.stopPropagation()}>
+             <GameControls 
+                 canUndo={history.length > 0}
+                 canErase={canErase}
+                 isPencilMode={isPencilMode}
+                 onUndo={(e) => handleUndo(isPaused, isCompleted)}
+                 onErase={(e) => handleErase(isPaused, isCompleted)}
+                 onTogglePencil={() => { sounds.playClick(); setIsPencilMode(!isPencilMode); }}
+                 purchasedSkills={purchasedSkills}
+                 isAutoAvailable={isAutoAvailable}
+                 scanUses={scanUses}
+                 isScanning={isScanning}
+                 scanCooldown={scanCooldown}
+                 revealUses={revealUses}
+                 revealingCell={revealingCell}
+                 onAutoFill={() => handleAutoFill(purchasedSkills)}
+                 onScan={() => handleScan(isPaused, isCompleted)}
+                 onReveal={() => handleReveal(isPaused, isCompleted)}
+                 timer={timer}
+             />
+         </div>
+         
+         {/* Deselect Text - Increased spacing (mt-8) */}
+         <div className={`mt-8 mb-4 pointer-events-none transition-opacity duration-1000 ${showStartHint ? 'opacity-100' : 'opacity-0'}`}>
+             <span className="text-sm font-light text-stone-400 dark:text-stone-500 tracking-wide">TAP HERE TO DESELECT</span>
+         </div>
+      </div>
+
+      {(isPaused || showRestartConfirm) && (
+          <div className="fixed inset-0 bg-stone-50/90 dark:bg-stone-900/90 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in">
               {!showRestartConfirm ? (
-                  /* Pause Menu Content */
                   <div className="flex flex-col gap-4 w-48 animate-pop">
-                    <h2 className="text-2xl font-bold text-stone-800 mb-4 text-center">Game Paused</h2>
-                    <button onClick={handleResume} className="flex items-center justify-center gap-2 p-4 bg-stone-800 text-white rounded-xl shadow-lg active:scale-95 transition hover:opacity-90">
-                        <Icons.Play className="w-5 h-5" /> Resume
+                    <h2 className="text-2xl font-bold text-stone-800 dark:text-t-primary mb-4 text-center">Game Paused</h2>
+                    <button onClick={() => { sounds.playClick(); setIsPaused(false); }} className="flex items-center justify-center gap-2 p-4 bg-stone-800 text-white dark:bg-blue-600 dark:text-white rounded-xl shadow-lg active:scale-95 transition hover:opacity-90">
+                        <Icons.Play className="w-5 h-5 fill-current" /> Resume
                     </button>
-                    <button 
-                        onClick={() => setShowRestartConfirm(true)} 
-                        className="flex items-center justify-center gap-2 p-4 bg-white text-stone-800 border border-stone-200 rounded-xl active:scale-95 transition hover:bg-stone-50"
-                    >
+                    <button onClick={() => { sounds.playClick(); setShowRestartConfirm(true); }} className="flex items-center justify-center gap-2 p-4 bg-white text-stone-800 border border-stone-200 dark:bg-t-surface dark:text-t-primary dark:border-t-border rounded-xl active:scale-95 transition hover:bg-stone-50 dark:hover:bg-t-surface-sec">
                         <Icons.Reset className="w-5 h-5" /> Restart Level
                     </button>
-                    <button onClick={handleQuit} className="flex items-center justify-center gap-2 p-4 text-stone-500 hover:text-stone-800 transition">
-                         Quit Game
+                    <button onClick={() => { sounds.playClick(); onBack(); }} className="flex items-center justify-center gap-2 p-4 text-stone-500 hover:text-stone-800 dark:text-t-secondary dark:hover:text-t-primary transition font-medium">
+                        Quit Game
                     </button>
                   </div>
               ) : (
-                  /* Restart Confirm Content */
-                  <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-sm text-center animate-pop">
-                     <h3 className="text-lg font-bold text-stone-800 mb-2">Restart Level?</h3>
-                     <p className="text-stone-500 text-sm mb-6">Are you sure? This will reset all progress on this level.</p>
+                  <div className="bg-white dark:bg-t-surface p-6 rounded-2xl shadow-xl w-full max-w-sm text-center animate-pop">
+                     <h3 className="text-lg font-bold text-stone-800 dark:text-t-primary mb-2">Restart Level?</h3>
+                     <p className="text-stone-500 dark:text-t-secondary text-sm mb-6">Are you sure? This will reset your progress on this level.</p>
                      <div className="flex gap-3">
-                        <button onClick={() => setShowRestartConfirm(false)} className="flex-1 py-3 text-stone-600 bg-stone-100 rounded-xl font-medium active:scale-95 transition">Cancel</button>
-                        <button onClick={handleRestart} className="flex-1 py-3 text-white bg-red-500 rounded-xl font-medium shadow-md active:scale-95 transition">Restart</button>
+                         <button onClick={() => { sounds.playClick(); setShowRestartConfirm(false); }} className="flex-1 py-3 text-stone-600 bg-stone-100 dark:bg-t-surface-sec dark:text-t-primary rounded-xl font-medium active:scale-95 transition">Cancel</button>
+                         <button onClick={handleRestart} className="flex-1 py-3 text-white bg-red-500 rounded-xl font-medium shadow-md active:scale-95 transition">Restart</button>
                      </div>
                   </div>
               )}
           </div>
       )}
 
-      {/* Completion Modal */}
       {isCompleted && (
-          <div className="absolute inset-0 bg-green-500/50 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-white animate-fade-in">
-              <div className="bg-white text-stone-800 p-8 rounded-2xl shadow-2xl w-80 text-center animate-pop">
-                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500">
-                      <Icons.Check className="w-10 h-10 animate-scale-loop" />
-                  </div>
-                  <h2 className="text-2xl font-bold mb-2">Solved!</h2>
-                  <p className="text-stone-500 mb-2 text-sm">You earned</p>
-                  <div className="flex items-center justify-center gap-2 mb-4">
-                      <div className="text-blue-500"><Icons.Diamond className="w-6 h-6 fill-current" /></div>
-                      <span className="text-3xl font-bold text-stone-800">+{displayedPoints}</span>
-                  </div>
-                  <p className="text-stone-400 mb-2 text-xs uppercase tracking-wide">Time</p>
-                  <p className="text-2xl font-medium mb-8 tabular-nums">{formatTime(timer)}</p>
-                  
-                  <div className="flex flex-col gap-3">
-                    <button onClick={handleNextLevelWithAnim} className="w-full py-3 bg-stone-800 text-white rounded-xl font-medium hover:bg-stone-700 active:scale-95 transition shadow-lg active:opacity-80">
-                        Play Next Level
-                    </button>
-                    <button onClick={handleQuit} className="w-full py-3 bg-white text-stone-600 border border-stone-200 rounded-xl font-medium hover:bg-stone-50 active:scale-95 transition active:opacity-80">
-                        Back to Menu
-                    </button>
-                  </div>
-              </div>
-          </div>
+          <WinModal 
+              difficulty={difficulty}
+              levelId={levelId}
+              timer={timer}
+              points={earnedPoints}
+              isGeneratingReplay={isGeneratingReplay}
+              replayUrl={replayUrl}
+              showReplay={showReplay}
+              generateReplayEnabled={settings.generateReplay}
+              onReplay={(e) => { e.stopPropagation(); setShowReplay(true); }}
+              onShareReplay={handleShareReplay}
+              onCloseReplay={() => setShowReplay(false)}
+              onGenerateReplay={generateReplay}
+              onBack={onBack}
+              onReturnToMenu={onReturnToMenu}
+          />
       )}
-    </div>
+    </>
   );
 };

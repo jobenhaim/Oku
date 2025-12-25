@@ -1,58 +1,157 @@
-import { AppSettings, LevelProgress, StoredData } from '../types';
+
+import { AppSettings, LevelProgress, StoredData, PepinoState } from '../types';
+import { Preferences } from '@capacitor/preferences';
 
 const STORAGE_KEY = 'minimal_sudoku_data_v1';
 
 const DEFAULT_SETTINGS: AppSettings = {
-  music: false,
   sound: true,
   highlight: true,
-  autoNotes: false,
-  defaultBackground: false,
+  autoEraseNotes: true, // Default ON
   vibration: true,
+  showTimer: true,
+  appearance: 'light',
+  digitFirst: false, // Default OFF
+  screenWakeLock: false, // Default OFF
+  generateReplay: true, // Default ON
+  hiddenDifficulties: [], // Default show all
 };
 
 function getStoredData(): StoredData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      return { 
+      const initialData: StoredData = { 
           settings: DEFAULT_SETTINGS, 
-          points: 500, // Default start points
+          points: 0, 
           progress: {},
-          purchasedBackgrounds: [],
-          selectedBackground: null
+          purchasedBackgrounds: ['bg-default', 'bg-dyn-default'],
+          selectedBackground: 'bg-default',
+          purchasedNumberColors: ['num-default'],
+          selectedNumberColor: 'num-default',
+          purchasedSkills: [],
+          enabledSkills: [],
+          purchasedSoundPacks: ['snd-zen'],
+          selectedSoundPack: 'snd-zen',
+          bonusClaimed: false,
+          nextBonusClaimTime: 0,
+          starterPackPurchased: false,
+          unlockedPack2: [],
+          unlockedPack3: [],
+          pepino: { unlocked: false, lastGiftTime: 0, nextGiftDelay: 0 }
       };
+      
+      return initialData;
     }
     const data = JSON.parse(raw);
-    // Migrations
-    if (typeof data.points !== 'number') data.points = 500;
-    if (!data.purchasedBackgrounds) data.purchasedBackgrounds = [];
-    if (data.selectedBackground === undefined) data.selectedBackground = null;
-    if (data.settings.defaultBackground === undefined) data.settings.defaultBackground = false;
-    if (data.settings.vibration === undefined) data.settings.vibration = true;
     
+    // Migrations
+    if (typeof data.points !== 'number') data.points = 0;
+    
+    if (!data.purchasedBackgrounds) data.purchasedBackgrounds = ['bg-default', 'bg-dyn-default'];
+    if (!data.purchasedBackgrounds.includes('bg-default')) data.purchasedBackgrounds.push('bg-default');
+    if (!data.purchasedBackgrounds.includes('bg-dyn-default')) data.purchasedBackgrounds.push('bg-dyn-default');
+
+    if (data.selectedBackground === undefined) data.selectedBackground = 'bg-default';
+    
+    if (!data.purchasedNumberColors) data.purchasedNumberColors = ['num-default'];
+    if (!data.selectedNumberColor) data.selectedNumberColor = 'num-default';
+
+    if (!data.purchasedSoundPacks) data.purchasedSoundPacks = ['snd-zen'];
+    if (!data.selectedSoundPack) data.selectedSoundPack = 'snd-zen';
+
+    if (data.settings.vibration === undefined) data.settings.vibration = true;
+
+    if (data.settings.showTimer === undefined) {
+        if ((data.settings as any).hideTimer !== undefined) {
+            data.settings.showTimer = !(data.settings as any).hideTimer;
+            delete (data.settings as any).hideTimer;
+        } else {
+            data.settings.showTimer = true;
+        }
+    }
+    
+    if (data.settings.autoEraseNotes === undefined) data.settings.autoEraseNotes = true;
+    if (data.settings.digitFirst === undefined) data.settings.digitFirst = false;
+    if (data.settings.screenWakeLock === undefined) data.settings.screenWakeLock = false;
+    if (data.settings.generateReplay === undefined) data.settings.generateReplay = true; // Default ON
+    if (data.settings.hiddenDifficulties === undefined) data.settings.hiddenDifficulties = [];
+
+    if (data.settings.appearance === undefined) {
+        data.settings.appearance = 'light'; 
+    }
+    
+    if (!data.purchasedSkills) data.purchasedSkills = [];
+    if (!data.enabledSkills) data.enabledSkills = [...data.purchasedSkills]; // Default new field to existing purchased skills
+    
+    if (data.bonusClaimed === undefined) data.bonusClaimed = false;
+    if (data.nextBonusClaimTime === undefined) data.nextBonusClaimTime = 0;
+    
+    if (data.starterPackPurchased === undefined) data.starterPackPurchased = false;
+    
+    if (!data.unlockedPack2) data.unlockedPack2 = [];
+    if (!data.unlockedPack3) data.unlockedPack3 = [];
+    
+    if (!data.pepino) data.pepino = { unlocked: false, lastGiftTime: 0, nextGiftDelay: 0 };
+
+    // Clean up deprecated fields if they exist from previous versions
+    if ((data as any).purchasedBundles) delete (data as any).purchasedBundles;
+
     return data;
   } catch (e) {
     console.error("Failed to load data", e);
     return { 
         settings: DEFAULT_SETTINGS, 
-        points: 500, 
+        points: 0, 
         progress: {},
-        purchasedBackgrounds: [],
-        selectedBackground: null 
+        purchasedBackgrounds: ['bg-default', 'bg-dyn-default'],
+        selectedBackground: 'bg-default',
+        purchasedNumberColors: ['num-default'],
+        selectedNumberColor: 'num-default',
+        purchasedSkills: [],
+        enabledSkills: [],
+        purchasedSoundPacks: ['snd-zen'],
+        selectedSoundPack: 'snd-zen',
+        bonusClaimed: false,
+        nextBonusClaimTime: 0,
+        starterPackPurchased: false,
+        unlockedPack2: [],
+        unlockedPack3: [],
+        pepino: { unlocked: false, lastGiftTime: 0, nextGiftDelay: 0 }
     };
   }
 }
 
 function saveData(data: StoredData) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    const stringified = JSON.stringify(data);
+    localStorage.setItem(STORAGE_KEY, stringified);
+    Preferences.set({
+        key: STORAGE_KEY,
+        value: stringified
+    }).catch(err => console.error("Native save failed", err));
   } catch (e) {
     console.error("Failed to save data", e);
   }
 }
 
 export const Storage = {
+  getStoredData, 
+  
+  initializeNative: async (): Promise<StoredData | null> => {
+      try {
+          const { value } = await Preferences.get({ key: STORAGE_KEY });
+          if (value) {
+              localStorage.setItem(STORAGE_KEY, value);
+              return JSON.parse(value);
+          }
+          return null;
+      } catch (e) {
+          console.warn("Could not read native prefs", e);
+          return null;
+      }
+  },
+
   getSettings: (): AppSettings => {
     return getStoredData().settings;
   },
@@ -73,8 +172,8 @@ export const Storage = {
     saveData(data);
     return data.points;
   },
-
-  // Store Methods
+  
+  // ... existing methods ...
   getPurchasedBackgrounds: (): string[] => {
       return getStoredData().purchasedBackgrounds;
   },
@@ -100,6 +199,163 @@ export const Storage = {
       saveData(data);
   },
 
+  getPurchasedNumberColors: (): string[] => {
+      return getStoredData().purchasedNumberColors;
+  },
+
+  getSelectedNumberColor: (): string => {
+      return getStoredData().selectedNumberColor;
+  },
+
+  purchaseNumberColor: (id: string, cost: number): boolean => {
+      const data = getStoredData();
+      if (data.points >= cost && !data.purchasedNumberColors.includes(id)) {
+          data.points -= cost;
+          data.purchasedNumberColors.push(id);
+          saveData(data);
+          return true;
+      }
+      return false;
+  },
+
+  selectNumberColor: (id: string) => {
+      const data = getStoredData();
+      data.selectedNumberColor = id;
+      saveData(data);
+  },
+
+  getPurchasedSoundPacks: (): string[] => {
+    return getStoredData().purchasedSoundPacks || ['snd-zen'];
+  },
+
+  getSelectedSoundPack: (): string => {
+      return getStoredData().selectedSoundPack || 'snd-zen';
+  },
+
+  purchaseSoundPack: (id: string, cost: number): boolean => {
+      const data = getStoredData();
+      if (!data.purchasedSoundPacks) data.purchasedSoundPacks = ['snd-zen'];
+      if (data.points >= cost && !data.purchasedSoundPacks.includes(id)) {
+          data.points -= cost;
+          data.purchasedSoundPacks.push(id);
+          saveData(data);
+          return true;
+      }
+      return false;
+  },
+
+  selectSoundPack: (id: string) => {
+      const data = getStoredData();
+      data.selectedSoundPack = id;
+      saveData(data);
+  },
+  
+  getPurchasedSkills: (): string[] => {
+      return getStoredData().purchasedSkills;
+  },
+
+  getEnabledSkills: (): string[] => {
+    const data = getStoredData();
+    return data.enabledSkills || [];
+  },
+  
+  purchaseSkill: (id: string, cost: number): boolean => {
+      const data = getStoredData();
+      if (data.points >= cost && !data.purchasedSkills.includes(id)) {
+          data.points -= cost;
+          data.purchasedSkills.push(id);
+          if (!data.enabledSkills) data.enabledSkills = [];
+          if (!data.enabledSkills.includes(id)) data.enabledSkills.push(id); // Auto enable on purchase
+          saveData(data);
+          return true;
+      }
+      return false;
+  },
+
+  toggleSkillEnabled: (id: string) => {
+    const data = getStoredData();
+    if (!data.enabledSkills) data.enabledSkills = [];
+    if (data.enabledSkills.includes(id)) {
+      data.enabledSkills = data.enabledSkills.filter(s => s !== id);
+    } else if (data.purchasedSkills.includes(id)) {
+      data.enabledSkills.push(id);
+    }
+    saveData(data);
+    return data.enabledSkills;
+  },
+
+  isBonusClaimed: (): boolean => {
+      return !!getStoredData().bonusClaimed;
+  },
+
+  setBonusClaimed: () => {
+      const data = getStoredData();
+      data.bonusClaimed = true;
+      saveData(data);
+  },
+
+  getNextBonusClaimTime: (): number => {
+      return getStoredData().nextBonusClaimTime || 0;
+  },
+
+  setNextBonusClaimTime: (time: number) => {
+      const data = getStoredData();
+      data.nextBonusClaimTime = time;
+      saveData(data);
+  },
+  
+  isStarterPackPurchased: (): boolean => {
+      return !!getStoredData().starterPackPurchased;
+  },
+  
+  setStarterPackPurchased: () => {
+      const data = getStoredData();
+      data.starterPackPurchased = true;
+      saveData(data);
+  },
+
+  getUnlockedPacks2: (): string[] => {
+      return getStoredData().unlockedPack2 || [];
+  },
+
+  isPack2Unlocked: (difficulty: string): boolean => {
+      return getStoredData().unlockedPack2?.includes(difficulty) ?? false;
+  },
+
+  unlockPack2: (difficulty: string, cost: number): boolean => {
+      const data = getStoredData();
+      if (!data.unlockedPack2) data.unlockedPack2 = [];
+      
+      if (data.points >= cost && !data.unlockedPack2.includes(difficulty)) {
+          data.points -= cost;
+          data.unlockedPack2.push(difficulty);
+          saveData(data);
+          return true;
+      }
+      return false;
+  },
+
+  getUnlockedPacks3: (): string[] => {
+      return getStoredData().unlockedPack3 || [];
+  },
+
+  isPack3Unlocked: (difficulty: string): boolean => {
+      return getStoredData().unlockedPack3?.includes(difficulty) ?? false;
+  },
+
+  unlockPack3: (difficulty: string, cost: number): boolean => {
+      const data = getStoredData();
+      if (!data.unlockedPack3) data.unlockedPack3 = [];
+      
+      if (data.points >= cost && !data.unlockedPack3.includes(difficulty)) {
+          data.points -= cost;
+          data.unlockedPack3.push(difficulty);
+          saveData(data);
+          return true;
+      }
+      return false;
+  },
+
   getLevelProgress: (difficulty: string, levelId: number): LevelProgress | undefined => {
     const key = `${difficulty}-${levelId}`;
     return getStoredData().progress[key];
@@ -109,23 +365,16 @@ export const Storage = {
     const data = getStoredData();
     const key = `${progress.difficulty}-${progress.levelId}`;
     const existing = data.progress[key];
-
-    // Handle Best Time Logic
     let bestTime = existing?.bestTime;
-    
     if (progress.status === 'completed') {
-        // If completed, update best time if current is better (lower) or if no best time exists
         if (bestTime === undefined || progress.timeElapsed < bestTime) {
             bestTime = progress.timeElapsed;
         }
     }
-    
-    // Preserve bestTime in the new progress object
     data.progress[key] = {
         ...progress,
         bestTime: bestTime
     };
-    
     saveData(data);
   },
   
@@ -133,18 +382,16 @@ export const Storage = {
       const data = getStoredData();
       const key = `${difficulty}-${levelId}`;
       if (data.progress[key]) {
-           // Reset game state but PRESERVE bestTime and status if needed (though restart usually implies trying again)
-           // We keep bestTime.
            const { bestTime } = data.progress[key];
-           
            data.progress[key] = {
                levelId,
                difficulty: difficulty as any,
-               status: 'not-started', // Reset status
+               status: 'not-started',
                boardState: undefined,
                timeElapsed: 0,
-               history: [],
-               bestTime: bestTime // Keep the record
+               bestTime: bestTime,
+               scanUses: 3,
+               revealUses: 1,
            };
            saveData(data);
       }
@@ -152,11 +399,49 @@ export const Storage = {
 
   resetAllData: () => {
     localStorage.removeItem(STORAGE_KEY);
+    Preferences.remove({ key: STORAGE_KEY }).catch(() => {});
   },
   
-  // Get counts for UI
-  getCompletedCount: (difficulty: string): number => {
+  getCompletedCount: (difficulty: string, maxLevel: number = 200): number => {
       const progress = getStoredData().progress;
-      return Object.values(progress).filter(p => p.difficulty === difficulty && p.status === 'completed').length;
+      return Object.values(progress).filter(p => 
+        p.difficulty === difficulty && 
+        p.levelId <= maxLevel && 
+        (p.status === 'completed' || p.bestTime !== undefined)
+      ).length;
+  },
+
+  getCompletedCountInRange: (difficulty: string, minLevel: number, maxLevel: number): number => {
+      const progress = getStoredData().progress;
+      return Object.values(progress).filter(p => 
+        p.difficulty === difficulty && 
+        p.levelId >= minLevel && 
+        p.levelId <= maxLevel && 
+        (p.status === 'completed' || p.bestTime !== undefined)
+      ).length;
+  },
+
+  // PEPINO (Fish) Methods
+  getPepinoState: (): PepinoState => {
+      const data = getStoredData();
+      return data.pepino || { unlocked: false, lastGiftTime: 0, nextGiftDelay: 0 };
+  },
+
+  unlockPepino: () => {
+      const data = getStoredData();
+      if (!data.pepino) data.pepino = { unlocked: true, lastGiftTime: Date.now(), nextGiftDelay: 0 };
+      data.pepino.unlocked = true;
+      // First gift available in 10 seconds for instant delight
+      data.pepino.lastGiftTime = Date.now();
+      data.pepino.nextGiftDelay = 10000;
+      saveData(data);
+  },
+
+  updatePepinoGiftTime: (delay: number) => {
+      const data = getStoredData();
+      if (!data.pepino) data.pepino = { unlocked: true, lastGiftTime: 0, nextGiftDelay: 0 };
+      data.pepino.lastGiftTime = Date.now();
+      data.pepino.nextGiftDelay = delay;
+      saveData(data);
   }
 };

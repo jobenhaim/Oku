@@ -1,19 +1,39 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1, minimum-scale=1">
+    <meta name="theme-color" content="#fafaf9" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Minimal Sudoku" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icons/icon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
     <title>Minimal Sudoku</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
               sans: ['Outfit', 'sans-serif'],
             },
             colors: {
+              // Semantic Theme Tokens
+              t: {
+                bg: 'var(--app-bg)',
+                surface: 'var(--surface)',
+                'surface-sec': 'var(--surface-sec)',
+                primary: 'var(--text-primary)',
+                secondary: 'var(--text-secondary)',
+                border: 'var(--border)',
+                icon: 'var(--icon)',
+                board: 'var(--board-bg)',
+              },
               stone: {
                 50: '#fafaf9',
                 100: '#f5f5f4',
@@ -26,16 +46,45 @@
                 800: '#292524',
                 900: '#1c1917',
               },
-              paper: '#F9F8F6',
+              paper: '#F5F2EB',
+              amber: {
+                50: '#fffbeb',
+                100: '#fef3c7', // Soft premium yellow for Reveal
+                200: '#fde68a',
+                300: '#fcd34d',
+                400: '#fbbf24',
+                500: '#f59e0b',
+              }
             },
             animation: {
               'fade-in': 'fadeIn 0.3s ease-out forwards',
               'fade-out': 'fadeOut 0.3s ease-out forwards',
+              'fade-in-medium': 'fadeIn 0.5s ease-out forwards',
+              'fade-out-medium': 'fadeOut 0.5s ease-out forwards',
+              'fade-in-long': 'fadeIn 1s ease-out forwards',
+              'fade-out-long': 'fadeOut 1s ease-out forwards',
               'slide-up': 'slideUp 0.3s ease-out forwards',
               'slide-down': 'slideDown 0.3s ease-in forwards',
+              'slide-in-down': 'slideInDown 0.4s ease-out forwards',
               'pop': 'pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
               'scale-loop': 'scaleLoop 2s infinite ease-in-out',
               'gradient': 'gradient 8s ease infinite',
+              'gradient-slow': 'gradient 32s ease infinite',
+              'scan': 'scan 1.2s linear forwards',
+              'reveal-premium': 'revealPremium 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+              'scale-in': 'scaleIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+              'scale-out': 'scaleOut 0.15s ease-in forwards',
+              'tooltip-enter': 'tooltipEnter 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+              'tooltip-exit': 'tooltipExit 0.15s ease-in forwards',
+              'shimmer': 'shimmer 5s infinite linear',
+              'section-complete': 'sectionComplete 1s ease-out forwards',
+              'flow-up': 'flowUp 40s linear infinite',
+              'spin-slow': 'spin 20s linear infinite',
+              'float-up': 'floatUp 6s ease-in infinite',
+              'bubble-float': 'bubbleFloat 2s ease-in-out infinite',
+              'sway': 'sway 3s ease-in-out infinite',
+              'sway-slow': 'sway 5s ease-in-out infinite',
+              'wiggle': 'wiggle 2s ease-in-out infinite',
             },
             keyframes: {
               fadeIn: {
@@ -54,6 +103,10 @@
                 '0%': { opacity: '1', transform: 'translateY(0)' },
                 '100%': { opacity: '0', transform: 'translateY(100%)' },
               },
+              slideInDown: {
+                '0%': { opacity: '0', transform: 'translateY(-20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
               pop: {
                 '0%': { transform: 'scale(0.9)' },
                 '100%': { transform: 'scale(1)' },
@@ -66,6 +119,65 @@
                 '0%': { 'background-position': '0% 50%' },
                 '50%': { 'background-position': '100% 50%' },
                 '100%': { 'background-position': '0% 50%' },
+              },
+              scan: {
+                '0%': { top: '-5%' },
+                '100%': { top: '105%' },
+              },
+              revealPremium: {
+                '0%': { transform: 'scale(0.8)', opacity: '0', backgroundColor: '#fffbeb' },
+                '40%': { transform: 'scale(1.15)', opacity: '1', backgroundColor: '#fcd34d', boxShadow: '0 0 15px #fbbf24' },
+                '100%': { transform: 'scale(1)', opacity: '1', backgroundColor: '#fef3c7', boxShadow: 'none' },
+              },
+              scaleIn: {
+                '0%': { opacity: '0', transform: 'translate(-50%, 10px) scale(0.8)' },
+                '100%': { opacity: '1', transform: 'translate(-50%, 0) scale(1)' },
+              },
+              scaleOut: {
+                '0%': { opacity: '1', transform: 'translate(-50%, 0) scale(1)' },
+                '100%': { opacity: '0', transform: 'translate(-50%, 10px) scale(0.8)' },
+              },
+              tooltipEnter: {
+                '0%': { opacity: '0', transform: 'scale(0)' },
+                '100%': { opacity: '1', transform: 'scale(1)' },
+              },
+              tooltipExit: {
+                '0%': { opacity: '1', transform: 'scale(1)' },
+                '100%': { opacity: '0', transform: 'scale(0)' },
+              },
+              shimmer: {
+                '0%': { transform: 'translateX(-150%) skewX(-20deg)' },
+                '15%': { transform: 'translateX(150%) skewX(-20deg)' },
+                '100%': { transform: 'translateX(150%) skewX(-20deg)' },
+              },
+              sectionComplete: {
+                '0%': { opacity: '0', transform: 'scale(0.98)' },
+                '20%': { opacity: '1', transform: 'scale(1)' },
+                '70%': { opacity: '1', transform: 'scale(1)' },
+                '100%': { opacity: '0', transform: 'scale(1.02)' },
+              },
+              flowUp: {
+                '0%': { transform: 'translateY(0)' },
+                '100%': { transform: 'translateY(-50%)' },
+              },
+              floatUp: {
+                '0%': { transform: 'translateY(20px) scale(0.8)', opacity: '0' },
+                '10%': { opacity: '0.4' },
+                '80%': { opacity: '0.2' },
+                '100%': { transform: 'translateY(-120px) scale(1.1)', opacity: '0' },
+              },
+              bubbleFloat: {
+                '0%, 100%': { transform: 'translateY(0px)' },
+                '50%': { transform: 'translateY(-5px)' }
+              },
+              sway: {
+                '0%, 100%': { transform: 'rotate(-5deg)' },
+                '50%': { transform: 'rotate(5deg)' }
+              },
+              wiggle: {
+                '0%, 100%': { transform: 'rotate(0deg) scale(1)' },
+                '25%': { transform: 'rotate(-2deg) scale(1.02)' },
+                '75%': { transform: 'rotate(2deg) scale(0.98)' }
               }
             }
           },
@@ -73,24 +185,382 @@
       }
     </script>
     <style>
-      body {
-        background-color: #F9F8F6;
-        color: #292524;
-        -webkit-tap-highlight-color: transparent;
+      :root {
+        /* Light Theme (Default) */
+        --app-bg: #fafaf9; /* stone-50 */
+        --surface: #ffffff;
+        --surface-sec: #f5f5f4; /* stone-100 */
+        --text-primary: #292524; /* stone-800 */
+        --text-secondary: #a8a29e; /* stone-400 */
+        --border: #a8a29e; /* stone-400 (Requested darker border) */
+        --icon: #57534e; /* stone-600 */
+        --board-bg: #ffffff;
+        --overlay-opacity: 0;
       }
-      /* Custom Scrollbar for hidden aesthetics */
+
+      .dark {
+        /* Dark Theme - Warm Dark Grey (Stone Palette) */
+        --app-bg: #1c1917; /* Stone 900 */
+        --surface: #292524; /* Stone 800 */
+        --surface-sec: #44403c; /* Stone 700 */
+        --text-primary: #f5f5f4; /* Stone 100 */
+        --text-secondary: #a8a29e; /* Stone 400 */
+        --border: #57534e; /* Stone 600 */
+        --icon: #d6d3d1; /* Stone 300 */
+        --board-bg: #d6d3d1; /* Stone 300 - Dimmed board */
+        --overlay-opacity: 0.5;
+      }
+
+      /* FORCE BACKGROUND COLOR ON HTML/BODY TO AVOID BLACK BARS */
+      html {
+        background-color: var(--app-bg);
+        transition: background-color 0.3s;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--app-bg);
+        font-family: 'Outfit', sans-serif;
+        overflow: hidden;
+        -webkit-font-smoothing: antialiased;
+        -webkit-tap-highlight-color: transparent;
+        transition: background-color 0.3s;
+      }
+      
+      #root {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Hide all scrollbars */
       ::-webkit-scrollbar {
         width: 0px;
         background: transparent;
       }
+      * {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+
+      /* 
+         TEXT EFFECTS 
+      */
+
+      /* 1. ELEGANT GOLD - REIMAGINED */
+      .text-shine-gold {
+        background-image: linear-gradient(
+          110deg,
+          #854d0e 15%,   /* Yellow 800 - Deep Bronze for Contrast */
+          #ca8a04 35%,   /* Yellow 600 - Rich Gold */
+          #fde047 50%,   /* Yellow 300 - Bright Shine (Brief) */
+          #ca8a04 65%,   /* Yellow 600 */
+          #854d0e 85%    /* Yellow 800 */
+        );
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: flow-light 4s linear infinite; /* Reuse smooth linear flow */
+        font-weight: 700;
+        /* Defined shadow for legibility on light board */
+        filter: drop-shadow(0px 1px 1px rgba(113, 63, 18, 0.25));
+      }
+
+      /* 2. REIMAGINED DIAMOND - PRISMATIC CRYSTAL */
+      .text-shine-diamond {
+        background-image: linear-gradient(
+          110deg,
+          #0369a1 15%,   /* Sky 700 - Deep Blue (Depth) */
+          #0ea5e9 35%,   /* Sky 500 - Bright Blue */
+          #e0f2fe 50%,   /* Sky 100 - Icy Shine (High Contrast) */
+          #0ea5e9 65%,   /* Sky 500 */
+          #0369a1 85%    /* Sky 700 */
+        );
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: flow-light 4s linear infinite; /* Matches Gold Speed (4s) */
+        font-weight: 700;
+        /* Defined shadow for legibility on light board, matching Gold style */
+        filter: drop-shadow(0px 1px 1px rgba(3, 105, 161, 0.25));
+      }
+
+      /* 3. REIMAGINED RUBY - PREMIUM RED */
+      .text-shine-ruby {
+        background-image: linear-gradient(
+          110deg,
+          #be123c 15%,   /* Rose 700 */
+          #f43f5e 35%,   /* Rose 500 */
+          #ffe4e6 50%,   /* Rose 100 */
+          #f43f5e 65%,   /* Rose 500 */
+          #be123c 85%    /* Rose 700 */
+        );
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: flow-light 4s linear infinite;
+        font-weight: 700;
+        filter: drop-shadow(0px 1px 1px rgba(190, 18, 60, 0.25));
+      }
+
+      /* 3. PREMIUM GET MORE BUTTON */
+      .btn-premium-blue {
+        position: relative;
+        background-color: #e0f2fe; /* Sky 100 Fallback */
+        overflow: hidden;
+        /* Ultra subtle gradient: Sky 100 base with a very faint Sky 50 shine passing through */
+        background: linear-gradient(
+          110deg, 
+          #e0f2fe 20%,  /* Base (Sky 100) */
+          #e8f7ff 45%,  /* Transition */
+          #f0f9ff 50%,  /* Highlight (Sky 50) */
+          #e8f7ff 55%,  /* Transition */
+          #e0f2fe 80%   /* Base */
+        );
+        background-size: 200% auto;
+        animation: flow-light 6s linear infinite; /* Slower and smooth */
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15); /* Sky 500 shadow, subtle */
+        border: 1px solid rgba(255,255,255,0.6);
+      }
+      
+      /* 4. SOLID ELEGANT STORE BUTTON (New Brown) */
+      .btn-store-brown {
+        background-color: #E3D8C8; /* Elegant Light Brown (Almond/Mocha) */
+        color: #292524; /* Stone 800 */
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); 
+        border: 1px solid rgba(255,255,255,0.2);
+        transition: all 0.2s ease;
+      }
+      .btn-store-brown:active {
+        transform: scale(0.95);
+        background-color: #D6CBB8; /* Slightly darker on press */
+      }
+      
+      @keyframes flow-light {
+        0% { background-position: 200% center; }
+        100% { background-position: -200% center; }
+      }
+      
+      /* Remove old vortex */
+      .btn-premium-blue::before {
+        display: none;
+      }
+      
+      /* 5. PREMIUM SILVER BUTTON (For Packs) */
+      .btn-premium-silver {
+        background: linear-gradient(180deg, #9ca3af 0%, #4b5563 100%); /* Gray 400 to 600 */
+        color: white;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255,255,255,0.25);
+        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      }
+      
+      /* 7. ALIVE BUTTON (Get More) - ORGANIC MULTI-LAYER BLOB ANIMATION */
+      .btn-alive-gradient {
+        position: relative;
+        overflow: hidden;
+        z-index: 1;
+        /* Default colors (Light) */
+        background-color: #d6d3d1; /* Stone 300 */
+        --alive-blob-1: rgba(255, 255, 255, 0.9);
+        --alive-blob-2: rgba(255, 255, 255, 0.5);
+      }
+      
+      .dark .btn-alive-gradient {
+        background-color: #1c1917; /* Stone 900 */
+        --alive-blob-1: rgba(120, 113, 108, 0.6); /* Stone 500 */
+        --alive-blob-2: rgba(87, 83, 78, 0.4); /* Stone 600 */
+      }
+
+      /* Blob 1: The Main Light */
+      .btn-alive-gradient::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 150%;
+        height: 150%;
+        background: radial-gradient(circle, var(--alive-blob-1) 0%, transparent 65%);
+        transform: translate(-50%, -50%);
+        animation: organic-1 4s infinite ease-in-out;
+        z-index: 0;
+        border-radius: 50%;
+      }
+
+      /* Blob 2: Secondary Light (Offset path) */
+      .btn-alive-gradient::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 120%;
+        height: 120%;
+        background: radial-gradient(circle, var(--alive-blob-2) 0%, transparent 60%);
+        transform: translate(-50%, -50%);
+        animation: organic-2 5.5s infinite ease-in-out; /* Different prime duration for unpredictability */
+        z-index: 0;
+        border-radius: 50%;
+      }
+      
+      /* 8. PREMIUM DEEP BLUE BUTTON (New) */
+      .btn-premium-deep {
+        position: relative;
+        background-color: #0b0f19; /* Deep Dark Blue Base */
+        overflow: hidden;
+        z-index: 1;
+        /* 
+           Gradient: Seamless loop structure (Dark -> Light -> Dark)
+           Placed in the second half of a 200% wide texture.
+        */
+        background: linear-gradient(
+          110deg, 
+          #0b0f19 0%,
+          #0b0f19 60%,    /* Dark up to 60% */
+          #1e3a8a 70%,    /* Blue 900 */
+          #60a5fa 75%,    /* Bright Blue 400 at 3/4 mark */
+          #1e3a8a 80%,    /* Blue 900 */
+          #0b0f19 90%,    /* Back to Dark */
+          #0b0f19 100%
+        );
+        background-size: 200% 100%;
+        animation: deep-sweep 3s linear infinite; /* Faster and Seamless Loop */
+        color: white;
+        border: 1px solid rgba(255,255,255,0.15); /* Subtle rim */
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); /* Deep shadow */
+      }
+
+      @keyframes deep-sweep {
+        0% { background-position: 200% 0; }
+        100% { background-position: 0% 0; }
+      }
+      
+      @keyframes organic-1 {
+        0% { transform: translate(-50%, -50%) scale(1); }
+        25% { transform: translate(-30%, -70%) scale(1.1); }
+        50% { transform: translate(-60%, -40%) scale(0.9); }
+        75% { transform: translate(-40%, -60%) scale(1.05); }
+        100% { transform: translate(-50%, -50%) scale(1); }
+      }
+
+      @keyframes organic-2 {
+        0% { transform: translate(-50%, -50%) scale(0.9); }
+        33% { transform: translate(-60%, -30%) scale(1.1); }
+        66% { transform: translate(-30%, -60%) scale(1); }
+        100% { transform: translate(-50%, -50%) scale(0.9); }
+      }
+
+      /* 
+         6. PREMIUM BUNDLE & PACK ANIMATIONS (SEAMLESS LOOPS) 
+         Using 0% -> 100% -> 0% (Ping Pong) to ensure no cut 
+      */
+
+      @keyframes gradient-shift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+
+      /* 
+         === PREMIUM ATMOSPHERE ANIMATIONS ===
+         Reimagined: Light 3-Level Gradients with Random-feeling "Wandering" Path.
+         Uses 400% size with complex irregular keyframes.
+      */
+      @keyframes atmosphere-wander {
+        0% { background-position: 10% 10%; }
+        20% { background-position: 80% 20%; }
+        40% { background-position: 20% 80%; }
+        60% { background-position: 90% 90%; }
+        80% { background-position: 30% 50%; }
+        100% { background-position: 10% 10%; }
+      }
+
+      /* Aurora: Teal 100 -> Sky 100 -> Violet 100 */
+      .bg-atmosphere-aurora {
+        background: linear-gradient(135deg, #ccfbf1 0%, #e0f2fe 33%, #ede9fe 66%, #ccfbf1 100%);
+        background-size: 400% 400%;
+        animation: atmosphere-wander 25s ease-in-out infinite;
+      }
+
+      /* Meadow: Lime 100 -> Green 100 -> Emerald 100 */
+      .bg-atmosphere-meadow {
+        background: linear-gradient(135deg, #ecfccb 0%, #dcfce7 33%, #d1fae5 66%, #ecfccb 100%);
+        background-size: 400% 400%;
+        animation: atmosphere-wander 25s ease-in-out infinite;
+      }
+
+      /* Blush: Rose 100 -> Orange 100 -> Amber 100 */
+      .bg-atmosphere-blush {
+        background: linear-gradient(135deg, #ffe4e6 0%, #ffedd5 33%, #fef3c7 66%, #ffe4e6 100%);
+        background-size: 400% 400%;
+        animation: atmosphere-wander 25s ease-in-out infinite;
+      }
+
+      /* Golden: Yellow 100 -> Amber 100 -> Orange 50 */
+      .bg-atmosphere-golden {
+        background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 33%, #fff7ed 66%, #fef9c3 100%);
+        background-size: 400% 400%;
+        animation: atmosphere-wander 25s ease-in-out infinite;
+      }
+
+      /* Platinum: Slate 100 -> Gray 200 -> Zinc 100 */
+      .bg-atmosphere-platinum {
+        background: linear-gradient(135deg, #f1f5f9 0%, #e5e7eb 33%, #f4f4f5 66%, #f1f5f9 100%);
+        background-size: 400% 400%;
+        animation: atmosphere-wander 25s ease-in-out infinite;
+      }
+
+      /* PACKS: Clean, Light Blue Flow */
+      .bg-pack-flow {
+        background: linear-gradient(120deg, #f0f9ff 0%, #e0f2fe 30%, #ffffff 50%, #e0f2fe 70%, #f0f9ff 100%);
+        background-size: 200% 200%;
+        animation: gradient-shift 6s ease-in-out infinite;
+      }
+
+      /* LOADING GREEN BAR */
+      .bg-loading-green {
+        background: linear-gradient(
+          90deg, 
+          #22c55e 0%, 
+          #86efac 50%, 
+          #22c55e 100%
+        );
+        background-size: 200% 100%;
+        animation: loading-slide 2s linear infinite;
+      }
+      
+      /* LOADING BLUE BAR (Progress) */
+      .bg-loading-blue {
+        background: linear-gradient(
+          90deg, 
+          #3b82f6 0%, 
+          #93c5fd 50%, 
+          #3b82f6 100%
+        );
+        background-size: 200% 100%;
+        animation: loading-slide 3s linear infinite;
+      }
+      
+      @keyframes loading-slide {
+        0% { background-position: 100% 0; }
+        100% { background-position: -100% 0; }
+      }
+
     </style>
   <script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.1/",
-    "react": "https://esm.sh/react@^19.2.1",
-    "lucide-react": "https://esm.sh/lucide-react@^0.559.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.1/"
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+    "@capacitor/preferences": "https://esm.sh/@capacitor/preferences@^8.0.0",
+    "@capacitor/haptics": "https://esm.sh/@capacitor/haptics@^8.0.0",
+    "framer-motion": "https://esm.sh/framer-motion@11.0.8?deps=react@19.2.3,react-dom@19.2.3"
   }
 }
 </script>

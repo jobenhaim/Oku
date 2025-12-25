@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="344.5149 210.9059 74.9591 41.2278" width="74.9591px" height="41.2278px">
+  <path d="M 373.193 239.648 C 379.513 254.112 400.131 252.185 404.661 240.061 C 393.45 240.02 396.193 239.089 386.193 239.648 L 373.193 239.648 Z" fill="#ef4444" opacity="0.95" style="stroke-width: 1;" transform="matrix(1, 0, 0, 1, 0, -1.4210854715202004e-14)"/>
+  <path d="M 372.793 224.525 C 379.113 207.278 399.731 209.576 404.261 224.033 C 393.05 224.081 395.793 225.192 385.793 224.525 L 372.793 224.525 Z" fill="#ef4444" opacity="0.95" style="stroke-width: 1;" transform="matrix(1, 0, 0, 1, 0, -1.4210854715202004e-14)"/>
+  <path d="M 394.515 231.681 C 379.515 206.681 344.428 201.406 344.515 231.681 C 344.565 261.131 379.515 256.681 394.515 231.681 Z" fill="#ef4444" opacity="0.95" style="stroke-width: 1;" transform="matrix(1, 0, 0, 1, 0, -1.4210854715202004e-14)"/>
+  <path d="M 394.515 231.681 C 374.515 216.681 359.515 211.681 354.515 231.681 C 359.515 251.681 374.515 246.681 394.515 231.681 Z" fill="#b91c1c" opacity="0.15" style="stroke-width: 1;" transform="matrix(1, 0, 0, 1, 0, -1.4210854715202004e-14)"/>
+  <ellipse cx="391.474" cy="231.681" rx="28" ry="11" fill="#dc2626" style="stroke-width: 1;" transform="matrix(1, 0, 0, 1, 0, -1.4210854715202004e-14)"/>
+  <path d="M 401.174 234.169 C 395.84 239.502 397.84 240.836 407.174 238.169 L 401.174 234.169 Z" fill="#fca5a5" opacity="0.8" style="stroke-width: 1; transform-origin: 402.719px 236.836px;" transform="matrix(0.71619296, -0.69790214, 0.69790214, 0.71619296, 0.00000291, 0.0000368)"/>
+  <circle cx="411.874" cy="230.381" r="2.5" fill="black" style="stroke-width: 1;" transform="matrix(1, 0, 0, 1, 0, -1.4210854715202004e-14)"/>
+  <circle cx="412.874" cy="229.381" r="0.8" fill="white" opacity="0.9" style="stroke-width: 1;" transform="matrix(1, 0, 0, 1, 0, -1.4210854715202004e-14)"/>
+</svg>

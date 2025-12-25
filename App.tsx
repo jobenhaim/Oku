@@ -1,519 +1,578 @@
+
 import React, { useState, useEffect } from 'react';
-import { Difficulty, AppSettings } from './types';
+import { Difficulty, AppSettings, DiamondOffer } from './types';
 import { SudokuGame } from './components/SudokuGame';
 import { Storage } from './utils/storage';
-import { Icons } from './components/ui/Icons';
+import { sounds } from './utils/sound';
+import { getPackCost, NUMBER_COLORS, ALL_BACKGROUNDS, SKILLS } from './utils/constants';
+import { motion, AnimatePresence } from 'framer-motion';
 
-type Screen = 'splash' | 'difficulty' | 'levels' | 'game' | 'settings' | 'store';
+// UI Components
+import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal } from './components/ui/Modals';
+import { AdOverlay } from './components/ui/AdOverlay';
 
-// Define Store Backgrounds
-const STATIC_BACKGROUNDS = [
-    { id: 'bg-dawn', name: 'Dawn', cost: 100, class: 'bg-gradient-to-br from-orange-50 to-rose-50' },
-    { id: 'bg-ocean', name: 'Ocean', cost: 100, class: 'bg-gradient-to-br from-sky-50 to-cyan-50' },
-    { id: 'bg-forest', name: 'Forest', cost: 100, class: 'bg-gradient-to-br from-emerald-50 to-green-50' },
-    { id: 'bg-dusk', name: 'Dusk', cost: 100, class: 'bg-gradient-to-br from-violet-50 to-purple-50' },
-    { id: 'bg-mist', name: 'Mist', cost: 100, class: 'bg-gradient-to-br from-stone-200 to-gray-200' },
-];
+// Screens
+import { SplashScreen } from './components/screens/SplashScreen';
+import { DifficultyScreen } from './components/screens/DifficultyScreen';
+import { LevelsScreen } from './components/screens/LevelsScreen';
+import { StoreScreen } from './components/screens/StoreScreen';
+import { DiamondShopScreen } from './components/screens/DiamondShopScreen';
+import { StatsScreen } from './components/screens/StatsScreen';
 
-const DYNAMIC_BACKGROUNDS = [
-    { id: 'bg-aurora', name: 'Aurora', cost: 150, class: 'bg-gradient-to-r from-teal-100 via-purple-100 to-blue-100 bg-[length:400%_400%] animate-gradient' },
-    { id: 'bg-solar', name: 'Solar', cost: 150, class: 'bg-gradient-to-r from-orange-100 via-amber-100 to-yellow-100 bg-[length:400%_400%] animate-gradient' },
-    { id: 'bg-bloom', name: 'Bloom', cost: 150, class: 'bg-gradient-to-r from-pink-100 via-rose-100 to-red-100 bg-[length:400%_400%] animate-gradient' },
-    { id: 'bg-ethereal', name: 'Ethereal', cost: 150, class: 'bg-gradient-to-r from-emerald-100 via-teal-100 to-cyan-100 bg-[length:400%_400%] animate-gradient' },
-    { id: 'bg-galaxy', name: 'Galaxy', cost: 150, class: 'bg-gradient-to-r from-gray-200 via-slate-300 to-blue-200 bg-[length:400%_400%] animate-gradient' },
-];
+type Screen = 'splash' | 'difficulty' | 'levels' | 'game' | 'settings' | 'store' | 'diamondShop' | 'stats';
 
-const ALL_BACKGROUNDS = [...STATIC_BACKGROUNDS, ...DYNAMIC_BACKGROUNDS];
-
-interface PurchaseModalProps {
-    item: { id: string; name: string; cost: number };
-    onConfirm: () => void;
-    onCancel: () => void;
-}
-
-const PurchaseModal: React.FC<PurchaseModalProps> = ({ item, onConfirm, onCancel }) => (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/20 backdrop-blur-sm px-4 animate-fade-in" onClick={onCancel}>
-        <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-xs text-center animate-pop" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold text-stone-800 mb-2">Unlock {item.name}?</h3>
-            <p className="text-stone-600 font-medium mb-1">Buy this background for <span className="text-stone-800 font-bold">{item.cost}</span> points?</p>
-            <p className="text-xs text-stone-400 mb-6 font-medium">(no refunds!)</p>
-            <div className="flex gap-3">
-                <button onClick={onCancel} className="flex-1 py-3 text-stone-600 bg-stone-100 rounded-xl font-bold active:scale-95 transition">No</button>
-                <button onClick={onConfirm} className="flex-1 py-3 text-white bg-stone-800 rounded-xl font-bold shadow-lg active:scale-95 transition">Yes</button>
-            </div>
-        </div>
-    </div>
-);
-
-interface SettingsModalProps {
-    settings: AppSettings;
-    onToggle: (key: keyof AppSettings) => void;
-    onReset: () => void;
-    onClose: () => void;
-}
-
-const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle, onReset, onClose }) => {
-    const [isClosing, setIsClosing] = useState(false);
-
-    const handleClose = () => {
-        setIsClosing(true);
-        setTimeout(() => {
-            onClose();
-        }, 300); // Match animation duration
-    };
-
-    return (
-        <div className={`fixed inset-0 z-[100] bg-black/20 backdrop-blur-sm flex items-end sm:items-center justify-center ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={handleClose}>
-            <div 
-                className={`bg-white w-full max-w-md p-6 rounded-t-3xl sm:rounded-3xl shadow-2xl ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} 
-                onClick={e => e.stopPropagation()}
-            >
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold text-stone-800">Settings</h3>
-                    <button onClick={handleClose} className="p-2 bg-stone-100 rounded-full hover:bg-stone-200"><Icons.Close className="w-5 h-5" /></button>
-                </div>
-                
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-stone-50">
-                        <div className="flex items-center gap-3 text-stone-700">
-                            <Icons.Sound className="w-5 h-5" />
-                            <span>Sound Effects</span>
-                        </div>
-                        <button onClick={() => onToggle('sound')} className={`w-12 h-7 rounded-full p-1 transition-colors ${settings.sound ? 'bg-green-500' : 'bg-stone-300'}`}>
-                            <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${settings.sound ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                        </button>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-stone-50">
-                        <div className="flex items-center gap-3 text-stone-700">
-                            <Icons.Vibration className="w-5 h-5" />
-                            <span>Vibration</span>
-                        </div>
-                        <button onClick={() => onToggle('vibration')} className={`w-12 h-7 rounded-full p-1 transition-colors ${settings.vibration ? 'bg-green-500' : 'bg-stone-300'}`}>
-                            <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${settings.vibration ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                        </button>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-stone-50">
-                        <div className="flex items-center gap-3 text-stone-700">
-                            <Icons.Eye className="w-5 h-5" />
-                            <span>Highlight Areas</span>
-                        </div>
-                        <button onClick={() => onToggle('highlight')} className={`w-12 h-7 rounded-full p-1 transition-colors ${settings.highlight ? 'bg-green-500' : 'bg-stone-300'}`}>
-                            <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${settings.highlight ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                        </button>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-stone-50">
-                        <div className="flex items-center gap-3 text-stone-700">
-                            <Icons.Square className="w-5 h-5" />
-                            <span>Default Background</span>
-                        </div>
-                        <button onClick={() => onToggle('defaultBackground')} className={`w-12 h-7 rounded-full p-1 transition-colors ${settings.defaultBackground ? 'bg-green-500' : 'bg-stone-300'}`}>
-                            <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${settings.defaultBackground ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                        </button>
-                    </div>
-                </div>
-
-                <div className="mt-8 pt-6 border-t border-stone-100">
-                    <button onClick={onReset} className="w-full py-3 flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 rounded-xl transition">
-                        <Icons.Trash className="w-5 h-5" /> Reset All Progress
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-function formatTimeShort(seconds: number) {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-function App() {
+export function App() {
   const [screen, setScreen] = useState<Screen>('splash');
+  const [direction, setDirection] = useState<number>(0);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
   const [settings, setSettings] = useState<AppSettings>(Storage.getSettings());
   const [points, setPoints] = useState<number>(Storage.getPoints());
+  
   const [purchasedBackgrounds, setPurchasedBackgrounds] = useState<string[]>(Storage.getPurchasedBackgrounds());
   const [selectedBackgroundId, setSelectedBackgroundId] = useState<string | null>(Storage.getSelectedBackground());
   
+  const [purchasedNumberColors, setPurchasedNumberColors] = useState<string[]>(Storage.getPurchasedNumberColors());
+  const [selectedNumberColorId, setSelectedNumberColorId] = useState<string>(Storage.getSelectedNumberColor());
+
+  const [purchasedSoundPacks, setPurchasedSoundPacks] = useState<string[]>(Storage.getPurchasedSoundPacks());
+  const [selectedSoundPackId, setSelectedSoundPackId] = useState<string>(Storage.getSelectedSoundPack());
+  
+  const [purchasedSkills, setPurchasedSkills] = useState<string[]>(Storage.getPurchasedSkills());
+  const [enabledSkills, setEnabledSkills] = useState<string[]>(Storage.getEnabledSkills());
+  const [starterPackPurchased, setStarterPackPurchased] = useState<boolean>(Storage.isStarterPackPurchased());
+  
+  // Unlocked Packs State - For Immediate UI Reactivity
+  const [unlockedPacks2, setUnlockedPacks2] = useState<string[]>(Storage.getUnlockedPacks2());
+  const [unlockedPacks3, setUnlockedPacks3] = useState<string[]>(Storage.getUnlockedPacks3());
+
   const [showSettings, setShowSettings] = useState(false);
   const [replayLevelId, setReplayLevelId] = useState<number | null>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   
-  // Store Purchase State
-  const [purchaseCandidate, setPurchaseCandidate] = useState<{id: string, name: string, cost: number} | null>(null);
+  const [purchaseCandidate, setPurchaseCandidate] = useState<{id: string, name: string, cost: number, type: 'bg' | 'num' | 'skill' | 'sound', description?: string} | null>(null);
+  const [paymentOffer, setPaymentOffer] = useState<DiamondOffer | null>(null);
+  
+  const [showNotEnoughPoints, setShowNotEnoughPoints] = useState(false);
+  const [isWatchingAd, setIsWatchingAd] = useState(false);
+  
+  const [nextBonusClaimTime, setNextBonusClaimTime] = useState(Storage.getNextBonusClaimTime());
 
-  // Splash Screen Effect
+  // Initialize Native Storage
+  useEffect(() => {
+    const initStorage = async () => {
+        const nativeData = await Storage.initializeNative();
+        if (nativeData) {
+            setPoints(nativeData.points);
+            setSettings(nativeData.settings);
+            setPurchasedBackgrounds(nativeData.purchasedBackgrounds);
+            setPurchasedNumberColors(nativeData.purchasedNumberColors);
+            setPurchasedSoundPacks(nativeData.purchasedSoundPacks || ['snd-zen']);
+            setSelectedSoundPackId(nativeData.selectedSoundPack || 'snd-zen');
+            setPurchasedSkills(nativeData.purchasedSkills);
+            setEnabledSkills(nativeData.enabledSkills || [...nativeData.purchasedSkills]);
+            setStarterPackPurchased(nativeData.starterPackPurchased || false);
+            
+            const isDark = nativeData.settings.appearance === 'dark' || (nativeData.settings.appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+        }
+    };
+    initStorage();
+  }, []);
+
+  // Theme Detection
+  useEffect(() => {
+      const applyTheme = () => {
+          const isDark = settings.appearance === 'dark' || (settings.appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          
+          if (isDark) {
+              document.documentElement.classList.add('dark');
+              document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#1c1917');
+          } else {
+              document.documentElement.classList.remove('dark');
+              document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#fafaf9');
+          }
+      };
+      applyTheme();
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handler = () => {
+          if (settings.appearance === 'system') applyTheme();
+      };
+      mediaQuery.addEventListener('change', handler);
+      return () => mediaQuery.removeEventListener('change', handler);
+  }, [settings.appearance]);
+
+  useEffect(() => { 
+      sounds.setEnabled(settings.sound); 
+      sounds.setVibrationEnabled(settings.vibration);
+      sounds.setProfile(selectedSoundPackId);
+  }, [settings.sound, settings.vibration, selectedSoundPackId]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      setScreen('difficulty');
+        setDirection(1);
+        setScreen('difficulty');
     }, 1500);
     return () => clearTimeout(timer);
   }, []);
 
-  // Update points/purchases from storage when returning to store/settings
   useEffect(() => {
      setPurchasedBackgrounds(Storage.getPurchasedBackgrounds());
      setSelectedBackgroundId(Storage.getSelectedBackground());
+     setPurchasedNumberColors(Storage.getPurchasedNumberColors());
+     setSelectedNumberColorId(Storage.getSelectedNumberColor());
+     setPurchasedSoundPacks(Storage.getPurchasedSoundPacks());
+     setSelectedSoundPackId(Storage.getSelectedSoundPack());
+     setPurchasedSkills(Storage.getPurchasedSkills());
+     setEnabledSkills(Storage.getEnabledSkills());
+     setStarterPackPurchased(Storage.isStarterPackPurchased());
      setPoints(Storage.getPoints());
+     setUnlockedPacks2(Storage.getUnlockedPacks2());
+     setUnlockedPacks3(Storage.getUnlockedPacks3());
+     setNextBonusClaimTime(Storage.getNextBonusClaimTime());
   }, [screen]);
 
+  const navigate = (nextScreen: Screen, dir: 'forward' | 'back' | 'none' = 'forward') => {
+      setDirection(dir === 'forward' ? 1 : dir === 'back' ? -1 : 0);
+      setScreen(nextScreen);
+      setPoints(Storage.getPoints());
+  };
+
   const handleDifficultySelect = (diff: Difficulty) => {
-    setIsTransitioning(true);
-    setTimeout(() => {
-        setSelectedDifficulty(diff);
-        setScreen('levels');
-        setIsTransitioning(false);
-    }, 300);
+    sounds.playClick();
+    setSelectedDifficulty(diff);
+    navigate('levels', 'forward');
   };
 
-  const handleLevelBack = () => {
-    setIsTransitioning(true);
-    setTimeout(() => {
-        setScreen('difficulty');
-        setIsTransitioning(false);
-    }, 300);
-  };
-  
-  const handleGameBack = () => {
-    setScreen('levels');
-    setPoints(Storage.getPoints()); 
-  };
-
-  const handleStoreBack = () => {
-    setIsTransitioning(true);
-    setTimeout(() => {
-        setScreen('difficulty');
-        setIsTransitioning(false);
-    }, 300);
-  };
+  const handleLevelBack = () => { sounds.playClick(); navigate('difficulty', 'back'); };
+  const handleGameBack = () => { sounds.playClick(); navigate('levels', 'back'); };
+  const handleReturnToMenu = () => { sounds.playClick(); navigate('difficulty', 'back'); };
+  const handleStoreBack = () => { sounds.playClick(); navigate('difficulty', 'back'); };
+  const handleDiamondShopBack = () => { sounds.playClick(); navigate('difficulty', 'back'); };
+  const handleStatsBack = () => { sounds.playClick(); navigate('difficulty', 'back'); };
 
   const handleLevelSelect = (levelId: number) => {
     const progress = Storage.getLevelProgress(selectedDifficulty!, levelId);
     if (progress?.status === 'completed') {
+        sounds.playClick();
         setReplayLevelId(levelId);
     } else {
-        setIsTransitioning(true);
-        setTimeout(() => {
-            setSelectedLevel(levelId);
-            setScreen('game');
-            setIsTransitioning(false);
-        }, 300);
+        sounds.playLevelEnter();
+        setSelectedLevel(levelId);
+        navigate('game', 'forward');
     }
   };
 
   const confirmReplay = () => {
+      sounds.playLevelEnter();
       if (selectedDifficulty && replayLevelId) {
           Storage.clearLevelProgress(selectedDifficulty, replayLevelId);
-          setIsTransitioning(true);
           setReplayLevelId(null);
-          setTimeout(() => {
-             setSelectedLevel(replayLevelId);
-             setScreen('game');
-             setIsTransitioning(false);
-          }, 300);
+          setSelectedLevel(replayLevelId);
+          navigate('game', 'forward');
       }
-  };
-  
-  const getLevelCount = (diff: Difficulty | null) => {
-      switch(diff) {
-          case Difficulty.Intense: return 20;
-          case Difficulty.Impossible: return 10;
-          default: return 100;
-      }
-  };
-
-  const handleNextLevel = () => {
-      const maxLevels = getLevelCount(selectedDifficulty);
-      if (selectedLevel && selectedLevel < maxLevels) {
-          setSelectedLevel(selectedLevel + 1);
-      } else {
-          setScreen('levels');
-      }
-      setPoints(Storage.getPoints());
   };
 
   const toggleSetting = (key: keyof AppSettings) => {
+    sounds.playClick();
     const newSettings = { ...settings, [key]: !settings[key] };
     setSettings(newSettings);
     Storage.saveSettings(newSettings);
   };
 
+  const handleToggleDifficultyVisibility = (diff: Difficulty) => {
+      sounds.playTap();
+      const currentHidden = settings.hiddenDifficulties || [];
+      let newHidden: Difficulty[];
+      
+      if (currentHidden.includes(diff)) {
+          newHidden = currentHidden.filter(d => d !== diff);
+      } else {
+          // Prevent hiding the last visible difficulty
+          const allDiffs = Object.values(Difficulty);
+          if (allDiffs.length - currentHidden.length <= 1) {
+             // Maybe play error sound?
+             return; 
+          }
+          newHidden = [...currentHidden, diff];
+      }
+      
+      const newSettings = { ...settings, hiddenDifficulties: newHidden };
+      setSettings(newSettings);
+      Storage.saveSettings(newSettings);
+  };
+
+  const setAppearance = (val: 'system' | 'light' | 'dark') => {
+      const newSettings = { ...settings, appearance: val };
+      setSettings(newSettings);
+      Storage.saveSettings(newSettings);
+  };
+
   const resetProgress = () => {
+      sounds.playClick();
       if (confirm("Are you sure you want to reset all progress? This cannot be undone.")) {
           Storage.resetAllData();
           window.location.reload();
       }
   };
 
-  const handleEarnPoints = (amount: number) => {
-      const newTotal = Storage.addPoints(amount);
-      setPoints(newTotal);
-  };
-
-  const handleWatchAd = () => {
-      if (confirm("Watch a short video to earn 10 Rhombuses?")) {
-          setTimeout(() => {
-              alert("Thanks for watching! +10 Points");
-              handleEarnPoints(10);
-          }, 1000);
-      }
-  };
-
   const handleSelectBackground = (id: string) => {
+      sounds.playClick();
       Storage.selectBackground(id);
       setSelectedBackgroundId(id);
   };
   
-  const initiatePurchase = (bg: {id: string, name: string, cost: number}) => {
-      setPurchaseCandidate({
-          id: bg.id,
-          name: bg.name,
-          cost: bg.cost
-      });
+  const handleSelectNumberColor = (id: string) => {
+      sounds.playClick();
+      Storage.selectNumberColor(id);
+      setSelectedNumberColorId(id);
+  };
+
+  const handleSelectSoundPack = (id: string) => {
+    Storage.selectSoundPack(id);
+    setSelectedSoundPackId(id);
+  };
+
+  const handleToggleSkill = (id: string) => {
+    const next = Storage.toggleSkillEnabled(id);
+    setEnabledSkills([...next]);
+  };
+
+  const handleEarnPoints = (amount: number) => {
+    const newTotal = Storage.addPoints(amount);
+    setPoints(newTotal);
+  };
+  
+  const handleClaimBonus = () => {
+    const now = Date.now();
+    if (now < nextBonusClaimTime) return;
+    sounds.playWin();
+    
+    // Set next claim time to next midnight (00:00:00)
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + 1);
+    nextDate.setHours(0, 0, 0, 0);
+    const nextTime = nextDate.getTime();
+
+    Storage.setNextBonusClaimTime(nextTime);
+    setNextBonusClaimTime(nextTime);
+    handleEarnPoints(10);
+  };
+  
+  const initiatePurchase = (item: any, type: 'bg' | 'num' | 'skill' | 'sound') => {
+      sounds.playPop();
+      setPurchaseCandidate({ ...item, type });
   };
 
   const confirmPurchase = () => {
       if (!purchaseCandidate) return;
-      
       if (points >= purchaseCandidate.cost) {
-          const success = Storage.purchaseBackground(purchaseCandidate.id, purchaseCandidate.cost);
-          if (success) {
-              setPurchasedBackgrounds([...purchasedBackgrounds, purchaseCandidate.id]);
-              setPoints(Storage.getPoints());
-              // We do NOT auto-select, making it "selectable" now.
+          if (purchaseCandidate.type === 'bg') {
+             if(Storage.purchaseBackground(purchaseCandidate.id, purchaseCandidate.cost)) {
+                setPurchasedBackgrounds([...purchasedBackgrounds, purchaseCandidate.id]);
+                handleSelectBackground(purchaseCandidate.id);
+             }
+          } else if (purchaseCandidate.type === 'num') {
+             if(Storage.purchaseNumberColor(purchaseCandidate.id, purchaseCandidate.cost)) {
+                setPurchasedNumberColors([...purchasedNumberColors, purchaseCandidate.id]);
+                handleSelectNumberColor(purchaseCandidate.id);
+             }
+          } else if (purchaseCandidate.type === 'skill') {
+             if(Storage.purchaseSkill(purchaseCandidate.id, purchaseCandidate.cost)) {
+                setPurchasedSkills(Storage.getPurchasedSkills());
+                setEnabledSkills(Storage.getEnabledSkills());
+             }
+          } else if (purchaseCandidate.type === 'sound') {
+            if(Storage.purchaseSoundPack(purchaseCandidate.id, purchaseCandidate.cost)) {
+               setPurchasedSoundPacks([...purchasedSoundPacks, purchaseCandidate.id]);
+               handleSelectSoundPack(purchaseCandidate.id);
+            }
           }
+          setPoints(Storage.getPoints());
+          setPurchaseCandidate(null);
       } else {
-          alert("Not enough Rhombuses!");
+          setPurchaseCandidate(null);
+          setShowNotEnoughPoints(true);
       }
-      setPurchaseCandidate(null);
   };
 
-  // Determine Game Background
-  let gameBackgroundClass = "bg-paper";
-  if (!settings.defaultBackground && selectedBackgroundId) {
+  const handleWatchAd = () => {
+        setShowNotEnoughPoints(false);
+        setPurchaseCandidate(null);
+        setIsWatchingAd(true);
+        setTimeout(() => {
+            handleEarnPoints(25);
+            setIsWatchingAd(false);
+            sounds.playWin();
+        }, 5000);
+  };
+
+  const handleNavigateToShop = () => {
+      setShowNotEnoughPoints(false);
+      navigate('diamondShop', 'forward');
+  };
+
+  const handleGoPlay = () => {
+      setShowNotEnoughPoints(false);
+      setPurchaseCandidate(null);
+      if (screen === 'store') {
+          navigate('difficulty', 'back');
+      }
+  };
+
+  const handleBuyOffer = (offer: DiamondOffer) => {
+      sounds.playClick();
+      // Only check starter pack restriction
+      if (offer.type === 'starter' && starterPackPurchased) return;
+      if (offer.priceLabel === '') return;
+      setPaymentOffer(offer);
+  };
+
+  const finalizeRealMoneyPurchase = () => {
+      if (!paymentOffer) return;
+      const offer = paymentOffer;
+      handleEarnPoints(offer.diamonds);
+      
+      if (offer.type === 'starter') {
+          Storage.setStarterPackPurchased();
+          setStarterPackPurchased(true);
+          Storage.purchaseSkill('skill-auto', 0);
+          Storage.purchaseSkill('skill-scan', 0);
+          Storage.purchaseSoundPack('snd-piano', 0);
+      } else if (offer.type === 'support') {
+          Storage.unlockPepino();
+      }
+
+      setPurchasedSkills(Storage.getPurchasedSkills());
+      setEnabledSkills(Storage.getEnabledSkills());
+      setPurchasedNumberColors(Storage.getPurchasedNumberColors());
+      setPurchasedBackgrounds(Storage.getPurchasedBackgrounds());
+      setPurchasedSoundPacks(Storage.getPurchasedSoundPacks());
+      setPaymentOffer(null);
+  };
+
+  const handleUnlockPack2 = () => {
+      if (!selectedDifficulty) return;
+      const cost = getPackCost(selectedDifficulty, 2);
+      if (points >= cost) {
+          sounds.playPop();
+          if (Storage.unlockPack2(selectedDifficulty, cost)) {
+              setPoints(Storage.getPoints());
+              setUnlockedPacks2(Storage.getUnlockedPacks2());
+              sounds.playWin();
+          }
+      } else {
+          sounds.playClick();
+          setShowNotEnoughPoints(true);
+      }
+  };
+
+  const handleUnlockPack3 = () => {
+      if (!selectedDifficulty) return;
+      const cost = getPackCost(selectedDifficulty, 3);
+      if (points >= cost) {
+          sounds.playPop();
+          if (Storage.unlockPack3(selectedDifficulty, cost)) {
+              setPoints(Storage.getPoints());
+              setUnlockedPacks3(Storage.getUnlockedPacks3());
+              sounds.playWin();
+          }
+      } else {
+          sounds.playClick();
+          setShowNotEnoughPoints(true);
+      }
+  };
+
+  const handleAddDevPoints = () => {
+      handleEarnPoints(5000);
+  };
+
+  let activeBackgroundClass = "bg-paper dark:bg-stone-900"; 
+  
+  if (selectedBackgroundId) {
       const bg = ALL_BACKGROUNDS.find(b => b.id === selectedBackgroundId);
-      if (bg) gameBackgroundClass = bg.class;
+      if (bg) {
+          activeBackgroundClass = bg.class;
+      }
   }
 
-  // --- Render Components ---
-
-  // 1. Splash
-  if (screen === 'splash') {
-    return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-stone-50">
-        <div className="animate-fade-in flex flex-col items-center">
-            <div className="w-20 h-20 bg-stone-800 rounded-2xl mb-6 shadow-xl flex items-center justify-center">
-                <div className="grid grid-cols-2 gap-1">
-                    <div className="w-3 h-3 bg-white rounded-sm opacity-50"></div>
-                    <div className="w-3 h-3 bg-white rounded-sm"></div>
-                    <div className="w-3 h-3 bg-white rounded-sm"></div>
-                    <div className="w-3 h-3 bg-white rounded-sm opacity-50"></div>
-                </div>
-            </div>
-          <h1 className="text-3xl font-light tracking-widest text-stone-800">MINIMAL</h1>
-          <h2 className="text-xl font-bold tracking-widest text-stone-400">SUDOKU</h2>
-        </div>
-      </div>
-    );
+  // NOTE: Splash screen override removed to allow global background selection to persist on all screens.
+  
+  const numberColorClass = NUMBER_COLORS.find(n => n.id === selectedNumberColorId)?.class || 'text-blue-600';
+  const isGradient = activeBackgroundClass.includes('bg-gradient');
+  let overlayOpacity = '0';
+  if (isGradient) {
+      if (screen === 'game') {
+          overlayOpacity = 'calc(var(--overlay-opacity) * 1.6)';
+      } else {
+          overlayOpacity = 'var(--overlay-opacity)';
+      }
+  } else if (screen === 'game') {
+      overlayOpacity = 'calc(var(--overlay-opacity) * 0.6)';
   }
 
-  // 2. Difficulty Selection (Main Menu)
-  if (screen === 'difficulty') {
-    const difficulties = Object.values(Difficulty);
-    return (
-      <div className={`min-h-screen bg-paper text-stone-800 px-6 pt-6 pb-6 flex flex-col items-center ${isTransitioning ? 'animate-fade-out' : 'animate-fade-in'}`}>
-        <div className="w-full max-w-md flex justify-between items-center mb-8 mt-2">
-            <div>
-                <h1 className="text-2xl font-bold">Select Mode</h1>
-                <p className="text-stone-400 text-sm">Choose your difficulty</p>
-            </div>
-            <div className="flex gap-2">
-                 <div className="flex items-center gap-1 bg-white px-3 py-2 rounded-full shadow-sm border border-stone-100">
-                    <div className="text-blue-500">
-                        <Icons.Diamond className="w-3 h-3 fill-current" />
-                    </div>
-                    <span className="text-sm font-bold text-stone-700">{points}</span>
-                </div>
-                <button onClick={() => setShowSettings(true)} className="p-2 bg-white rounded-full shadow-sm hover:shadow-md transition">
-                    <Icons.Settings className="w-6 h-6 text-stone-600" />
-                </button>
-            </div>
-        </div>
+  // Animation Variants for "Slide" Transition
+  // Using 100% width slide to prevent cuts and ensure screens move completely off-view
+  const variants = {
+    initial: (dir: number) => ({
+      x: dir > 0 ? '100%' : (dir < 0 ? '-100%' : 0),
+      opacity: 0
+    }),
+    animate: {
+      x: 0,
+      opacity: 1,
+      transition: { 
+          type: "spring", 
+          stiffness: 260, 
+          damping: 25
+      }
+    },
+    exit: (dir: number) => ({
+      x: dir > 0 ? '-100%' : '100%',
+      opacity: 0,
+      transition: { 
+          type: "spring", 
+          stiffness: 260, 
+          damping: 25
+      }
+    })
+  };
 
-        <div className="w-full max-w-md grid grid-cols-2 gap-3 mb-6">
-          {difficulties.map((diff) => {
-             const completed = Storage.getCompletedCount(diff);
-             const maxLevels = getLevelCount(diff);
-             return (
-                <button
-                key={diff}
-                onClick={() => handleDifficultySelect(diff)}
-                className="bg-white p-5 rounded-2xl shadow-sm border border-stone-100 flex flex-col items-start gap-1 hover:border-blue-200 hover:shadow-md transition-all active:scale-95 text-left"
+  return (
+      <>
+          {/* Background Layer (Persistent) */}
+          <div 
+            className={`fixed inset-0 z-0 transition-all ease-in-out duration-500 ${activeBackgroundClass}`} 
+            style={{ width: '100%', height: '100%' }}
+          />
+          <div 
+            className="fixed inset-0 z-[1] bg-black pointer-events-none transition-opacity duration-500" 
+            style={{ opacity: overlayOpacity }} 
+          />
+
+          {/* Screen Content Layer (Animated) */}
+          <div 
+             className="relative z-10 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden"
+             style={{ paddingTop: 'env(safe-area-inset-top)' }}
+          >
+            <AnimatePresence custom={direction} initial={false}>
+                <motion.div
+                    key={screen}
+                    custom={direction}
+                    variants={variants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    className="w-full h-full absolute inset-0 flex flex-col bg-transparent"
+                    style={{ pointerEvents: 'auto' }}
                 >
-                <span className="text-base font-bold text-stone-700">{diff}</span>
-                <span className="text-xs text-stone-400 font-medium tracking-wide">{completed} / {maxLevels}</span>
-                <div className="w-full h-1 bg-stone-100 rounded-full mt-2 overflow-hidden">
-                    <div className="h-full bg-stone-800" style={{ width: `${(completed/maxLevels)*100}%` }}></div>
-                </div>
-                </button>
-            )
-          })}
-        </div>
+                    {screen === 'splash' && <SplashScreen />}
 
-        {/* Store Button */}
-        <div className="w-full max-w-md flex flex-col gap-3">
-            <button 
-                onClick={() => {
-                    setIsTransitioning(true);
-                    setTimeout(() => {
-                        setScreen('store');
-                        setIsTransitioning(false);
-                    }, 300);
-                }}
-                className="w-full p-4 bg-gradient-to-r from-stone-800 to-stone-700 text-white rounded-2xl shadow-lg flex items-center justify-center gap-3 active:scale-95 transition"
-            >
-                <Icons.Store className="w-5 h-5" />
-                <span className="font-bold tracking-wide">Store</span>
-            </button>
+                    {screen === 'difficulty' && (
+                        <DifficultyScreen 
+                            points={points}
+                            onDifficultySelect={handleDifficultySelect}
+                            onOpenSettings={() => setShowSettings(true)}
+                            onOpenStore={() => navigate('store', 'forward')}
+                            onOpenDiamondShop={() => navigate('diamondShop', 'forward')}
+                            onClaimBonus={handleClaimBonus}
+                            onOpenStats={() => navigate('stats', 'forward')}
+                            nextBonusClaimTime={nextBonusClaimTime}
+                            hiddenDifficulties={settings.hiddenDifficulties}
+                        />
+                    )}
 
-            {/* Watch Ad Placeholder */}
-             <button 
-                onClick={handleWatchAd}
-                className="w-full p-4 bg-white border border-blue-200 text-blue-600 rounded-2xl shadow-sm flex items-center justify-center gap-3 active:scale-95 transition hover:bg-blue-50"
-            >
-                <Icons.Video className="w-5 h-5" />
-                <span className="font-medium">Watch an ad and get 10</span>
-                <Icons.Diamond className="w-4 h-4 fill-current" />
-            </button>
-        </div>
+                    {screen === 'diamondShop' && (
+                        <DiamondShopScreen 
+                            points={points}
+                            onBack={handleDiamondShopBack}
+                            onWatchAd={handleWatchAd}
+                            onBuyOffer={handleBuyOffer}
+                            starterPackPurchased={starterPackPurchased}
+                        />
+                    )}
+                    
+                    {screen === 'stats' && (
+                        <StatsScreen 
+                            onBack={handleStatsBack}
+                        />
+                    )}
+                    
+                    {screen === 'levels' && selectedDifficulty && (
+                        <LevelsScreen 
+                            difficulty={selectedDifficulty}
+                            points={points}
+                            unlockedPacks2={unlockedPacks2}
+                            unlockedPacks3={unlockedPacks3}
+                            onBack={handleLevelBack}
+                            onLevelSelect={handleLevelSelect}
+                            onOpenSettings={() => setShowSettings(true)}
+                            onUnlockPack2={handleUnlockPack2}
+                            onUnlockPack3={handleUnlockPack3}
+                        />
+                    )}
 
-        {showSettings && <SettingsModal settings={settings} onToggle={toggleSetting} onReset={resetProgress} onClose={() => setShowSettings(false)} />}
-      </div>
-    );
-  }
+                    {screen === 'store' && (
+                        <StoreScreen 
+                            points={points}
+                            onBack={handleStoreBack}
+                            purchasedSkills={purchasedSkills}
+                            enabledSkills={enabledSkills}
+                            purchasedBackgrounds={purchasedBackgrounds}
+                            purchasedNumberColors={purchasedNumberColors}
+                            purchasedSoundPacks={purchasedSoundPacks}
+                            selectedBackgroundId={selectedBackgroundId}
+                            selectedNumberColorId={selectedNumberColorId}
+                            selectedSoundPackId={selectedSoundPackId}
+                            onPurchase={initiatePurchase}
+                            onSelectBackground={handleSelectBackground}
+                            onSelectNumberColor={handleSelectNumberColor}
+                            onSelectSoundPack={handleSelectSoundPack}
+                            onToggleSkill={handleToggleSkill}
+                        />
+                    )}
+                    
+                    {screen === 'game' && selectedDifficulty && selectedLevel && (
+                        <SudokuGame
+                            difficulty={selectedDifficulty}
+                            levelId={selectedLevel}
+                            onBack={handleGameBack}
+                            onReturnToMenu={handleReturnToMenu}
+                            onComplete={() => {
+                                setPoints(Storage.getPoints());
+                            }}
+                            onSettingsOpen={() => setShowSettings(true)}
+                            settings={settings}
+                            onEarnPoints={handleEarnPoints}
+                            currentPoints={points}
+                            isSettingsOpen={showSettings}
+                            backgroundClass={activeBackgroundClass}
+                            numberColor={numberColorClass}
+                            purchasedSkills={enabledSkills} // Pass only enabled skills to game
+                        />
+                    )}
+                </motion.div>
+            </AnimatePresence>
 
-  // 5. Store Screen
-  if (screen === 'store') {
-      return (
-        <div className={`min-h-screen bg-paper px-6 pt-6 pb-6 flex flex-col items-center ${isTransitioning ? 'animate-fade-out' : 'animate-fade-in'}`}>
-            {/* Store Header */}
-            <div className="w-full max-w-md flex items-start mb-6 relative">
-                <button onClick={handleStoreBack} className="absolute left-0 p-2 rounded-full hover:bg-stone-200 transition -ml-2">
-                    <Icons.Back className="w-6 h-6" />
-                </button>
-                <div className="w-full text-center mt-2 pointer-events-none">
-                    <h1 className="text-xl font-bold text-stone-800">Store</h1>
-                </div>
-                 <div className="absolute right-0 top-0 flex items-center gap-1 bg-white px-3 py-2 rounded-full shadow-sm border border-stone-100">
-                    <div className="text-blue-500">
-                        <Icons.Diamond className="w-3 h-3 fill-current" />
-                    </div>
-                    <span className="text-sm font-bold text-stone-700">{points}</span>
-                </div>
-            </div>
-
-            {/* Store Content */}
-            <div className="w-full max-w-md space-y-8 overflow-y-auto pb-8 hide-scrollbar">
-                
-                {/* Backgrounds Section */}
-                <div>
-                     <h2 className="text-lg font-bold text-stone-700 mb-4 ml-1">Backgrounds</h2>
-
-                     {/* Static Backgrounds */}
-                     <div className="mb-6">
-                        <h3 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-3 ml-1">Static</h3>
-                        <div className="grid grid-cols-5 gap-3">
-                            {STATIC_BACKGROUNDS.map((bg) => {
-                                const isPurchased = purchasedBackgrounds.includes(bg.id);
-                                const isSelected = selectedBackgroundId === bg.id;
-
-                                return (
-                                    <div key={bg.id} className="flex flex-col items-center gap-1">
-                                        <button 
-                                            onClick={() => isPurchased ? handleSelectBackground(bg.id) : initiatePurchase(bg)}
-                                            className={`
-                                                w-full aspect-square rounded-2xl shadow-sm flex flex-col items-center justify-center relative overflow-hidden transition-all active:scale-95
-                                                ${bg.class}
-                                                ${isSelected ? 'ring-4 ring-inset ring-blue-500/20' : ''}
-                                                ${!isPurchased ? 'opacity-90' : ''}
-                                            `}
-                                        >
-                                            {isPurchased && isSelected && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                                                    <Icons.Check className="w-6 h-6 text-white drop-shadow-md" />
-                                                </div>
-                                            )}
-                                            {!isPurchased && (
-                                                <div className="flex items-center gap-0.5 text-stone-700 font-bold">
-                                                    <span className="text-sm">{bg.cost}</span>
-                                                    <Icons.Diamond className="w-3 h-3 fill-current" />
-                                                </div>
-                                            )}
-                                        </button>
-                                        <span className="text-[10px] text-stone-500 font-medium">{bg.name}</span>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Dynamic Backgrounds */}
-                    <div>
-                        <h3 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-3 ml-1">Dynamic</h3>
-                        <div className="grid grid-cols-5 gap-3">
-                            {DYNAMIC_BACKGROUNDS.map((bg) => {
-                                const isPurchased = purchasedBackgrounds.includes(bg.id);
-                                const isSelected = selectedBackgroundId === bg.id;
-
-                                return (
-                                    <div key={bg.id} className="flex flex-col items-center gap-1">
-                                        <button 
-                                            onClick={() => isPurchased ? handleSelectBackground(bg.id) : initiatePurchase(bg)}
-                                            className={`
-                                                w-full aspect-square rounded-2xl shadow-sm flex flex-col items-center justify-center relative overflow-hidden transition-all active:scale-95
-                                                ${bg.class}
-                                                ${isSelected ? 'ring-4 ring-inset ring-blue-500/20' : ''}
-                                                ${!isPurchased ? 'opacity-90' : ''}
-                                            `}
-                                        >
-                                            {isPurchased && isSelected && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                                                    <Icons.Check className="w-6 h-6 text-white drop-shadow-md" />
-                                                </div>
-                                            )}
-                                            {!isPurchased && (
-                                                <div className="flex items-center gap-0.5 text-stone-700 font-bold">
-                                                    <span className="text-sm">{bg.cost}</span>
-                                                    <Icons.Diamond className="w-3 h-3 fill-current" />
-                                                </div>
-                                            )}
-                                        </button>
-                                        <span className="text-[10px] text-stone-500 font-medium">{bg.name}</span>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <h3 className="text-lg font-bold text-stone-700 mb-3 ml-1">Grids</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                         {[1, 2].map(i => (
-                            <div key={i} className="bg-white p-4 rounded-xl border border-stone-100 shadow-sm flex flex-col items-center gap-2 opacity-60">
-                                <div className="w-16 h-16 border-2 border-stone-200 rounded mb-1 bg-stone-50"></div>
-                                <span className="text-xs font-bold text-stone-400">Coming Soon</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-            
+            {/* Modals & Overlays (Outside AnimatePresence to float on top) */}
+            {showSettings && (
+                <SettingsModal 
+                    settings={settings} 
+                    onToggle={toggleSetting} 
+                    onToggleDifficulty={handleToggleDifficultyVisibility}
+                    onSetAppearance={setAppearance}
+                    onReset={resetProgress}
+                    onClose={() => setShowSettings(false)} 
+                    onAddDevPoints={handleAddDevPoints}
+                />
+            )}
+            {replayLevelId !== null && selectedDifficulty && (
+                <ReplayModal 
+                    levelId={replayLevelId}
+                    onConfirm={confirmReplay}
+                    onCancel={() => setReplayLevelId(null)}
+                />
+            )}
             {purchaseCandidate && (
                 <PurchaseModal 
                     item={purchaseCandidate} 
@@ -521,113 +580,22 @@ function App() {
                     onCancel={() => setPurchaseCandidate(null)} 
                 />
             )}
-        </div>
-      );
-  }
-
-  // 3. Level Selection
-  if (screen === 'levels' && selectedDifficulty) {
-    const maxLevels = getLevelCount(selectedDifficulty);
-    const levels = Array.from({ length: maxLevels }, (_, i) => i + 1);
-    
-    return (
-      <div className={`min-h-screen bg-paper px-6 pt-6 pb-6 flex flex-col items-center ${isTransitioning ? 'animate-fade-out' : 'animate-fade-in'}`}>
-        <div className="w-full max-w-md flex items-start mb-14 relative">
-            <button onClick={handleLevelBack} className="absolute left-0 p-2 rounded-full hover:bg-stone-200 transition -ml-2">
-                <Icons.Back className="w-6 h-6" />
-            </button>
-            <div className="w-full text-center mt-12 pointer-events-none">
-                <h1 className="text-xl font-bold">{selectedDifficulty}</h1>
-                <p className="text-xs text-stone-400 uppercase tracking-widest">Select Level</p>
-            </div>
-             <button onClick={() => setShowSettings(true)} className="absolute right-0 p-2 rounded-full hover:bg-stone-200 -mr-2">
-                <Icons.Settings className="w-6 h-6 text-stone-600" />
-            </button>
-        </div>
-
-        <div className="w-full max-w-md grid grid-cols-5 gap-3">
-          {levels.map((lvl) => {
-            const progress = Storage.getLevelProgress(selectedDifficulty, lvl);
-            const isCompleted = progress?.status === 'completed';
-            const isInProgress = progress?.status === 'in-progress';
-            const bestTime = progress?.bestTime;
-            // Only show blue dot if NOT completed AND NO PB AND IS in progress
-            const showInProgressDot = isInProgress && !bestTime; 
-            
-            return (
-              <button
-                key={lvl}
-                onClick={() => handleLevelSelect(lvl)}
-                className={`
-                  aspect-square rounded-xl relative transition-all active:scale-90
-                  ${isCompleted 
-                    ? 'bg-stone-100 text-stone-300 border border-stone-100' // Greyed out for completed
-                    : isInProgress 
-                        ? 'bg-white border-2 border-blue-400 shadow-md text-stone-800' 
-                        : 'bg-white border border-stone-100 shadow-sm hover:shadow-md text-stone-800'}
-                `}
-              >
-                {/* Center Number Absolute */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                     <span className="font-bold text-xl leading-none">{lvl}</span>
-                </div>
-                
-                {/* PB Time Display - Absolute Bottom, always show if bestTime exists */}
-                {bestTime && (
-                    <div className="absolute bottom-1.5 inset-x-0 text-center">
-                        <span className="text-[10px] text-stone-400 font-bold tracking-tight block">{formatTimeShort(bestTime)}</span>
-                    </div>
-                )}
-                
-                {/* Blue Dot */}
-                {showInProgressDot && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 absolute bottom-2 left-1/2 -translate-x-1/2"></div>}
-              </button>
-            );
-          })}
-        </div>
-        
-        {/* Replay Confirmation Modal */}
-        {replayLevelId && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm px-4 animate-fade-in">
-                <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-sm text-center animate-pop">
-                    <h3 className="text-lg font-bold text-stone-800 mb-2">Replay Level {replayLevelId}?</h3>
-                    <p className="text-stone-500 text-sm mb-6">This will reset your progress on this level.</p>
-                    <div className="flex gap-3">
-                        <button onClick={() => setReplayLevelId(null)} className="flex-1 py-3 text-stone-600 bg-stone-100 rounded-xl font-medium active:scale-95 transition">Cancel</button>
-                        <button onClick={confirmReplay} className="flex-1 py-3 text-white bg-blue-500 rounded-xl font-medium shadow-md active:scale-95 transition">Replay</button>
-                    </div>
-                </div>
-            </div>
-        )}
-
-        {showSettings && <SettingsModal settings={settings} onToggle={toggleSetting} onReset={resetProgress} onClose={() => setShowSettings(false)} />}
-      </div>
-    );
-  }
-
-  // 4. Game Screen
-  if (screen === 'game' && selectedDifficulty && selectedLevel) {
-    return (
-      <div className={`h-screen w-full ${gameBackgroundClass}`}>
-         <SudokuGame 
-            difficulty={selectedDifficulty}
-            levelId={selectedLevel}
-            onBack={handleGameBack}
-            onComplete={() => {}} 
-            onSettingsOpen={() => setShowSettings(true)}
-            onNextLevel={handleNextLevel}
-            settings={settings}
-            onEarnPoints={handleEarnPoints}
-            currentPoints={points}
-            isSettingsOpen={showSettings}
-            backgroundClass={gameBackgroundClass}
-         />
-         {showSettings && <SettingsModal settings={settings} onToggle={toggleSetting} onReset={resetProgress} onClose={() => setShowSettings(false)} />}
-      </div>
-    );
-  }
-
-  return null;
+            {paymentOffer && (
+                <PaymentModal
+                    offer={paymentOffer}
+                    onComplete={finalizeRealMoneyPurchase}
+                    onCancel={() => setPaymentOffer(null)}
+                />
+            )}
+            {showNotEnoughPoints && (
+                <NotEnoughPointsModal 
+                    onClose={() => setShowNotEnoughPoints(false)} 
+                    onGetMore={handleNavigateToShop} 
+                    onGoPlay={handleGoPlay} 
+                />
+            )}
+            {isWatchingAd && <AdOverlay />}
+          </div>
+      </>
+  );
 }
-
-export default App;
