@@ -6,6 +6,8 @@ import { Storage } from './utils/storage';
 import { sounds } from './utils/sound';
 import { getPackCost, NUMBER_COLORS, ALL_BACKGROUNDS, SKILLS } from './utils/constants';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { AdMob, RewardAdOptions, RewardAdPluginEvents, AdMobRewardItem } from '@capacitor-community/admob';
+import { Capacitor } from '@capacitor/core';
 
 // UI Components
 import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal } from './components/ui/Modals';
@@ -78,6 +80,27 @@ export function App() {
         }
     };
     initStorage();
+  }, []);
+
+  // Initialize AdMob Listeners (Native Only)
+  useEffect(() => {
+      const initAdMob = async () => {
+          if (Capacitor.isNativePlatform()) {
+              try {
+                  await AdMob.initialize();
+                  
+                  // Listener for when the user completes watching the video
+                  await AdMob.addListener(RewardAdPluginEvents.Rewarded, (reward: AdMobRewardItem) => {
+                      // This event fires when the ad finishes and user earns reward
+                      handleAdReward(); 
+                  });
+                  
+              } catch (e) {
+                  console.error("AdMob Init Error", e);
+              }
+          }
+      };
+      initAdMob();
   }, []);
 
   // Theme Detection
@@ -296,15 +319,34 @@ export function App() {
       }
   };
 
-  const handleWatchAd = () => {
+  const handleWatchAd = async () => {
         setShowNotEnoughPoints(false);
         setPurchaseCandidate(null);
-        setIsWatchingAd(true);
-        // Timeout removed. AdOverlay controls completion.
+
+        // HYBRID LOGIC: Real Ad on Phone, Fake Ad on Web/Windows
+        if (Capacitor.isNativePlatform()) {
+            try {
+                // IMPORTANT: Replace this ID with your real AdMob Unit ID before release.
+                // This is the standard Google Test ID for iOS Rewarded Video.
+                const options: RewardAdOptions = {
+                    adId: 'ca-app-pub-3940256099942544/1712485313', 
+                };
+                
+                await AdMob.prepareRewardVideoAd(options);
+                await AdMob.showRewardVideoAd();
+            } catch (error) {
+                console.error('Ad failed to load', error);
+                alert("Unable to load ad. Please check your connection.");
+            }
+        } else {
+            // Web / Development Fallback: Show the "Nebula Jump" fake ad
+            setIsWatchingAd(true);
+        }
   };
 
   const handleAdReward = () => {
       handleEarnPoints(25);
+      // Ensure the web overlay is closed (safe to call even if native)
       setIsWatchingAd(false);
       sounds.playWin();
   };
@@ -592,6 +634,11 @@ export function App() {
                     onGoPlay={handleGoPlay} 
                 />
             )}
+            {/* 
+               Hybrid logic: 
+               - If native (iOS), isWatchingAd is never set true, so AdOverlay is hidden. 
+               - If web, isWatchingAd becomes true, showing the fake overlay.
+            */}
             {isWatchingAd && <AdOverlay onComplete={handleAdReward} />}
           </div>
       </>

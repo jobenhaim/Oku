@@ -12,8 +12,10 @@
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "lucide-react": "^0.561.0",
-    "@capacitor/preferences": "^8.0.0",
-    "@capacitor/haptics": "^8.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/preferences": "^6.0.0",
+    "@capacitor/haptics": "^6.0.0",
+    "@capacitor-community/admob": "^6.0.0",
     "framer-motion": "11.0.8"
   },
   "devDependencies": {
