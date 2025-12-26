@@ -47,7 +47,8 @@ import {
   StickyNote,
   Trees,
   GlassWater,
-  Bell
+  Bell,
+  Heart
 } from 'lucide-react';
 
 export const Icons = {
@@ -100,4 +101,5 @@ export const Icons = {
   Wood: (props: any) => <Trees {...props} />,
   Water: (props: any) => <Droplets {...props} />, 
   Bell: (props: any) => <Bell {...props} />,
+  Heart: (props: any) => <Heart {...props} />,
 };

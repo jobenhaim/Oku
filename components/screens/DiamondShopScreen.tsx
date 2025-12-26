@@ -55,6 +55,10 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
         }
     };
 
+    // Unified Price Badge Style
+    // Premium Silver Gradient + Dark Text + Thin Border + Reduced Size
+    const priceBadgeClass = "px-3 py-1.5 rounded-lg text-sm font-bold text-stone-800 shadow-sm min-w-[70px] text-center flex items-center justify-center border border-stone-900/10 bg-gradient-to-br from-white via-gray-100 to-gray-200 active:scale-95 transition-transform tracking-wide";
+
     return (
         <div className="flex-1 w-full flex flex-col items-center overflow-hidden relative">
             <DiamondBackground />
@@ -85,9 +89,12 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                             <button 
                                 key={offer.id} 
                                 onClick={() => handleBuyOfferWrapper(offer)}
-                                // Card Container
-                                className="w-full h-56 relative overflow-hidden rounded-[1.75rem] p-6 shadow-xl transition-transform mb-6 text-left bg-rose-50 active:scale-[0.99] group border border-rose-100"
+                                // Card Container - Premium Midnight Slate Gradient with lighter start
+                                className="w-full h-56 relative overflow-hidden rounded-[1.75rem] p-6 shadow-2xl transition-transform mb-6 text-left bg-gradient-to-br from-slate-600 via-slate-800 to-slate-900 active:scale-[0.99] group border border-white/10"
                             >
+                                {/* Subtle Shine Effect */}
+                                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/0 to-white/5 pointer-events-none" />
+
                                 {/* Giant Faded Heart Background - Centered/Right */}
                                 <div className="absolute -right-8 -bottom-10 opacity-[0.08] pointer-events-none z-0">
                                      <svg viewBox="0 0 24 24" className="w-64 h-64 fill-current text-rose-500">
@@ -95,14 +102,40 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                      </svg>
                                 </div>
 
+                                {/* Moving Floating Hearts */}
+                                <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                                    {[...Array(12)].map((_, i) => (
+                                        <div 
+                                            key={i}
+                                            className="absolute text-rose-500 animate-float-up"
+                                            style={{
+                                                left: `${Math.random() * 100}%`,
+                                                bottom: '-20px',
+                                                animationDelay: `${Math.random() * 5}s`,
+                                                animationDuration: `${5 + Math.random() * 5}s`,
+                                                opacity: 0 // Initial opacity handled by keyframe
+                                            }}
+                                        >
+                                            <Icons.Heart 
+                                                className="fill-current" 
+                                                style={{ 
+                                                    // Increased size by ~15% (range: 10px - 24px)
+                                                    width: `${10 + Math.random() * 14}px`, 
+                                                    height: `${10 + Math.random() * 14}px` 
+                                                }}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+
                                 <div className="relative z-10 flex flex-col h-full">
                                     {/* Header Row */}
                                     <div className="flex justify-between items-start mb-2">
-                                        <h2 className="text-2xl font-bold text-stone-900 leading-tight">{offer.title}</h2>
+                                        <h2 className="text-2xl font-bold text-white leading-tight">{offer.title}</h2>
                                     </div>
 
                                     {/* Description Text - Explicitly over the heart area */}
-                                    <p className="text-[11px] font-medium text-stone-600 leading-relaxed pr-2 max-w-full mb-3 relative z-10">
+                                    <p className="text-[11px] font-medium text-slate-300 leading-relaxed pr-2 max-w-full mb-3 relative z-10">
                                         Oku is made by a single independent developer. 
                                         Your support helps keep the app calm, fair, and ad-light. 
                                         Thank you for being here.
@@ -114,28 +147,28 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         {/* Benefits List (Smaller Text: text-[11px] or text-xs) */}
                                         <div className="flex flex-col gap-1">
                                             <div className="flex items-center gap-2">
-                                                <Icons.Check className="w-3.5 h-3.5 text-green-500 stroke-[3]" />
+                                                <Icons.Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
                                                 <div className="flex items-center gap-0.5">
-                                                    <span className="text-[11px] font-bold text-stone-800">+400</span>
-                                                    <Icons.Diamond className="w-3.5 h-3.5 text-blue-500 fill-current" />
+                                                    <span className="text-[11px] font-bold text-white">+400</span>
+                                                    <Icons.Diamond className="w-3.5 h-3.5 text-sky-400 fill-current" />
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <Icons.Check className="w-3.5 h-3.5 text-green-500 stroke-[3]" />
-                                                <span className="text-[11px] font-bold text-stone-700">No forced ads, ever</span>
+                                                <Icons.Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
+                                                <span className="text-[11px] font-bold text-slate-200">No forced ads, ever</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <Icons.Check className="w-3.5 h-3.5 text-green-500 stroke-[3]" />
-                                                <span className="text-[11px] font-bold text-stone-700">Special companion</span>
+                                                <Icons.Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
+                                                <span className="text-[11px] font-bold text-slate-200">Special companion</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <Icons.Check className="w-3.5 h-3.5 text-green-500 stroke-[3]" />
-                                                <span className="text-[11px] font-bold text-stone-700">A personal thank-you</span>
+                                                <Icons.Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
+                                                <span className="text-[11px] font-bold text-slate-200">A personal thank-you</span>
                                             </div>
                                         </div>
 
-                                        {/* Price Badge - Now Flex Item */}
-                                        <div className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-stone-900 shadow-sm min-w-[80px] min-h-[28px] flex items-center justify-center text-center shrink-0 ml-4 mb-0.5">
+                                        {/* Price Badge */}
+                                        <div className={`${priceBadgeClass} shrink-0 ml-4 mb-0.5 shadow-lg`}>
                                             {offer.priceLabel}
                                         </div>
                                     </div>
@@ -195,7 +228,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     </div>
                                     <div className="flex flex-col items-end justify-between shrink-0 py-0.5">
                                         <div 
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm min-w-[80px] text-center min-h-[28px] flex items-center justify-center ${isPurchased ? 'bg-stone-400 text-white shadow-none' : 'bg-stone-800 text-white group-hover:bg-stone-700'}`}
+                                            className={`${isPurchased ? 'bg-stone-400 text-white shadow-none cursor-default px-3 py-1.5 rounded-lg text-xs font-bold min-w-[70px] text-center border border-transparent' : priceBadgeClass}`}
                                          >
                                             {isPurchased ? 'OWNED' : offer.priceLabel}
                                          </div>
@@ -215,15 +248,17 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                             <button 
                                 key={offer.id} 
                                 onClick={() => onBuyOffer(offer)}
-                                className="bg-gradient-to-b from-blue-50 to-white dark:from-stone-800 dark:to-stone-900 rounded-2xl p-1.5 flex flex-col items-center justify-between shadow-sm border border-blue-100 dark:border-stone-700 h-28 active:scale-95 transition-transform"
+                                className="bg-gradient-to-b from-blue-50 to-white dark:from-stone-800 dark:to-stone-900 rounded-2xl p-1.5 flex flex-col items-center justify-between shadow-sm border border-blue-100 dark:border-stone-700 h-28 active:scale-95 transition-transform group"
                             >
                                 <div className="flex-1 flex flex-col items-center justify-center gap-0.5 w-full overflow-hidden">
                                     <Icons.Diamond className="w-6 h-6 text-blue-500 fill-current drop-shadow-sm mb-0.5" />
                                     <span className="text-base font-bold text-stone-900 dark:text-t-primary leading-none">+{offer.diamonds}</span>
                                     <span className="text-[10px] font-bold text-stone-400 truncate w-full text-center leading-tight">{offer.title}</span>
                                 </div>
-                                <div className="w-full py-2 btn-premium-silver rounded-lg text-[11px] font-bold truncate px-1 min-h-[28px] flex items-center justify-center">
-                                    {offer.priceLabel}
+                                <div className="w-full">
+                                    <div className={`${priceBadgeClass} w-full text-xs py-1.5 min-w-0 rounded-md group-active:scale-100 border-stone-900/10`}>
+                                        {offer.priceLabel}
+                                    </div>
                                 </div>
                             </button>
                         ))}

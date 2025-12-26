@@ -241,15 +241,15 @@ export const DIAMOND_OFFERS: DiamondOffer[] = [
         diamonds: 1000,
         includes: ['Auto & Scan Skill Unlocked', 'Piano Sound Pack Unlocked'],
         badge: 'BEST VALUE',
-        priceLabel: '', // Price removed for App Store compliance
+        priceLabel: '$2.99',
         type: 'starter',
         gradientClass: 'bg-[#FFF5E1] border-amber-100'
     },
     // Packs
-    { id: 'gem_300', title: 'Handful', diamonds: 300, priceLabel: '', type: 'pack' },
-    { id: 'gem_1000', title: 'Pouch', diamonds: 1000, priceLabel: '', type: 'pack' },
-    { id: 'gem_2500', title: 'Chest', diamonds: 2500, priceLabel: '', type: 'pack' },
-    { id: 'gem_5000', title: 'Vault', diamonds: 5000, priceLabel: '', type: 'pack' },
+    { id: 'gem_300', title: 'Handful', diamonds: 300, priceLabel: '$0.99', type: 'pack' },
+    { id: 'gem_1000', title: 'Pouch', diamonds: 1000, priceLabel: '$1.99', type: 'pack' },
+    { id: 'gem_2500', title: 'Chest', diamonds: 2500, priceLabel: '$3.99', type: 'pack' },
+    { id: 'gem_5000', title: 'Vault', diamonds: 5000, priceLabel: '$6.99', type: 'pack' },
 ];
 
 export function formatTimeShort(totalSeconds: number) {

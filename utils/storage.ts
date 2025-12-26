@@ -397,9 +397,13 @@ export const Storage = {
       }
   },
 
-  resetAllData: () => {
+  resetAllData: async () => {
     localStorage.removeItem(STORAGE_KEY);
-    Preferences.remove({ key: STORAGE_KEY }).catch(() => {});
+    try {
+        await Preferences.remove({ key: STORAGE_KEY });
+    } catch (e) {
+        console.warn("Error removing native preference", e);
+    }
   },
   
   getCompletedCount: (difficulty: string, maxLevel: number = 200): number => {

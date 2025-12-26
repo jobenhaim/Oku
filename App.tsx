@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Difficulty, AppSettings, DiamondOffer } from './types';
 import { SudokuGame } from './components/SudokuGame';
@@ -207,10 +208,10 @@ export function App() {
       Storage.saveSettings(newSettings);
   };
 
-  const resetProgress = () => {
+  const resetProgress = async () => {
       sounds.playClick();
-      if (confirm("Are you sure you want to reset all progress? This cannot be undone.")) {
-          Storage.resetAllData();
+      if (confirm("Are you sure you want to reset all progress? This will clear data from Local Storage and Cloud Backup.")) {
+          await Storage.resetAllData();
           window.location.reload();
       }
   };
@@ -380,10 +381,6 @@ export function App() {
           sounds.playClick();
           setShowNotEnoughPoints(true);
       }
-  };
-
-  const handleAddDevPoints = () => {
-      handleEarnPoints(5000);
   };
 
   let activeBackgroundClass = "bg-paper dark:bg-stone-900"; 
@@ -563,7 +560,6 @@ export function App() {
                     onSetAppearance={setAppearance}
                     onReset={resetProgress}
                     onClose={() => setShowSettings(false)} 
-                    onAddDevPoints={handleAddDevPoints}
                 />
             )}
             {replayLevelId !== null && selectedDifficulty && (
