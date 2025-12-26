@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Difficulty, AppSettings, DiamondOffer } from './types';
 import { SudokuGame } from './components/SudokuGame';
 import { Storage } from './utils/storage';
 import { sounds } from './utils/sound';
 import { getPackCost, NUMBER_COLORS, ALL_BACKGROUNDS, SKILLS } from './utils/constants';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 // UI Components
 import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal } from './components/ui/Modals';
@@ -413,7 +412,7 @@ export function App() {
 
   // Animation Variants for "Slide" Transition
   // Using 100% width slide to prevent cuts and ensure screens move completely off-view
-  const variants = {
+  const variants: Variants = {
     initial: (dir: number) => ({
       x: dir > 0 ? '100%' : (dir < 0 ? '-100%' : 0),
       opacity: 0
@@ -488,6 +487,7 @@ export function App() {
                             onBack={handleDiamondShopBack}
                             onWatchAd={handleWatchAd}
                             onBuyOffer={handleBuyOffer}
+                            onEarnPoints={handleEarnPoints}
                             starterPackPurchased={starterPackPurchased}
                         />
                     )}

@@ -229,7 +229,7 @@ export const DIAMOND_OFFERS: DiamondOffer[] = [
         title: 'Support the Developer',
         subtitle: 'Calm, fair, and ad-light.',
         diamonds: 400,
-        priceLabel: '$4.99',
+        priceLabel: '$3.99',
         type: 'support',
         badge: 'SPECIAL'
     },

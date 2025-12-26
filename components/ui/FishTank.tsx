@@ -1,73 +1,210 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Storage } from '../../utils/storage';
 import { sounds } from '../../utils/sound';
 import { Icons } from './Icons';
 import { PepinoState } from '../../types';
 
+// 100 Unique Pepino Messages (Updated)
+const PEPINO_MESSAGES = [
+    "Splash.", "Hello.", "Nice phone.", "Screen is clean.", "Fish approves.",
+    "Hi there!", "Clean water, clean mind.", "Just keep swimming.", "Do you have a snack?",
+    "I'm watching you.", "I believe in you.", "You are smart.", "Take a break?",
+    "Stay hydrated.", "I live here now.", "Cozy tank.", "Did you blink?",
+    "Sudoku master?", "I'm just a fish.", "This is a simulation.", "Digital water is dry.",
+    "Pixels taste funny.", "Goldfish? Nope.", "Welcome back!", "Nice to see you.",
+    "Stay a while.", "It's peaceful here.", "Oops.", "Are you winning?",
+    "Diamonds are shiny.", "I like blue.", "I'm your fan!", "Bubbles...",
+    "Good morning?", "Good evening?", "Rate 5 stars?", "I'm shy.",
+    "Catch me if you can.", "This is from Mathilda.", "Tiny brain.", "E = mc²",
+    "Oh... the universe.", "Brain makes bubbles.", "Just floating...", "I see you.",
+    "Nice case.", "No case? Brave.", "Battery looks fine.", "Fancy device.",
+    "Fish alert!", "Zero thumbs.", "Full-time fish.", "Bubble expert.",
+    "Wet forever.", "Fish.", "I can't find your gift.", ":)",
+    "Uninstall the ocean.", "I blame the crab.", "Bloop for safety.", "Overthinking...",
+    "Memory is optional.", "I'm proud of you.", "Thank you for waiting.", "Boo!",
+    "The rock moved, I swear!", "Nemo won't believe this.", "Hehe.", "Wifi? More like Wi-Fish.",
+    "Sorry, I panicked.", "Aquarium CEO.", "Fish. But dramatic.", "I demand snacks.",
+    "Bloop equals wisdom.", "I ate a number 7.", "How are you today?", "Bubble trouble.",
+    "My fin itches.", "You are doing swimmingly.", "Water you thinking?", "I'm 100% organic pixels.",
+    "Don't tap too hard.", "I'm judging your logic.", "Hold my poodle!",
+    "Evething is wet.", "I'm fluent in Bubbles.", "Glub.", "Thinking cap: On.",
+    "I'm the hint button.", "Wait, I'm just a fish.", "Nice moves, human.",
+    "Can I have a castle?", "This water is precise.", "See you at the finish."
+];
+
 interface FishTankProps {
-    onRewardClaim: (amount: number, isPoop: boolean) => void;
+    onRewardClaim: (amount: number) => void;
     showIntro?: boolean;
 }
 
 export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = false }) => {
     const [pepinoState, setPepinoState] = useState<PepinoState>(Storage.getPepinoState());
-    const [isGiftReady, setIsGiftReady] = useState(false);
-    const [poopVisible, setPoopVisible] = useState(false);
+    
+    // Initialize ready state immediately (Lazy initializer)
+    const [isGiftReady, setIsGiftReady] = useState(() => {
+        const now = Date.now();
+        return now >= pepinoState.lastGiftTime + pepinoState.nextGiftDelay;
+    });
     
     // Reward Feedback State
-    const [rewardFeedback, setRewardFeedback] = useState<{amount: number, isPoop: boolean} | null>(null);
+    const [rewardFeedback, setRewardFeedback] = useState<{amount: number} | null>(null);
     const [rewardExiting, setRewardExiting] = useState(false);
+    const [clickCoords, setClickCoords] = useState<{x: number, y: number} | null>(null);
     
-    // Intro State: 'waiting' (text visible) -> 'appearing' (fish pops in) -> 'active' (normal swim)
-    const [introState, setIntroState] = useState<'waiting' | 'appearing' | 'active'>(
+    // Hearts Interaction State
+    const [hearts, setHearts] = useState<{id: number, x: number, y: number, tx: number, rot: number}[]>([]);
+
+    // Speech Bubble State
+    const [speech, setSpeech] = useState<string | null>(null);
+
+    // Intro State: 
+    // 'waiting' (text visible) -> 'clearing' (text fades out) -> 
+    // 'appearing' (fish pops in) -> 'active' (normal swim)
+    const [introState, setIntroState] = useState<'waiting' | 'clearing' | 'appearing' | 'active'>(
         showIntro ? 'waiting' : 'active'
     );
     
     // Fish movement state
-    const [fishPos, setFishPos] = useState({ x: 50, y: 50 }); // Percentage
+    // Initialize random position (X: 15-85%, Y: 32-85%)
+    const [fishPos, setFishPos] = useState(() => ({ 
+        x: 15 + Math.random() * 70, 
+        y: 32 + Math.random() * 53 
+    }));
     const [fishDirection, setFishDirection] = useState<'left' | 'right'>('right');
     
+    // Container dimensions for smooth pixel-perfect transforms
+    const [tankSize, setTankSize] = useState({ width: 0, height: 0 });
+    
+    // Transition Ready State (Prevents jump from 0,0)
+    const [isTransitionEnabled, setIsTransitionEnabled] = useState(false);
+    
     // Refs for animation logic to avoid stale closures
-    const fishPosRef = useRef({ x: 50, y: 50 });
+    const fishPosRef = useRef(fishPos);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    // Track container size for pixel-perfect transforms
+    useEffect(() => {
+        if (!containerRef.current) return;
+        
+        const updateSize = () => {
+            if (containerRef.current) {
+                const { width, height } = containerRef.current.getBoundingClientRect();
+                setTankSize({ width, height });
+            }
+        };
+
+        // Initial size
+        updateSize();
+
+        const observer = new ResizeObserver(() => {
+            updateSize();
+        });
+        
+        observer.observe(containerRef.current);
+        return () => observer.disconnect();
+    }, []);
+
+    // Enable transitions only AFTER we have a valid size and position calculated
+    // This prevents the "fly in from 0,0" visual glitch
+    useEffect(() => {
+        if (tankSize.width > 0 && !isTransitionEnabled) {
+            // Increased timeout to 150ms to ensure DOM has fully applied the initial non-transitioned position
+            const t = setTimeout(() => {
+                setIsTransitionEnabled(true);
+            }, 150);
+            return () => clearTimeout(t);
+        }
+    }, [tankSize.width, isTransitionEnabled]);
 
     // Handle Intro Flow
     useEffect(() => {
         if (showIntro) {
-            // 1. Wait 7 seconds with text overlay
+            // 1. Wait 7 seconds with text overlay visible
             const timer1 = setTimeout(() => {
-                setIntroState('appearing');
+                setIntroState('clearing'); // Triggers text fade out (duration 700ms)
                 
-                // 2. Play Pop Sound as fish appears
+                // 2. Wait for text fade (700ms). Fade is halfway done around 350ms.
+                // We want fish to appear at ~7.6s total time.
                 setTimeout(() => {
-                    sounds.playPop(); 
-                }, 100);
+                    setIntroState('appearing'); // Triggers fish pop
+                    sounds.playPop(); // Sync improved pop sound
 
-                // 3. Switch to fully active state after pop animation
-                setTimeout(() => {
-                    setIntroState('active');
-                }, 600); 
+                    // 3. Switch to fully active state after rapid pop animation (300ms)
+                    setTimeout(() => {
+                        setIntroState('active');
+                    }, 400); 
+                }, 600); // 7000ms + 600ms = 7.6s total wait
             }, 7000);
             return () => clearTimeout(timer1);
+        } else {
+            setIntroState('active');
         }
     }, [showIntro]);
 
-    // Timer check
+    // Derived state for visibility
+    const isTextVisible = introState === 'waiting';
+    // Fish is visible only if active/appearing AND we have measured size (prevent ghost)
+    // CHANGE: Decoupled visibility from isTransitionEnabled to fix delay. 
+    // Now visible as soon as we know where to put it (tankSize > 0).
+    const isFishVisible = (introState === 'appearing' || introState === 'active') && tankSize.width > 0;
+
+    // SPEECH BUBBLE LOGIC
+    useEffect(() => {
+        // Stop speech if:
+        // 1. Fish isn't active
+        // 2. A gift is ready (Priority - strict check)
+        if (!isFishVisible || introState !== 'active' || isGiftReady) {
+            setSpeech(null); 
+            return;
+        }
+
+        let hideTimeout: any;
+
+        const speak = () => {
+            // Double check gift status before speaking
+            if (isGiftReady) {
+                setSpeech(null);
+                return;
+            }
+
+            // 1. Pick random message
+            const msg = PEPINO_MESSAGES[Math.floor(Math.random() * PEPINO_MESSAGES.length)];
+            setSpeech(msg);
+            
+            // 2. Hide after 7 seconds
+            if (hideTimeout) clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(() => {
+                setSpeech(null);
+            }, 7000);
+        };
+
+        // Initial speech after 1 second of being active to give space for Gift appearance
+        const initialDelay = setTimeout(speak, 1000);
+
+        // Loop every 60 seconds
+        const loopInterval = setInterval(speak, 60000);
+
+        return () => {
+            clearTimeout(initialDelay);
+            clearInterval(loopInterval);
+            if (hideTimeout) clearTimeout(hideTimeout);
+        };
+    }, [isFishVisible, introState, isGiftReady]);
+
+    // Timer check for Gifts
     useEffect(() => {
         const checkTime = () => {
             const now = Date.now();
             const readyTime = pepinoState.lastGiftTime + pepinoState.nextGiftDelay;
-            
-            if (now >= readyTime) {
-                setIsGiftReady(true);
-            } else {
-                setIsGiftReady(false);
-            }
+            const ready = now >= readyTime;
+            setIsGiftReady(ready);
         };
 
         checkTime();
-        const interval = setInterval(checkTime, 5000); 
+        // Check more frequently (1s) to capture readiness as soon as possible
+        const interval = setInterval(checkTime, 1000); 
         return () => clearInterval(interval);
     }, [pepinoState]);
 
@@ -81,8 +218,10 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
             // Generate new target position
             // X: 15-85% (avoid walls)
             const newX = 15 + Math.random() * 70;
-            // Y: 20-80% (More vertical space now that sand is gone)
-            const newY = 20 + Math.random() * 60; 
+            
+            // Y: Limit to lower part (avoid top 50px)
+            // Tank Height = 224px (h-56)
+            const newY = 32 + Math.random() * 53; 
             
             // Determine direction based on CURRENT position vs NEW position
             const newDirection = newX > currentX ? 'right' : 'left';
@@ -97,15 +236,25 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
             timeoutId = setTimeout(moveFish, delay);
         };
 
-        // Initial delay before first move to let intro settle
-        timeoutId = setTimeout(moveFish, 1000);
+        // Initial delay: If showing intro, wait for sequence to finish (~9s total) before swimming
+        const startDelay = showIntro ? 9000 : 1000;
+        timeoutId = setTimeout(moveFish, startDelay);
 
         return () => clearTimeout(timeoutId);
-    }, []); 
+    }, [showIntro]); 
 
     const handleClaim = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if ((!isGiftReady && !poopVisible) || rewardFeedback) return;
+        if (!isGiftReady || rewardFeedback) return;
+
+        // Capture coordinates relative to tank
+        if (containerRef.current) {
+             const rect = containerRef.current.getBoundingClientRect();
+             setClickCoords({
+                 x: e.clientX - rect.left,
+                 y: e.clientY - rect.top
+             });
+        }
 
         const minDelay = 7200000;
         const maxDelay = 10800000;
@@ -115,34 +264,51 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
         setPepinoState(Storage.getPepinoState()); 
         setIsGiftReady(false);
 
-        if (poopVisible) {
-            setPoopVisible(false);
-            onRewardClaim(1, true); 
-            showReward({ amount: 1, isPoop: true });
-            sounds.playPop();
-            return;
-        }
-
         const r = Math.random();
         let amount = 5;
-        let isPoop = false;
 
-        if (r < 0.05) {
-            isPoop = true;
-            setPoopVisible(true);
-            return; 
-        } else if (r < 0.10) amount = 20;
+        // Reward Distribution:
+        // 20 Diamonds: 5%
+        // 15 Diamonds: 15%
+        // 10 Diamonds: 30%
+        // 5 Diamonds: 50%
+        
+        if (r < 0.05) amount = 20;
         else if (r < 0.20) amount = 15;
         else if (r < 0.50) amount = 10;
+        else amount = 5;
 
         if (amount > 0) {
-            sounds.playWin();
-            onRewardClaim(amount, false);
-            showReward({ amount, isPoop: false });
+            // New "Bubbly" sound for gift
+            sounds.playBubblePop();
+            onRewardClaim(amount);
+            showReward({ amount });
         }
     };
 
-    const showReward = (feedback: {amount: number, isPoop: boolean}) => {
+    const handlePepinoClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        sounds.playPepinoTap(); // Play cute tap sound
+        if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Random horizontal movement (-60px to +60px)
+            const tx = (Math.random() - 0.5) * 120;
+            // Random rotation (-30deg to +30deg)
+            const rot = (Math.random() - 0.5) * 60;
+
+            const newHeart = { id: Date.now() + Math.random(), x, y, tx, rot };
+            setHearts(prev => [...prev, newHeart]);
+            
+            setTimeout(() => {
+                setHearts(prev => prev.filter(h => h.id !== newHeart.id));
+            }, 800);
+        }
+    };
+
+    const showReward = (feedback: {amount: number}) => {
         setRewardFeedback(feedback);
         setRewardExiting(false);
         
@@ -152,14 +318,22 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
             setTimeout(() => {
                 setRewardFeedback(null);
                 setRewardExiting(false);
+                setClickCoords(null);
             }, 300); 
         }, 1700);
     };
 
-    // Derived state for visibility
-    const isTextVisible = introState === 'waiting';
-    const isFishVisible = introState !== 'waiting';
-    const isPopping = introState === 'appearing';
+    
+    // Scale Logic: 0 during wait/clear, 1 during appear/active
+    const scaleValue = (introState === 'waiting' || introState === 'clearing') ? 0 : 1;
+    
+    // Transition Duration Logic
+    const transitionDuration = introState === 'active' ? '4000ms' : '300ms';
+
+    // Calculate Exact Pixel Coordinates for Transform
+    // Fish is w-12 (48px) x h-8 (32px). Center offset is 24px, 16px.
+    const fishX = (fishPos.x / 100) * tankSize.width - 24;
+    const fishY = (fishPos.y / 100) * tankSize.height - 16;
 
     return (
         <div 
@@ -167,31 +341,83 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
             // Size: w-24 h-16 (~20-25% smaller than original w-32 h-24)
             className="w-full h-56 relative rounded-[1.75rem] overflow-hidden bg-[#e0f7fa] shadow-xl mb-6 select-none animate-pop mx-auto"
         >
-            {/* Clean Water Gradient - No Decor */}
+            <style>{`
+                @keyframes heart-float {
+                    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                    100% { transform: translate(calc(-50% + var(--tx)), calc(-50% - 75px)) scale(1.1) rotate(var(--rot)); opacity: 0; }
+                }
+            `}</style>
+
+            {/* Clean Water Gradient */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#e0f7fa] via-[#d1f4fa] to-[#b3e5fc]" />
+
+            {/* --- LAYER 1: BACKGROUND PLANTS (Behind Fish) --- */}
+            {/* Z-Index 5: Behind Fish (30) */}
+            <div className="absolute inset-x-0 bottom-0 h-full z-[5] pointer-events-none">
+                {/* Background Plants Cluster */}
+                {/* Added translate3d(0,0,0) to force layer promotion and fix vibration on iOS */}
+                <div 
+                    className="absolute bottom-4 left-[10%] w-24 h-[60%] opacity-80 mix-blend-multiply origin-bottom"
+                    style={{ transform: 'translate3d(0,0,0)' }}
+                >
+                     <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="plantGradientBg" x1="0.5" x2="0.5" y1="0" y2="1">
+                                <stop offset="0%" stopColor="#4ade80" /> {/* green-400 */}
+                                <stop offset="100%" stopColor="#14532d" /> {/* green-900 */}
+                            </linearGradient>
+                        </defs>
+                        
+                        {/* Leaf 2 (Left - Thicker Base) */}
+                        <g 
+                            className="origin-bottom animate-sway" 
+                            style={{ transformOrigin: '30% 100%', animationDelay: '-1.5s', willChange: 'transform' }}
+                        >
+                           <path d="M 24 100 C 24 70 30 40 25 15 L 27 15 C 33 30 40 60 36 100 Z" fill="url(#plantGradientBg)" opacity="0.8" />
+                        </g>
+
+                        {/* Leaf 3 (Right - Thicker Base) */}
+                        <g 
+                            className="origin-bottom animate-sway-slow" 
+                            style={{ transformOrigin: '70% 100%', animationDelay: '-3s', willChange: 'transform' }}
+                        >
+                           <path d="M 69 100 C 69 70 75 40 78 15 L 80 15 C 85 40 81 70 81 100 Z" fill="url(#plantGradientBg)" opacity="0.9" />
+                        </g>
+                     </svg>
+                </div>
+            </div>
 
             {/* --- INTRO TEXT OVERLAY --- */}
             <div 
                 className={`absolute inset-0 flex items-center justify-center p-4 z-40 transition-opacity duration-700 ${isTextVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             >
                 <div className="bg-white/60 backdrop-blur-md p-6 rounded-2xl shadow-sm border border-white/40 text-center max-w-[90%]">
-                    <p className="text-lg font-bold text-stone-800 mb-2 leading-tight">This is Pepino.</p>
-                    <p className="text-[11px] font-medium text-stone-600 mb-3 leading-relaxed">He was around while Oku was being built.</p>
-                    <p className="text-[9px] text-stone-500 font-semibold opacity-90">Thanks for supporting the app — feel free to check on him anytime.</p>
+                    <p className="text-xl font-bold text-stone-800 mb-3 leading-tight">This is Pepino.</p>
+                    <p className="text-sm font-medium text-stone-600 mb-1 leading-relaxed">He was around while Oku was being built.</p>
+                    <p className="text-sm font-medium text-stone-600 leading-relaxed">Thanks for supporting the app — feel free to check on him anytime.</p>
                 </div>
             </div>
 
-            {/* PEPINO CONTAINER (Handles X/Y Position) */}
+            {/* PEPINO CONTAINER (Handles Position via Transform) */}
+            {/* Z-Index 30: In front of Back Plants (5), Behind Front Plant (35) */}
             <div 
-                className={`absolute w-12 h-8 transition-all duration-[4000ms] ease-in-out z-30 ${isFishVisible ? 'opacity-100' : 'opacity-0'}`}
+                onClick={handlePepinoClick}
+                className={`absolute w-12 h-8 z-30 cursor-pointer top-0 left-0 ${isFishVisible ? 'opacity-100' : 'opacity-0'}`}
                 style={{ 
-                    left: `${fishPos.x}%`, 
-                    top: `${fishPos.y}%`,
-                    transform: `translate(-50%, -50%) ${isPopping ? 'scale(0)' : 'scale(1)'}` 
+                    // CRITICAL FIX: Use translate3d with pixels for smooth iOS movement
+                    // Removed 'opacity' from transition to prevent fade-in effect on subsequent moves
+                    transform: `translate3d(${fishX}px, ${fishY}px, 0)`,
+                    transition: isTransitionEnabled ? `transform ${transitionDuration} ease-in-out` : 'none',
+                    willChange: 'transform',
+                    WebkitBackfaceVisibility: 'hidden',
+                    backfaceVisibility: 'hidden',
                 }}
             >
-                 {/* POP IN ANIMATION WRAPPER */}
-                 <div className={`w-full h-full transition-transform duration-500 cubic-bezier(0.175, 0.885, 0.32, 1.275) ${isPopping ? 'scale-100' : ''}`}>
+                 {/* POP IN ANIMATION WRAPPER (Handles Scale) */}
+                 <div 
+                    className="w-full h-full transition-transform duration-300 cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+                    style={{ transform: `scale(${scaleValue})` }}
+                 >
                      
                      {/* DIRECTION FLIPPER */}
                      <div 
@@ -199,8 +425,8 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
                         style={{ transform: fishDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)' }}
                      >
                          {/* WIGGLER */}
-                         <div className="w-full h-full animate-wiggle">
-                            {/* Updated Pepino with new SVG paths */}
+                         <div className="w-full h-full animate-wiggle" style={{ willChange: 'transform' }}>
+                            {/* Pepino SVG */}
                             <svg viewBox="344.5149 210.9059 74.9591 41.2278" className="w-full h-full drop-shadow-sm filter" style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }}>
                                 <path d="M 373.193 239.648 C 379.513 254.112 400.131 252.185 404.661 240.061 C 393.45 240.02 396.193 239.089 386.193 239.648 L 373.193 239.648 Z" fill="#ef4444" opacity="0.95" style={{strokeWidth: 1}} transform="matrix(1, 0, 0, 1, 0, -1.4210854715202004e-14)"/>
                                 <path d="M 372.793 224.525 C 379.113 207.278 399.731 209.576 404.261 224.033 C 393.05 224.081 395.793 225.192 385.793 224.525 L 372.793 224.525 Z" fill="#ef4444" opacity="0.95" style={{strokeWidth: 1}} transform="matrix(1, 0, 0, 1, 0, -1.4210854715202004e-14)"/>
@@ -215,52 +441,148 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
                      </div>
                  </div>
 
-                 {/* GIFT BUBBLE */}
-                 {isGiftReady && !isTextVisible && (
-                        <div 
-                            onClick={handleClaim}
-                            className="absolute -top-8 left-1/2 -translate-x-1/2 z-20 cursor-pointer hover:scale-105 transition-transform"
+                 {/* SPEECH BUBBLE */}
+                 {/* Positioned relative to Fish Container (Upright) */}
+                 <AnimatePresence>
+                    {speech && !isGiftReady && (
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0, y: 10, x: "-50%" }} 
+                            animate={{ opacity: 1, scale: 1, y: 0, x: "-50%" }}
+                            exit={{ opacity: 0, scale: 0, y: 5, x: "-50%" }}
+                            transition={{ duration: 0.2 }}
+                            className="absolute -top-10 left-1/2 whitespace-nowrap z-50 origin-bottom"
                         >
-                            <div className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-md border border-blue-100/50">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <rect x="3" y="8" width="18" height="4" rx="1" />
-                                    <path d="M12 8v13" />
-                                    <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
-                                    <path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" />
-                                </svg>
+                            <div className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl shadow-md border border-stone-100 text-[10px] font-bold text-stone-600 relative">
+                                {speech}
+                                {/* Tiny triangle */}
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-[5px] border-transparent border-t-white/95"></div>
                             </div>
+                        </motion.div>
+                    )}
+                 </AnimatePresence>
+
+                 {/* GIFT BUBBLE (Trigger) - Only visible when fish is visible */}
+                 {isGiftReady && isFishVisible && !isTextVisible && (
+                        <div 
+                            // Moved down (-top-7 vs -top-10) and right (ml-4)
+                            className="absolute -top-7 left-1/2 -translate-x-1/2 ml-4 z-20"
+                            // No scaling/transform logic here, just centering relative to upright container
+                            style={{ backfaceVisibility: 'hidden' }}
+                        >
+                             <div className="animate-scale-in origin-bottom">
+                                <div 
+                                    onClick={handleClaim}
+                                    className="cursor-pointer hover:scale-110 transition-transform duration-200"
+                                >
+                                    <div className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-md border border-blue-100/50">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="3" y="8" width="18" height="4" rx="1" />
+                                            <path d="M12 8v13" />
+                                            <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
+                                            <path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" />
+                                        </svg>
+                                    </div>
+                                </div>
+                             </div>
                         </div>
                  )}
             </div>
-            
-            {/* POOP */}
-            {poopVisible && !isTextVisible && (
-                <div 
-                    onClick={handleClaim}
-                    className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 cursor-pointer hover:scale-110 transition-transform animate-bounce"
-                >
-                    <span className="text-lg filter drop-shadow-md">💩</span>
-                </div>
-            )}
 
-            {/* REWARD FEEDBACK (Center Pill - Scale In / Scale Out) */}
-            {rewardFeedback && (
+            {/* --- LAYER 2: FOREGROUND PLANT (In Front of Fish) --- */}
+            {/* Z-Index 35: In front of Fish (30), Behind Scenery (40) */}
+            <div className="absolute inset-x-0 bottom-0 h-full z-[35] pointer-events-none">
+                {/* Added translate3d(0,0,0) to force layer promotion and fix vibration on iOS */}
                 <div 
-                    className={`absolute inset-0 flex items-center justify-center pointer-events-none z-50 transition-all duration-300 ease-out ${
-                        rewardExiting 
-                        ? 'opacity-0 scale-90' 
-                        : 'opacity-100 scale-100'
-                    }`}
+                    className="absolute bottom-4 left-[10%] w-24 h-[60%] opacity-80 mix-blend-multiply origin-bottom"
+                    style={{ transform: 'translate3d(0,0,0)' }}
                 >
-                    <div className="bg-white px-5 py-2.5 rounded-full shadow-xl flex items-center gap-2 border border-stone-100 animate-scale-in">
-                        {rewardFeedback.isPoop ? (
-                            <span className="text-sm font-bold text-stone-600">Cleaned!</span>
-                        ) : (
+                     <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="plantGradientFg" x1="0.5" x2="0.5" y1="0" y2="1">
+                                <stop offset="0%" stopColor="#4ade80" /> {/* green-400 */}
+                                <stop offset="100%" stopColor="#14532d" /> {/* green-900 */}
+                            </linearGradient>
+                        </defs>
+                        
+                        {/* Leaf 1 (Main Tall - Thicker Base) */}
+                        <g 
+                            className="origin-bottom animate-sway-slow" 
+                            style={{ transformOrigin: '50% 100%', willChange: 'transform' }}
+                        >
+                           <path d="M 42 100 C 42 60 50 30 48 5 L 50 5 C 50 30 58 60 58 100 Z" fill="url(#plantGradientFg)" />
+                        </g>
+                     </svg>
+                </div>
+            </div>
+            
+            {/* --- SCENERY LAYER (Sand & Rocks) --- */}
+            {/* Z-Index 40: Frontmost Layer (Covers plant bases & fish if low) */}
+            <div className="absolute inset-x-0 bottom-0 h-20 z-40 pointer-events-none">
+                
+                {/* Background Rock (New Tall Rock) - Lighter color for depth, positioned behind */}
+                {/* Adjusted right position from 4% to 8% to move it slightly left */}
+                <div className="absolute bottom-1 right-[8%] w-16 h-14 bg-gradient-to-t from-[#a8a29e] to-[#d6d3d1] rounded-[30%_70%_70%_30%_/_30%_50%_50%_70%] rotate-[-8deg] z-0" />
+
+                {/* Left Rock */}
+                <div className="absolute bottom-2 left-[12%] w-12 h-8 bg-gradient-to-tr from-[#7d7873] to-[#a8a29e] rounded-[45%_55%_50%_50%_/_50%_50%_40%_40%] rotate-2 shadow-sm z-10" />
+                
+                {/* Right Small Rock (Foreground) */}
+                <div className="absolute bottom-1 right-[18%] w-9 h-7 bg-gradient-to-tl from-[#8a8580] to-[#b5b0ab] rounded-[50%_50%_40%_60%] -rotate-3 shadow-sm z-10" />
+                
+                {/* Center Pebble */}
+                <div className="absolute bottom-3 left-[45%] w-5 h-4 bg-gradient-to-t from-[#96918c] to-[#c2bdb8] rounded-full z-10" />
+
+                {/* Sand Layer */}
+                <svg className="absolute bottom-0 w-full h-full z-[20]" preserveAspectRatio="none" viewBox="0 0 100 100">
+                    <defs>
+                        <linearGradient id="sandGradient" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" stopColor="#f7eed9" /> {/* Very Light Sand */}
+                            <stop offset="100%" stopColor="#ebe0c5" /> {/* Slightly Darker */}
+                        </linearGradient>
+                    </defs>
+                    {/* Gentle Wave: Starts around y=75 (approx 15-20px high in h-20/80px container, which is ~10% of tank) */}
+                    <path d="M0 100 L0 75 Q 30 82 50 78 T 100 72 L 100 100 Z" fill="url(#sandGradient)" />
+                </svg>
+            </div>
+
+            {/* Hearts Layer */}
+            {hearts.map(h => (
+                <div 
+                    key={h.id} 
+                    className="absolute z-[60] pointer-events-none text-rose-500"
+                    style={{ 
+                        left: h.x, 
+                        top: h.y,
+                        '--tx': `${h.tx}px`,
+                        '--rot': `${h.rot}deg`,
+                        animation: 'heart-float 0.8s ease-out forwards'
+                    } as React.CSSProperties}
+                >
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 drop-shadow-sm">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                </div>
+            ))}
+            
+            {/* REWARD FEEDBACK (Dynamic Position) */}
+            {rewardFeedback && clickCoords && (
+                <div 
+                    className="absolute z-50 pointer-events-none"
+                    style={{ left: clickCoords.x, top: clickCoords.y - 20 }}
+                >
+                    <div 
+                        className={`transition-all duration-300 ease-out ${
+                            rewardExiting 
+                            ? 'opacity-0 scale-90' 
+                            : 'opacity-100 scale-100'
+                        }`}
+                    >
+                        <div className="bg-white px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5 border border-stone-100 animate-scale-in origin-center">
                             <>
-                                <span className="text-xl font-bold text-stone-800">+{rewardFeedback.amount}</span>
-                                <Icons.Diamond className="w-5 h-5 text-blue-500 fill-current" />
+                                <span className="text-xs font-bold text-stone-800">+{rewardFeedback.amount}</span>
+                                <Icons.Diamond className="w-2.5 h-2.5 text-blue-500 fill-current" />
                             </>
-                        )}
+                        </div>
                     </div>
                 </div>
             )}

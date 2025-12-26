@@ -319,8 +319,80 @@ class SoundController {
 
     playPop() {
         if (this.soundEnabled) {
-            this.playTone(this.activeProfile.popFreq, this.activeProfile.duration, 0.4);
+            // New Fun Pop: Quick upward sweep
+            const ctx = this.getCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.type = 'sine';
+            // Start low, go high quickly
+            osc.frequency.setValueAtTime(400, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.1);
+            
+            gain.gain.setValueAtTime(0, ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.start();
+            osc.stop(ctx.currentTime + 0.15);
         }
+        if (this.vibrationEnabled) {
+            Haptics.impact({ style: ImpactStyle.Light });
+        }
+    }
+
+    playBubblePop() {
+        if (this.soundEnabled) {
+            const ctx = this.getCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            // "Bloop" - start lower, rise fast, short decay
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(300, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.1);
+            
+            gain.gain.setValueAtTime(0, ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.01); // Fast attack
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1); // Short decay
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.start();
+            osc.stop(ctx.currentTime + 0.15);
+        }
+        if (this.vibrationEnabled) {
+            Haptics.impact({ style: ImpactStyle.Light });
+        }
+    }
+
+    playPepinoTap() {
+        if (this.soundEnabled) {
+            const ctx = this.getCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            // "Tiny Blip" - Cute and tactile
+            // A5 (880Hz) to A6 (1760Hz) fast chirp
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime); 
+            osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.05); 
+            
+            gain.gain.setValueAtTime(0, ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.01); 
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1); 
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.start();
+            osc.stop(ctx.currentTime + 0.15);
+        }
+        // Light impact for tactility
         if (this.vibrationEnabled) {
             Haptics.impact({ style: ImpactStyle.Light });
         }

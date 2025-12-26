@@ -431,9 +431,9 @@ export const Storage = {
       const data = getStoredData();
       if (!data.pepino) data.pepino = { unlocked: true, lastGiftTime: Date.now(), nextGiftDelay: 0 };
       data.pepino.unlocked = true;
-      // First gift available in 10 seconds for instant delight
+      // First gift available instantly for instant delight
       data.pepino.lastGiftTime = Date.now();
-      data.pepino.nextGiftDelay = 10000;
+      data.pepino.nextGiftDelay = 0;
       saveData(data);
   },
 

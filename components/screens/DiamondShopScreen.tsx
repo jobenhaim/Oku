@@ -11,6 +11,7 @@ interface DiamondShopScreenProps {
     onBack: () => void;
     onWatchAd: () => void;
     onBuyOffer: (offer: DiamondOffer) => void;
+    onEarnPoints: (amount: number) => void;
     starterPackPurchased: boolean;
 }
 
@@ -32,11 +33,10 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     onBack,
     onWatchAd,
     onBuyOffer,
+    onEarnPoints,
     starterPackPurchased
 }) => {
     const pepinoState = Storage.getPepinoState();
-    
-    // No green reward message state needed here
     
     const handleBuyOfferWrapper = (offer: DiamondOffer) => {
         onBuyOffer(offer);
@@ -45,19 +45,14 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     const shouldShowIntro = () => {
         if (!pepinoState.unlocked) return false;
         const now = Date.now();
-        // If unlocked within the last 15 seconds, show intro
-        return (now - pepinoState.lastGiftTime) < 15000 && pepinoState.nextGiftDelay === 10000;
+        // If unlocked within the last 15 seconds AND delay is 0 (initial state), show intro
+        return (now - pepinoState.lastGiftTime) < 15000 && pepinoState.nextGiftDelay === 0;
     };
 
-    const handleRewardClaim = (amount: number, isPoop: boolean) => {
+    const handleRewardClaim = (amount: number) => {
         if (amount > 0) {
-            Storage.addPoints(amount);
-        } else if (isPoop) {
-            if (amount === 1) {
-                Storage.addPoints(1);
-            }
+            onEarnPoints(amount);
         }
-        // Feedback is handled internally by FishTank
     };
 
     return (
@@ -139,9 +134,9 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                             </div>
                                         </div>
 
-                                        {/* Price Badge - Bottom Right */}
-                                        <div className="absolute bottom-6 right-6 px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-stone-900 shadow-sm min-w-[70px] text-center">
-                                            Support
+                                        {/* Price Badge - Now Flex Item */}
+                                        <div className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-stone-900 shadow-sm min-w-[80px] min-h-[28px] flex items-center justify-center text-center shrink-0 ml-4 mb-0.5">
+                                            {offer.priceLabel}
                                         </div>
                                     </div>
                                 </div>

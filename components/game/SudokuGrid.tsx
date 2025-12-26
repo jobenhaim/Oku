@@ -66,11 +66,14 @@ export const SudokuGrid: React.FC<SudokuGridProps> = ({
         if (isThisCellRevealing) {
             bgClass = ''; 
         } else if (isMarkedWrong) {
-             bgClass = 'bg-red-100 animate-pulse '; 
+             // Scanner Detection: Bright Red Flash
+             bgClass = 'bg-red-500 animate-pulse shadow-inner '; 
         } else if (isSelected && (isError || isConflict)) {
-             bgClass = 'bg-red-100 '; // Selected Error
+             // Selected Error: Noticeable Red
+             bgClass = 'bg-red-200 dark:bg-red-900 '; 
         } else if (isError || isConflict) {
-             bgClass = 'bg-red-50 ';
+             // Error: Increased visibility
+             bgClass = 'bg-red-100 dark:bg-red-900/50 ';
         } else if (isSelected) {
              bgClass = 'bg-blue-200 dark:bg-blue-500 '; // Selected: Blue 200 (Lighter)
         } else if (settings.highlight && isSameValue) {
@@ -95,8 +98,12 @@ export const SudokuGrid: React.FC<SudokuGridProps> = ({
         } else if (isRevealed) {
             classes += "font-semibold text-stone-800 ";
         } else {
-            if (isError || isConflict || isMarkedWrong) {
-                classes += "font-medium text-red-500 ";
+            if (isMarkedWrong) {
+                // Scanner Detection Text: White for contrast against bright red
+                classes += "font-bold text-white ";
+            } else if (isError || isConflict) {
+                // Error Text: Darker red for visibility
+                classes += "font-medium text-red-600 dark:text-red-300 ";
             } else {
                 classes += "font-medium ";
             }
