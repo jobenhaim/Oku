@@ -300,11 +300,13 @@ export function App() {
         setShowNotEnoughPoints(false);
         setPurchaseCandidate(null);
         setIsWatchingAd(true);
-        setTimeout(() => {
-            handleEarnPoints(25);
-            setIsWatchingAd(false);
-            sounds.playWin();
-        }, 5000);
+        // Timeout removed. AdOverlay controls completion.
+  };
+
+  const handleAdReward = () => {
+      handleEarnPoints(25);
+      setIsWatchingAd(false);
+      sounds.playWin();
   };
 
   const handleNavigateToShop = () => {
@@ -590,7 +592,7 @@ export function App() {
                     onGoPlay={handleGoPlay} 
                 />
             )}
-            {isWatchingAd && <AdOverlay />}
+            {isWatchingAd && <AdOverlay onComplete={handleAdReward} />}
           </div>
       </>
   );
