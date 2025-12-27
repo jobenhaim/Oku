@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Icons } from '../ui/Icons';
 import { sounds } from '../../utils/sound';
@@ -147,7 +146,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                           {/* Text Content */}
                                           <div className="flex-1 min-w-0 py-0.5">
                                               <h3 className="text-lg font-bold text-t-primary leading-tight mb-1">{skill.name}</h3>
-                                              <p className="text-xs font-medium text-t-secondary leading-snug line-clamp-2">{skill.description}</p>
+                                              <p className="text-[11px] font-medium text-t-secondary leading-snug">{skill.description}</p>
                                           </div>
 
                                           {/* Action Area */}
