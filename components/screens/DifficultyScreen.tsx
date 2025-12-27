@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Difficulty } from '../../types';
 import { Storage } from '../../utils/storage';
@@ -393,7 +392,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                               {!!timeLeft ? (
                                    <div className="flex items-center gap-2 h-6">
                                       <Icons.Clock className="w-4 h-4" />
-                                      <span className="font-semibold text-xs uppercase tracking-wider">{timeLeft}</span>
+                                      <span className="font-semibold text-xs tracking-wide">{timeLeft}</span>
                                    </div>
                               ) : (
                                    <div className="flex items-center gap-1.5 h-6">
