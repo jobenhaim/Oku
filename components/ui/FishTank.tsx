@@ -6,32 +6,143 @@ import { sounds } from '../../utils/sound';
 import { Icons } from './Icons';
 import { PepinoState } from '../../types';
 
-// 100 Unique Pepino Messages (Updated)
+// 300+ Unique Pepino Messages
 const PEPINO_MESSAGES = [
     "Splash.", "Hello.", "Nice phone.", "Screen is clean.", "Fish approves.",
-    "Hi there!", "Clean water, clean mind.", "Just keep swimming.", "Do you have a snack?",
-    "I'm watching you.", "I believe in you.", "You are smart.", "Take a break?",
-    "Stay hydrated.", "I live here now.", "Cozy tank.", "Did you blink?",
-    "Sudoku master?", "I'm just a fish.", "This is a simulation.", "Digital water is dry.",
+    "Hi there!", "Clean water.", "Just swimming.", "Snack?", "Watching you.",
+    "You are smart.", "Take a break?", "Stay hydrated.", "I live here.", "Cozy tank.",
+    "Did you blink?", "Sudoku master?", "I am a fish.", "Simulation.", "Dry water.",
     "Pixels taste funny.", "Goldfish? Nope.", "Welcome back!", "Nice to see you.",
-    "Stay a while.", "It's peaceful here.", "Oops.", "Are you winning?",
-    "Diamonds are shiny.", "I like blue.", "I'm your fan!", "Bubbles...",
-    "Good morning?", "Good evening?", "Rate 5 stars?", "I'm shy.",
-    "Catch me if you can.", "This is from Mathilda.", "Tiny brain.", "E = mc²",
-    "Oh... the universe.", "Brain makes bubbles.", "Just floating...", "I see you.",
-    "Nice case.", "No case? Brave.", "Battery looks fine.", "Fancy device.",
-    "Fish alert!", "Zero thumbs.", "Full-time fish.", "Bubble expert.",
-    "Wet forever.", "Fish.", "I can't find your gift.", ":)",
-    "Uninstall the ocean.", "I blame the crab.", "Bloop for safety.", "Overthinking...",
-    "Memory is optional.", "I'm proud of you.", "Thank you for waiting.", "Boo!",
-    "The rock moved, I swear!", "Nemo won't believe this.", "Hehe.", "Wifi? More like Wi-Fish.",
-    "Sorry, I panicked.", "Aquarium CEO.", "Fish. But dramatic.", "I demand snacks.",
-    "Bloop equals wisdom.", "I ate a number 7.", "How are you today?", "Bubble trouble.",
-    "My fin itches.", "You are doing swimmingly.", "Water you thinking?", "I'm 100% organic pixels.",
-    "Don't tap too hard.", "I'm judging your logic.", "Hold my poodle!",
-    "Evething is wet.", "I'm fluent in Bubbles.", "Glub.", "Thinking cap: On.",
-    "I'm the hint button.", "Wait, I'm just a fish.", "Nice moves, human.",
-    "Can I have a castle?", "This water is precise.", "See you at the finish."
+    "Stay a while.", "Peaceful here.", "Oops.", "Winning?", "Shiny diamonds.",
+    "I like blue.", "I'm your fan!", "Bubbles...", "Good morning?", "Good evening?",
+    "Rate 5 stars?", "I'm shy.", "Catch me.", "Tiny brain.", "E = mc²",
+    "The universe.", "Brain bubbles.", "Just floating...", "I see you.", "Nice case.",
+    "No case? Brave.", "Battery fine.", "Fancy device.", "Fish alert!", "Zero thumbs.",
+    "Full-time fish.", "Bubble expert.", "Wet forever.", "Fish.", "No gift yet.",
+    ":)", "Uninstall ocean.", "Blame the crab.", "Bloop.", "Overthinking...",
+    "Memory optional.", "Proud of you.", "Thanks for waiting.", "Boo!", "Rock moved.",
+    "Hehe.", "Wi-Fish.", "Panicked.", "Aquarium CEO.", "Dramatic fish.", 
+    "Snacks please.", "Bloop wisdom.", "Ate a 7.", "How are you?", "Bubble trouble.", 
+    "Fin itches.", "Swimmingly.", "Water thinking?", "Organic pixels.", "Tap gently.", 
+    "We are champions.", "Hold my poodle!", "Wet.", "Fluent in Bubbles.", "Glub.", 
+    "Thinking cap.", "Hint button?", "Just a fish.", "Nice moves.", "Castle please?", 
+    "Precise water.", "Finish line.", "Meow.", "Woof.", "Moo.", 
+    "Bilingual.", "Hola.", "Bonjour.", "Tasty pixels.", "Binary bubbles.", 
+    "010101.", "Glub glub.", "Splash zone.", "No fishing.", "I am real.", 
+    "Philosophy.", "Deep thoughts.", "Shallow water.", "Nice hair.", "Blink twice.", 
+    "Dizzy.", "Round and round.", "Left is right.", "Up is down.", "Gravity check.", 
+    "Float on.", "Zen mode.", "Ommmmm.", "Peace.", "Quiet please.", 
+    "Loud noises.", "Sneeze.", "Bless you.", "Good vibes.", "Bad math.", 
+    "1 + 1 = 3.", "Fish math.", "Bubble math.", "Counting scales.", "One two fish.", 
+    "Red fish.", "Blue fish.", "Colorful.", "Glowing?", "Bioluminescence.", 
+    "Shiny object.", "Look there.", "Made you look.", "Ninja fish.", "Stealth mode.", 
+    "Camouflage.", "Invisible.", "See me?", "Peekaboo.", "Hide seek.", 
+    "Found me.", "Tag you're it.", "Race you.", "I win.", "Speedy.", 
+    "Turbo fin.", "Nitro bubbles.", "Vroom vroom.", "Beep beep.", "Traffic jam.", 
+    "School of fish.", "Skipped school.", "Homework ate me.", "Too much logic.", "Brain hurts.", 
+    "Big heart.", "Love you.", "Platonic only.", "Just friends.", "Fish hug.", 
+    "Wet hug.", "Slippery.", "Soap?", "Bubble bath.", "Rubber ducky.", 
+    "Quack.", "I'm a duck.", "Identity crisis.", "Who am I?", "What is life?", 
+    "42.", "Don't panic.", "Towel?", "Dry land.", "Miss legs.", 
+    "Evolution.", "Walking soon.", "Maybe tomorrow.", "Procrastinating.", "Later.", 
+    "Nap time.", "Zzzzz.", "Sleep swimming.", "Dreaming worms.", "Yum worms.", 
+    "Flakes again?", "Pizza please.", "Tacos?", "Sushi bad.", "Friends not food.", 
+    "Veggie fish.", "Algae smoothie.", "Green diet.", "Healthy fish.", "Gym time.", 
+    "Fin ups.", "Tail press.", "Strong fish.", "Muscle beach.", "Flexing.", 
+    "Do you lift?", "Heavy water.", "Light water.", "Sparkling.", "Fizz.", 
+    "Pop.", "Snap.", "Crackle.", "Cereal?", "Breakfast.", 
+    "Lunch.", "Dinner.", "Snack time.", "Hungry.", "Feed me.", 
+    "Tap to feed.", "Just kidding.", "Virtual food.", "Bytes.", "Megabytes.", 
+    "Gigabytes.", "Terabytes.", "Data stream.", "Streaming.", "Influencer.", 
+    "Subscribe.", "Follow me.", "Trending.", "Viral bubble.", "Hashtag fish.", 
+    "Selfie?", "No camera.", "Say cheese.", "Smile.", "Frown.", 
+    "Grumpy.", "Happy.", "Silly.", "Crazy.", "Loco.", 
+    "Go fish.", "Card game.", "Ace.", "Royal flush.", "Poker face.", 
+    "Bluffing.", "All in.", "Fold.", "Checkmate.", "Wrong game.", 
+    "Sudoku rules.", "Grid life.", "Boxed in.", "Row 1.", "Column 9.", 
+    "Center box.", "Corner piece.", "Missing number.", "Is it 5?", "Try 7.", 
+    "Maybe 3.", "Definite 9.", "Guessing.", "Logic wins.", "Smarty pants.", 
+    "Genius.", "Brainiac.", "Nerd.", "Geek.", "Cool kid.", 
+    "Hipster.", "Vintage.", "Retro.", "Old school.", "New wave.", 
+    "Current.", "Shocking.", "Electric eel.", "Not me.", "Cousin eel.", 
+    "Uncle crab.", "Aunt whale.", "Big family.", "Reunion.", "Ocean party.", 
+    "DJ Fish.", "Drop bass.", "Bass fish.", "Music lover.", "Humming.", 
+    "La la la.", "Singing.", "Opera.", "High note.", "Glass breaks.", 
+    "My bad.", "Fix it.", "Glitch.", "Bug?", "Feature.", 
+    "It works.", "Ship it.", "Dev mode.", "Console log.", "Print hello.", 
+    "Hello world.", "System ready.", "Access granted.", "Hacking...", "Mainframe.", 
+    "Cyber fish.", "Neon lights.", "Glow up.", "Shine bright.", "Star fish.", 
+    "Moon fish.", "Sun fish.", "Planet earth.", "Alien.", "Take me home.", 
+    "UFO.", "Unidentified.", "Flying saucer.", "Swimming saucer.", "Tea cup.", 
+    "Tea time.", "Earl Grey.", "Hot.", "Cold.", "Lukewarm.", 
+    "Perfect temp.", "Cozy.", "Blanket?", "Pillow?", "Bed time.", 
+    "Wake up.", "Alarm clock.", "Snooze.", "Five mins.", "Morning.", 
+    "Night.", "Noon.", "Time flies.", "Time swims.", "Clock ticking.", 
+    "Tick tock.", "Hurry up.", "Slow down.", "Speed limit.", "Police fish.", 
+    "Siren.", "Wee woo.", "Pull over.", "License?", "Registration?", 
+    "Officer.", "Detained?", "Free fish.", "Liberty.", "Justice.", 
+    "Law.", "Order.", "Dismissed.", "Objection.", "Sustained.", 
+    "Overruled.", "Briefcase.", "Suit tie.", "Formal.", "Tuxedo.", 
+    "Penguin?", "Wrong bird.", "I can fly.", "Flying fish.", "Sky high.", 
+    "Clouds.", "Rain.", "More water.", "Flood.", "Boat ride.", 
+    "Seasick.", "Land ho.", "Island.", "Treasure.", "X marks spot.", 
+    "Gold coins.", "Pirate.", "Arrgh.", "Matey.", "Captain.", 
+    "Hook.", "Peg leg.", "Eye patch.", "Silence.", "Golden.", 
+    "Silver.", "Bronze.", "Medal.", "Champion.", "Winner.", 
+    "Loser.", "Try again.", "Game over.", "Continue?", "Insert coin.", 
+    "Press start.", "Player 1.", "Ready.", "Fight.", "Round 1.", 
+    "Knockout.", "Victory.", "Defeat.", "Draw.", "Tie game.", 
+    "Sudden death.", "Extra time.", "Penalty.", "Goal.", "Score.", 
+    "Net.", "Ball.", "Sports.", "Team.", "Coach.", 
+    "Whistle.", "Referee.", "Foul.", "Red card.", "Ejected.", 
+    "Bench.", "Water boy.", "Hydrate.", "H2O.", "Molecule.", 
+    "Atom.", "Science.", "Chemistry.", "Biology.", "Physics.", 
+    "Math.", "History.", "Geography.", "Map.", "Compass.", 
+    "North.", "South.", "East.", "West.", "Lost.", 
+    "Found.", "Path.", "Road.", "Street.", "Avenue.", 
+    "Lane.", "Drive.", "Way.", "Route.", "GPS.", 
+    "Recalculating.", "Turn left.", "Turn right.", "Straight on.", "Destination.", 
+    "Arrived.", "Home.", "Sweet home.", "Tank sweet tank.", "I am a cat.", 
+    "Baah.", "Gravity is a suggestion.", "The glass is solid.", "Is this real?", "Philosophish.", 
+    "To be or not.", "I think therefore swim.", "Where is the ocean?", "Tiny pool.", "Big dreams.", 
+    "Giant squid?", "No sharks here.", "Safe space.", "Cozy corner.", "Bubbles tickle.", 
+    "My fins are tired.", "Leg day.", "I have no legs.", "Sad fish.", "Happy fish.", 
+    "Angry fish.", "Grumpy gills.", "Smiley face.", "Fish face.", "Duck face.", 
+    "Selfie time.", "No filter.", "Natural glow.", "Bioluminescent.", "I glow in dark.", 
+    "Turn off lights.", "Too bright.", "Sunnies on.", "Cool dude.", "Ice cold.", 
+    "Frozen fish.", "Thawing out.", "Warm water.", "Jacuzzi.", "Spa day.", 
+    "Cucumber slices.", "Relaxing.", "Stress free.", "Zen garden.", "Raking sand.", 
+    "Sand castle.", "King of tank.", "Queen of tank.", "Jester.", "Funny joke.", 
+    "Knock knock.", "Who is there?", "Water you doing?", "Sea what I did?", "Shell we dance?", 
+    "Whale hello there.", "Krilling it.", "Cod luck.", "Tuna in later.", "Salmon says.", 
+    "Carppe diem.", "Holy mackerel.", "Oh my cod.", "For shore.", "Beach vibes.", 
+    "Surfs up.", "Cowabunga.", "Radical.", "Tubular.", "Totally.", 
+    "Awesome.", "Sweet.", "Dude.", "Bro.", "Mate.", 
+    "Pal.", "Buddy.", "Chum.", "Friend.", "Bestie.", 
+    "BFF.", "Pen pal.", "Write me.", "No hands.", "No pen.", 
+    "Ink?", "Squid ink.", "Messy.", "Clean up.", "Janitor fish.", 
+    "Algae eater.", "Yum algae.", "Green smoothie.", "Diet starts Monday.", "Cheat day.", 
+    "Pizza?", "Burger?", "Fries?", "Chips?", "Fish and chips?", 
+    "Wait no.", "Cannibalism.", "Scary.", "Run away.", "Swim away.", 
+    "Fast swim.", "Slow swim.", "Floating.", "Drifting.", "Current events.", 
+    "News anchor.", "Weather report.", "It is wet.", "100% chance of water.", "Rain dance.", 
+    "Umbrella?", "Underwater rain.", "Impossible.", "Science.", "Magic.", 
+    "Wizard fish.", "You shall not pass.", "Abracadabra.", "Poof.", "Disappear.", 
+    "Invisible.", "Can you see me?", "Ghost fish.", "Spooky.", "Haunted tank.", 
+    "Skeleton.", "Bones.", "Fossils.", "Dinosaur.", "Rex.", 
+    "Roar.", "Tiny roar.", "Squeak.", "Mouse?", "Cheese?", 
+    "Trap?", "No thanks.", "Vegetarian.", "Vegan.", "Gluten free.", 
+    "Organic.", "Free range.", "Cage free.", "Wild caught.", "Farm raised.", 
+    "Local.", "Sustainable.", "Eco friendly.", "Recycle.", "Plastic bad.", 
+    "Save the ocean.", "Hero.", "Super fish.", "Cape?", "Mask?", 
+    "Secret identity.", "Clark Kent.", "Bruce Wayne.", "Peter Parker.", "Just Pepino.", 
+    "The one only.", "Original.", "Limited edition.", "Rare drop.", "Legendary.", 
+    "Epic.", "Common.", "Uncommon.", "Loot box.", "Open me.", 
+    "Prize inside.", "Jackpot.", "Winner.", "Chicken dinner.", "Winner winner.", 
+    "Level up.", "High score.", "Leaderboard.", "Number one.", "Gold medal.", 
+    "Participation.", "Ribbon.", "Trophy.", "Stand tall.", "Stand proud.", 
+    "Good job.", "Well done.", "Nice work.", "Keep going.", "Don't stop.", 
+    "Believing.", "Journey.", "Destination."
 ];
 
 interface FishTankProps {
@@ -160,36 +271,29 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
             return;
         }
 
-        let hideTimeout: any;
+        let timeoutId: any;
 
-        const speak = () => {
-            // Double check gift status before speaking
-            if (isGiftReady) {
-                setSpeech(null);
-                return;
-            }
+        const runCycle = () => {
+            // Double check gift status (redundant due to dependency but safe)
+            if (isGiftReady) return;
 
             // 1. Pick random message
             const msg = PEPINO_MESSAGES[Math.floor(Math.random() * PEPINO_MESSAGES.length)];
             setSpeech(msg);
             
-            // 2. Hide after 7 seconds
-            if (hideTimeout) clearTimeout(hideTimeout);
-            hideTimeout = setTimeout(() => {
+            // 2. Hide after 10 seconds
+            timeoutId = setTimeout(() => {
                 setSpeech(null);
-            }, 7000);
+                // 3. Wait 20 seconds cooldown before next message
+                timeoutId = setTimeout(runCycle, 20000);
+            }, 10000);
         };
 
         // Initial speech after 1 second of being active to give space for Gift appearance
-        const initialDelay = setTimeout(speak, 1000);
-
-        // Loop every 60 seconds
-        const loopInterval = setInterval(speak, 60000);
+        timeoutId = setTimeout(runCycle, 1000);
 
         return () => {
-            clearTimeout(initialDelay);
-            clearInterval(loopInterval);
-            if (hideTimeout) clearTimeout(hideTimeout);
+            clearTimeout(timeoutId);
         };
     }, [isFishVisible, introState, isGiftReady]);
 
