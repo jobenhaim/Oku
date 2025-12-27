@@ -1,4 +1,3 @@
-
 import { AppSettings, LevelProgress, StoredData, PepinoState } from '../types';
 import { Preferences } from '@capacitor/preferences';
 
@@ -141,7 +140,7 @@ function saveData(data: StoredData) {
     Preferences.set({
         key: STORAGE_KEY,
         value: stringified
-    }).catch(err => console.error("Native save failed", err));
+    }).catch((err: any) => console.error("Native save failed", err));
   } catch (e) {
     console.error("Failed to save data", e);
   }

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Settings, 
@@ -27,7 +26,7 @@ import {
   Moon,
   Laptop,
   Lock,
-  LockOpen,
+  Unlock, // Changed from LockOpen
   Film,
   BarChart3,
   Hand,
@@ -81,7 +80,7 @@ export const Icons = {
   Moon: (props: any) => <Moon {...props} />,
   System: (props: any) => <Laptop {...props} />,
   Lock: (props: any) => <Lock {...props} />,
-  LockOpen: (props: any) => <LockOpen {...props} />,
+  LockOpen: (props: any) => <Unlock {...props} />, // Map LockOpen to Unlock component
   Film: (props: any) => <Film {...props} />,
   BarChart: (props: any) => <BarChart3 {...props} />,
   Hand: (props: any) => <Hand {...props} />,
