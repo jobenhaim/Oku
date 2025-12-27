@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Difficulty, AppSettings, Board, MoveLogEntry } from '../types';
 import { useSudokuBoard } from '../hooks/useSudokuBoard';
@@ -379,7 +380,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   return (
     <>
-      <div className="w-full flex justify-center px-6 pt-[70px] pb-4 relative z-40 shrink-0">
+      <div className="w-full flex justify-center px-6 pt-4 pb-4 relative z-40 shrink-0">
           <div className="w-full max-w-md flex items-center justify-between relative">
               {/* Left Column: Back Button */}
               <button onClick={onBack} className="p-2 rounded-full hover:bg-stone-200/50 transition -ml-2 text-t-icon relative z-30">

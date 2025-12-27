@@ -259,7 +259,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
             onClick={() => activeInfo && handleClose()}
         >
              {/* Content Container - removed overflow-y-auto, added overflow-hidden for non-scrollable */}
-             <div className="flex-1 w-full overflow-hidden px-6 pb-6 pt-[70px] flex flex-col items-center min-h-0">
+             <div className="flex-1 w-full overflow-hidden px-6 pb-6 pt-4 flex flex-col items-center min-h-0">
                   
                   {/* Hero Section - Static */}
                   <div className="flex flex-col items-center mb-6 shrink-0">

@@ -63,7 +63,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
         <div className="flex-1 w-full flex flex-col items-center overflow-hidden relative">
             <DiamondBackground />
 
-            <div className="w-full max-w-md flex items-center justify-between px-6 pt-[70px] pb-4 relative shrink-0 z-20 mx-auto">
+            <div className="w-full max-w-md flex items-center justify-between px-6 pt-4 pb-4 relative shrink-0 z-20 mx-auto">
                 <button onClick={onBack} className="p-2 rounded-full hover:bg-stone-200 transition -ml-2 text-t-icon relative z-30">
                     <Icons.Back className="w-6 h-6 text-t-icon" />
                 </button>
