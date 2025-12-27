@@ -114,35 +114,35 @@ const PEPINO_MESSAGES = [
     "Cucumber slices.", "Relaxing.", "Stress free.", "Zen garden.", "Raking sand.", 
     "Sand castle.", "King of tank.", "Queen of tank.", "Jester.", "Funny joke.", 
     "Knock knock.", "Who is there?", "Water you doing?", "Sea what I did?", "Shell we dance?", 
-    "Whale hello there.", "Krilling it.", "Cod luck.", "Tuna in later.", "Salmon says.", 
+    "Whale hello there.", "Krilling it.", "Good luck today!", "Tuna in later.", "Salmon says.", 
     "Carppe diem.", "Holy mackerel.", "Oh my cod.", "For shore.", "Beach vibes.", 
     "Surfs up.", "Cowabunga.", "Radical.", "Tubular.", "Totally.", 
     "Awesome.", "Sweet.", "Dude.", "Bro.", "Mate.", 
     "Pal.", "Buddy.", "Chum.", "Friend.", "Bestie.", 
-    "BFF.", "Pen pal.", "Write me.", "No hands.", "No pen.", 
-    "Ink?", "Squid ink.", "Messy.", "Clean up.", "Janitor fish.", 
-    "Algae eater.", "Yum algae.", "Green smoothie.", "Diet starts Monday.", "Cheat day.", 
+    "BFF.", "Pen pal.", "Tap me.", "No hands.", ":)", 
+    "Wow!", "Squid ink.", "Messy.", "Clean up.", "Janitor fish.", 
+    "Algae eater.", "Lil Fish.", "Green smoothie.", "Diet starts Monday.", "Cheat day.", 
     "Pizza?", "Burger?", "Fries?", "Chips?", "Fish and chips?", 
-    "Wait no.", "Cannibalism.", "Scary.", "Run away.", "Swim away.", 
+    ":D.", "Oh?", "Oh!", "Dreams come true.", "Swim away.", 
     "Fast swim.", "Slow swim.", "Floating.", "Drifting.", "Current events.", 
     "News anchor.", "Weather report.", "It is wet.", "100% chance of water.", "Rain dance.", 
     "Umbrella?", "Underwater rain.", "Impossible.", "Science.", "Magic.", 
-    "Wizard fish.", "You shall not pass.", "Abracadabra.", "Poof.", "Disappear.", 
-    "Invisible.", "Can you see me?", "Ghost fish.", "Spooky.", "Haunted tank.", 
-    "Skeleton.", "Bones.", "Fossils.", "Dinosaur.", "Rex.", 
+    "Wizard fish.", "You shall not pass.", "Abracadabra.", "Poof.", "Waka waka, eh eh.", 
+    "Invisible.", "Can you see me?", "Ghost fish.", "Spooky.", "La Macarena.", 
+    "Taco Tuesday.", "Pepino.", "Pepino means cucumber.", "Life is good.", "In this economy?!", 
     "Roar.", "Tiny roar.", "Squeak.", "Mouse?", "Cheese?", 
-    "Trap?", "No thanks.", "Vegetarian.", "Vegan.", "Gluten free.", 
-    "Organic.", "Free range.", "Cage free.", "Wild caught.", "Farm raised.", 
-    "Local.", "Sustainable.", "Eco friendly.", "Recycle.", "Plastic bad.", 
-    "Save the ocean.", "Hero.", "Super fish.", "Cape?", "Mask?", 
-    "Secret identity.", "Clark Kent.", "Bruce Wayne.", "Peter Parker.", "Just Pepino.", 
-    "The one only.", "Original.", "Limited edition.", "Rare drop.", "Legendary.", 
-    "Epic.", "Common.", "Uncommon.", "Loot box.", "Open me.", 
-    "Prize inside.", "Jackpot.", "Winner.", "Chicken dinner.", "Winner winner.", 
-    "Level up.", "High score.", "Leaderboard.", "Number one.", "Gold medal.", 
-    "Participation.", "Ribbon.", "Trophy.", "Stand tall.", "Stand proud.", 
+    "Dobby... :(", "Expecto Patronum!", "Communication is key.", "Write a poem.", "I need a towel.", 
+    "Glory!.", "Sounds fishy.", "Any-fin is possible.", "It's o-fish-ial!", "Nice plants!", 
+    "Local.", "Drop the bass.", "Eco friendly.", "Recycle.", "Plastic bad.", 
+    "Save the ocean.", "Hero.", "Super fish.", "Catch you later!", "Batman!", 
+    "Potato in pajamas.", "Angry tiny muffin.", "Error: Brain full.", "Floor is lava!", "Just Pepino.", 
+    "Oh yeah!", "Tiny Pepino.", "CEO of Bad Ideas.", "Absolute chaos.", "Legendary.", 
+    "Epic.", "Danger noodle.", "Wet bread.", "Wet rocks", "Wet plants.", 
+    "Burrito nap.", "Jackpot.", "Winner.", "Chicken dinner.", "Winner winner.", 
+    "Level up.", "Space cat.", "Flamingo stance.", "Number one.", "Gold medal.", 
+    "Elbow sneeze.", "...!", "Take a picture.", "Stand tall.", "Stand proud.", 
     "Good job.", "Well done.", "Nice work.", "Keep going.", "Don't stop.", 
-    "Believing.", "Journey.", "Destination."
+    "Add me on Instagram.", "I saw a snail.", "Expeliarmus!"
 ];
 
 interface FishTankProps {
@@ -284,8 +284,8 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
             // 2. Hide after 10 seconds
             timeoutId = setTimeout(() => {
                 setSpeech(null);
-                // 3. Wait 20 seconds cooldown before next message
-                timeoutId = setTimeout(runCycle, 20000);
+                // 3. Wait 5 seconds cooldown before next message
+                timeoutId = setTimeout(runCycle, 5000);
             }, 10000);
         };
 
