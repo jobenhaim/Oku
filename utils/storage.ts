@@ -2,7 +2,8 @@
 import { AppSettings, LevelProgress, StoredData, PepinoState } from '../types';
 import { Preferences } from '@capacitor/preferences';
 
-const STORAGE_KEY = 'minimal_sudoku_data_v1';
+const STORAGE_KEY = 'oku_data_v1';
+const LEGACY_STORAGE_KEY = 'minimal_sudoku_data_v1';
 
 const DEFAULT_SETTINGS: AppSettings = {
   sound: true,
@@ -19,7 +20,18 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 function getStoredData(): StoredData {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let raw = localStorage.getItem(STORAGE_KEY);
+    
+    // Migration Logic: Check for legacy key if new key doesn't exist
+    if (!raw) {
+        const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
+        if (legacyRaw) {
+            raw = legacyRaw;
+            // Persist migration immediately
+            localStorage.setItem(STORAGE_KEY, legacyRaw);
+        }
+    }
+
     if (!raw) {
       const initialData: StoredData = { 
           settings: DEFAULT_SETTINGS, 
@@ -140,7 +152,18 @@ export const Storage = {
   
   initializeNative: async (): Promise<StoredData | null> => {
       try {
-          const { value } = await Preferences.get({ key: STORAGE_KEY });
+          let { value } = await Preferences.get({ key: STORAGE_KEY });
+          
+          // Native Migration Logic
+          if (!value) {
+              const legacy = await Preferences.get({ key: LEGACY_STORAGE_KEY });
+              if (legacy.value) {
+                  value = legacy.value;
+                  // Persist to new key
+                  await Preferences.set({ key: STORAGE_KEY, value: legacy.value });
+              }
+          }
+
           if (value) {
               localStorage.setItem(STORAGE_KEY, value);
               return JSON.parse(value);
@@ -399,8 +422,12 @@ export const Storage = {
 
   resetAllData: async () => {
     localStorage.removeItem(STORAGE_KEY);
+    // Also remove legacy just in case
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    
     try {
         await Preferences.remove({ key: STORAGE_KEY });
+        await Preferences.remove({ key: LEGACY_STORAGE_KEY });
     } catch (e) {
         console.warn("Error removing native preference", e);
     }

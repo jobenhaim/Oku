@@ -1,6 +1,7 @@
+
 {
-  "short_name": "Sudoku",
-  "name": "Minimal Sudoku",
+  "short_name": "Oku",
+  "name": "Oku",
   "icons": [
     {
       "src": "/icons/icon.svg",
