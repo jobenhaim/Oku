@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,7 +10,7 @@
   --surface-sec: #f5f5f4; /* stone-100 */
   --text-primary: #292524; /* stone-800 */
   --text-secondary: #a8a29e; /* stone-400 */
-  --border: #a8a29e; /* stone-400 (Requested darker border) */
+  --border: #a8a29e; /* stone-400 */
   --icon: #57534e; /* stone-600 */
   --board-bg: #ffffff;
   --overlay-opacity: 0;
@@ -28,32 +29,38 @@
   --overlay-opacity: 0.5;
 }
 
-/* FORCE BACKGROUND COLOR ON HTML/BODY TO AVOID BLACK BARS */
-html {
-  background-color: var(--app-bg);
-  transition: background-color 0.3s;
-}
-body {
+/* STRICT VIEWPORT LOCKING FOR MOBILE */
+html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
+  position: fixed; /* Prevents elastic scrolling on iOS */
+  overflow: hidden;
   background-color: var(--app-bg);
   font-family: 'Outfit', sans-serif;
-  overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.3s;
+  
+  /* Disable selection and zooming */
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  overscroll-behavior: none;
 }
 
 #root {
   width: 100%;
   height: 100%;
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
   overflow: hidden;
 }
 
-/* Hide all scrollbars */
+/* Hide all scrollbars but allow scrolling functionality where needed */
 ::-webkit-scrollbar {
   width: 0px;
   background: transparent;
@@ -61,6 +68,20 @@ body {
 * {
   scrollbar-width: none;
   -ms-overflow-style: none;
+  /* Prevent default touch actions like double-tap zoom globally */
+  touch-action: manipulation;
+}
+
+/* Safe Area Utilities */
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.h-safe-screen {
+  height: 100vh; /* Fallback */
+  height: 100dvh;
 }
 
 /* TEXT EFFECTS */
@@ -69,9 +90,9 @@ body {
 .text-shine-gold {
   background-image: linear-gradient(
     110deg,
-    #854d0e 15%,   /* Yellow 800 - Deep Bronze for Contrast */
-    #ca8a04 35%,   /* Yellow 600 - Rich Gold */
-    #fde047 50%,   /* Yellow 300 - Bright Shine (Brief) */
+    #854d0e 15%,   /* Yellow 800 */
+    #ca8a04 35%,   /* Yellow 600 */
+    #fde047 50%,   /* Yellow 300 */
     #ca8a04 65%,   /* Yellow 600 */
     #854d0e 85%    /* Yellow 800 */
   );
@@ -79,9 +100,8 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: flow-light 4s linear infinite; /* Reuse smooth linear flow */
+  animation: flow-light 4s linear infinite; 
   font-weight: 700;
-  /* Defined shadow for legibility on light board */
   filter: drop-shadow(0px 1px 1px rgba(113, 63, 18, 0.25));
 }
 
@@ -89,9 +109,9 @@ body {
 .text-shine-diamond {
   background-image: linear-gradient(
     110deg,
-    #0369a1 15%,   /* Sky 700 - Deep Blue (Depth) */
-    #0ea5e9 35%,   /* Sky 500 - Bright Blue */
-    #e0f2fe 50%,   /* Sky 100 - Icy Shine (High Contrast) */
+    #0369a1 15%,   /* Sky 700 */
+    #0ea5e9 35%,   /* Sky 500 */
+    #e0f2fe 50%,   /* Sky 100 */
     #0ea5e9 65%,   /* Sky 500 */
     #0369a1 85%    /* Sky 700 */
   );
@@ -99,9 +119,8 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: flow-light 4s linear infinite; /* Matches Gold Speed (4s) */
+  animation: flow-light 4s linear infinite; 
   font-weight: 700;
-  /* Defined shadow for legibility on light board, matching Gold style */
   filter: drop-shadow(0px 1px 1px rgba(3, 105, 161, 0.25));
 }
 
@@ -127,34 +146,33 @@ body {
 /* 3. PREMIUM GET MORE BUTTON */
 .btn-premium-blue {
   position: relative;
-  background-color: #e0f2fe; /* Sky 100 Fallback */
+  background-color: #e0f2fe; 
   overflow: hidden;
-  /* Ultra subtle gradient: Sky 100 base with a very faint Sky 50 shine passing through */
   background: linear-gradient(
     110deg, 
-    #e0f2fe 20%,  /* Base (Sky 100) */
-    #e8f7ff 45%,  /* Transition */
-    #f0f9ff 50%,  /* Highlight (Sky 50) */
-    #e8f7ff 55%,  /* Transition */
-    #e0f2fe 80%   /* Base */
+    #e0f2fe 20%,  
+    #e8f7ff 45%,  
+    #f0f9ff 50%,  
+    #e8f7ff 55%,  
+    #e0f2fe 80%   
   );
   background-size: 200% auto;
-  animation: flow-light 6s linear infinite; /* Slower and smooth */
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15); /* Sky 500 shadow, subtle */
+  animation: flow-light 6s linear infinite; 
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15); 
   border: 1px solid rgba(255,255,255,0.6);
 }
 
 /* 4. SOLID ELEGANT STORE BUTTON (New Brown) */
 .btn-store-brown {
-  background-color: #E3D8C8; /* Elegant Light Brown (Almond/Mocha) */
-  color: #292524; /* Stone 800 */
+  background-color: #E3D8C8; 
+  color: #292524; 
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); 
   border: 1px solid rgba(255,255,255,0.2);
   transition: all 0.2s ease;
 }
 .btn-store-brown:active {
   transform: scale(0.95);
-  background-color: #D6CBB8; /* Slightly darker on press */
+  background-color: #D6CBB8; 
 }
 
 @keyframes flow-light {
@@ -162,14 +180,13 @@ body {
   100% { background-position: -200% center; }
 }
 
-/* Remove old vortex */
 .btn-premium-blue::before {
   display: none;
 }
 
 /* 5. PREMIUM SILVER BUTTON (For Packs) */
 .btn-premium-silver {
-  background: linear-gradient(180deg, #9ca3af 0%, #4b5563 100%); /* Gray 400 to 600 */
+  background: linear-gradient(180deg, #9ca3af 0%, #4b5563 100%); 
   color: white;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255,255,255,0.25);
   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
@@ -180,19 +197,17 @@ body {
   position: relative;
   overflow: hidden;
   z-index: 1;
-  /* Default colors (Light) */
-  background-color: #d6d3d1; /* Stone 300 */
+  background-color: #d6d3d1; 
   --alive-blob-1: rgba(255, 255, 255, 0.9);
   --alive-blob-2: rgba(255, 255, 255, 0.5);
 }
 
 .dark .btn-alive-gradient {
-  background-color: #1c1917; /* Stone 900 */
-  --alive-blob-1: rgba(120, 113, 108, 0.6); /* Stone 500 */
-  --alive-blob-2: rgba(87, 83, 78, 0.4); /* Stone 600 */
+  background-color: #1c1917; 
+  --alive-blob-1: rgba(120, 113, 108, 0.6); 
+  --alive-blob-2: rgba(87, 83, 78, 0.4); 
 }
 
-/* Blob 1: The Main Light */
 .btn-alive-gradient::before {
   content: '';
   position: absolute;
@@ -207,7 +222,6 @@ body {
   border-radius: 50%;
 }
 
-/* Blob 2: Secondary Light (Offset path) */
 .btn-alive-gradient::after {
   content: '';
   position: absolute;
@@ -217,7 +231,7 @@ body {
   height: 120%;
   background: radial-gradient(circle, var(--alive-blob-2) 0%, transparent 60%);
   transform: translate(-50%, -50%);
-  animation: organic-2 5.5s infinite ease-in-out; /* Different prime duration for unpredictability */
+  animation: organic-2 5.5s infinite ease-in-out; 
   z-index: 0;
   border-radius: 50%;
 }
@@ -225,28 +239,24 @@ body {
 /* 8. PREMIUM DEEP BLUE BUTTON (New) */
 .btn-premium-deep {
   position: relative;
-  background-color: #0b0f19; /* Deep Dark Blue Base */
+  background-color: #0b0f19; 
   overflow: hidden;
   z-index: 1;
-  /* 
-     Gradient: Seamless loop structure (Dark -> Light -> Dark)
-     Placed in the second half of a 200% wide texture.
-  */
   background: linear-gradient(
     110deg, 
     #0b0f19 0%,
-    #0b0f19 60%,    /* Dark up to 60% */
-    #1e3a8a 70%,    /* Blue 900 */
-    #60a5fa 75%,    /* Bright Blue 400 at 3/4 mark */
-    #1e3a8a 80%,    /* Blue 900 */
-    #0b0f19 90%,    /* Back to Dark */
+    #0b0f19 60%,    
+    #1e3a8a 70%,    
+    #60a5fa 75%,    
+    #1e3a8a 80%,    
+    #0b0f19 90%,    
     #0b0f19 100%
   );
   background-size: 200% 100%;
-  animation: deep-sweep 3s linear infinite; /* Faster and Seamless Loop */
+  animation: deep-sweep 3s linear infinite; 
   color: white;
-  border: 1px solid rgba(255,255,255,0.15); /* Subtle rim */
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); /* Deep shadow */
+  border: 1px solid rgba(255,255,255,0.15); 
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); 
 }
 
 @keyframes deep-sweep {
@@ -269,22 +279,12 @@ body {
   100% { transform: translate(-50%, -50%) scale(0.9); }
 }
 
-/* 
-   6. PREMIUM BUNDLE & PACK ANIMATIONS (SEAMLESS LOOPS) 
-   Using 0% -> 100% -> 0% (Ping Pong) to ensure no cut 
-*/
-
 @keyframes gradient-shift {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
 
-/* 
-   === PREMIUM ATMOSPHERE ANIMATIONS ===
-   Reimagined: Light 3-Level Gradients with Random-feeling "Wandering" Path.
-   Uses 400% size with complex irregular keyframes.
-*/
 @keyframes atmosphere-wander {
   0% { background-position: 10% 10%; }
   20% { background-position: 80% 20%; }
@@ -294,49 +294,42 @@ body {
   100% { background-position: 10% 10%; }
 }
 
-/* Aurora: Teal 100 -> Sky 100 -> Violet 100 */
 .bg-atmosphere-aurora {
   background: linear-gradient(135deg, #ccfbf1 0%, #e0f2fe 33%, #ede9fe 66%, #ccfbf1 100%);
   background-size: 400% 400%;
   animation: atmosphere-wander 25s ease-in-out infinite;
 }
 
-/* Meadow: Lime 100 -> Green 100 -> Emerald 100 */
 .bg-atmosphere-meadow {
   background: linear-gradient(135deg, #ecfccb 0%, #dcfce7 33%, #d1fae5 66%, #ecfccb 100%);
   background-size: 400% 400%;
   animation: atmosphere-wander 25s ease-in-out infinite;
 }
 
-/* Blush: Rose 100 -> Orange 100 -> Amber 100 */
 .bg-atmosphere-blush {
   background: linear-gradient(135deg, #ffe4e6 0%, #ffedd5 33%, #fef3c7 66%, #ffe4e6 100%);
   background-size: 400% 400%;
   animation: atmosphere-wander 25s ease-in-out infinite;
 }
 
-/* Golden: Yellow 100 -> Amber 100 -> Orange 50 */
 .bg-atmosphere-golden {
   background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 33%, #fff7ed 66%, #fef9c3 100%);
   background-size: 400% 400%;
   animation: atmosphere-wander 25s ease-in-out infinite;
 }
 
-/* Platinum: Slate 100 -> Gray 200 -> Zinc 100 */
 .bg-atmosphere-platinum {
   background: linear-gradient(135deg, #f1f5f9 0%, #e5e7eb 33%, #f4f4f5 66%, #f1f5f9 100%);
   background-size: 400% 400%;
   animation: atmosphere-wander 25s ease-in-out infinite;
 }
 
-/* PACKS: Clean, Light Blue Flow */
 .bg-pack-flow {
   background: linear-gradient(120deg, #f0f9ff 0%, #e0f2fe 30%, #ffffff 50%, #e0f2fe 70%, #f0f9ff 100%);
   background-size: 200% 200%;
   animation: gradient-shift 6s ease-in-out infinite;
 }
 
-/* LOADING GREEN BAR */
 .bg-loading-green {
   background: linear-gradient(
     90deg, 
@@ -348,7 +341,6 @@ body {
   animation: loading-slide 2s linear infinite;
 }
 
-/* LOADING BLUE BAR (Progress) */
 .bg-loading-blue {
   background: linear-gradient(
     90deg, 

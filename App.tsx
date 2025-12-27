@@ -480,166 +480,172 @@ export function App() {
 
   return (
       <>
-          {/* Background Layer (Persistent) */}
-          <div 
-            className={`fixed inset-0 z-0 transition-all ease-in-out duration-500 ${activeBackgroundClass}`} 
-            style={{ width: '100%', height: '100%' }}
-          />
-          <div 
-            className="fixed inset-0 z-[1] bg-black pointer-events-none transition-opacity duration-500" 
-            style={{ opacity: overlayOpacity }} 
-          />
+          {/* Main App Wrapper: Fixed, Full Viewport, No Overflow */}
+          <div className="fixed inset-0 z-0 w-full h-full overflow-hidden select-none touch-none">
+              
+              {/* Background Layer (Persistent) */}
+              <div 
+                className={`absolute inset-0 z-0 transition-all ease-in-out duration-500 ${activeBackgroundClass}`} 
+                style={{ width: '100%', height: '100%' }}
+              />
+              <div 
+                className="absolute inset-0 z-[1] bg-black pointer-events-none transition-opacity duration-500" 
+                style={{ opacity: overlayOpacity }} 
+              />
 
-          {/* Screen Content Layer (Animated) */}
-          <div 
-             className="relative z-10 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden"
-             style={{ paddingTop: 'env(safe-area-inset-top)' }}
-          >
-            <AnimatePresence custom={direction} initial={false}>
-                <motion.div
-                    key={screen}
-                    custom={direction}
-                    variants={variants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    className="w-full h-full absolute inset-0 flex flex-col bg-transparent"
-                    style={{ pointerEvents: 'auto' }}
-                >
-                    {screen === 'splash' && <SplashScreen />}
+              {/* Content Wrapper with Safe Areas */}
+              {/* This inner container handles safe area padding to prevent content from being covered by notch/home bar */}
+              <div 
+                 className="relative z-10 w-full h-full flex flex-col pt-safe pb-safe"
+              >
+                <div className="flex-1 relative w-full h-full overflow-hidden">
+                    <AnimatePresence custom={direction} initial={false}>
+                        <motion.div
+                            key={screen}
+                            custom={direction}
+                            variants={variants}
+                            initial="initial"
+                            animate="animate"
+                            exit="exit"
+                            className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent"
+                            style={{ pointerEvents: 'auto' }}
+                        >
+                            {screen === 'splash' && <SplashScreen />}
 
-                    {screen === 'difficulty' && (
-                        <DifficultyScreen 
-                            points={points}
-                            onDifficultySelect={handleDifficultySelect}
-                            onOpenSettings={() => setShowSettings(true)}
-                            onOpenStore={() => navigate('store', 'forward')}
-                            onOpenDiamondShop={() => navigate('diamondShop', 'forward')}
-                            onClaimBonus={handleClaimBonus}
-                            onOpenStats={() => navigate('stats', 'forward')}
-                            nextBonusClaimTime={nextBonusClaimTime}
-                            hiddenDifficulties={settings.hiddenDifficulties}
-                        />
-                    )}
+                            {screen === 'difficulty' && (
+                                <DifficultyScreen 
+                                    points={points}
+                                    onDifficultySelect={handleDifficultySelect}
+                                    onOpenSettings={() => setShowSettings(true)}
+                                    onOpenStore={() => navigate('store', 'forward')}
+                                    onOpenDiamondShop={() => navigate('diamondShop', 'forward')}
+                                    onClaimBonus={handleClaimBonus}
+                                    onOpenStats={() => navigate('stats', 'forward')}
+                                    nextBonusClaimTime={nextBonusClaimTime}
+                                    hiddenDifficulties={settings.hiddenDifficulties}
+                                />
+                            )}
 
-                    {screen === 'diamondShop' && (
-                        <DiamondShopScreen 
-                            points={points}
-                            onBack={handleDiamondShopBack}
-                            onWatchAd={handleWatchAd}
-                            onBuyOffer={handleBuyOffer}
-                            onEarnPoints={handleEarnPoints}
-                            starterPackPurchased={starterPackPurchased}
-                        />
-                    )}
-                    
-                    {screen === 'stats' && (
-                        <StatsScreen 
-                            onBack={handleStatsBack}
-                        />
-                    )}
-                    
-                    {screen === 'levels' && selectedDifficulty && (
-                        <LevelsScreen 
-                            difficulty={selectedDifficulty}
-                            points={points}
-                            unlockedPacks2={unlockedPacks2}
-                            unlockedPacks3={unlockedPacks3}
-                            onBack={handleLevelBack}
-                            onLevelSelect={handleLevelSelect}
-                            onOpenSettings={() => setShowSettings(true)}
-                            onUnlockPack2={handleUnlockPack2}
-                            onUnlockPack3={handleUnlockPack3}
-                        />
-                    )}
+                            {screen === 'diamondShop' && (
+                                <DiamondShopScreen 
+                                    points={points}
+                                    onBack={handleDiamondShopBack}
+                                    onWatchAd={handleWatchAd}
+                                    onBuyOffer={handleBuyOffer}
+                                    onEarnPoints={handleEarnPoints}
+                                    starterPackPurchased={starterPackPurchased}
+                                />
+                            )}
+                            
+                            {screen === 'stats' && (
+                                <StatsScreen 
+                                    onBack={handleStatsBack}
+                                />
+                            )}
+                            
+                            {screen === 'levels' && selectedDifficulty && (
+                                <LevelsScreen 
+                                    difficulty={selectedDifficulty}
+                                    points={points}
+                                    unlockedPacks2={unlockedPacks2}
+                                    unlockedPacks3={unlockedPacks3}
+                                    onBack={handleLevelBack}
+                                    onLevelSelect={handleLevelSelect}
+                                    onOpenSettings={() => setShowSettings(true)}
+                                    onUnlockPack2={handleUnlockPack2}
+                                    onUnlockPack3={handleUnlockPack3}
+                                />
+                            )}
 
-                    {screen === 'store' && (
-                        <StoreScreen 
-                            points={points}
-                            onBack={handleStoreBack}
-                            purchasedSkills={purchasedSkills}
-                            enabledSkills={enabledSkills}
-                            purchasedBackgrounds={purchasedBackgrounds}
-                            purchasedNumberColors={purchasedNumberColors}
-                            purchasedSoundPacks={purchasedSoundPacks}
-                            selectedBackgroundId={selectedBackgroundId}
-                            selectedNumberColorId={selectedNumberColorId}
-                            selectedSoundPackId={selectedSoundPackId}
-                            onPurchase={initiatePurchase}
-                            onSelectBackground={handleSelectBackground}
-                            onSelectNumberColor={handleSelectNumberColor}
-                            onSelectSoundPack={handleSelectSoundPack}
-                            onToggleSkill={handleToggleSkill}
-                        />
-                    )}
-                    
-                    {screen === 'game' && selectedDifficulty && selectedLevel && (
-                        <SudokuGame
-                            difficulty={selectedDifficulty}
-                            levelId={selectedLevel}
-                            onBack={handleGameBack}
-                            onReturnToMenu={handleReturnToMenu}
-                            onComplete={() => {
-                                setPoints(Storage.getPoints());
-                            }}
-                            onSettingsOpen={() => setShowSettings(true)}
-                            settings={settings}
-                            onEarnPoints={handleEarnPoints}
-                            currentPoints={points}
-                            isSettingsOpen={showSettings}
-                            backgroundClass={activeBackgroundClass}
-                            numberColor={numberColorClass}
-                            purchasedSkills={enabledSkills} // Pass only enabled skills to game
-                        />
-                    )}
-                </motion.div>
-            </AnimatePresence>
+                            {screen === 'store' && (
+                                <StoreScreen 
+                                    points={points}
+                                    onBack={handleStoreBack}
+                                    purchasedSkills={purchasedSkills}
+                                    enabledSkills={enabledSkills}
+                                    purchasedBackgrounds={purchasedBackgrounds}
+                                    purchasedNumberColors={purchasedNumberColors}
+                                    purchasedSoundPacks={purchasedSoundPacks}
+                                    selectedBackgroundId={selectedBackgroundId}
+                                    selectedNumberColorId={selectedNumberColorId}
+                                    selectedSoundPackId={selectedSoundPackId}
+                                    onPurchase={initiatePurchase}
+                                    onSelectBackground={handleSelectBackground}
+                                    onSelectNumberColor={handleSelectNumberColor}
+                                    onSelectSoundPack={handleSelectSoundPack}
+                                    onToggleSkill={handleToggleSkill}
+                                />
+                            )}
+                            
+                            {screen === 'game' && selectedDifficulty && selectedLevel && (
+                                <SudokuGame
+                                    difficulty={selectedDifficulty}
+                                    levelId={selectedLevel}
+                                    onBack={handleGameBack}
+                                    onReturnToMenu={handleReturnToMenu}
+                                    onComplete={() => {
+                                        setPoints(Storage.getPoints());
+                                    }}
+                                    onSettingsOpen={() => setShowSettings(true)}
+                                    settings={settings}
+                                    onEarnPoints={handleEarnPoints}
+                                    currentPoints={points}
+                                    isSettingsOpen={showSettings}
+                                    backgroundClass={activeBackgroundClass}
+                                    numberColor={numberColorClass}
+                                    purchasedSkills={enabledSkills} // Pass only enabled skills to game
+                                />
+                            )}
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
 
-            {/* Modals & Overlays (Outside AnimatePresence to float on top) */}
-            {showSettings && (
-                <SettingsModal 
-                    settings={settings} 
-                    onToggle={toggleSetting} 
-                    onToggleDifficulty={handleToggleDifficultyVisibility}
-                    onSetAppearance={setAppearance}
-                    onReset={resetProgress}
-                    onClose={() => setShowSettings(false)} 
-                />
-            )}
-            {replayLevelId !== null && selectedDifficulty && (
-                <ReplayModal 
-                    levelId={replayLevelId}
-                    onConfirm={confirmReplay}
-                    onCancel={() => setReplayLevelId(null)}
-                />
-            )}
-            {purchaseCandidate && (
-                <PurchaseModal 
-                    item={purchaseCandidate} 
-                    onConfirm={confirmPurchase} 
-                    onCancel={() => setPurchaseCandidate(null)} 
-                />
-            )}
-            {paymentOffer && (
-                <PaymentModal
-                    offer={paymentOffer}
-                    onComplete={finalizeRealMoneyPurchase}
-                    onCancel={() => setPaymentOffer(null)}
-                />
-            )}
-            {showNotEnoughPoints && (
-                <NotEnoughPointsModal 
-                    onClose={() => setShowNotEnoughPoints(false)} 
-                    onGetMore={handleNavigateToShop} 
-                    onGoPlay={handleGoPlay} 
-                />
-            )}
-            {/* 
-               Hybrid logic: 
-               - If native (iOS), isWatchingAd is never set true, so AdOverlay is hidden. 
-               - If web, isWatchingAd becomes true, showing the fake overlay.
-            */}
-            {isWatchingAd && <AdOverlay onComplete={handleAdReward} />}
+                {/* Modals & Overlays (Outside AnimatePresence to float on top) */}
+                {showSettings && (
+                    <SettingsModal 
+                        settings={settings} 
+                        onToggle={toggleSetting} 
+                        onToggleDifficulty={handleToggleDifficultyVisibility}
+                        onSetAppearance={setAppearance}
+                        onReset={resetProgress}
+                        onClose={() => setShowSettings(false)} 
+                    />
+                )}
+                {replayLevelId !== null && selectedDifficulty && (
+                    <ReplayModal 
+                        levelId={replayLevelId}
+                        onConfirm={confirmReplay}
+                        onCancel={() => setReplayLevelId(null)}
+                    />
+                )}
+                {purchaseCandidate && (
+                    <PurchaseModal 
+                        item={purchaseCandidate} 
+                        onConfirm={confirmPurchase} 
+                        onCancel={() => setPurchaseCandidate(null)} 
+                    />
+                )}
+                {paymentOffer && (
+                    <PaymentModal
+                        offer={paymentOffer}
+                        onComplete={finalizeRealMoneyPurchase}
+                        onCancel={() => setPaymentOffer(null)}
+                    />
+                )}
+                {showNotEnoughPoints && (
+                    <NotEnoughPointsModal 
+                        onClose={() => setShowNotEnoughPoints(false)} 
+                        onGetMore={handleNavigateToShop} 
+                        onGoPlay={handleGoPlay} 
+                    />
+                )}
+                {/* 
+                   Hybrid logic: 
+                   - If native (iOS), isWatchingAd is never set true, so AdOverlay is hidden. 
+                   - If web, isWatchingAd becomes true, showing the fake overlay.
+                */}
+                {isWatchingAd && <AdOverlay onComplete={handleAdReward} />}
+              </div>
           </div>
       </>
   );
