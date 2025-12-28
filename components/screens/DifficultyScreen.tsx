@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Difficulty } from '../../types';
 import { Storage } from '../../utils/storage';
 import { Icons } from '../ui/Icons';
-import { Logo } from '../ui/Logo';
 import { sounds } from '../../utils/sound';
 import { getDifficultyPoints, DIFFICULTY_DESCRIPTIONS } from '../../utils/constants';
 
@@ -260,11 +259,10 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
              {/* Content Container - removed overflow-y-auto, added overflow-hidden for non-scrollable */}
              <div className="flex-1 w-full overflow-hidden px-6 pb-6 pt-4 flex flex-col items-center min-h-0">
                   
-                  {/* Hero Section - Static */}
-                  <div className="flex flex-col items-center mb-6 shrink-0">
-                      <Logo size={70} className="mb-4 drop-shadow-xl" />
-                      <h1 className="text-3xl font-semibold text-t-primary mb-2 tracking-tight">Oku</h1>
-                      <div className="h-px w-12 bg-t-border mb-3"></div>
+                  {/* Hero Section - Clean Text Typography */}
+                  <div className="flex flex-col items-center mb-8 shrink-0 pt-4">
+                      <h1 className="text-6xl font-bold text-stone-800 dark:text-stone-100 tracking-tight leading-none mb-1">Oku</h1>
+                      <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.4em] ml-1">Sudoku</span>
                   </div>
 
                   {/* Difficulty Header */}
