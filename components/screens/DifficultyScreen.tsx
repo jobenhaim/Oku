@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Difficulty } from '../../types';
 import { Storage } from '../../utils/storage';
 import { Icons } from '../ui/Icons';
 import { sounds } from '../../utils/sound';
 import { getDifficultyPoints, DIFFICULTY_DESCRIPTIONS } from '../../utils/constants';
+import { AnimatedNumber } from '../ui/AnimatedNumber';
 
 interface DifficultyScreenProps {
     points: number;
@@ -11,13 +13,13 @@ interface DifficultyScreenProps {
     onOpenSettings: () => void;
     onOpenStore: () => void;
     onOpenDiamondShop: () => void;
-    onClaimBonus: () => void;
+    onClaimBonus: (e: React.MouseEvent) => void;
     onOpenStats: () => void;
     nextBonusClaimTime: number;
     hiddenDifficulties?: Difficulty[]; // New prop
 }
 
-// Internal Hook for Counting Animation
+// Internal Hook for Counting Animation (Progress Bars)
 const useAnimatedCounter = (target: number, duration: number = 500) => {
     const [count, setCount] = useState(0);
 
@@ -126,7 +128,7 @@ const DifficultyCard: React.FC<{
         <button 
             onClick={() => onSelect(diff)} 
             style={finalStyle}
-            className={`bg-t-surface ${paddingClass} rounded-2xl shadow-sm flex flex-col justify-between active:scale-95 transition-transform text-left relative group overflow-visible ${animating ? 'opacity-0 animate-slide-in-down' : 'opacity-100'}`}
+            className={`bg-t-surface ${paddingClass} rounded-2xl shadow-sm flex flex-col justify-between transition-transform text-left relative group overflow-visible ${animating ? 'opacity-0 animate-slide-in-down' : 'opacity-100'}`}
         >
             {/* Header: Title & Points */}
             <div className="w-full flex justify-between items-start mb-1">
@@ -372,13 +374,13 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                           <button 
                             onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenStats(); }} 
                             style={{ width: '47.5%', background: 'linear-gradient(135deg, #B8D3F5 0%, #79A6E3 100%)' }}
-                            className="p-4 text-[#102a43] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] flex items-center justify-center gap-2 active:scale-95 transition"
+                            className="p-4 text-[#102a43] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] flex items-center justify-center gap-2 active:scale-95 transition relative"
                           >
                               <Icons.BarChart className="w-5 h-5" /> <span className="font-semibold tracking-wide">Stats</span>
                           </button>
 
                           <button 
-                              onClick={(e) => { e.stopPropagation(); onClaimBonus(); }}
+                              onClick={onClaimBonus}
                               disabled={!!timeLeft}
                               style={{ width: '47.5%', ...(!timeLeft ? { background: 'linear-gradient(135deg, #B8DBBE 0%, #8CB794 100%)' } : {}) }}
                               className={`p-4 rounded-2xl flex items-center justify-center gap-2 transition overflow-hidden relative ${
@@ -408,8 +410,10 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                     className="w-full max-w-md flex items-center justify-center gap-3 mt-6 mb-2 opacity-0 animate-slide-in-down shrink-0" 
                     style={{ animationDelay: '350ms' }}
                   >
-                      <div className="flex items-center gap-1.5 bg-t-surface px-3 py-1.5 rounded-full shadow-sm">
-                          <span className="text-sm font-semibold text-t-primary tabular-nums leading-none pt-0.5">{points}</span>
+                      <div 
+                        className="flex items-center gap-1.5 bg-t-surface px-3 py-1.5 rounded-full shadow-sm"
+                      >
+                          <AnimatedNumber value={points} className="text-sm font-semibold text-t-primary tabular-nums leading-none pt-0.5" />
                           <div className="text-blue-500"><Icons.Diamond className="w-3.5 h-3.5 fill-current" /></div>
                       </div>
                       

@@ -9,7 +9,7 @@ interface UseSudokuBoardProps {
   levelId: number;
   settings: AppSettings;
   onBoardChange?: (board: Board, moveLog: MoveLogEntry[]) => void;
-  onComplete?: (completedBoard: Board, moveLog: MoveLogEntry[]) => void;
+  onComplete?: (completedBoard: Board, moveLog: MoveLogEntry[], isPerfect: boolean) => void;
   onSectionComplete?: (sections: string[]) => void;
 }
 
@@ -55,11 +55,13 @@ export const useSudokuBoard = ({
   const [activeNumber, setActiveNumber] = useState<number | null>(null);
 
   const moveLog = useRef<MoveLogEntry[]>([]);
+  const errorCountRef = useRef<number>(0);
   
   const initializeBoard = useCallback((savedBoard?: Board, savedMoveLog?: MoveLogEntry[]) => {
     setHistory([]);
     setSelectedCell(null);
     setActiveNumber(null);
+    errorCountRef.current = 0;
     
     if (savedMoveLog) {
         moveLog.current = savedMoveLog;
@@ -118,7 +120,7 @@ export const useSudokuBoard = ({
 
   const checkCompletion = useCallback((currentBoard: Board) => {
       if (isBoardComplete(currentBoard)) {
-          if (onComplete) onComplete(currentBoard, moveLog.current);
+          if (onComplete) onComplete(currentBoard, moveLog.current, errorCountRef.current === 0);
       }
   }, [isBoardComplete, onComplete]);
 
@@ -153,8 +155,14 @@ export const useSudokuBoard = ({
                      newCell.notes = [];
                      
                      const isHarderDifficulty = difficulty === Difficulty.Hard || difficulty === Difficulty.Intense || difficulty === Difficulty.Impossible;
-                     if (!isHarderDifficulty) newCell.isError = activeNumber !== solvedBoard[row][col];
+                     const isError = activeNumber !== solvedBoard[row][col];
+                     
+                     if (!isHarderDifficulty) newCell.isError = isError;
                      else newCell.isError = false;
+                     
+                     if (isError) {
+                         errorCountRef.current += 1;
+                     }
 
                      newBoard[row][col] = newCell;
 
@@ -236,8 +244,14 @@ export const useSudokuBoard = ({
         newCell.value = num as any;
         newCell.notes = [];
         const isHarderDifficulty = difficulty === Difficulty.Hard || difficulty === Difficulty.Intense || difficulty === Difficulty.Impossible;
-        if (!isHarderDifficulty) newCell.isError = num !== solvedBoard[r][c];
+        const isError = num !== solvedBoard[r][c];
+        
+        if (!isHarderDifficulty) newCell.isError = isError;
         else newCell.isError = false; 
+        
+        if (isError) {
+             errorCountRef.current += 1;
+        }
         
         newBoard[r][c] = newCell;
 

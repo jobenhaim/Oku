@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { sounds } from '../../utils/sound';
 import { AppSettings, DiamondOffer, Difficulty } from '../../types';
@@ -258,6 +258,7 @@ interface PaymentModalProps {
 export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, onCancel }) => {
     const [status, setStatus] = useState<'confirm' | 'processing' | 'success'>('confirm');
     const [isClosing, setIsClosing] = useState(false);
+    const purchaseBtnRef = useRef<HTMLButtonElement>(null);
 
     const handlePurchase = () => {
         sounds.playClick();
@@ -288,7 +289,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
         if (offer.type === 'support') {
             return (
                 <span>
-                    Unlocks <span className="font-bold text-blue-500">Pepino</span>, a special fish companion who lives in your app and gifts you diamonds. Your support helps keep Oku ad-light and calm.
+                    Adopt Pepino! Unlock your fish companion for diamond gifts, an instant 400 <span className="inline-block align-baseline translate-y-[2px]"><Icons.Diamond className="w-3 h-3 text-blue-500 fill-current" /></span> boost, and permanent ad-removal. Your support keeps Oku fair and calm, thank you!
                 </span>
             );
         }
@@ -337,6 +338,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
                 {status === 'confirm' && (
                     <div className="flex flex-col gap-3 animate-fade-in">
                         <button 
+                            ref={purchaseBtnRef}
                             onClick={handlePurchase} 
                             className="w-full py-3.5 text-white bg-blue-500 hover:bg-blue-600 rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition flex items-center justify-center gap-2"
                         >

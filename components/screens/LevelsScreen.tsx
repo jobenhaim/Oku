@@ -6,6 +6,7 @@ import { Icons } from '../ui/Icons';
 import { sounds } from '../../utils/sound';
 import { UnlockCard } from '../ui/UnlockCard';
 import { getPackCost, formatTimeShort } from '../../utils/constants';
+import { AnimatedNumber } from '../ui/AnimatedNumber';
 
 interface LevelsScreenProps {
     difficulty: Difficulty;
@@ -71,23 +72,47 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                     )}
                 </div>
 
-                <button onClick={() => { sounds.playClick(); onOpenSettings(); }} className="p-2 rounded-full hover:bg-stone-200/50 transition -mr-2 text-t-icon relative z-30">
-                    <Icons.Settings className="w-6 h-6 text-t-icon" />
-                </button>
+                <div className="flex items-center gap-1.5 bg-t-surface px-3 py-1.5 rounded-full shadow-sm relative z-30">
+                    <AnimatedNumber value={points} className="text-sm font-semibold text-t-primary tabular-nums leading-none pt-0.5" />
+                    <div className="text-blue-500"><Icons.Diamond className="w-3.5 h-3.5 fill-current" /></div>
+                </div>
             </div>
 
             <div className="flex-1 w-full overflow-y-auto px-6 pb-6 hide-scrollbar flex flex-col items-center">
                 <div className="w-full max-w-md grid grid-cols-5 gap-3 pt-2">
                     {allLevels.map((lvl) => {
                             const progress = Storage.getLevelProgress(difficulty, lvl);
-                            const isCompleted = progress?.status === 'completed';
-                            const isInProgress = progress?.status === 'in-progress';
                             const bestTime = progress?.bestTime;
+                            
+                            // A level is considered "Solved" if it has a bestTime recorded (history of winning)
+                            // or if the current status is completed (fresh win)
+                            const isSolved = bestTime !== undefined || progress?.status === 'completed';
+                            const isInProgress = progress?.status === 'in-progress';
                             const isGlobalBest = hasGlobalBest && bestTime !== undefined && bestTime === globalBest;
 
-                            // Removed 'border' and 'border-t-border'. Replaced 'border-2' for in-progress with 'ring-2'.
+                            // Style Logic:
+                            // - Solved levels always use the 'Completed' background (bg-t-surface-sec) to show they are done.
+                            // - If Solved AND In-Progress (Replaying), we add a Blue Ring to show activity, but keep background grey/completed.
+                            // - If Not Solved AND In-Progress, we use White/Surface background with Blue Ring.
+                            
+                            let buttonClass = 'aspect-square rounded-xl relative transition-all active:scale-90 shadow-sm ';
+                            
+                            if (isSolved) {
+                                buttonClass += 'bg-t-surface-sec text-t-secondary ring-1 ring-inset ring-stone-900/5 ';
+                                if (isInProgress) {
+                                    // Replaying: Add active ring and clearer text color
+                                    buttonClass += '!ring-2 !ring-blue-400 !text-t-primary ';
+                                }
+                            } else if (isInProgress) {
+                                // First time playing, active
+                                buttonClass += 'bg-t-surface ring-2 ring-blue-400 shadow-md text-t-primary ';
+                            } else {
+                                // Not started
+                                buttonClass += 'bg-t-surface hover:shadow-md text-t-primary ';
+                            }
+
                             return (
-                                <button key={lvl} onClick={() => onLevelSelect(lvl)} className={`aspect-square rounded-xl relative transition-all active:scale-90 ${isCompleted ? 'bg-t-surface-sec text-t-secondary ring-1 ring-inset ring-stone-900/5' : isInProgress ? 'bg-t-surface ring-2 ring-blue-400 shadow-md text-t-primary' : 'bg-t-surface shadow-sm hover:shadow-md text-t-primary'}`}>
+                                <button key={lvl} onClick={() => onLevelSelect(lvl)} className={buttonClass}>
                                     <div className="absolute inset-0 flex items-center justify-center"><span className="font-bold text-2xl leading-none">{lvl}</span></div>
                                     {bestTime ? (
                                         isGlobalBest ? (
@@ -101,7 +126,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                                             </>
                                         ) : (
                                             <div className="absolute bottom-1.5 inset-x-0 text-center">
-                                                <span className="text-[10px] text-t-secondary font-bold tracking-tight block">{formatTimeShort(bestTime)}</span>
+                                                <span className={`text-[10px] font-bold tracking-tight block ${isInProgress ? 'text-t-primary' : 'text-t-secondary'}`}>{formatTimeShort(bestTime)}</span>
                                             </div>
                                         )
                                     ) : null}

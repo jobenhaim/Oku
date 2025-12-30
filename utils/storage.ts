@@ -1,4 +1,5 @@
-import { AppSettings, LevelProgress, StoredData, PepinoState } from '../types';
+
+import { AppSettings, LevelProgress, StoredData, PepinoState, Difficulty } from '../types';
 import { Preferences } from '@capacitor/preferences';
 
 const STORAGE_KEY = 'oku_data_v1';
@@ -15,6 +16,12 @@ const DEFAULT_SETTINGS: AppSettings = {
   screenWakeLock: false, // Default OFF
   generateReplay: true, // Default ON
   hiddenDifficulties: [], // Default show all
+};
+
+const DEFAULT_STATS = {
+    totalGamesWon: 0,
+    totalDiamondsEarned: 0,
+    perfectGames: 0
 };
 
 function getStoredData(): StoredData {
@@ -49,7 +56,8 @@ function getStoredData(): StoredData {
           starterPackPurchased: false,
           unlockedPack2: [],
           unlockedPack3: [],
-          pepino: { unlocked: false, lastGiftTime: 0, nextGiftDelay: 0 }
+          pepino: { unlocked: false, hasPendingGift: false },
+          stats: DEFAULT_STATS
       };
       
       return initialData;
@@ -103,7 +111,26 @@ function getStoredData(): StoredData {
     if (!data.unlockedPack2) data.unlockedPack2 = [];
     if (!data.unlockedPack3) data.unlockedPack3 = [];
     
-    if (!data.pepino) data.pepino = { unlocked: false, lastGiftTime: 0, nextGiftDelay: 0 };
+    if (!data.pepino) {
+        data.pepino = { unlocked: false, hasPendingGift: false };
+    } else {
+        // Migration from Timer based (lastGiftTime) to Event based (hasPendingGift)
+        if ((data.pepino as any).nextGiftDelay !== undefined) {
+            const old = data.pepino as any;
+            const wasReady = Date.now() >= (old.lastGiftTime || 0) + (old.nextGiftDelay || 0);
+            data.pepino = {
+                unlocked: old.unlocked,
+                hasPendingGift: wasReady,
+                unlockedAt: old.unlocked ? Date.now() : undefined // Fallback unlock time
+            };
+        }
+    }
+    
+    if (!data.stats) {
+        // Simple backfill of totalGamesWon based on progress
+        const wonCount = Object.values(data.progress || {}).filter((p: any) => p.status === 'completed' || p.bestTime !== undefined).length;
+        data.stats = { ...DEFAULT_STATS, totalGamesWon: wonCount };
+    }
 
     // Clean up deprecated fields if they exist from previous versions
     if ((data as any).purchasedBundles) delete (data as any).purchasedBundles;
@@ -128,7 +155,8 @@ function getStoredData(): StoredData {
         starterPackPurchased: false,
         unlockedPack2: [],
         unlockedPack3: [],
-        pepino: { unlocked: false, lastGiftTime: 0, nextGiftDelay: 0 }
+        pepino: { unlocked: false, hasPendingGift: false },
+        stats: DEFAULT_STATS
     };
   }
 }
@@ -191,6 +219,10 @@ export const Storage = {
   addPoints: (amount: number) => {
     const data = getStoredData();
     data.points += amount;
+    // Update stats
+    if (!data.stats) data.stats = { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 };
+    data.stats.totalDiamondsEarned += amount;
+    
     saveData(data);
     return data.points;
   },
@@ -383,20 +415,31 @@ export const Storage = {
     return getStoredData().progress[key];
   },
 
-  saveLevelProgress: (progress: LevelProgress) => {
+  saveLevelProgress: (progress: LevelProgress, isPerfectGame: boolean = false) => {
     const data = getStoredData();
     const key = `${progress.difficulty}-${progress.levelId}`;
     const existing = data.progress[key];
     let bestTime = existing?.bestTime;
+    
     if (progress.status === 'completed') {
         if (bestTime === undefined || progress.timeElapsed < bestTime) {
             bestTime = progress.timeElapsed;
         }
+        // Increment Stats
+        if (!data.stats) data.stats = { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 };
+        
+        data.stats.totalGamesWon += 1;
+        
+        if (isPerfectGame) {
+            data.stats.perfectGames += 1;
+        }
     }
+    
     data.progress[key] = {
         ...progress,
         bestTime: bestTime
     };
+    
     saveData(data);
   },
   
@@ -454,24 +497,32 @@ export const Storage = {
   // PEPINO (Fish) Methods
   getPepinoState: (): PepinoState => {
       const data = getStoredData();
-      return data.pepino || { unlocked: false, lastGiftTime: 0, nextGiftDelay: 0 };
+      return data.pepino || { unlocked: false, hasPendingGift: false };
   },
 
   unlockPepino: () => {
       const data = getStoredData();
-      if (!data.pepino) data.pepino = { unlocked: true, lastGiftTime: Date.now(), nextGiftDelay: 0 };
-      data.pepino.unlocked = true;
-      // First gift available instantly for instant delight
-      data.pepino.lastGiftTime = Date.now();
-      data.pepino.nextGiftDelay = 0;
+      data.pepino = { 
+          unlocked: true, 
+          hasPendingGift: true, // First gift instant
+          unlockedAt: Date.now() 
+      };
       saveData(data);
   },
 
-  updatePepinoGiftTime: (delay: number) => {
+  grantPepinoGift: () => {
       const data = getStoredData();
-      if (!data.pepino) data.pepino = { unlocked: true, lastGiftTime: 0, nextGiftDelay: 0 };
-      data.pepino.lastGiftTime = Date.now();
-      data.pepino.nextGiftDelay = delay;
-      saveData(data);
-  }
+      if (data.pepino && data.pepino.unlocked) {
+          data.pepino.hasPendingGift = true;
+          saveData(data);
+      }
+  },
+
+  claimPepinoGift: () => {
+      const data = getStoredData();
+      if (data.pepino) {
+          data.pepino.hasPendingGift = false;
+          saveData(data);
+      }
+  },
 };

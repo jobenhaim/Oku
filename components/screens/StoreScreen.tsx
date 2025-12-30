@@ -1,7 +1,9 @@
+
 import React, { useState } from 'react';
 import { Icons } from '../ui/Icons';
 import { sounds } from '../../utils/sound';
 import { STATIC_BACKGROUNDS, DYNAMIC_BACKGROUNDS, NUMBER_COLORS, SKILLS, SOUND_PACKS } from '../../utils/constants';
+import { AnimatedNumber } from '../ui/AnimatedNumber';
 
 interface StoreScreenProps {
     points: number;
@@ -115,7 +117,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1 bg-t-surface px-3 py-2 rounded-full shadow-sm relative z-30">
-                      <span className="text-sm font-bold text-t-primary">{points}</span>
+                      <AnimatedNumber value={points} className="text-sm font-bold text-t-primary tabular-nums" />
                       <div className="text-blue-500"><Icons.Diamond className="w-3 h-3 fill-current" /></div>
                 </div>
              </div>

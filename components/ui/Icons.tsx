@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   Settings, 
@@ -47,7 +48,12 @@ import {
   Trees,
   GlassWater,
   Bell,
-  Heart
+  Heart,
+  Trophy,
+  User,
+  Medal,
+  Flame,
+  Star
 } from 'lucide-react';
 
 export const Icons = {
@@ -66,6 +72,7 @@ export const Icons = {
   Trash: (props: any) => <Trash2 {...props} />,
   Close: (props: any) => <X {...props} />,
   Store: (props: any) => <ShoppingBag {...props} />,
+  ShoppingBag: (props: any) => <ShoppingBag {...props} />,
   Diamond: (props: any) => <Diamond {...props} />, // Using Diamond as Rhombus
   Video: (props: any) => <Video {...props} />,
   // Added Smartphone to match usage in constants.ts
@@ -81,6 +88,7 @@ export const Icons = {
   System: (props: any) => <Laptop {...props} />,
   Lock: (props: any) => <Lock {...props} />,
   LockOpen: (props: any) => <Unlock {...props} />, // Map LockOpen to Unlock component
+  Unlock: (props: any) => <Unlock {...props} />,
   Film: (props: any) => <Film {...props} />,
   BarChart: (props: any) => <BarChart3 {...props} />,
   Hand: (props: any) => <Hand {...props} />,
@@ -101,4 +109,9 @@ export const Icons = {
   Water: (props: any) => <Droplets {...props} />, 
   Bell: (props: any) => <Bell {...props} />,
   Heart: (props: any) => <Heart {...props} />,
+  Trophy: (props: any) => <Trophy {...props} />,
+  User: (props: any) => <User {...props} />,
+  Medal: (props: any) => <Medal {...props} />,
+  Flame: (props: any) => <Flame {...props} />,
+  Star: (props: any) => <Star {...props} />,
 };

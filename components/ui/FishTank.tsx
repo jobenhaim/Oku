@@ -153,11 +153,8 @@ interface FishTankProps {
 export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = false }) => {
     const [pepinoState, setPepinoState] = useState<PepinoState>(Storage.getPepinoState());
     
-    // Initialize ready state immediately (Lazy initializer)
-    const [isGiftReady, setIsGiftReady] = useState(() => {
-        const now = Date.now();
-        return now >= pepinoState.lastGiftTime + pepinoState.nextGiftDelay;
-    });
+    // Initialize ready state based on hasPendingGift
+    const [isGiftReady, setIsGiftReady] = useState(pepinoState.hasPendingGift);
     
     // Reward Feedback State
     const [rewardFeedback, setRewardFeedback] = useState<{amount: number} | null>(null);
@@ -171,14 +168,13 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
     const [speech, setSpeech] = useState<string | null>(null);
 
     // Intro State: 
-    // 'waiting' (text visible) -> 'clearing' (text fades out) -> 
+    // 'waiting' (text visible, user must tap) -> 'clearing' (text fades out) -> 
     // 'appearing' (fish pops in) -> 'active' (normal swim)
     const [introState, setIntroState] = useState<'waiting' | 'clearing' | 'appearing' | 'active'>(
         showIntro ? 'waiting' : 'active'
     );
     
     // Fish movement state
-    // Initialize random position (X: 15-85%, Y: 32-85%)
     const [fishPos, setFishPos] = useState(() => ({ 
         x: 15 + Math.random() * 70, 
         y: 32 + Math.random() * 53 
@@ -218,10 +214,8 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
     }, []);
 
     // Enable transitions only AFTER we have a valid size and position calculated
-    // This prevents the "fly in from 0,0" visual glitch
     useEffect(() => {
         if (tankSize.width > 0 && !isTransitionEnabled) {
-            // Increased timeout to 150ms to ensure DOM has fully applied the initial non-transitioned position
             const t = setTimeout(() => {
                 setIsTransitionEnabled(true);
             }, 150);
@@ -229,43 +223,36 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
         }
     }, [tankSize.width, isTransitionEnabled]);
 
-    // Handle Intro Flow
+    // Handle Intro Flow Init (Skip if not showing intro)
     useEffect(() => {
-        if (showIntro) {
-            // 1. Wait 7 seconds with text overlay visible
-            const timer1 = setTimeout(() => {
-                setIntroState('clearing'); // Triggers text fade out (duration 700ms)
-                
-                // 2. Wait for text fade (700ms). Fade is halfway done around 350ms.
-                // We want fish to appear at ~7.6s total time.
-                setTimeout(() => {
-                    setIntroState('appearing'); // Triggers fish pop
-                    sounds.playPop(); // Sync improved pop sound
-
-                    // 3. Switch to fully active state after rapid pop animation (300ms)
-                    setTimeout(() => {
-                        setIntroState('active');
-                    }, 400); 
-                }, 600); // 7000ms + 600ms = 7.6s total wait
-            }, 7000);
-            return () => clearTimeout(timer1);
-        } else {
+        if (!showIntro) {
             setIntroState('active');
         }
     }, [showIntro]);
 
+    const handleIntroTap = () => {
+        if (introState !== 'waiting') return;
+        
+        sounds.playClick(); 
+        setIntroState('clearing');
+        
+        setTimeout(() => {
+            setIntroState('appearing'); 
+            sounds.playPop(); 
+
+            setTimeout(() => {
+                setIntroState('active');
+            }, 400); 
+        }, 600); 
+    };
+
     // Derived state for visibility
     const isTextVisible = introState === 'waiting';
-    // Fish is visible only if active/appearing AND we have measured size (prevent ghost)
-    // CHANGE: Decoupled visibility from isTransitionEnabled to fix delay. 
-    // Now visible as soon as we know where to put it (tankSize > 0).
     const isFishVisible = (introState === 'appearing' || introState === 'active') && tankSize.width > 0;
 
     // SPEECH BUBBLE LOGIC
     useEffect(() => {
-        // Stop speech if:
-        // 1. Fish isn't active
-        // 2. A gift is ready (Priority - strict check)
+        // Stop speech if fish isn't active or gift is ready
         if (!isFishVisible || introState !== 'active' || isGiftReady) {
             setSpeech(null); 
             return;
@@ -274,7 +261,6 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
         let timeoutId: any;
 
         const runCycle = () => {
-            // Double check gift status (redundant due to dependency but safe)
             if (isGiftReady) return;
 
             // 1. Pick random message
@@ -297,23 +283,10 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
         };
     }, [isFishVisible, introState, isGiftReady]);
 
-    // Timer check for Gifts
-    useEffect(() => {
-        const checkTime = () => {
-            const now = Date.now();
-            const readyTime = pepinoState.lastGiftTime + pepinoState.nextGiftDelay;
-            const ready = now >= readyTime;
-            setIsGiftReady(ready);
-        };
-
-        checkTime();
-        // Check more frequently (1s) to capture readiness as soon as possible
-        const interval = setInterval(checkTime, 1000); 
-        return () => clearInterval(interval);
-    }, [pepinoState]);
-
     // Random Swimming Logic
     useEffect(() => {
+        if (introState !== 'active') return;
+
         let timeoutId: any;
         
         const moveFish = () => {
@@ -340,12 +313,12 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
             timeoutId = setTimeout(moveFish, delay);
         };
 
-        // Initial delay: If showing intro, wait for sequence to finish (~9s total) before swimming
-        const startDelay = showIntro ? 9000 : 1000;
+        // Initial delay: Start quickly after active
+        const startDelay = 1000;
         timeoutId = setTimeout(moveFish, startDelay);
 
         return () => clearTimeout(timeoutId);
-    }, [showIntro]); 
+    }, [introState]); 
 
     const handleClaim = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -359,12 +332,8 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
                  y: e.clientY - rect.top
              });
         }
-
-        const minDelay = 7200000;
-        const maxDelay = 10800000;
-        const nextDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1) + minDelay);
         
-        Storage.updatePepinoGiftTime(nextDelay);
+        Storage.claimPepinoGift();
         setPepinoState(Storage.getPepinoState()); 
         setIsGiftReady(false);
 
@@ -493,12 +462,14 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
 
             {/* --- INTRO TEXT OVERLAY --- */}
             <div 
-                className={`absolute inset-0 flex items-center justify-center p-4 z-40 transition-opacity duration-700 ${isTextVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                onClick={handleIntroTap}
+                className={`absolute inset-0 flex items-center justify-center p-4 z-40 transition-opacity duration-700 cursor-pointer active:scale-95 ${isTextVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             >
                 <div className="bg-white/60 backdrop-blur-md p-6 rounded-2xl shadow-sm border border-white/40 text-center max-w-[90%]">
-                    <p className="text-xl font-bold text-stone-800 mb-3 leading-tight">This is Pepino.</p>
-                    <p className="text-sm font-medium text-stone-600 mb-1 leading-relaxed">He was around while Oku was being built.</p>
-                    <p className="text-sm font-medium text-stone-600 leading-relaxed">Thanks for supporting the app — feel free to check on him anytime.</p>
+                    <p className="text-xl font-bold text-stone-800 mb-3 leading-tight">Meet Pepino.</p>
+                    <p className="text-sm font-medium text-stone-600 mb-1 leading-relaxed">He was around when Oku was being built.</p>
+                    <p className="text-sm font-medium text-stone-600 leading-relaxed mb-4">Feel free to check on him after every game.</p>
+                    <p className="text-xs font-bold text-blue-500 uppercase tracking-widest animate-pulse">Tap to continue</p>
                 </div>
             </div>
 

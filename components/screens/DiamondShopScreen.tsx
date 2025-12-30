@@ -5,6 +5,7 @@ import { DIAMOND_OFFERS } from '../../utils/constants';
 import { DiamondOffer } from '../../types';
 import { Storage } from '../../utils/storage';
 import { FishTank } from '../ui/FishTank';
+import { AnimatedNumber } from '../ui/AnimatedNumber';
 
 interface DiamondShopScreenProps {
     points: number;
@@ -14,19 +15,6 @@ interface DiamondShopScreenProps {
     onEarnPoints: (amount: number) => void;
     starterPackPurchased: boolean;
 }
-
-const DiamondBackground = () => (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-    <svg className="w-full h-[200%] animate-flow-up opacity-[0.15]" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <pattern id="diamond-pattern" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
-           <path d="M30 5 L55 30 L30 55 L5 30 Z" fill="none" stroke="currentColor" strokeWidth="2" className="text-stone-400 dark:text-stone-600" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#diamond-pattern)" />
-    </svg>
-  </div>
-);
 
 export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     points,
@@ -44,9 +32,11 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
 
     const shouldShowIntro = () => {
         if (!pepinoState.unlocked) return false;
-        const now = Date.now();
-        // If unlocked within the last 15 seconds AND delay is 0 (initial state), show intro
-        return (now - pepinoState.lastGiftTime) < 15000 && pepinoState.nextGiftDelay === 0;
+        // If we have an unlock timestamp, check if it was recent (15s)
+        if (pepinoState.unlockedAt) {
+            return (Date.now() - pepinoState.unlockedAt) < 15000;
+        }
+        return false;
     };
 
     const handleRewardClaim = (amount: number) => {
@@ -61,7 +51,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
 
     return (
         <div className="flex-1 w-full flex flex-col items-center overflow-hidden relative">
-            <DiamondBackground />
+            {/* Background is now handled in App.tsx to cover safe areas */}
 
             <div className="w-full max-w-md flex items-center justify-between px-6 pt-4 pb-4 relative shrink-0 z-20 mx-auto">
                 <button onClick={onBack} className="p-2 rounded-full hover:bg-stone-200 transition -ml-2 text-t-icon relative z-30">
@@ -74,7 +64,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1 bg-t-surface px-3 py-2 rounded-full shadow-sm relative z-30">
-                      <span className="text-sm font-bold text-t-primary animate-pop">{points}</span>
+                      <AnimatedNumber value={points} className="text-sm font-bold text-t-primary tabular-nums" />
                       <div className="text-blue-500"><Icons.Diamond className="w-3 h-3 fill-current" /></div>
                 </div>
             </div>
@@ -90,7 +80,8 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                 key={offer.id} 
                                 onClick={() => handleBuyOfferWrapper(offer)}
                                 // Card Container - Premium Midnight Slate Gradient with lighter start
-                                className="w-full h-56 relative overflow-hidden rounded-[1.75rem] p-6 shadow-2xl transition-transform mb-6 text-left bg-gradient-to-br from-slate-600 via-slate-800 to-slate-900 active:scale-[0.99] group border border-white/10"
+                                // Adjusted padding to px-5 py-4 to lift content
+                                className="w-full h-56 relative overflow-hidden rounded-[1.75rem] px-5 py-4 shadow-2xl transition-transform mb-6 text-left bg-gradient-to-br from-slate-600 via-slate-800 to-slate-900 active:scale-[0.99] group border border-white/10"
                             >
                                 {/* Subtle Shine Effect */}
                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/0 to-white/5 pointer-events-none" />
@@ -129,16 +120,14 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                 </div>
 
                                 <div className="relative z-10 flex flex-col h-full">
-                                    {/* Header Row */}
-                                    <div className="flex justify-between items-start mb-2">
+                                    {/* Header Row - Reduced bottom margin */}
+                                    <div className="flex justify-between items-start mb-1">
                                         <h2 className="text-2xl font-bold text-white leading-tight">{offer.title}</h2>
                                     </div>
 
-                                    {/* Description Text - Explicitly over the heart area */}
-                                    <p className="text-[11px] font-medium text-slate-300 leading-relaxed pr-2 max-w-full mb-3 relative z-10">
-                                        Oku is made by a single independent developer. 
-                                        Your support helps keep the app calm, fair, and ad-light. 
-                                        Thank you for being here.
+                                    {/* Description Text - Reduced bottom margin */}
+                                    <p className="text-[10px] font-medium text-slate-300 leading-relaxed pr-2 max-w-full mb-2 relative z-10">
+                                        Oku is the work of a single independent developer. Your support keeps the experience calm, fair, and ad-light. By getting this, you adopt a special companion who brings exclusive rewards to your journey. Thank you!
                                     </p>
 
                                     {/* Bottom Area: Benefits List + Price Badge */}

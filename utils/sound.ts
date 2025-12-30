@@ -83,6 +83,7 @@ class SoundController {
     private soundEnabled: boolean = true;
     private vibrationEnabled: boolean = true;
     private activeProfile: SoundProfile = PROFILES['snd-zen'];
+    private lastTickTime: number = 0;
 
     setEnabled(enabled: boolean) {
         this.soundEnabled = enabled;
@@ -398,6 +399,31 @@ class SoundController {
         }
     }
 
+    playCounterTick() {
+        if (!this.soundEnabled) return;
+        
+        // Throttling to avoid buzzing on large number jumps
+        const now = Date.now();
+        if (now - this.lastTickTime < 50) return; 
+        this.lastTickTime = now;
+
+        const pid = this.activeProfile.id;
+        
+        if (pid === 'snd-paper') {
+            this.playNoiseBurst(1500, 0.01, 0.15); // Very short scratch
+        } else if (pid === 'snd-wood') {
+            this.playTone(800, 0.02, 0.15, 'sine', undefined, true);
+        } else if (pid === 'snd-water') {
+            this.playTone(1000 + Math.random() * 200, 0.03, 0.15, 'sine', undefined, true);
+        } else if (pid === 'snd-piano') {
+            // High C7 is ~2093
+            this.playTone(2093, 0.05, 0.1, 'triangle', undefined, true);
+        } else {
+            // Zen / Default
+            this.playTone(1000, 0.02, 0.1, 'sine', undefined, true);
+        }
+    }
+
     playWin() {
         if (this.soundEnabled) {
             const sequence = [1046.50, 1318.51, 1567.98, 2093.00]; 
@@ -466,55 +492,47 @@ class SoundController {
     }
 
     playZap() {
+        // "Auto" Skill Sound - Satisfying "Snap + Ding"
         if (this.soundEnabled) {
             const ctx = this.getCtx();
             const now = ctx.currentTime;
             
-            const bufferSize = ctx.sampleRate * 0.2;
-            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                data[i] = Math.random() * 2 - 1;
-            }
-
-            const noise = ctx.createBufferSource();
-            noise.buffer = buffer;
-
-            const noiseFilter = ctx.createBiquadFilter();
-            noiseFilter.type = 'bandpass';
-            noiseFilter.Q.value = 1.0;
-            noiseFilter.frequency.setValueAtTime(600, now);
-            noiseFilter.frequency.exponentialRampToValueAtTime(3500, now + 0.15); 
-
-            const noiseGain = ctx.createGain();
-            noiseGain.gain.setValueAtTime(0, now);
-            noiseGain.gain.linearRampToValueAtTime(0.35, now + 0.04);
-            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-
-            noise.connect(noiseFilter);
-            noiseFilter.connect(noiseGain);
-            noiseGain.connect(ctx.destination);
-            noise.start(now);
-            noise.stop(now + 0.2);
-
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(800, now);
-            osc.frequency.exponentialRampToValueAtTime(1400, now + 0.1); 
+            // 1. The Snap (Percussive, Mechanical)
+            const snapOsc = ctx.createOscillator();
+            const snapGain = ctx.createGain();
             
-            gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.25, now + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+            snapOsc.type = 'triangle'; // Sharper than sine
+            snapOsc.frequency.setValueAtTime(300, now);
+            snapOsc.frequency.exponentialRampToValueAtTime(50, now + 0.1); // Quick drop
+            
+            snapGain.gain.setValueAtTime(0, now);
+            snapGain.gain.linearRampToValueAtTime(0.4, now + 0.01);
+            snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            
+            snapOsc.connect(snapGain);
+            snapGain.connect(ctx.destination);
+            snapOsc.start(now);
+            snapOsc.stop(now + 0.15);
 
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(now);
-            osc.stop(now + 0.25);
+            // 2. The Ding (Confirmation, High Pitch)
+            const dingOsc = ctx.createOscillator();
+            const dingGain = ctx.createGain();
+            
+            dingOsc.type = 'sine';
+            dingOsc.frequency.setValueAtTime(1046.50, now); // C6
+            
+            dingGain.gain.setValueAtTime(0, now);
+            dingGain.gain.linearRampToValueAtTime(0.2, now + 0.02);
+            dingGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+            
+            dingOsc.connect(dingGain);
+            dingGain.connect(ctx.destination);
+            dingOsc.start(now);
+            dingOsc.stop(now + 0.45);
         }
 
         if (this.vibrationEnabled) {
-            Haptics.impact({ style: ImpactStyle.Heavy });
+            Haptics.impact({ style: ImpactStyle.Medium });
         }
     }
 
@@ -590,8 +608,34 @@ class SoundController {
 
     playReveal() {
         if (!this.soundEnabled) return;
-        this.playTone(523.25, 0.15, 0.4, 'sine', 1.0, true);
-        setTimeout(() => this.playTone(1046.50, 0.4, 0.3, 'sine', 1.0, true), 100);
+        const ctx = this.getCtx();
+        const now = ctx.currentTime;
+
+        // Consistent "Magical" Chord: C Major Add9 (C, E, G, D)
+        // This plays regardless of the selected sound pack
+        const frequencies = [523.25, 659.25, 783.99, 1174.66]; 
+        
+        frequencies.forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            // Use Sine for pure magic sound
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now);
+            
+            // Staggered entry for "shimmer" effect
+            const startTime = now + (i * 0.06);
+            
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.15, startTime + 0.05); // Soft attack
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.2); // Long decay
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.start(startTime);
+            osc.stop(startTime + 1.3);
+        });
     }
 
     playPreview(profileId: string) {

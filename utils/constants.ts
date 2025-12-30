@@ -5,7 +5,6 @@ import { Icons } from '../components/ui/Icons';
 // --- GOLDEN SEEDS ---
 // These seeds are pre-mined. They guarantee a valid, unique puzzle with 20-23 clues.
 // This allows "Impossible" levels to load INSTANTLY without freezing the phone.
-// Use window.mineSudokuSeeds(1, 300) to generate unique ones.
 export const IMPOSSIBLE_SEEDS = [
     // Pack 1 (Levels 1-100)
     36, 57, 101, 129, 153, 160, 169, 237, 435, 471, 
@@ -90,14 +89,6 @@ export const DIFFICULTY_DESCRIPTIONS = {
     ],
 };
 
-// Base cost for Pack 2 (Levels 101-200)
-// Configured to match exactly the points earned from 100 levels of the previous pack.
-// SuperEasy: 5pts * 100 = 500
-// Easy: 10pts * 100 = 1000
-// Normal: 15pts * 100 = 1500
-// Hard: 20pts * 100 = 2000
-// Intense: 30pts * 100 = 3000
-// Impossible: 50pts * 100 = 5000
 const PACK_BASE_COST = {
     [Difficulty.SuperEasy]: 500,
     [Difficulty.Easy]: 1000,

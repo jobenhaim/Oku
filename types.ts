@@ -58,8 +58,8 @@ export interface AppSettings {
 
 export interface PepinoState {
   unlocked: boolean;
-  lastGiftTime: number; // Timestamp of when the last reward was claimed
-  nextGiftDelay: number; // Milliseconds to wait for next gift
+  hasPendingGift: boolean;
+  unlockedAt?: number; // Timestamp of when it was unlocked, for intro logic
 }
 
 export interface StoredData {
@@ -80,6 +80,13 @@ export interface StoredData {
   unlockedPack2?: string[]; // Array of difficulty names where Pack 2 (levels 101-200) is unlocked
   unlockedPack3?: string[]; // Array of difficulty names where Pack 3 (levels 201-300) is unlocked
   pepino?: PepinoState;
+  
+  // Stats
+  stats?: {
+      totalGamesWon: number;
+      totalDiamondsEarned: number;
+      perfectGames: number; // Won without errors
+  };
 }
 
 export type DiamondOffer = {

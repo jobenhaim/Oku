@@ -57,7 +57,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   const [animatingSections, setAnimatingSections] = useState<Set<string>>(new Set());
   const [showStartHint, setShowStartHint] = useState(false);
-
+  
   // Timer hook
   const { timer, setTimer } = useGameTimer(
       settings,
@@ -68,7 +68,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       0
   );
 
-  const saveProgress = (currentBoard: Board, scanUsesVal?: number, revealUsesVal?: number, moveLog?: MoveLogEntry[]) => {
+  const saveProgress = (currentBoard: Board, scanUsesVal?: number, revealUsesVal?: number, moveLog?: MoveLogEntry[], isPerfect: boolean = false) => {
       if (isCompleted || isEnding) return;
       Storage.saveLevelProgress({
           levelId,
@@ -80,7 +80,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           lastPlayed: Date.now(),
           scanUses: scanUsesVal !== undefined ? scanUsesVal : scanUses,
           revealUses: revealUsesVal !== undefined ? revealUsesVal : revealUses,
-      });
+      }, isPerfect);
   };
 
   const handleSectionComplete = useCallback((sections: string[]) => {
@@ -100,7 +100,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       }
   }, []);
 
-  const handleGameComplete = (completedBoard: Board, completedMoveLog: MoveLogEntry[]) => {
+  const handleGameComplete = (completedBoard: Board, completedMoveLog: MoveLogEntry[], isPerfect: boolean) => {
       if (isCompleted || isEnding) return;
       setIsEnding(true);
       sounds.playWin();
@@ -133,7 +133,10 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           lastPlayed: Date.now(),
           scanUses,
           revealUses,
-      });
+      }, isPerfect);
+      
+      // Grant Pepino Gift on Win
+      Storage.grantPepinoGift();
       
       if (settings.generateReplay) {
           // Pass true to indicate auto-generation
@@ -415,19 +418,21 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           className="flex-1 w-full flex flex-col items-center justify-start relative cursor-default" 
           onClick={handleBackgroundClick}
       >
-         <SudokuGrid 
-             board={board}
-             selectedCell={selectedCell}
-             activeNumber={activeNumber}
-             conflicts={conflicts}
-             revealingCell={revealingCell}
-             animatingCell={animatingCell}
-             isScanning={isScanning}
-             animatingSections={animatingSections}
-             settings={settings}
-             numberColor={numberColor}
-             onCellClick={onCellClickWrapper}
-         />
+         <div className="contents">
+            <SudokuGrid 
+                board={board}
+                selectedCell={selectedCell}
+                activeNumber={activeNumber}
+                conflicts={conflicts}
+                revealingCell={revealingCell}
+                animatingCell={animatingCell}
+                isScanning={isScanning}
+                animatingSections={animatingSections}
+                settings={settings}
+                numberColor={numberColor}
+                onCellClick={onCellClickWrapper}
+            />
+         </div>
 
          {/* Number Pad - Wider [500px] to match grid */}
          <div className="w-full max-w-[500px] px-2 mt-4 relative z-[100]" onClick={(e) => e.stopPropagation()}>
@@ -465,7 +470,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
          
          {/* Deselect Text - Increased spacing (mt-8) */}
          <div className={`mt-8 mb-4 pointer-events-none transition-opacity duration-1000 ${showStartHint ? 'opacity-100' : 'opacity-0'}`}>
-             <span className="text-sm font-light text-stone-400 dark:text-stone-500 tracking-wide">TAP HERE TO DESELECT</span>
+             <span className="text-xs font-light text-stone-400 dark:text-stone-500 tracking-wide">Tap here to deselect</span>
          </div>
       </div>
 

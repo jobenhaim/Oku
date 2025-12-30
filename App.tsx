@@ -4,9 +4,8 @@ import { Difficulty, AppSettings, DiamondOffer } from './types';
 import { SudokuGame } from './components/SudokuGame';
 import { Storage } from './utils/storage';
 import { sounds } from './utils/sound';
-import { getPackCost, NUMBER_COLORS, ALL_BACKGROUNDS, SKILLS } from './utils/constants';
+import { getPackCost, NUMBER_COLORS, ALL_BACKGROUNDS } from './utils/constants';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
-import { Capacitor } from '@capacitor/core';
 
 // UI Components
 import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal } from './components/ui/Modals';
@@ -21,6 +20,24 @@ import { DiamondShopScreen } from './components/screens/DiamondShopScreen';
 import { StatsScreen } from './components/screens/StatsScreen';
 
 type Screen = 'splash' | 'difficulty' | 'levels' | 'game' | 'settings' | 'store' | 'diamondShop' | 'stats';
+
+// Diamond Background Component - Moved here to guarantee full screen coverage (behind safe areas)
+const DiamondBackground = () => (
+  <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <svg 
+        className="w-full h-[200%] animate-flow-up opacity-[0.12]" 
+        style={{ animationDuration: '80s' }} 
+        xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <pattern id="diamond-pattern" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+           <path d="M15 4 L26 15 L15 26 L4 15 Z" fill="none" stroke="currentColor" strokeWidth="1.2" className="text-stone-500 dark:text-stone-400" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#diamond-pattern)" />
+    </svg>
+  </div>
+);
 
 export function App() {
   const [screen, setScreen] = useState<Screen>('splash');
@@ -61,22 +78,25 @@ export function App() {
   // Initialize Native Storage
   useEffect(() => {
     const initStorage = async () => {
-        const nativeData = await Storage.initializeNative();
-        if (nativeData) {
-            setPoints(nativeData.points);
-            setSettings(nativeData.settings);
-            setPurchasedBackgrounds(nativeData.purchasedBackgrounds);
-            setPurchasedNumberColors(nativeData.purchasedNumberColors);
-            setPurchasedSoundPacks(nativeData.purchasedSoundPacks || ['snd-zen']);
-            setSelectedSoundPackId(nativeData.selectedSoundPack || 'snd-zen');
-            setPurchasedSkills(nativeData.purchasedSkills);
-            setEnabledSkills(nativeData.enabledSkills || [...nativeData.purchasedSkills]);
-            setStarterPackPurchased(nativeData.starterPackPurchased || false);
-            
-            const isDark = nativeData.settings.appearance === 'dark' || (nativeData.settings.appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-            if (isDark) document.documentElement.classList.add('dark');
-            else document.documentElement.classList.remove('dark');
-        }
+        // Initialize native storage and get data
+        const data = await Storage.initializeNative() || Storage.getStoredData();
+        
+        setPoints(data.points);
+        setSettings(data.settings);
+        setPurchasedBackgrounds(data.purchasedBackgrounds);
+        setPurchasedNumberColors(data.purchasedNumberColors);
+        setPurchasedSoundPacks(data.purchasedSoundPacks || ['snd-zen']);
+        setSelectedSoundPackId(data.selectedSoundPack || 'snd-zen');
+        setPurchasedSkills(data.purchasedSkills);
+        setEnabledSkills(data.enabledSkills || [...data.purchasedSkills]);
+        setStarterPackPurchased(data.starterPackPurchased || false);
+        setUnlockedPacks2(data.unlockedPack2 || []);
+        setUnlockedPacks3(data.unlockedPack3 || []);
+        setNextBonusClaimTime(data.nextBonusClaimTime || 0);
+        
+        const isDark = data.settings.appearance === 'dark' || (data.settings.appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) document.documentElement.classList.add('dark');
+        else document.documentElement.classList.remove('dark');
     };
     initStorage();
   }, []);
@@ -239,12 +259,13 @@ export function App() {
     setEnabledSkills([...next]);
   };
 
+  // Simplified Earn Points Handler (No Fly-In)
   const handleEarnPoints = (amount: number) => {
     const newTotal = Storage.addPoints(amount);
     setPoints(newTotal);
   };
   
-  const handleClaimBonus = () => {
+  const handleClaimBonus = (e: React.MouseEvent) => {
     const now = Date.now();
     if (now < nextBonusClaimTime) return;
     sounds.playWin();
@@ -261,7 +282,11 @@ export function App() {
   };
   
   const initiatePurchase = (item: any, type: 'bg' | 'num' | 'skill' | 'sound') => {
-      sounds.playPop();
+      // Don't play the default 'pop' sound if we are buying a sound pack, 
+      // as the preview of that sound pack will already be playing.
+      if (type !== 'sound') {
+          sounds.playPop();
+      }
       setPurchaseCandidate({ ...item, type });
   };
 
@@ -334,6 +359,7 @@ export function App() {
   const finalizeRealMoneyPurchase = () => {
       if (!paymentOffer) return;
       const offer = paymentOffer;
+      
       handleEarnPoints(offer.diamonds);
       
       if (offer.type === 'starter') {
@@ -395,8 +421,6 @@ export function App() {
       }
   }
 
-  // NOTE: Splash screen override removed to allow global background selection to persist on all screens.
-  
   const numberColorClass = NUMBER_COLORS.find(n => n.id === selectedNumberColorId)?.class || 'text-blue-600';
   const isGradient = activeBackgroundClass.includes('bg-gradient');
   let overlayOpacity = '0';
@@ -452,6 +476,10 @@ export function App() {
                 style={{ opacity: overlayOpacity }} 
               />
 
+              {/* Diamond Shop Background (Behind Safe Area Wrapper) */}
+              {/* This ensures diamonds cover the entire screen including notches */}
+              {screen === 'diamondShop' && <DiamondBackground />}
+
               {/* Content Wrapper with Safe Areas */}
               {/* This inner container handles safe area padding to prevent content from being covered by notch/home bar */}
               <div 
@@ -499,6 +527,8 @@ export function App() {
                             {screen === 'stats' && (
                                 <StatsScreen 
                                     onBack={handleStatsBack}
+                                    onEarnPoints={handleEarnPoints}
+                                    points={points}
                                 />
                             )}
                             

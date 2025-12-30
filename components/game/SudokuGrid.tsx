@@ -64,7 +64,8 @@ export const SudokuGrid: React.FC<SudokuGridProps> = ({
         const isThisCellRevealing = revealingCell?.r === r && revealingCell?.c === c;
     
         if (isThisCellRevealing) {
-            bgClass = ''; 
+            // Keep default background during reveal init to prevent black flash from transparency
+            bgClass = 'bg-t-board '; 
         } else if (isMarkedWrong) {
              // Scanner Detection: Bright Red Flash
              bgClass = 'bg-red-500 animate-pulse shadow-inner '; 

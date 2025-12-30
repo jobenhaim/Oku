@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Icons } from '../ui/Icons';
 import { sounds } from '../../utils/sound';
@@ -76,8 +77,8 @@ export const GameControls: React.FC<GameControlsProps> = ({
                             <Icons.Reveal className={`w-5 h-5 ${revealUses > 0 ? 'text-purple-600 dark:text-purple-400' : 'text-stone-300 dark:text-stone-600'}`} />
                         )}
                         
-                        {/* Removed border-2 border-t-surface */}
-                        <div className={`absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-sm font-bold leading-none ${revealUses > 0 && !isRevealLocked ? 'bg-blue-600 text-white' : 'bg-stone-300 text-white dark:bg-stone-600'}`}>
+                        {/* Larger Badge for Reveal - Moved to -top-4 -right-4 */}
+                        <div className={`absolute -top-4 -right-4 w-7 h-7 rounded-full flex items-center justify-center text-base font-bold leading-none shadow-sm z-10 ${revealUses > 0 && !isRevealLocked ? 'bg-blue-600 text-white' : 'bg-stone-300 text-white dark:bg-stone-600'}`}>
                                 {revealUses > 0 ? revealUses : '+'}
                         </div>
                     </div>
@@ -94,8 +95,9 @@ export const GameControls: React.FC<GameControlsProps> = ({
                     >
                     <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative ${getBaseContainerStyle(scanUses > 0 && !scanCooldown && !isScanning)}`}>
                         <Icons.Scan className={`w-5 h-5 ${scanUses > 0 && !scanCooldown && !isScanning ? 'text-red-600 dark:text-red-400' : 'text-stone-300 dark:text-stone-600'}`} />
+                        {/* Larger Badge for Scan - Moved to -top-4 -right-4 */}
                         {scanUses > 0 && (
-                            <div className={`absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-sm font-bold leading-none ${scanUses > 0 ? 'bg-blue-600 text-white' : 'hidden'}`}>
+                            <div className={`absolute -top-4 -right-4 w-7 h-7 rounded-full flex items-center justify-center text-base font-bold leading-none shadow-sm z-10 ${scanUses > 0 ? 'bg-blue-600 text-white' : 'hidden'}`}>
                                 {scanUses}
                             </div>
                         )}
