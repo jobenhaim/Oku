@@ -161,11 +161,11 @@ function getStoredData(): StoredData {
   }
 }
 
-function saveData(data: StoredData) {
+async function saveData(data: StoredData) {
   try {
     const stringified = JSON.stringify(data);
     localStorage.setItem(STORAGE_KEY, stringified);
-    Preferences.set({
+    await Preferences.set({
         key: STORAGE_KEY,
         value: stringified
     }).catch((err: any) => console.error("Native save failed", err));
@@ -475,6 +475,35 @@ export const Storage = {
     }
   },
   
+  // --- DEV TOOLS ---
+  debugCompleteLevels: async (difficulty: string, count: number) => {
+      const data = getStoredData();
+      // Ensure we have stats object
+      if (!data.stats) data.stats = { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 };
+
+      for (let i = 1; i <= count; i++) {
+          const key = `${difficulty}-${i}`;
+          data.progress[key] = {
+              levelId: i,
+              difficulty: difficulty as any,
+              status: 'completed',
+              timeElapsed: 60, // Dummy 1 min time
+              bestTime: 60,
+              scanUses: 3,
+              revealUses: 1,
+              lastPlayed: Date.now()
+          };
+          // Don't double count if already done in stats, simplistic approach
+          data.stats.totalGamesWon += 1;
+      }
+      
+      // Give enough money to test unlocks
+      data.points += 50000;
+      data.stats.totalDiamondsEarned += 50000;
+
+      await saveData(data);
+  },
+
   getCompletedCount: (difficulty: string, maxLevel: number = 200): number => {
       const progress = getStoredData().progress;
       return Object.values(progress).filter(p => 

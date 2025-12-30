@@ -21,22 +21,9 @@ import { StatsScreen } from './components/screens/StatsScreen';
 
 type Screen = 'splash' | 'difficulty' | 'levels' | 'game' | 'settings' | 'store' | 'diamondShop' | 'stats';
 
-// Diamond Background Component - Moved here to guarantee full screen coverage (behind safe areas)
+// Optimized Diamond Background Component (CSS-based)
 const DiamondBackground = () => (
-  <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-    <svg 
-        className="w-full h-[200%] animate-flow-up opacity-[0.12]" 
-        style={{ animationDuration: '80s' }} 
-        xmlns="http://www.w3.org/2000/svg"
-    >
-      <defs>
-        <pattern id="diamond-pattern" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
-           <path d="M15 4 L26 15 L15 26 L4 15 Z" fill="none" stroke="currentColor" strokeWidth="1.2" className="text-stone-500 dark:text-stone-400" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#diamond-pattern)" />
-    </svg>
-  </div>
+  <div className="fixed inset-0 pointer-events-none z-0 bg-diamond-pattern" />
 );
 
 export function App() {
@@ -78,8 +65,11 @@ export function App() {
   // Initialize Native Storage
   useEffect(() => {
     const initStorage = async () => {
-        // Initialize native storage and get data
-        const data = await Storage.initializeNative() || Storage.getStoredData();
+        // Initialize native storage
+        await Storage.initializeNative();
+        
+        // Get updated data
+        const data = Storage.getStoredData();
         
         setPoints(data.points);
         setSettings(data.settings);
@@ -477,7 +467,6 @@ export function App() {
               />
 
               {/* Diamond Shop Background (Behind Safe Area Wrapper) */}
-              {/* This ensures diamonds cover the entire screen including notches */}
               {screen === 'diamondShop' && <DiamondBackground />}
 
               {/* Content Wrapper with Safe Areas */}

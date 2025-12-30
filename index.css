@@ -356,3 +356,17 @@ html, body {
   0% { background-position: 100% 0; }
   100% { background-position: -100% 0; }
 }
+
+/* Optimized Diamond Pattern */
+.bg-diamond-pattern {
+  /* Using a data URI SVG for the pattern. Stroke color is #78716c (stone-500) */
+  background-image: url("data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M15 4 L26 15 L15 26 L4 15 Z' fill='none' stroke='%2378716c' stroke-width='1.2' opacity='0.4'/%3E%3C/svg%3E");
+  background-size: 30px 30px;
+  animation: bg-scroll 80s linear infinite;
+  opacity: 0.12;
+}
+
+@keyframes bg-scroll {
+  from { background-position: 0 0; }
+  to { background-position: 0 -30px; }
+}

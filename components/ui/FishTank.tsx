@@ -467,8 +467,8 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
             >
                 <div className="bg-white/60 backdrop-blur-md p-6 rounded-2xl shadow-sm border border-white/40 text-center max-w-[90%]">
                     <p className="text-xl font-bold text-stone-800 mb-3 leading-tight">Meet Pepino.</p>
-                    <p className="text-sm font-medium text-stone-600 mb-1 leading-relaxed">He was around when Oku was being built.</p>
-                    <p className="text-sm font-medium text-stone-600 leading-relaxed mb-4">Feel free to check on him after every game.</p>
+                    <p className="text-[11px] font-medium text-stone-600 mb-1 leading-relaxed">He was around when Oku was being built.</p>
+                    <p className="text-[11px] font-medium text-stone-600 leading-relaxed mb-4">Feel free to check on him after every game.</p>
                     <p className="text-xs font-bold text-blue-500 uppercase tracking-widest animate-pulse">Tap to continue</p>
                 </div>
             </div>

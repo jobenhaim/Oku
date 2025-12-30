@@ -1,6 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { Board, Cell, AppSettings } from '../../types';
+import SudokuCell from './SudokuCell';
 
 interface SudokuGridProps {
     board: Board;
@@ -16,7 +17,7 @@ interface SudokuGridProps {
     onCellClick: (e: React.MouseEvent, r: number, c: number) => void;
 }
 
-export const SudokuGrid: React.FC<SudokuGridProps> = ({
+export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     board,
     selectedCell,
     activeNumber,
@@ -43,75 +44,6 @@ export const SudokuGrid: React.FC<SudokuGridProps> = ({
         return null;
     }, [activeNumber, selectedCell, board]);
 
-    const getCellClass = (cell: Cell, r: number, c: number) => {
-        let classes = "w-full h-full flex items-center justify-center cursor-pointer select-none relative overflow-hidden ";
-        const isConflict = conflicts.has(`${r}-${c}`);
-        const isError = cell.isError;
-        const isMarkedWrong = cell.isMarkedWrong;
-        const isRevealed = cell.isRevealed;
-        
-        const isSelected = selectedCell ? (selectedCell[0] === r && selectedCell[1] === c) : false;
-        
-        // Check if cell matches highlighted value for background highlight
-        let isSameValue = false;
-        if (cell.value !== null && highlightedValue !== null) {
-            isSameValue = cell.value === highlightedValue;
-        }
-    
-        const isRelated = selectedCell && (selectedCell[0] === r || selectedCell[1] === c || (Math.floor(selectedCell[0]/3) === Math.floor(r/3) && Math.floor(selectedCell[1]/3) === Math.floor(c/3)));
-        
-        let bgClass = ''; 
-        const isThisCellRevealing = revealingCell?.r === r && revealingCell?.c === c;
-    
-        if (isThisCellRevealing) {
-            // Keep default background during reveal init to prevent black flash from transparency
-            bgClass = 'bg-t-board '; 
-        } else if (isMarkedWrong) {
-             // Scanner Detection: Bright Red Flash
-             bgClass = 'bg-red-500 animate-pulse shadow-inner '; 
-        } else if (isSelected && (isError || isConflict)) {
-             // Selected Error: Noticeable Red
-             bgClass = 'bg-red-200 dark:bg-red-900 '; 
-        } else if (isError || isConflict) {
-             // Error: Increased visibility
-             bgClass = 'bg-red-100 dark:bg-red-900/50 ';
-        } else if (isSelected) {
-             bgClass = 'bg-blue-200 dark:bg-blue-500 '; // Selected: Blue 200 (Lighter)
-        } else if (settings.highlight && isSameValue) {
-             bgClass = 'bg-blue-100 dark:bg-blue-600/40 '; // Same Value: Blue 100
-        } else if (settings.highlight && isRelated) {
-             // Related: Grey (stone-100) instead of Blue
-             bgClass = 'bg-stone-100 dark:bg-black/10 '; 
-        } else if (isRevealed) {
-             bgClass = 'bg-amber-100 '; 
-        } else {
-             bgClass = 'bg-t-board '; 
-        }
-    
-        classes += bgClass;
-        
-        if (isThisCellRevealing) {
-            classes += "animate-reveal-premium z-50 relative ";
-        }
-        
-        if (cell.isFixed) {
-            classes += "font-semibold text-stone-800 ";
-        } else if (isRevealed) {
-            classes += "font-semibold text-stone-800 ";
-        } else {
-            if (isMarkedWrong) {
-                // Scanner Detection Text: White for contrast against bright red
-                classes += "font-bold text-white ";
-            } else if (isError || isConflict) {
-                // Error Text: Darker red for visibility
-                classes += "font-medium text-red-600 dark:text-red-300 ";
-            } else {
-                classes += "font-medium ";
-            }
-        }
-        return classes;
-    };
-
     const getSectionOverlayStyle = (sectionId: string) => {
         if (sectionId === 'full-board') {
             return {
@@ -122,7 +54,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = ({
                 left: 0,
                 width: '100%',
                 height: '100%',
-                borderWidth: '8px' // Make completion border more prominent
+                borderWidth: '8px' 
             };
         }
 
@@ -163,8 +95,6 @@ export const SudokuGrid: React.FC<SudokuGridProps> = ({
                 }}
             >
             
-            {/* Main Border Overlay Removed - Now handled by container border */}
-
             {isScanning && (
                 <div className="absolute left-0 right-0 h-1 bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)] z-30 animate-scan pointer-events-none"></div>
             )}
@@ -186,47 +116,47 @@ export const SudokuGrid: React.FC<SudokuGridProps> = ({
             <div className="grid w-full h-full relative z-10" style={{ gridTemplateColumns: 'repeat(9, minmax(0, 1fr))', gridTemplateRows: 'repeat(9, minmax(0, 1fr))' }}>
             {board.map((row, rIndex) => row.map((cell, cIndex) => {
                     const isAnimating = animatingCell?.r === rIndex && animatingCell?.c === cIndex;
+                    const isConflict = conflicts.has(`${rIndex}-${cIndex}`);
+                    
+                    const isSelected = selectedCell ? (selectedCell[0] === rIndex && selectedCell[1] === cIndex) : false;
+                    
+                    let isSameValue = false;
+                    if (cell.value !== null && highlightedValue !== null) {
+                        isSameValue = cell.value === highlightedValue;
+                    }
+                
+                    const isRelated = selectedCell && (selectedCell[0] === rIndex || selectedCell[1] === cIndex || (Math.floor(selectedCell[0]/3) === Math.floor(rIndex/3) && Math.floor(selectedCell[1]/3) === Math.floor(cIndex/3)));
+                    
+                    const isRevealingCell = revealingCell?.r === rIndex && revealingCell?.c === cIndex;
 
                     return (
-                        <div 
-                            key={`${rIndex}-${cIndex}`} 
-                            className={getCellClass(cell, rIndex, cIndex)} 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onCellClick(e, rIndex, cIndex);
-                            }} 
-                            style={{ fontSize: mainFontSize }}
-                        >
-                        {(cell.value || isAnimating) ? (
-                            <span className={`leading-none pt-[0.1em] relative z-10 ${!cell.isFixed && !cell.isError && !cell.isMarkedWrong && !cell.isRevealed ? numberColor : ''}`}>
-                                {isAnimating ? animatingCell!.value : cell.value}
-                            </span>
-                        ) : (
-                            <div className="grid grid-cols-3 grid-rows-3 w-full h-full p-[1px] pointer-events-none relative z-10">
-                                {[1,2,3,4,5,6,7,8,9].map(n => {
-                                    // BOLD NOTE LOGIC
-                                    const isNoteActive = n === highlightedValue;
-                                    const noteClass = cell.notes.includes(n) 
-                                        ? (isNoteActive 
-                                            ? 'text-stone-900 dark:text-stone-100 font-black scale-110 transition-transform' 
-                                            : 'text-stone-500 font-medium')
-                                        : 'invisible';
-                                        
-                                    return (
-                                        <div key={n} className="flex items-center justify-center leading-none" style={{ fontSize: noteFontSize, lineHeight: noteLineHeight }}>
-                                            <span className={noteClass}>{n}</span>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        )}
-                        </div>
+                        <SudokuCell
+                            key={`${rIndex}-${cIndex}`}
+                            r={rIndex}
+                            c={cIndex}
+                            cell={cell}
+                            isConflict={isConflict}
+                            isError={!!cell.isError}
+                            isMarkedWrong={!!cell.isMarkedWrong}
+                            isRevealed={!!cell.isRevealed}
+                            isSelected={isSelected}
+                            isSameValue={isSameValue}
+                            isRelated={!!isRelated}
+                            highlight={settings.highlight}
+                            isRevealingCell={isRevealingCell}
+                            animatingValue={isAnimating ? animatingCell!.value : null}
+                            settings={settings}
+                            numberColor={numberColor}
+                            onCellClick={onCellClick}
+                            mainFontSize={mainFontSize}
+                            noteFontSize={noteFontSize}
+                            noteLineHeight={noteLineHeight}
+                        />
                     );
                 })
             )}
             </div>
             
-            {/* Section/Board Completion Borders */}
             {Array.from(animatingSections).map((sectionId: string) => (
                  <div 
                     key={sectionId} 
@@ -237,4 +167,4 @@ export const SudokuGrid: React.FC<SudokuGridProps> = ({
          </div>
          </div>
     );
-};
+});

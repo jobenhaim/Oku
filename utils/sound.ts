@@ -424,6 +424,83 @@ class SoundController {
         }
     }
 
+    playProgressFill(duration: number): () => void {
+        if (!this.soundEnabled) return () => {};
+        const ctx = this.getCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+
+        // Subtle rising tone ("charging" effect)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(150, ctx.currentTime);
+        // Ramp pitch slightly
+        osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + duration);
+
+        // Lowpass filter opening up
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(200, ctx.currentTime);
+        filter.frequency.linearRampToValueAtTime(800, ctx.currentTime + duration);
+
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        // Soft fade in
+        gain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 0.2);
+        // Hold
+        gain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + duration - 0.2);
+        // Soft fade out
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+        
+        return () => {
+            try {
+                // Ramp down quickly to avoid click on stop
+                gain.gain.cancelScheduledValues(ctx.currentTime);
+                gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1);
+                osc.stop(ctx.currentTime + 0.15);
+            } catch(e) {}
+        };
+    }
+
+    playUnlockReady() {
+        if (!this.soundEnabled) return;
+        const ctx = this.getCtx();
+        
+        // "Unlock Ready" Chime: Bright, Magical
+        // C6, E6, G6, C7
+        const notes = [1046.50, 1318.51, 1567.98, 2093.00];
+        
+        notes.forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, ctx.currentTime);
+            
+            const start = ctx.currentTime + (i * 0.08); // Slight stagger
+            
+            gain.gain.setValueAtTime(0, start);
+            gain.gain.linearRampToValueAtTime(0.1, start + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, start + 1.5);
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.start(start);
+            osc.stop(start + 1.6);
+        });
+
+        if (this.vibrationEnabled) {
+             Haptics.notification({ type: NotificationType.Success });
+        }
+    }
+
     playWin() {
         if (this.soundEnabled) {
             const sequence = [1046.50, 1318.51, 1567.98, 2093.00]; 

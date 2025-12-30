@@ -3,6 +3,7 @@ import React from 'react';
 import { 
   Settings, 
   ChevronLeft, 
+  ChevronRight,
   Pause, 
   Play, 
   RotateCcw, 
@@ -59,6 +60,7 @@ import {
 export const Icons = {
   Settings: (props: any) => <Settings {...props} />,
   Back: (props: any) => <ChevronLeft {...props} />,
+  Next: (props: any) => <ChevronRight {...props} />,
   Pause: (props: any) => <Pause {...props} />,
   Play: (props: any) => <Play {...props} />,
   Reset: (props: any) => <RotateCcw {...props} />,

@@ -1,5 +1,7 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { Icons } from './Icons';
+import { sounds } from '../../utils/sound';
 
 interface UnlockCardProps {
     startLevel: number;
@@ -41,7 +43,14 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, co
     }, []);
 
     useEffect(() => {
+        let stopSound: (() => void) | undefined;
+
         if (isVisible) {
+            // Play fill sound if there is progress to show
+            if (rawPercent > 0) {
+               stopSound = sounds.playProgressFill(2.5);
+            }
+
             // Animate progress
             const duration = 2500; // Slower duration
             const startTime = performance.now();
@@ -61,12 +70,17 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, co
                         // Wait a moment after hitting 100% before showing the unlock button
                         setTimeout(() => {
                             setShowUnlockUI(true);
+                            sounds.playUnlockReady();
                         }, 500);
                     }
                 }
             };
             requestAnimationFrame(animate);
         }
+        
+        return () => {
+            if (stopSound) stopSound();
+        };
     }, [isVisible, rawPercent]);
 
     const handleUnlockClick = () => {
@@ -79,7 +93,6 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, co
             <button 
                 onClick={handleUnlockClick}
                 disabled={!showUnlockUI}
-                // Removed borders
                 className={`w-full h-32 rounded-[1.5rem] relative overflow-hidden transition-all duration-500 ease-out group ${
                     showUnlockUI 
                         ? 'bg-gradient-to-b from-white to-blue-50/50 dark:from-stone-800 dark:to-stone-900 shadow-lg active:scale-[0.98] cursor-pointer' 
@@ -101,7 +114,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, co
                              
                              {/* Left Side: Info & CTA */}
                              <div className="flex flex-col items-start gap-1.5">
-                                 {/* Header Pill - Removed border */}
+                                 {/* Header Pill */}
                                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-stone-800 rounded-full shadow-sm">
                                     <Icons.LockOpen className="w-3 h-3 text-blue-500" />
                                     <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest pt-0.5">
@@ -123,27 +136,39 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, co
                              </div>
                         </div>
                     ) : (
-                        <div className="flex flex-row items-center justify-between w-full gap-5">
-                            {/* Left Side: Lock Icon */}
-                            <div className="w-14 h-14 rounded-xl bg-stone-300/50 dark:bg-stone-700/50 flex items-center justify-center shadow-inner">
-                                <Icons.Lock className="w-6 h-6 text-stone-500 dark:text-stone-400" />
+                        <div className="flex flex-row items-center justify-between w-full gap-4">
+                            {/* Left Side: Locked Status Box */}
+                            <div className="w-16 h-16 rounded-2xl bg-stone-300/50 dark:bg-stone-700/50 flex flex-col items-center justify-center shrink-0 border border-stone-300/30 dark:border-stone-600/30 shadow-inner">
+                                <Icons.Lock className="w-5 h-5 text-stone-500 dark:text-stone-400 mb-1" />
+                                <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest opacity-80 leading-none">
+                                    {animatedPercent}%
+                                </span>
                             </div>
                             
-                            {/* Right Side: Progress Stats */}
-                            <div className="flex-1 flex flex-col items-start gap-2">
-                                <div className="flex items-baseline gap-1.5">
-                                    <span className="text-3xl font-bold text-stone-500 dark:text-stone-400 leading-none">
-                                        {animatedPercent}
+                            {/* Right Side: Progress Details */}
+                            <div className="flex-1 flex flex-col justify-center gap-2.5">
+                                <div className="flex justify-between items-end px-0.5">
+                                    <span className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide leading-none">
+                                        Locked
                                     </span>
-                                    <span className="text-lg font-bold text-stone-400 dark:text-stone-500">%</span>
+                                    <span className="text-[10px] font-medium text-stone-400 dark:text-stone-500 leading-none">
+                                        {completedCount}/{totalBaseLevels} Levels
+                                    </span>
                                 </div>
+
                                 {/* Modern Progress Bar */}
-                                <div className="w-full h-2.5 bg-stone-300 dark:bg-stone-700 rounded-full overflow-hidden p-[1px]">
+                                <div className="w-full h-3 bg-stone-300/50 dark:bg-stone-700/50 rounded-full overflow-hidden p-[2px] shadow-sm">
                                     <div 
-                                        className="h-full bg-loading-green rounded-full shadow-sm transition-all duration-200 ease-out" 
+                                        className="h-full bg-stone-500 dark:bg-stone-400 rounded-full shadow-sm transition-all duration-300 ease-out min-w-[6px] relative overflow-hidden" 
                                         style={{ width: `${animatedPercent}%` }}
-                                    />
+                                    >
+                                        <div className="absolute inset-0 opacity-10 bg-[linear-gradient(45deg,rgba(255,255,255,0.5)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.5)_50%,rgba(255,255,255,0.5)_75%,transparent_75%,transparent)] bg-[length:8px_8px]" />
+                                    </div>
                                 </div>
+                                
+                                <p className="text-[10px] font-medium text-stone-400 dark:text-stone-500 leading-tight px-0.5">
+                                    Complete previous pack to unlock.
+                                </p>
                             </div>
                         </div>
                     )}

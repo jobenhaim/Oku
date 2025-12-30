@@ -648,8 +648,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                             </div>
 
                             {/* Danger Zone */}
-                            <div className="pt-4 border-t border-t-border">
-                                <p className="text-[10px] text-center text-t-secondary font-medium mb-3 px-4 leading-relaxed">
+                            <div className="pt-4 border-t border-t-border flex flex-col gap-3">
+                                <p className="text-[10px] text-center text-t-secondary font-medium mb-1 px-4 leading-relaxed">
                                     Your progress is saved in your device's Cloud Backup.<br/>We cannot access your data.
                                 </p>
                                 <button onClick={onReset} className="w-full py-4 flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-2xl transition font-bold text-base">

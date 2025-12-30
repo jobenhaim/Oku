@@ -124,7 +124,8 @@ export const useSudokuBoard = ({
       }
   }, [isBoardComplete, onComplete]);
 
-  const handleCellClick = (row: number, col: number, isPaused: boolean, isCompleted: boolean) => {
+  // Memoize handlers to avoid re-renders on timer ticks
+  const handleCellClick = useCallback((row: number, col: number, isPaused: boolean, isCompleted: boolean) => {
     if (isPaused || isCompleted) return;
     
     if (settings.digitFirst) {
@@ -203,9 +204,9 @@ export const useSudokuBoard = ({
             setSelectedCell([row, col]);
         }
     }
-  };
+  }, [board, settings.digitFirst, settings.autoEraseNotes, activeNumber, isPencilMode, selectedCell, difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete]);
 
-  const handleNumberInput = (num: number, isPaused: boolean, isCompleted: boolean) => {
+  const handleNumberInput = useCallback((num: number, isPaused: boolean, isCompleted: boolean) => {
     if (isPaused || isCompleted) return;
     
     if (settings.digitFirst) {
@@ -277,18 +278,18 @@ export const useSudokuBoard = ({
     setBoard(newBoard);
     if (onBoardChange) onBoardChange(newBoard, moveLog.current);
     if (!isPencilMode && newCell.value) checkCompletion(newBoard);
-  };
+  }, [board, selectedCell, settings.digitFirst, settings.autoEraseNotes, activeNumber, isPencilMode, difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete]);
 
-  const handleUndo = (isPaused: boolean, isCompleted: boolean) => {
+  const handleUndo = useCallback((isPaused: boolean, isCompleted: boolean) => {
     if (history.length === 0 || isPaused || isCompleted) return;
     sounds.playClick();
     const previous = history[history.length - 1];
     setBoard(previous);
     setHistory(prev => prev.slice(0, -1));
     if (onBoardChange) onBoardChange(previous, moveLog.current);
-  };
+  }, [history, onBoardChange]);
 
-  const handleErase = (isPaused: boolean, isCompleted: boolean) => {
+  const handleErase = useCallback((isPaused: boolean, isCompleted: boolean) => {
     if (!selectedCell || isPaused || isCompleted) return;
     sounds.playClick();
     const [r, c] = selectedCell;
@@ -303,7 +304,7 @@ export const useSudokuBoard = ({
     newBoard[r][c].isMarkedWrong = false; 
     setBoard(newBoard);
     if (onBoardChange) onBoardChange(newBoard, moveLog.current);
-  };
+  }, [board, selectedCell, onBoardChange]);
 
   const conflicts = useMemo(() => {
       const conf = new Set<string>();

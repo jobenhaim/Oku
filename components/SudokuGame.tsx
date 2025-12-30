@@ -373,13 +373,14 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       return !cell.isFixed && (cell.value !== null || cell.notes.length > 0);
   })();
 
-  const onCellClickWrapper = (e: React.MouseEvent, r: number, c: number) => {
+  // Memoize click handlers to avoid passing new functions on every timer tick
+  const onCellClickWrapper = useCallback((e: React.MouseEvent, r: number, c: number) => {
       handleCellClick(r, c, isPaused, isCompleted);
-  };
+  }, [handleCellClick, isPaused, isCompleted]);
 
-  const onNumberClickWrapper = (e: React.MouseEvent, n: number) => {
+  const onNumberClickWrapper = useCallback((e: React.MouseEvent, n: number) => {
       handleNumberInput(n, isPaused, isCompleted);
-  };
+  }, [handleNumberInput, isPaused, isCompleted]);
 
   return (
     <>
