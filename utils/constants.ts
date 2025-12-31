@@ -129,10 +129,10 @@ export const getDifficultyPoints = (diff: Difficulty) => {
 
 export const STATIC_BACKGROUNDS = [
     { id: 'bg-default', name: 'Default', cost: 0, class: 'bg-paper dark:bg-stone-900' },
-    { id: 'bg-dawn', name: 'Dawn', cost: 100, class: 'bg-gradient-to-br from-orange-50 to-rose-50' },
-    { id: 'bg-ocean', name: 'Ocean', cost: 100, class: 'bg-gradient-to-br from-sky-50 to-cyan-50' },
-    { id: 'bg-forest', name: 'Forest', cost: 100, class: 'bg-gradient-to-br from-emerald-50 to-green-50' },
-    { id: 'bg-dusk', name: 'Dusk', cost: 100, class: 'bg-gradient-to-br from-violet-50 to-purple-50' },
+    { id: 'bg-dawn', name: 'Dawn', cost: 100, class: 'bg-gradient-to-br from-orange-100 to-rose-100' },
+    { id: 'bg-ocean', name: 'Ocean', cost: 100, class: 'bg-gradient-to-br from-sky-100 to-cyan-200' },
+    { id: 'bg-forest', name: 'Forest', cost: 100, class: 'bg-gradient-to-br from-emerald-100 to-teal-100' },
+    { id: 'bg-dusk', name: 'Dusk', cost: 100, class: 'bg-gradient-to-br from-violet-100 to-indigo-100' },
 ];
 
 export const DYNAMIC_BACKGROUNDS = [
@@ -210,19 +210,19 @@ export const SOUND_PACKS = [
 export const SKILLS = [
     { id: 'skill-auto', name: 'Auto', cost: 750, icon: Icons.Auto, class: 'text-amber-500', bgClass: 'bg-amber-50/60 dark:bg-amber-900/10', description: "Automatically fills a cell when it's the only option left." },
     { id: 'skill-scan', name: 'Scan', cost: 750, icon: Icons.Scan, class: 'text-red-500', bgClass: 'bg-red-50/60 dark:bg-red-900/10', description: "Spot errors instantly. Essential for Hard, Intense, and Impossible modes." },
-    { id: 'skill-reveal', name: 'Reveal', cost: 1000, icon: Icons.Reveal, class: 'text-purple-500', bgClass: 'bg-purple-50/60 dark:bg-purple-900/10', description: "Reveals the correct number. Available after one minute of play." },
+    { id: 'skill-reveal', name: 'Reveal', cost: 1000, icon: Icons.Reveal, class: 'text-purple-500', bgClass: 'bg-purple-50/60 dark:bg-purple-900/10', description: "Reveals a correct number randomly. Available after one minute of play." },
 ];
 
 export const DIAMOND_OFFERS: DiamondOffer[] = [
-    // Support Developer
+    // Premium Pack (Previously Support Developer)
     {
         id: 'support_dev',
-        title: 'Support the Developer',
-        subtitle: 'Calm, fair, and ad-light.',
-        diamonds: 400,
-        priceLabel: '$3.99',
+        title: 'Premium Pack',
+        subtitle: 'Exclusive Companion + Rewards',
+        diamonds: 1500,
+        priceLabel: '$4.99',
         type: 'support',
-        badge: 'SPECIAL'
+        badge: 'PREMIUM'
     },
     // Starter
     {

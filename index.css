@@ -302,34 +302,37 @@ html, body {
   100% { background-position: 10% 10%; }
 }
 
+/* Atmosphere Backgrounds - High Contrast Holographic Flow */
+/* Using hex codes for precise control over gradient "punch" */
+
 .bg-atmosphere-aurora {
-  background: linear-gradient(135deg, #ccfbf1 0%, #e0f2fe 33%, #ede9fe 66%, #ccfbf1 100%);
+  background: linear-gradient(135deg, #a5f3fc 0%, #d8b4fe 50%, #fbcfe8 100%);
   background-size: 400% 400%;
-  animation: atmosphere-wander 25s ease-in-out infinite;
+  animation: atmosphere-wander 30s ease-in-out infinite;
 }
 
 .bg-atmosphere-meadow {
-  background: linear-gradient(135deg, #ecfccb 0%, #dcfce7 33%, #d1fae5 66%, #ecfccb 100%);
+  background: linear-gradient(135deg, #d9f99d 0%, #d1fae5 50%, #fef08a 100%);
   background-size: 400% 400%;
-  animation: atmosphere-wander 25s ease-in-out infinite;
+  animation: atmosphere-wander 30s ease-in-out infinite;
 }
 
 .bg-atmosphere-blush {
-  background: linear-gradient(135deg, #ffe4e6 0%, #ffedd5 33%, #fef3c7 66%, #ffe4e6 100%);
+  background: linear-gradient(135deg, #fecdd3 0%, #fed7aa 50%, #fee2e2 100%);
   background-size: 400% 400%;
-  animation: atmosphere-wander 25s ease-in-out infinite;
+  animation: atmosphere-wander 30s ease-in-out infinite;
 }
 
 .bg-atmosphere-golden {
-  background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 33%, #fff7ed 66%, #fef9c3 100%);
+  background: linear-gradient(135deg, #fde68a 0%, #fef9c3 50%, #ffffff 100%);
   background-size: 400% 400%;
-  animation: atmosphere-wander 25s ease-in-out infinite;
+  animation: atmosphere-wander 30s ease-in-out infinite;
 }
 
 .bg-atmosphere-platinum {
-  background: linear-gradient(135deg, #f1f5f9 0%, #e5e7eb 33%, #f4f4f5 66%, #f1f5f9 100%);
+  background: linear-gradient(135deg, #e2e8f0 0%, #dbeafe 50%, #ffffff 100%);
   background-size: 400% 400%;
-  animation: atmosphere-wander 25s ease-in-out infinite;
+  animation: atmosphere-wander 30s ease-in-out infinite;
 }
 
 .bg-pack-flow {

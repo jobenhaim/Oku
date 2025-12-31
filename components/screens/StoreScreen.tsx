@@ -90,7 +90,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
         // If not purchased, always show price
         if (!isPurchased) {
             return (
-                <div className="h-6 bg-white/80 dark:bg-stone-800/80 backdrop-blur-sm border-t border-stone-200 dark:border-stone-700 flex items-center justify-center gap-0.5 shrink-0 relative z-10">
+                <div className="h-6 bg-white dark:bg-stone-800 border-t border-stone-200 dark:border-stone-700 flex items-center justify-center gap-0.5 shrink-0 relative z-10">
                     <span className="text-[13px] font-bold text-stone-900 dark:text-white leading-none pt-0.5">{cost}</span>
                     <Icons.Diamond className="w-3 h-3 text-blue-500 fill-current" />
                 </div>
@@ -184,7 +184,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                       <div key={bg.id} className="flex flex-col items-center gap-1.5">
                                           <button 
                                               onClick={() => isPurchased ? onSelectBackground(bg.id) : onPurchase(bg, 'bg')} 
-                                              className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 bg-white dark:bg-stone-800 ${isSelected ? 'border border-stone-600 dark:border-stone-400 scale-105 z-10' : ''}`}
+                                              className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 bg-gradient-to-t from-stone-200 to-white dark:bg-stone-800 ${isSelected ? 'border border-stone-600 dark:border-stone-400 scale-105 z-10' : ''}`}
                                           >
                                               <div className={`flex-1 relative overflow-hidden ${bg.class}`}>
                                                    <div className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-500" style={{ opacity: bg.id === 'bg-default' ? 'calc(var(--overlay-opacity) * 0.6)' : 'calc(var(--overlay-opacity) * 1.6)' }} />
@@ -205,11 +205,11 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                       <div key={bg.id} className="flex flex-col items-center gap-1.5">
                                           <button 
                                               onClick={() => isPurchased ? onSelectBackground(bg.id) : onPurchase(bg, 'bg')} 
-                                              className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 bg-white dark:bg-stone-800 ${isSelected ? 'border border-stone-600 dark:border-stone-400 scale-105 z-10' : ''}`}
+                                              className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 bg-gradient-to-t from-stone-200 to-white dark:bg-stone-800 ${isSelected ? 'border border-stone-600 dark:border-stone-400 scale-105 z-10' : ''}`}
                                           >
                                               <div 
                                                 className={`flex-1 relative overflow-hidden ${bg.class}`} 
-                                                style={{ backgroundSize: '140% 140%' }} // Adjusted scale for preview (zoomed out from 200%)
+                                                style={{ backgroundSize: '300% 300%' }} // Increased scale for preview to enhance visible movement (300%)
                                               >
                                                    <div className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-500" style={{ opacity: 'calc(var(--overlay-opacity) * 1.6)' }} />
                                               </div>
@@ -248,7 +248,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
 
                                       <button 
                                           onClick={(e) => handleSoundPackClick(e, pack)} 
-                                          className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all bg-white dark:bg-stone-800 ${isSelected ? 'border border-stone-600 dark:border-stone-400 scale-105 shadow-md' : 'active:scale-95'}`}
+                                          className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all bg-gradient-to-t from-stone-200 to-white dark:bg-stone-800 ${isSelected ? 'border border-stone-600 dark:border-stone-400 scale-105 shadow-md' : 'active:scale-95'}`}
                                       >
                                           <div className={`flex-1 flex items-center justify-center relative z-10 overflow-hidden`}>
                                               <PackIcon className={`w-8 h-8 ${pack.iconColor} relative z-20`} />
@@ -272,7 +272,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                   <div key={num.id} className="flex flex-col items-center gap-1.5">
                                       <button 
                                           onClick={() => isPurchased ? onSelectNumberColor(num.id) : onPurchase(num, 'num')} 
-                                          className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all bg-white dark:bg-stone-800 ${isSelected ? 'border border-stone-600 dark:border-stone-400 scale-105 z-10' : 'active:scale-95'}`}
+                                          className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all bg-gradient-to-t from-stone-200 to-white dark:bg-stone-800 ${isSelected ? 'border border-stone-600 dark:border-stone-400 scale-105 z-10' : 'active:scale-95'}`}
                                       >
                                           <div className={`flex-1 flex items-center justify-center w-full`}>
                                               <span className={`text-3xl font-bold ${num.uiClass}`}>5</span>

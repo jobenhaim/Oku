@@ -9,7 +9,7 @@ import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 // UI Components
 import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal } from './components/ui/Modals';
-import { AdOverlay } from './components/ui/AdOverlay';
+// AdOverlay removed
 
 // Screens
 import { SplashScreen } from './components/screens/SplashScreen';
@@ -317,6 +317,12 @@ export function App() {
         setShowNotEnoughPoints(false);
         setPurchaseCandidate(null);
         setIsWatchingAd(true);
+        sounds.playClick();
+        
+        // Simulating Loading Delay instead of Fake Ad Game
+        setTimeout(() => {
+            handleAdReward();
+        }, 2000);
   };
 
   const handleAdReward = () => {
@@ -621,7 +627,14 @@ export function App() {
                         onGoPlay={handleGoPlay} 
                     />
                 )}
-                {isWatchingAd && <AdOverlay onComplete={handleAdReward} />}
+                {isWatchingAd && (
+                    <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-md flex items-center justify-center animate-fade-in">
+                        <div className="bg-t-surface p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 animate-pop">
+                            <div className="w-10 h-10 border-4 border-stone-200 border-t-blue-500 rounded-full animate-spin"></div>
+                            <p className="font-bold text-t-primary">Claiming Reward...</p>
+                        </div>
+                    </div>
+                )}
               </div>
           </div>
       </>

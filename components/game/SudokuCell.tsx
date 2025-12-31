@@ -69,11 +69,13 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
          // Selected: Blue 200 (Light) / Blue 300 (Dark Mode - distinct but softer than 400)
          bgClass = 'bg-blue-200 dark:bg-blue-300 '; 
     } else if (highlight && isSameValue) {
-         // Same Value: Blue 50 / Blue 200 (Dark Mode)
-         bgClass = 'bg-blue-50 dark:bg-blue-200 '; 
+         // Same Value: Blue 100 (was 50) / Blue 200 (Dark Mode)
+         // Increased contrast for light mode visibility
+         bgClass = 'bg-blue-100 dark:bg-blue-200 '; 
     } else if (highlight && isRelated) {
-         // Related: Stone 50 / Stone 200 (Dark Mode - lighter than board Stone-300)
-         bgClass = 'bg-stone-50 dark:bg-stone-200 '; 
+         // Related: Stone 100 (was 50) / Stone 200 (Dark Mode - lighter than board Stone-300)
+         // Increased contrast for light mode visibility
+         bgClass = 'bg-stone-100 dark:bg-stone-200 '; 
     } else if (isRevealed) {
          bgClass = 'bg-amber-100 '; 
     } else {

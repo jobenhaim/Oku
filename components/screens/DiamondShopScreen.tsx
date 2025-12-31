@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Icons } from '../ui/Icons';
 import { DIAMOND_OFFERS } from '../../utils/constants';
@@ -46,7 +45,6 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     };
 
     // Unified Price Badge Style
-    // Premium Silver Gradient + Dark Text + Thin Border + Reduced Size
     const priceBadgeClass = "px-3 py-1.5 rounded-lg text-sm font-bold text-stone-800 shadow-sm min-w-[70px] text-center flex items-center justify-center border border-stone-900/10 bg-gradient-to-br from-white via-gray-100 to-gray-200 active:scale-95 transition-transform tracking-wide";
 
     return (
@@ -60,7 +58,6 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                  
                 <div className="flex flex-col items-center absolute left-0 right-0 pointer-events-none z-20">
                     <h1 className="text-xl font-bold text-t-primary leading-none">Diamond Shop</h1>
-                    <p className="text-t-secondary text-[10px] font-bold tracking-widest uppercase mt-1">Get More</p>
                 </div>
 
                 <div className="flex items-center gap-1 bg-t-surface px-3 py-2 rounded-full shadow-sm relative z-30">
@@ -72,100 +69,6 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
             <div className="flex-1 w-full overflow-y-auto px-6 pb-6 hide-scrollbar flex flex-col items-center relative z-10">
                 <div className="w-full max-w-md pt-2 mx-auto">
                     
-                    {pepinoState.unlocked ? (
-                        <FishTank onRewardClaim={handleRewardClaim} showIntro={shouldShowIntro()} />
-                    ) : (
-                        DIAMOND_OFFERS.filter(o => o.type === 'support').map(offer => (
-                            <button 
-                                key={offer.id} 
-                                onClick={() => handleBuyOfferWrapper(offer)}
-                                // Card Container - Premium Midnight Slate Gradient with lighter start
-                                // Adjusted padding to px-5 py-4 to lift content
-                                className="w-full h-56 relative overflow-hidden rounded-[1.75rem] px-5 py-4 shadow-2xl transition-transform mb-6 text-left bg-gradient-to-br from-slate-600 via-slate-800 to-slate-900 active:scale-[0.99] group border border-white/10"
-                            >
-                                {/* Subtle Shine Effect */}
-                                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/0 to-white/5 pointer-events-none" />
-
-                                {/* Giant Faded Heart Background - Centered/Right */}
-                                <div className="absolute -right-8 -bottom-10 opacity-[0.08] pointer-events-none z-0">
-                                     <svg viewBox="0 0 24 24" className="w-64 h-64 fill-current text-rose-500">
-                                         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                                     </svg>
-                                </div>
-
-                                {/* Moving Floating Hearts */}
-                                <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-                                    {[...Array(12)].map((_, i) => (
-                                        <div 
-                                            key={i}
-                                            className="absolute text-rose-500 animate-float-up"
-                                            style={{
-                                                left: `${Math.random() * 100}%`,
-                                                bottom: '-20px',
-                                                animationDelay: `${Math.random() * 5}s`,
-                                                animationDuration: `${5 + Math.random() * 5}s`,
-                                                opacity: 0 // Initial opacity handled by keyframe
-                                            }}
-                                        >
-                                            <Icons.Heart 
-                                                className="fill-current" 
-                                                style={{ 
-                                                    // Increased size by ~15% (range: 10px - 24px)
-                                                    width: `${10 + Math.random() * 14}px`, 
-                                                    height: `${10 + Math.random() * 14}px` 
-                                                }}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="relative z-10 flex flex-col h-full">
-                                    {/* Header Row - Reduced bottom margin */}
-                                    <div className="flex justify-between items-start mb-1">
-                                        <h2 className="text-2xl font-bold text-white leading-tight">{offer.title}</h2>
-                                    </div>
-
-                                    {/* Description Text - Reduced bottom margin */}
-                                    <p className="text-[10px] font-medium text-slate-300 leading-relaxed pr-2 max-w-full mb-2 relative z-10">
-                                        Oku is the work of a single independent developer. Your support keeps the experience calm, fair, and ad-light. By getting this, you adopt a special companion who brings exclusive rewards to your journey. Thank you!
-                                    </p>
-
-                                    {/* Bottom Area: Benefits List + Price Badge */}
-                                    <div className="flex items-end justify-between mt-auto w-full">
-                                        
-                                        {/* Benefits List (Smaller Text: text-[11px] or text-xs) */}
-                                        <div className="flex flex-col gap-1">
-                                            <div className="flex items-center gap-2">
-                                                <Icons.Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
-                                                <div className="flex items-center gap-0.5">
-                                                    <span className="text-[11px] font-bold text-white">+400</span>
-                                                    <Icons.Diamond className="w-3.5 h-3.5 text-sky-400 fill-current" />
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Icons.Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
-                                                <span className="text-[11px] font-bold text-slate-200">No forced ads, ever</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Icons.Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
-                                                <span className="text-[11px] font-bold text-slate-200">Special companion</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Icons.Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
-                                                <span className="text-[11px] font-bold text-slate-200">A personal thank-you</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Price Badge */}
-                                        <div className={`${priceBadgeClass} shrink-0 ml-4 mb-0.5 shadow-lg`}>
-                                            {offer.priceLabel}
-                                        </div>
-                                    </div>
-                                </div>
-                            </button>
-                        ))
-                    )}
-
                     <button 
                         onClick={onWatchAd} 
                         className="w-1/2 mx-auto block relative overflow-hidden bg-gradient-to-br from-amber-200 via-yellow-400 to-amber-500 bg-[length:200%_200%] animate-gradient rounded-2xl shadow-lg shadow-amber-500/30 active:scale-95 transition-transform group mb-8 border-t border-white/40"
@@ -182,6 +85,101 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                         </div>
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent z-20 animate-shimmer pointer-events-none" />
                     </button>
+
+                    {pepinoState.unlocked ? (
+                        <FishTank onRewardClaim={handleRewardClaim} showIntro={shouldShowIntro()} />
+                    ) : (
+                        DIAMOND_OFFERS.filter(o => o.type === 'support').map(offer => (
+                            <button 
+                                key={offer.id} 
+                                onClick={() => handleBuyOfferWrapper(offer)}
+                                // Card Container - Premium Cosmic Gradient
+                                className="w-full h-56 relative overflow-hidden rounded-[1.75rem] px-5 py-4 shadow-2xl transition-transform mb-6 text-left bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 active:scale-[0.99] group border border-white/10"
+                            >
+                                {/* Subtle Shine Effect */}
+                                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/0 to-white/10 pointer-events-none" />
+
+                                {/* Giant Faded Crown/Star Background */}
+                                <div className="absolute -right-6 -bottom-8 opacity-[0.12] pointer-events-none z-0 rotate-12">
+                                     {/* Crown Shape */}
+                                     <svg viewBox="0 0 24 24" className="w-64 h-64 fill-current text-white">
+                                         <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5ZM19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" />
+                                     </svg>
+                                </div>
+
+                                {/* Floating Premium Particles (Stars & Hearts) */}
+                                <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                                    {[...Array(12)].map((_, i) => {
+                                        const isStar = i % 2 === 0;
+                                        return (
+                                            <div 
+                                                key={i}
+                                                className={`absolute ${isStar ? 'text-yellow-200' : 'text-rose-300'} animate-float-up`}
+                                                style={{
+                                                    left: `${Math.random() * 100}%`,
+                                                    bottom: '-20px',
+                                                    animationDelay: `${Math.random() * 5}s`,
+                                                    animationDuration: `${5 + Math.random() * 5}s`,
+                                                    opacity: 0 // Initial opacity handled by keyframe
+                                                }}
+                                            >
+                                                {isStar ? (
+                                                    <Icons.Sparkles className="fill-current" style={{ width: `${8 + Math.random() * 10}px`, height: `${8 + Math.random() * 10}px` }} />
+                                                ) : (
+                                                    <Icons.Heart className="fill-current" style={{ width: `${10 + Math.random() * 8}px`, height: `${10 + Math.random() * 8}px` }} />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="relative z-10 flex flex-col h-full">
+                                    {/* Header Row */}
+                                    <div className="flex justify-between items-start mb-1">
+                                        <div className="flex flex-col">
+                                            <div className="inline-block px-2 py-0.5 rounded-md bg-white/20 text-white text-[9px] font-bold tracking-widest uppercase mb-1.5 border border-white/20 leading-none w-fit backdrop-blur-sm">
+                                                EXCLUSIVE
+                                            </div>
+                                            <h2 className="text-2xl font-bold text-white leading-tight drop-shadow-md">{offer.title}</h2>
+                                        </div>
+                                    </div>
+
+                                    {/* Description Text */}
+                                    <p className="text-[11px] font-medium text-purple-50 leading-relaxed pr-2 max-w-full mb-2 relative z-10 opacity-95">
+                                        Adopt an exclusive companion that grows with you and grants special rewards after every game. Support indie development and enjoy a distraction-free journey.
+                                    </p>
+
+                                    {/* Bottom Area: Benefits List + Price Badge */}
+                                    <div className="flex items-end justify-between mt-auto w-full">
+                                        
+                                        {/* Benefits List */}
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex items-center gap-2">
+                                                <Icons.Check className="w-3.5 h-3.5 text-emerald-300 stroke-[3]" />
+                                                <div className="flex items-center gap-0.5">
+                                                    <span className="text-[11px] font-bold text-white">+1500</span>
+                                                    <Icons.Diamond className="w-3.5 h-3.5 text-blue-500 fill-current" />
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Icons.Check className="w-3.5 h-3.5 text-emerald-300 stroke-[3]" />
+                                                <span className="text-[11px] font-bold text-white">No forced ads, ever</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Icons.Check className="w-3.5 h-3.5 text-emerald-300 stroke-[3]" />
+                                                <span className="text-[11px] font-bold text-white">Special companion</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Price Badge */}
+                                        <div className={`${priceBadgeClass} shrink-0 ml-4 mb-0.5 shadow-lg`}>
+                                            {offer.priceLabel}
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+                        ))
+                    )}
 
                     {DIAMOND_OFFERS.filter(o => o.type === 'starter').map(offer => {
                          const isPurchased = starterPackPurchased;

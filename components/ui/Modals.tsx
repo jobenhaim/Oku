@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { sounds } from '../../utils/sound';
@@ -290,7 +289,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
         if (offer.type === 'support') {
             return (
                 <span>
-                    Adopt Pepino! Unlock your fish companion for diamond gifts, an instant 400 <span className="inline-block align-baseline translate-y-[2px]"><Icons.Diamond className="w-3 h-3 text-blue-500 fill-current" /></span> boost, and permanent ad-removal. Your support keeps Oku fair and calm, thank you!
+                    Adopt an exclusive companion that grows with you and grants special rewards after every game. Support indie development and enjoy a distraction-free journey.
                 </span>
             );
         }
@@ -322,7 +321,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
                     {status === 'success' ? (
                         <Icons.Check className="w-8 h-8 text-green-500 animate-pop" />
                     ) : offer.type === 'support' ? (
-                        <Icons.Heart className="w-8 h-8 text-rose-500 fill-current" />
+                        <Icons.Trophy className="w-8 h-8 text-amber-500 fill-current" />
                     ) : (
                         <Icons.Diamond className="w-8 h-8 text-blue-500 fill-current" />
                     )}
@@ -412,7 +411,7 @@ export const NotEnoughPointsModal: React.FC<NotEnoughPointsModalProps> = ({ onCl
                           {/* Sharp Shine Animation */}
                           <div className="absolute inset-0 -translate-x-full animate-[shimmer_4s_infinite] bg-gradient-to-r from-transparent via-white/80 to-transparent skew-x-[-20deg] pointer-events-none" />
 
-                          <span className="font-bold tracking-wide relative z-10 text-slate-700">Get More</span> 
+                          <span className="font-bold tracking-wide relative z-10 text-slate-700">Diamond Shop</span> 
                           <Icons.Diamond className="w-4 h-4 text-blue-500 fill-current relative z-10 drop-shadow-sm" />
                      </button>
 
