@@ -374,8 +374,8 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                           >
                               <div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-blue-100/30 to-transparent pointer-events-none" />
                               <div className="absolute inset-0 -translate-x-full animate-[shimmer_4s_infinite] bg-gradient-to-r from-transparent via-white/80 to-transparent skew-x-[-20deg] pointer-events-none" />
-                              <span className="font-bold tracking-wide relative z-10 text-slate-700">Diamond Shop</span> 
                               <Icons.Diamond className="w-4 h-4 text-blue-500 fill-current relative z-10 drop-shadow-sm" />
+                              <span className="font-bold tracking-wide relative z-10 text-slate-700">Shop</span> 
                           </button>
                       </div>
                       

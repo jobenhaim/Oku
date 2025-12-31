@@ -411,8 +411,8 @@ export const NotEnoughPointsModal: React.FC<NotEnoughPointsModalProps> = ({ onCl
                           {/* Sharp Shine Animation */}
                           <div className="absolute inset-0 -translate-x-full animate-[shimmer_4s_infinite] bg-gradient-to-r from-transparent via-white/80 to-transparent skew-x-[-20deg] pointer-events-none" />
 
-                          <span className="font-bold tracking-wide relative z-10 text-slate-700">Diamond Shop</span> 
                           <Icons.Diamond className="w-4 h-4 text-blue-500 fill-current relative z-10 drop-shadow-sm" />
+                          <span className="font-bold tracking-wide relative z-10 text-slate-700">Shop</span> 
                      </button>
 
                      <button onClick={() => handleAction(onGoPlay)} className="w-full py-4 text-stone-700 bg-stone-200 dark:text-stone-200 dark:bg-stone-700 rounded-2xl font-bold active:scale-95 transition-all duration-300 hover:opacity-90">
