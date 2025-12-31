@@ -19,6 +19,19 @@ interface DifficultyScreenProps {
     hiddenDifficulties?: Difficulty[]; // New prop
 }
 
+const SUBTITLES = [
+    "Choose your pace",
+    "Find your flow",
+    "Time to focus",
+    "Relax and solve",
+    "Pick your challenge",
+    "Sharpen your mind",
+    "Enjoy the quiet",
+    "A moment of zen",
+    "Ready to play?",
+    "Sudoku awaits"
+];
+
 // Internal Hook for Counting Animation (Progress Bars)
 const useAnimatedCounter = (target: number, duration: number = 500) => {
     const [count, setCount] = useState(0);
@@ -205,6 +218,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     const [timeLeft, setTimeLeft] = useState<string>("");
     const [activeInfo, setActiveInfo] = useState<Difficulty | null>(null);
     const [isClosing, setIsClosing] = useState(false);
+    const [subtitle] = useState(() => SUBTITLES[Math.floor(Math.random() * SUBTITLES.length)]);
     
     const [infoIndices, setInfoIndices] = useState<Record<string, number>>({});
 
@@ -272,7 +286,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                     className="w-full max-w-md flex justify-center mb-2 opacity-0 animate-slide-in-down shrink-0" 
                     style={{ animationDelay: '50ms' }}
                   >
-                      <p className="text-xs font-semibold text-t-secondary uppercase tracking-[0.2em]">Choose your pace</p>
+                      <p className="text-xs font-semibold text-t-secondary uppercase tracking-[0.2em]">{subtitle}</p>
                   </div>
 
                   {/* Difficulty Grid */}

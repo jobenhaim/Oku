@@ -61,6 +61,9 @@ export function App() {
   const [isWatchingAd, setIsWatchingAd] = useState(false);
   
   const [nextBonusClaimTime, setNextBonusClaimTime] = useState(Storage.getNextBonusClaimTime());
+  
+  // Track actual dark mode state for JS logic
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Initialize Native Storage
   useEffect(() => {
@@ -85,6 +88,7 @@ export function App() {
         setNextBonusClaimTime(data.nextBonusClaimTime || 0);
         
         const isDark = data.settings.appearance === 'dark' || (data.settings.appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        setIsDarkMode(isDark);
         if (isDark) document.documentElement.classList.add('dark');
         else document.documentElement.classList.remove('dark');
     };
@@ -95,10 +99,11 @@ export function App() {
   useEffect(() => {
       const applyTheme = () => {
           const isDark = settings.appearance === 'dark' || (settings.appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          setIsDarkMode(isDark);
           
           if (isDark) {
               document.documentElement.classList.add('dark');
-              document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#1c1917');
+              document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#000000');
           } else {
               document.documentElement.classList.remove('dark');
               document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#fafaf9');
@@ -249,7 +254,6 @@ export function App() {
     setEnabledSkills([...next]);
   };
 
-  // Simplified Earn Points Handler (No Fly-In)
   const handleEarnPoints = (amount: number) => {
     const newTotal = Storage.addPoints(amount);
     setPoints(newTotal);
@@ -260,7 +264,6 @@ export function App() {
     if (now < nextBonusClaimTime) return;
     sounds.playWin();
     
-    // Set next claim time to next midnight (00:00:00)
     const nextDate = new Date();
     nextDate.setDate(nextDate.getDate() + 1);
     nextDate.setHours(0, 0, 0, 0);
@@ -272,8 +275,6 @@ export function App() {
   };
   
   const initiatePurchase = (item: any, type: 'bg' | 'num' | 'skill' | 'sound') => {
-      // Don't play the default 'pop' sound if we are buying a sound pack, 
-      // as the preview of that sound pack will already be playing.
       if (type !== 'sound') {
           sounds.playPop();
       }
@@ -315,7 +316,6 @@ export function App() {
   const handleWatchAd = async () => {
         setShowNotEnoughPoints(false);
         setPurchaseCandidate(null);
-        // Show the internal 'fake' ad overlay which provides rewards
         setIsWatchingAd(true);
   };
 
@@ -340,7 +340,6 @@ export function App() {
 
   const handleBuyOffer = (offer: DiamondOffer) => {
       sounds.playClick();
-      // Only check starter pack restriction
       if (offer.type === 'starter' && starterPackPurchased) return;
       if (offer.priceLabel === '') return;
       setPaymentOffer(offer);
@@ -402,30 +401,36 @@ export function App() {
       }
   };
 
-  let activeBackgroundClass = "bg-paper dark:bg-stone-900"; 
+  let activeBackgroundClass = "bg-paper dark:bg-black"; 
   
-  if (selectedBackgroundId) {
+  // Logic: In Dark Mode, override selection to ensure OLED Black background
+  // In Light Mode, respect user selection
+  if (selectedBackgroundId && !isDarkMode) {
       const bg = ALL_BACKGROUNDS.find(b => b.id === selectedBackgroundId);
       if (bg) {
           activeBackgroundClass = bg.class;
       }
+  } else if (isDarkMode) {
+      activeBackgroundClass = "bg-black";
   }
 
   const numberColorClass = NUMBER_COLORS.find(n => n.id === selectedNumberColorId)?.class || 'text-blue-600';
+  
+  // Calculate overlay opacity in JS for better reliability
   const isGradient = activeBackgroundClass.includes('bg-gradient');
-  let overlayOpacity = '0';
+  let overlayOpacityValue = 0;
+  const baseOverlayOpacity = isDarkMode ? 0.5 : 0; // Base opacity for dark mode
+
   if (isGradient) {
       if (screen === 'game') {
-          overlayOpacity = 'calc(var(--overlay-opacity) * 1.6)';
+          overlayOpacityValue = baseOverlayOpacity * 1.6;
       } else {
-          overlayOpacity = 'var(--overlay-opacity)';
+          overlayOpacityValue = baseOverlayOpacity;
       }
   } else if (screen === 'game') {
-      overlayOpacity = 'calc(var(--overlay-opacity) * 0.6)';
+      overlayOpacityValue = baseOverlayOpacity * 0.6;
   }
 
-  // Animation Variants for "Slide" Transition
-  // Using 100% width slide to prevent cuts and ensure screens move completely off-view
   const variants: Variants = {
     initial: (dir: number) => ({
       x: dir > 0 ? '100%' : (dir < 0 ? '-100%' : 0),
@@ -463,14 +468,13 @@ export function App() {
               />
               <div 
                 className="absolute inset-0 z-[1] bg-black pointer-events-none transition-opacity duration-500" 
-                style={{ opacity: overlayOpacity }} 
+                style={{ opacity: overlayOpacityValue }} 
               />
 
               {/* Diamond Shop Background (Behind Safe Area Wrapper) */}
               {screen === 'diamondShop' && <DiamondBackground />}
 
               {/* Content Wrapper with Safe Areas */}
-              {/* This inner container handles safe area padding to prevent content from being covered by notch/home bar */}
               <div 
                  className="relative z-10 w-full h-full flex flex-col pt-safe pb-safe"
               >
@@ -571,14 +575,14 @@ export function App() {
                                     isSettingsOpen={showSettings}
                                     backgroundClass={activeBackgroundClass}
                                     numberColor={numberColorClass}
-                                    purchasedSkills={enabledSkills} // Pass only enabled skills to game
+                                    purchasedSkills={enabledSkills}
                                 />
                             )}
                         </motion.div>
                     </AnimatePresence>
                 </div>
 
-                {/* Modals & Overlays (Outside AnimatePresence to float on top) */}
+                {/* Modals & Overlays */}
                 {showSettings && (
                     <SettingsModal 
                         settings={settings} 
@@ -617,10 +621,6 @@ export function App() {
                         onGoPlay={handleGoPlay} 
                     />
                 )}
-                {/* 
-                   Ad Overlay: Since native AdMob is removed, we always trigger this
-                   fake overlay when isWatchingAd is true.
-                */}
                 {isWatchingAd && <AdOverlay onComplete={handleAdReward} />}
               </div>
           </div>

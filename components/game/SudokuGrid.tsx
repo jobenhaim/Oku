@@ -101,7 +101,20 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
             
             <div className="absolute inset-0 pointer-events-none z-20">
                 <svg width="100%" height="100%" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
-                    <defs><style>{`.grid-line-thin { stroke: #a8a29e; stroke-width: 0.05; } .grid-line-thick { stroke: #1c1917; stroke-width: 0.05; } `}</style></defs>
+                    <defs>
+                        <style>{`
+                            .grid-line-thin { 
+                                stroke: var(--grid-thin); 
+                                stroke-width: 1px; 
+                                vector-effect: non-scaling-stroke; 
+                            } 
+                            .grid-line-thick { 
+                                stroke: var(--grid-thick); 
+                                stroke-width: 3px; 
+                                vector-effect: non-scaling-stroke; 
+                            } 
+                        `}</style>
+                    </defs>
                     <line x1="1" y1="0" x2="1" y2="9" className="grid-line-thin" /><line x1="2" y1="0" x2="2" y2="9" className="grid-line-thin" />
                     <line x1="4" y1="0" x2="4" y2="9" className="grid-line-thin" /><line x1="5" y1="0" x2="5" y2="9" className="grid-line-thin" />
                     <line x1="7" y1="0" x2="7" y2="9" className="grid-line-thin" /><line x1="8" y1="0" x2="8" y2="9" className="grid-line-thin" />

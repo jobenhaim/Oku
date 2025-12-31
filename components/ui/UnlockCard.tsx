@@ -16,6 +16,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, co
     const cardRef = useRef<HTMLDivElement>(null);
     const [isVisible, setIsVisible] = useState(false);
     const [animatedPercent, setAnimatedPercent] = useState(0);
+    const [animatedCount, setAnimatedCount] = useState(0);
     const [showUnlockUI, setShowUnlockUI] = useState(false);
     
     // Calculate percentage (capped at 100%)
@@ -29,6 +30,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, co
                 } else {
                     setIsVisible(false);
                     setAnimatedPercent(0); // Reset for replay
+                    setAnimatedCount(0); // Reset count
                     setShowUnlockUI(false); // Reset UI state
                 }
             },
@@ -46,26 +48,32 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, co
         let stopSound: (() => void) | undefined;
 
         if (isVisible) {
+            // Progressive Duration: 
+            // 1% -> fast (~300ms)
+            // 99% -> slow (~3000ms)
+            const duration = rawPercent <= 0 ? 0 : 300 + (rawPercent / 100) * 2700;
+
             // Play fill sound if there is progress to show
             if (rawPercent > 0) {
-               stopSound = sounds.playProgressFill(2.5);
+               stopSound = sounds.playProgressFill(duration / 1000);
             }
 
-            // Animate progress
-            const duration = 2500; // Slower duration
             const startTime = performance.now();
 
             const animate = (time: number) => {
                 const elapsed = time - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const ease = progress; // Linear easing
+                const progress = duration === 0 ? 1 : Math.min(elapsed / duration, 1);
+                // Linear ease fits loading bars better for sound synchronization
+                const ease = progress; 
                 
                 setAnimatedPercent(Math.floor(rawPercent * ease));
+                setAnimatedCount(Math.floor(completedCount * ease));
 
                 if (progress < 1) {
                     requestAnimationFrame(animate);
                 } else {
                     setAnimatedPercent(rawPercent);
+                    setAnimatedCount(completedCount);
                     if (rawPercent === 100) {
                         // Wait a moment after hitting 100% before showing the unlock button
                         setTimeout(() => {
@@ -81,7 +89,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, co
         return () => {
             if (stopSound) stopSound();
         };
-    }, [isVisible, rawPercent]);
+    }, [isVisible, rawPercent, completedCount]);
 
     const handleUnlockClick = () => {
         if (!showUnlockUI) return;
@@ -93,7 +101,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, co
             <button 
                 onClick={handleUnlockClick}
                 disabled={!showUnlockUI}
-                className={`w-full h-32 rounded-[1.5rem] relative overflow-hidden transition-all duration-500 ease-out group ${
+                className={`w-full h-36 rounded-[1.5rem] relative overflow-hidden transition-all duration-500 ease-out group ${
                     showUnlockUI 
                         ? 'bg-gradient-to-b from-white to-blue-50/50 dark:from-stone-800 dark:to-stone-900 shadow-lg active:scale-[0.98] cursor-pointer' 
                         : 'bg-stone-200 dark:bg-stone-800/80 cursor-default'
@@ -115,14 +123,14 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, co
                              {/* Left Side: Info & CTA */}
                              <div className="flex flex-col items-start gap-1.5">
                                  {/* Header Pill */}
-                                 <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-stone-800 rounded-full shadow-sm">
-                                    <Icons.LockOpen className="w-3 h-3 text-blue-500" />
-                                    <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest pt-0.5">
+                                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 rounded-full shadow-sm">
+                                    <Icons.LockOpen className="w-4 h-4 text-blue-500" />
+                                    <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest pt-0.5">
                                         Levels {startLevel}-{endLevel}
                                     </span>
                                  </div>
                                  {/* Flashing CTA */}
-                                 <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest pl-1 animate-pulse ml-0.5">
+                                 <span className="text-xs font-bold text-blue-500 uppercase tracking-widest pl-1 animate-pulse ml-0.5">
                                      Tap to Unlock
                                  </span>
                              </div>
@@ -136,37 +144,34 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, co
                              </div>
                         </div>
                     ) : (
-                        <div className="flex flex-row items-center justify-between w-full gap-4">
+                        <div className="flex flex-row items-center justify-between w-full gap-5">
                             {/* Left Side: Locked Status Box */}
-                            <div className="w-16 h-16 rounded-2xl bg-stone-300/50 dark:bg-stone-700/50 flex flex-col items-center justify-center shrink-0 border border-stone-300/30 dark:border-stone-600/30 shadow-inner">
-                                <Icons.Lock className="w-5 h-5 text-stone-500 dark:text-stone-400 mb-1" />
-                                <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest opacity-80 leading-none">
-                                    {animatedPercent}%
-                                </span>
+                            <div className="w-20 h-20 rounded-3xl bg-stone-300/50 dark:bg-stone-700/50 flex flex-col items-center justify-center shrink-0 border border-stone-300/30 dark:border-stone-600/30 shadow-inner">
+                                <Icons.Lock className="w-8 h-8 text-stone-500 dark:text-stone-400 opacity-80" />
                             </div>
                             
                             {/* Right Side: Progress Details */}
-                            <div className="flex-1 flex flex-col justify-center gap-2.5">
+                            <div className="flex-1 flex flex-col justify-center gap-3">
                                 <div className="flex justify-between items-end px-0.5">
-                                    <span className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide leading-none">
+                                    <span className="text-sm font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide leading-none">
                                         Locked
                                     </span>
-                                    <span className="text-[10px] font-medium text-stone-400 dark:text-stone-500 leading-none">
-                                        {completedCount}/{totalBaseLevels} Levels
+                                    <span className="text-xs font-medium text-stone-500 dark:text-stone-400 leading-none tabular-nums">
+                                        {animatedCount}/{totalBaseLevels} Levels
                                     </span>
                                 </div>
 
                                 {/* Modern Progress Bar */}
-                                <div className="w-full h-3 bg-stone-300/50 dark:bg-stone-700/50 rounded-full overflow-hidden p-[2px] shadow-sm">
+                                <div className="w-full h-4 bg-stone-300/50 dark:bg-stone-700/50 rounded-full overflow-hidden p-[3px] shadow-sm">
                                     <div 
-                                        className="h-full bg-stone-500 dark:bg-stone-400 rounded-full shadow-sm transition-all duration-300 ease-out min-w-[6px] relative overflow-hidden" 
+                                        className={`h-full bg-stone-500 dark:bg-stone-400 rounded-full shadow-sm transition-all duration-75 ease-linear relative overflow-hidden ${animatedPercent > 0 ? 'min-w-[8px]' : 'opacity-0'}`} 
                                         style={{ width: `${animatedPercent}%` }}
                                     >
                                         <div className="absolute inset-0 opacity-10 bg-[linear-gradient(45deg,rgba(255,255,255,0.5)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.5)_50%,rgba(255,255,255,0.5)_75%,transparent_75%,transparent)] bg-[length:8px_8px]" />
                                     </div>
                                 </div>
                                 
-                                <p className="text-[10px] font-medium text-stone-400 dark:text-stone-500 leading-tight px-0.5">
+                                <p className="text-xs font-medium text-stone-500 dark:text-stone-400 leading-tight px-0.5">
                                     Complete previous pack to unlock.
                                 </p>
                             </div>

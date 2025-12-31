@@ -569,43 +569,55 @@ class SoundController {
     }
 
     playZap() {
-        // "Auto" Skill Sound - Satisfying "Snap + Ding"
+        // "Auto" Skill Sound - "Cute Lightning"
+        // Satisfying, crisp, electric snap that "itches the brain"
         if (this.soundEnabled) {
             const ctx = this.getCtx();
             const now = ctx.currentTime;
             
-            // 1. The Snap (Percussive, Mechanical)
-            const snapOsc = ctx.createOscillator();
-            const snapGain = ctx.createGain();
+            // 1. The Electric Zap (Sawtooth Down-sweep)
+            // Provides the "Lightning" texture
+            const zapOsc = ctx.createOscillator();
+            const zapGain = ctx.createGain();
             
-            snapOsc.type = 'triangle'; // Sharper than sine
-            snapOsc.frequency.setValueAtTime(300, now);
-            snapOsc.frequency.exponentialRampToValueAtTime(50, now + 0.1); // Quick drop
+            zapOsc.type = 'sawtooth'; 
+            zapOsc.frequency.setValueAtTime(2200, now); // Sharp start
+            zapOsc.frequency.exponentialRampToValueAtTime(150, now + 0.1); // Fast snap down
             
-            snapGain.gain.setValueAtTime(0, now);
-            snapGain.gain.linearRampToValueAtTime(0.4, now + 0.01);
-            snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            zapGain.gain.setValueAtTime(0, now);
+            zapGain.gain.linearRampToValueAtTime(0.12, now + 0.005); // Instant attack
+            zapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
             
-            snapOsc.connect(snapGain);
-            snapGain.connect(ctx.destination);
-            snapOsc.start(now);
-            snapOsc.stop(now + 0.15);
+            // Highpass filter to remove muddy lows from the zap, keeping it crisp
+            const zapFilter = ctx.createBiquadFilter();
+            zapFilter.type = 'highpass';
+            zapFilter.frequency.value = 500;
 
-            // 2. The Ding (Confirmation, High Pitch)
-            const dingOsc = ctx.createOscillator();
-            const dingGain = ctx.createGain();
+            zapOsc.connect(zapFilter);
+            zapFilter.connect(zapGain);
+            zapGain.connect(ctx.destination);
             
-            dingOsc.type = 'sine';
-            dingOsc.frequency.setValueAtTime(1046.50, now); // C6
+            zapOsc.start(now);
+            zapOsc.stop(now + 0.15);
+
+            // 2. The "Cute" Aftertouch (Sine High Blip)
+            // Provides the "Satisfying" finish
+            const sparkOsc = ctx.createOscillator();
+            const sparkGain = ctx.createGain();
             
-            dingGain.gain.setValueAtTime(0, now);
-            dingGain.gain.linearRampToValueAtTime(0.2, now + 0.02);
-            dingGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+            sparkOsc.type = 'sine';
+            sparkOsc.frequency.setValueAtTime(1800, now);
+            sparkOsc.frequency.linearRampToValueAtTime(2200, now + 0.05); // Quick chirp up
             
-            dingOsc.connect(dingGain);
-            dingGain.connect(ctx.destination);
-            dingOsc.start(now);
-            dingOsc.stop(now + 0.45);
+            sparkGain.gain.setValueAtTime(0, now);
+            sparkGain.gain.linearRampToValueAtTime(0.15, now + 0.01);
+            sparkGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15); // Ring out slightly
+            
+            sparkOsc.connect(sparkGain);
+            sparkGain.connect(ctx.destination);
+            
+            sparkOsc.start(now);
+            sparkOsc.stop(now + 0.2);
         }
 
         if (this.vibrationEnabled) {

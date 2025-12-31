@@ -49,6 +49,10 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     
     let bgClass = ''; 
 
+    // Dark Mode Color Strategy: 
+    // The board background is Stone-300 (#d6d3d1) in Dark Mode.
+    // Highlights are lighter (Stone-200) to stand out subtly without matching the Stone-500 grid lines.
+
     if (isRevealingCell) {
         // Keep default background during reveal init to prevent black flash from transparency
         bgClass = 'bg-t-board '; 
@@ -56,18 +60,20 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
          // Scanner Detection: Bright Red Flash
          bgClass = 'bg-red-500 animate-pulse shadow-inner '; 
     } else if (isSelected && (isError || isConflict)) {
-         // Selected Error: Noticeable Red
-         bgClass = 'bg-red-200 dark:bg-red-900 '; 
+         // Selected Error:
+         bgClass = 'bg-red-200 dark:bg-red-300 '; 
     } else if (isError || isConflict) {
-         // Error: Increased visibility
-         bgClass = 'bg-red-100 dark:bg-red-900/50 ';
+         // Error:
+         bgClass = 'bg-red-100 dark:bg-red-200 ';
     } else if (isSelected) {
-         bgClass = 'bg-blue-200 dark:bg-blue-500 '; // Selected: Blue 200 (Lighter)
+         // Selected: Blue 200 (Light) / Blue 300 (Dark Mode - distinct but softer than 400)
+         bgClass = 'bg-blue-200 dark:bg-blue-300 '; 
     } else if (highlight && isSameValue) {
-         bgClass = 'bg-blue-100 dark:bg-blue-600/40 '; // Same Value: Blue 100
+         // Same Value: Blue 50 / Blue 200 (Dark Mode)
+         bgClass = 'bg-blue-50 dark:bg-blue-200 '; 
     } else if (highlight && isRelated) {
-         // Related: Grey (stone-100) instead of Blue
-         bgClass = 'bg-stone-100 dark:bg-black/10 '; 
+         // Related: Stone 50 / Stone 200 (Dark Mode - lighter than board Stone-300)
+         bgClass = 'bg-stone-50 dark:bg-stone-200 '; 
     } else if (isRevealed) {
          bgClass = 'bg-amber-100 '; 
     } else {
@@ -89,8 +95,8 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
             // Scanner Detection Text: White for contrast against bright red
             classes += "font-bold text-white ";
         } else if (isError || isConflict) {
-            // Error Text: Darker red for visibility
-            classes += "font-medium text-red-600 dark:text-red-300 ";
+            // Error Text: Dark red
+            classes += "font-medium text-red-600 dark:text-red-700 ";
         } else {
             classes += "font-medium ";
         }

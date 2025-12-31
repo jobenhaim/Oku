@@ -463,9 +463,9 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
             {/* --- INTRO TEXT OVERLAY --- */}
             <div 
                 onClick={handleIntroTap}
-                className={`absolute inset-0 flex items-center justify-center p-4 z-40 transition-opacity duration-700 cursor-pointer active:scale-95 ${isTextVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                className={`absolute inset-0 flex items-center justify-center p-4 z-40 transition-opacity duration-700 cursor-pointer ${isTextVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             >
-                <div className="bg-white/60 backdrop-blur-md p-6 rounded-2xl shadow-sm border border-white/40 text-center max-w-[90%]">
+                <div className="bg-white/90 p-6 rounded-2xl shadow-sm border border-white/40 text-center max-w-[90%]">
                     <p className="text-xl font-bold text-stone-800 mb-3 leading-tight">Meet Pepino.</p>
                     <p className="text-[11px] font-medium text-stone-600 mb-1 leading-relaxed">He was around when Oku was being built.</p>
                     <p className="text-[11px] font-medium text-stone-600 leading-relaxed mb-4">Feel free to check on him after every game.</p>

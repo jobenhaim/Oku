@@ -14,19 +14,27 @@
   --icon: #57534e; /* stone-600 */
   --board-bg: #ffffff;
   --overlay-opacity: 0;
+  
+  /* Grid Lines */
+  --grid-thin: #a8a29e; /* stone-400 */
+  --grid-thick: #1c1917; /* stone-900 */
 }
 
 .dark {
-  /* Dark Theme - Warm Dark Grey (Stone Palette) */
-  --app-bg: #1c1917; /* Stone 900 */
-  --surface: #292524; /* Stone 800 */
-  --surface-sec: #44403c; /* Stone 700 */
+  /* Dark Theme - OLED Black (Pure Black) */
+  --app-bg: #000000; 
+  --surface: #121212; /* Very dark grey for cards (Material Dark) */
+  --surface-sec: #262626; /* Slightly lighter for inputs */
   --text-primary: #f5f5f4; /* Stone 100 */
-  --text-secondary: #a8a29e; /* Stone 400 */
-  --border: #57534e; /* Stone 600 */
-  --icon: #d6d3d1; /* Stone 300 */
-  --board-bg: #d6d3d1; /* Stone 300 - Dimmed board */
+  --text-secondary: #a3a3a3; /* Neutral 400 */
+  --border: #404040; /* Neutral 700 */
+  --icon: #d4d4d4; /* Neutral 300 */
+  --board-bg: #d6d3d1; /* Stone 300 - Dimmed board for contrast against black */
   --overlay-opacity: 0.5;
+
+  /* Grid Lines - Dark Mode */
+  --grid-thin: #78716c; /* Stone 500 */
+  --grid-thick: #44403c; /* Stone 700 */
 }
 
 /* STRICT VIEWPORT LOCKING FOR MOBILE */
