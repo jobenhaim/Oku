@@ -127,12 +127,22 @@ const DifficultyCard: React.FC<{
     const finalStyle = { ...defaultStyle, ...layoutStyle, zIndex: finalZIndex, animationDelay: `${delay}ms` };
 
     // Dynamic Scale classes
-    const titleClass = contentScale === 'large' ? 'text-3xl mb-3' : (contentScale === 'medium' ? 'text-2xl mb-2' : 'text-lg mb-1');
-    const iconSizeClass = contentScale === 'large' ? 'w-6 h-6' : (contentScale === 'medium' ? 'w-5 h-5' : 'w-3.5 h-3.5');
+    // Title: slightly adjusted to remove mb, relies on flex-between spacing
+    const titleClass = contentScale === 'large' ? 'text-3xl' : (contentScale === 'medium' ? 'text-2xl' : 'text-lg');
+    
+    // Icon Size: Smaller
+    const iconSizeClass = contentScale === 'large' ? 'w-5 h-5' : (contentScale === 'medium' ? 'w-4 h-4' : 'w-3 h-3');
+    
+    // Info Icon Size
     const infoIconSizeClass = contentScale === 'large' ? 'w-8 h-8 -ml-1.5' : (contentScale === 'medium' ? 'w-7 h-7 -ml-1' : 'w-6 h-6 -ml-0.5');
     const infoIconInnerSize = contentScale === 'large' ? 'w-6 h-6' : (contentScale === 'medium' ? 'w-5 h-5' : 'w-4 h-4');
-    const pointsTextClass = contentScale === 'large' ? 'text-xl' : (contentScale === 'medium' ? 'text-lg' : 'text-sm');
-    const progressTextClass = contentScale === 'large' ? 'text-xl' : (contentScale === 'medium' ? 'text-lg' : 'text-sm');
+    
+    // Points Text: Visually smaller
+    const pointsTextClass = contentScale === 'large' ? 'text-base' : (contentScale === 'medium' ? 'text-sm' : 'text-xs');
+    
+    // Progress Text: 40% smaller (Tiny)
+    const progressTextClass = contentScale === 'large' ? 'text-sm' : (contentScale === 'medium' ? 'text-xs' : 'text-[10px]');
+    
     const progressBarHeight = contentScale === 'large' ? 'h-3' : (contentScale === 'medium' ? 'h-2.5' : 'h-1.5');
     const paddingClass = contentScale === 'large' ? 'p-6' : (contentScale === 'medium' ? 'p-5' : 'p-3.5');
 
@@ -142,17 +152,17 @@ const DifficultyCard: React.FC<{
             style={finalStyle}
             className={`bg-t-surface ${paddingClass} rounded-2xl shadow-sm flex flex-col justify-between transition-transform text-left relative group overflow-visible ${animating ? 'opacity-0 animate-slide-in-down' : 'opacity-100'}`}
         >
-            {/* Header: Title & Points */}
-            <div className="w-full flex justify-between items-start mb-1">
-                <span className={`font-semibold text-stone-700 dark:text-stone-300 leading-none tracking-tight truncate mr-1 mt-0.5 ${titleClass}`}>{diff}</span>
-                <div className="flex items-center gap-1 shrink-0">
+            {/* Header: Title & Points - Aligned Center */}
+            <div className="w-full flex justify-between items-center mb-1">
+                <span className={`font-semibold text-stone-700 dark:text-stone-300 leading-none tracking-tight truncate mr-1 ${titleClass}`}>{diff}</span>
+                <div className="flex items-center gap-0.5 shrink-0">
                     <span className={`${pointsTextClass} font-bold text-t-primary opacity-80 leading-none`}>+{diffPoints}</span>
                     <Icons.Diamond className={`${iconSizeClass} text-blue-500 fill-current`} />
                 </div>
             </div>
             
-            {/* Middle: Info & Progress Numbers */}
-            <div className="w-full flex justify-between items-end mb-2 mt-auto">
+            {/* Middle: Info & Progress Numbers - Closer to bar (mb-1) */}
+            <div className="w-full flex justify-between items-end mb-1 mt-auto">
                 {/* Info Icon */}
                 <div className="relative z-50" onClick={(e) => e.stopPropagation()}>
                     <div 
@@ -183,8 +193,8 @@ const DifficultyCard: React.FC<{
                     )}
                 </div>
                 
-                {/* Progress Numbers (Animated) */}
-                <span className={`${progressTextClass} text-stone-700 dark:text-stone-300 font-bold tracking-wide font-sans leading-none`}>
+                {/* Progress Numbers (Animated & Smaller) */}
+                <span className={`${progressTextClass} text-stone-700 dark:text-stone-300 font-bold tracking-wide font-sans leading-none opacity-90`}>
                     {animatedCompleted} / {maxLevels}
                 </span>
             </div>

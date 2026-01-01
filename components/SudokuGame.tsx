@@ -398,7 +398,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                   ) : (
                       <span className="text-xl font-bold text-t-primary leading-none">Level {levelId}</span>
                   )}
-                  <span className="text-[10px] font-bold text-t-secondary uppercase tracking-widest mt-1">
+                  <span className="text-[10px] font-bold text-stone-600 dark:text-stone-400 uppercase tracking-widest mt-1">
                     {difficulty} {settings.showTimer && `• ${levelId}`}
                   </span>
               </div>

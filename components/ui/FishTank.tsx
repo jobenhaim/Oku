@@ -123,7 +123,7 @@ const PEPINO_MESSAGES = [
     "Wow!", "Squid ink.", "Messy.", "Clean up.", "Janitor fish.", 
     "Algae eater.", "Lil Fish.", "Green smoothie.", "Diet starts Monday.", "Cheat day.", 
     "Pizza?", "Burger?", "Fries?", "Chips?", "Fish and chips?", 
-    ":D.", "Oh?", "Oh!", "Dreams come true.", "Swim away.", 
+    ":D", "Oh?", "Oh!", "Dreams come true.", "Swim away.", 
     "Fast swim.", "Slow swim.", "Floating.", "Drifting.", "Current events.", 
     "News anchor.", "Weather report.", "It is wet.", "100% chance of water.", "Rain dance.", 
     "Umbrella?", "Underwater rain.", "Impossible.", "Science.", "Magic.", 

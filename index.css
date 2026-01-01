@@ -29,12 +29,12 @@
   --text-secondary: #a3a3a3; /* Neutral 400 */
   --border: #404040; /* Neutral 700 */
   --icon: #d4d4d4; /* Neutral 300 */
-  --board-bg: #d6d3d1; /* Stone 300 - Dimmed board for contrast against black */
+  --board-bg: #292524; /* Stone 800 - Dark Grid Background */
   --overlay-opacity: 0.5;
 
-  /* Grid Lines - Dark Mode */
-  --grid-thin: #78716c; /* Stone 500 */
-  --grid-thick: #44403c; /* Stone 700 */
+  /* Grid Lines - Dark Mode (Lighter for contrast against dark bg) */
+  --grid-thin: #57534e; /* Stone 600 */
+  --grid-thick: #a8a29e; /* Stone 400 */
 }
 
 /* STRICT VIEWPORT LOCKING FOR MOBILE */

@@ -94,87 +94,79 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                             <button 
                                 key={offer.id} 
                                 onClick={() => handleBuyOfferWrapper(offer)}
-                                // Card Container - Premium Cosmic Gradient
-                                className="w-full h-56 relative overflow-hidden rounded-[1.75rem] px-5 py-4 shadow-2xl transition-transform mb-6 text-left bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 active:scale-[0.99] group border border-white/10"
+                                // Card Container - Compact Premium with Price Header
+                                className="w-full relative overflow-hidden rounded-[1.5rem] p-4 shadow-2xl transition-transform mb-6 text-left bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 active:scale-[0.99] group border border-white/10"
                             >
                                 {/* Subtle Shine Effect */}
                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/0 to-white/10 pointer-events-none" />
 
                                 {/* Giant Faded Crown/Star Background */}
                                 <div className="absolute -right-6 -bottom-8 opacity-[0.12] pointer-events-none z-0 rotate-12">
-                                     {/* Crown Shape */}
-                                     <svg viewBox="0 0 24 24" className="w-64 h-64 fill-current text-white">
+                                     <svg viewBox="0 0 24 24" className="w-48 h-48 fill-current text-white">
                                          <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5ZM19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" />
                                      </svg>
                                 </div>
 
-                                {/* Floating Premium Particles (Stars & Hearts) */}
+                                {/* Floating Premium Particles */}
                                 <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-                                    {[...Array(12)].map((_, i) => {
-                                        const isStar = i % 2 === 0;
-                                        return (
-                                            <div 
-                                                key={i}
-                                                className={`absolute ${isStar ? 'text-yellow-200' : 'text-rose-300'} animate-float-up`}
-                                                style={{
-                                                    left: `${Math.random() * 100}%`,
-                                                    bottom: '-20px',
-                                                    animationDelay: `${Math.random() * 5}s`,
-                                                    animationDuration: `${5 + Math.random() * 5}s`,
-                                                    opacity: 0 // Initial opacity handled by keyframe
-                                                }}
-                                            >
-                                                {isStar ? (
-                                                    <Icons.Sparkles className="fill-current" style={{ width: `${8 + Math.random() * 10}px`, height: `${8 + Math.random() * 10}px` }} />
-                                                ) : (
-                                                    <Icons.Heart className="fill-current" style={{ width: `${10 + Math.random() * 8}px`, height: `${10 + Math.random() * 8}px` }} />
-                                                )}
-                                            </div>
-                                        );
-                                    })}
+                                    {[...Array(8)].map((_, i) => (
+                                        <div 
+                                            key={i}
+                                            className={`absolute ${i % 2 === 0 ? 'text-yellow-200' : 'text-rose-300'} animate-float-up`}
+                                            style={{
+                                                left: `${Math.random() * 100}%`,
+                                                bottom: '-20px',
+                                                // Negative delay ensures particles are already mid-flight when component mounts
+                                                animationDelay: `-${Math.random() * 5}s`,
+                                                animationDuration: `${5 + Math.random() * 5}s`,
+                                                opacity: 0 
+                                            }}
+                                        >
+                                            {/* Alternating Hearts and Crowns */}
+                                            {i % 2 === 0 ? (
+                                                <Icons.Crown className="fill-current" style={{ width: `${14 + Math.random() * 10}px`, height: `${14 + Math.random() * 10}px` }} />
+                                            ) : (
+                                                <Icons.Heart className="fill-current" style={{ width: `${14 + Math.random() * 10}px`, height: `${14 + Math.random() * 10}px` }} />
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
 
-                                <div className="relative z-10 flex flex-col h-full">
-                                    {/* Header Row */}
-                                    <div className="flex justify-between items-start mb-1">
+                                <div className="relative z-10 flex flex-col w-full">
+                                    {/* Top Row: Title + Price (Compact) */}
+                                    <div className="flex justify-between items-start mb-1.5">
                                         <div className="flex flex-col">
-                                            <div className="inline-block px-2 py-0.5 rounded-md bg-white/20 text-white text-[9px] font-bold tracking-widest uppercase mb-1.5 border border-white/20 leading-none w-fit backdrop-blur-sm">
+                                            <div className="inline-block px-1.5 py-0.5 rounded-[4px] bg-white/20 text-white text-[9px] font-bold tracking-widest uppercase mb-0.5 border border-white/20 leading-none w-fit backdrop-blur-sm">
                                                 EXCLUSIVE
                                             </div>
-                                            <h2 className="text-2xl font-bold text-white leading-tight drop-shadow-md">{offer.title}</h2>
+                                            <h2 className="text-xl font-bold text-white leading-none drop-shadow-md">{offer.title}</h2>
+                                        </div>
+                                        <div className={priceBadgeClass}>
+                                            {offer.priceLabel}
                                         </div>
                                     </div>
 
-                                    {/* Description Text */}
-                                    <p className="text-[11px] font-medium text-purple-50 leading-relaxed pr-2 max-w-full mb-2 relative z-10 opacity-95">
+                                    {/* Description Text - RESTORED */}
+                                    <p className="text-[10px] font-medium text-indigo-50 leading-tight mb-2.5 pr-1 max-w-full opacity-95">
                                         Adopt an exclusive companion that grows with you and grants special rewards after every game. Support indie development and enjoy a distraction-free journey.
                                     </p>
 
-                                    {/* Bottom Area: Benefits List + Price Badge */}
-                                    <div className="flex items-end justify-between mt-auto w-full">
-                                        
-                                        {/* Benefits List */}
-                                        <div className="flex flex-col gap-1">
-                                            <div className="flex items-center gap-2">
-                                                <Icons.Check className="w-3.5 h-3.5 text-emerald-300 stroke-[3]" />
-                                                <div className="flex items-center gap-0.5">
-                                                    <span className="text-[11px] font-bold text-white">+1500</span>
-                                                    <Icons.Diamond className="w-3.5 h-3.5 text-blue-500 fill-current" />
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Icons.Check className="w-3.5 h-3.5 text-emerald-300 stroke-[3]" />
-                                                <span className="text-[11px] font-bold text-white">No forced ads, ever</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Icons.Check className="w-3.5 h-3.5 text-emerald-300 stroke-[3]" />
-                                                <span className="text-[11px] font-bold text-white">Special companion</span>
+                                    {/* Features List - Vertical Bullet Point Style */}
+                                    <div className="flex flex-col gap-0.5 w-full pl-0.5">
+                                        <div className="flex items-center gap-2">
+                                            <Icons.Check className="w-3 h-3 text-emerald-300 stroke-[3] shrink-0" />
+                                            <div className="flex items-center gap-1">
+                                                <span className="text-[10px] font-bold text-white">+1500</span>
+                                                <Icons.Diamond className="w-2.5 h-2.5 text-blue-300 fill-current" />
                                             </div>
                                         </div>
-
-                                        {/* Price Badge */}
-                                        <div className={`${priceBadgeClass} shrink-0 ml-4 mb-0.5 shadow-lg`}>
-                                            {offer.priceLabel}
+                                        <div className="flex items-center gap-2">
+                                            <Icons.Check className="w-3 h-3 text-emerald-300 stroke-[3] shrink-0" />
+                                            <span className="text-[10px] font-bold text-white">No forced ads, ever</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Icons.Check className="w-3 h-3 text-emerald-300 stroke-[3] shrink-0" />
+                                            <span className="text-[10px] font-bold text-white">Special companion & daily gifts</span>
                                         </div>
                                     </div>
                                 </div>

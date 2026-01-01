@@ -50,8 +50,8 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     let bgClass = ''; 
 
     // Dark Mode Color Strategy: 
-    // The board background is Stone-300 (#d6d3d1) in Dark Mode.
-    // Highlights are lighter (Stone-200) to stand out subtly without matching the Stone-500 grid lines.
+    // The board background is Stone-800 (#292524) in Dark Mode.
+    // Highlights must be darker or translucent to blend nicely.
 
     if (isRevealingCell) {
         // Keep default background during reveal init to prevent black flash from transparency
@@ -61,23 +61,21 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
          bgClass = 'bg-red-500 animate-pulse shadow-inner '; 
     } else if (isSelected && (isError || isConflict)) {
          // Selected Error:
-         bgClass = 'bg-red-200 dark:bg-red-300 '; 
+         bgClass = 'bg-red-200 dark:bg-red-900/80 '; 
     } else if (isError || isConflict) {
          // Error:
-         bgClass = 'bg-red-100 dark:bg-red-200 ';
+         bgClass = 'bg-red-100 dark:bg-red-900/50 ';
     } else if (isSelected) {
-         // Selected: Blue 200 (Light) / Blue 300 (Dark Mode - distinct but softer than 400)
-         bgClass = 'bg-blue-200 dark:bg-blue-300 '; 
+         // Selected: Blue 200 (Light) / Dark Blue (Dark Mode)
+         bgClass = 'bg-blue-200 dark:bg-blue-900 '; 
     } else if (highlight && isSameValue) {
-         // Same Value: Blue 100 (was 50) / Blue 200 (Dark Mode)
-         // Increased contrast for light mode visibility
-         bgClass = 'bg-blue-100 dark:bg-blue-200 '; 
+         // Same Value: Blue 100 / Translucent Dark Blue
+         bgClass = 'bg-blue-100 dark:bg-blue-900/60 '; 
     } else if (highlight && isRelated) {
-         // Related: Stone 100 (was 50) / Stone 200 (Dark Mode - lighter than board Stone-300)
-         // Increased contrast for light mode visibility
-         bgClass = 'bg-stone-100 dark:bg-stone-200 '; 
+         // Related: Stone 100 / Stone 700 (Slightly lighter than base 800 for visibility)
+         bgClass = 'bg-stone-100 dark:bg-stone-700 '; 
     } else if (isRevealed) {
-         bgClass = 'bg-amber-100 '; 
+         bgClass = 'bg-amber-100 dark:bg-amber-900 '; 
     } else {
          bgClass = 'bg-t-board '; 
     }
@@ -89,16 +87,16 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     }
     
     if (cell.isFixed) {
-        classes += "font-semibold text-stone-800 ";
+        classes += "font-semibold text-stone-800 dark:text-stone-200 ";
     } else if (isRevealed) {
-        classes += "font-semibold text-stone-800 ";
+        classes += "font-semibold text-stone-800 dark:text-stone-200 ";
     } else {
         if (isMarkedWrong) {
             // Scanner Detection Text: White for contrast against bright red
             classes += "font-bold text-white ";
         } else if (isError || isConflict) {
-            // Error Text: Dark red
-            classes += "font-medium text-red-600 dark:text-red-700 ";
+            // Error Text: Dark red / Light red
+            classes += "font-medium text-red-600 dark:text-red-400 ";
         } else {
             classes += "font-medium ";
         }
@@ -121,7 +119,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
             <div className="grid grid-cols-3 grid-rows-3 w-full h-full p-[1px] pointer-events-none relative z-10">
                 {[1,2,3,4,5,6,7,8,9].map(n => {
                     const noteClass = cell.notes.includes(n) 
-                        ? 'text-stone-500 font-medium'
+                        ? 'text-stone-500 dark:text-stone-400 font-medium'
                         : 'invisible';
                         
                     return (

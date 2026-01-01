@@ -54,7 +54,8 @@ import {
   User,
   Medal,
   Flame,
-  Star
+  Star,
+  Crown
 } from 'lucide-react';
 
 export const Icons = {
@@ -116,4 +117,5 @@ export const Icons = {
   Medal: (props: any) => <Medal {...props} />,
   Flame: (props: any) => <Flame {...props} />,
   Star: (props: any) => <Star {...props} />,
+  Crown: (props: any) => <Crown {...props} />,
 };
