@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { sounds } from '../../utils/sound';
@@ -296,7 +297,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
         if (offer.type === 'starter') {
             return (
                 <span>
-                    Includes <span className="font-bold">1,000 Diamonds</span>, plus permanent access to <span className="font-bold">Auto</span> & <span className="font-bold">Scan</span> skills and the <span className="font-bold">Piano</span> sound pack.
+                    Includes <span className="font-bold">500 Diamonds</span>, plus permanent access to <span className="font-bold">Auto</span> & <span className="font-bold">Scan</span> skills and the <span className="font-bold">Piano</span> sound pack.
                 </span>
             );
         }

@@ -92,6 +92,14 @@ html, body {
   height: 100dvh;
 }
 
+/* Landscape Blocker Logic */
+/* Only show on screens that are likely mobile phones in landscape */
+@media screen and (orientation: landscape) and (max-height: 600px) {
+  .landscape-blocker {
+    display: flex !important;
+  }
+}
+
 /* TEXT EFFECTS */
 
 /* 1. ELEGANT GOLD - REIMAGINED */

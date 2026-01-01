@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Icons } from '../ui/Icons';
 import { DIAMOND_OFFERS } from '../../utils/constants';
@@ -166,7 +167,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Icons.Check className="w-3 h-3 text-emerald-300 stroke-[3] shrink-0" />
-                                            <span className="text-[10px] font-bold text-white">Special companion & daily gifts</span>
+                                            <span className="text-[10px] font-bold text-white">Special Companion + Rewards</span>
                                         </div>
                                     </div>
                                 </div>

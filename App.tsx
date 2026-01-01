@@ -6,9 +6,11 @@ import { Storage } from './utils/storage';
 import { sounds } from './utils/sound';
 import { getPackCost, NUMBER_COLORS, ALL_BACKGROUNDS } from './utils/constants';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { ScreenOrientation } from '@capacitor/screen-orientation';
 
 // UI Components
 import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal } from './components/ui/Modals';
+import { LandscapeBlocker } from './components/ui/LandscapeBlocker';
 // AdOverlay removed
 
 // Screens
@@ -65,7 +67,7 @@ export function App() {
   // Track actual dark mode state for JS logic
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Initialize Native Storage
+  // Initialize Native Storage & Orientation Lock
   useEffect(() => {
     const initStorage = async () => {
         // Initialize native storage
@@ -93,6 +95,38 @@ export function App() {
         else document.documentElement.classList.remove('dark');
     };
     initStorage();
+
+    // Lock Orientation to Portrait
+    const lockOrientation = async () => {
+        try {
+            // Native Lock (Capacitor)
+            await ScreenOrientation.lock({ orientation: 'portrait' });
+        } catch (e) {
+            console.log("Native lock failed or not supported, trying web API");
+            // Web API Fallback
+            try {
+                if (window.screen && window.screen.orientation && typeof (window.screen.orientation as any).lock === 'function') {
+                    await (window.screen.orientation as any).lock('portrait');
+                }
+            } catch (err) {
+                // Ignore errors (e.g. desktop browser doesn't support locking)
+            }
+        }
+    };
+    
+    lockOrientation();
+
+    // Re-lock on visibility change (sometimes needed on Android resume)
+    const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+            lockOrientation();
+        }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Theme Detection
@@ -467,6 +501,9 @@ export function App() {
           {/* Main App Wrapper: Fixed, Full Viewport, No Overflow */}
           <div className="fixed inset-0 z-0 w-full h-full overflow-hidden select-none touch-none">
               
+              {/* Force Landscape Blocker */}
+              <LandscapeBlocker />
+
               {/* Background Layer (Persistent) */}
               <div 
                 className={`absolute inset-0 z-0 transition-all ease-in-out duration-500 ${activeBackgroundClass}`} 

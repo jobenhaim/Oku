@@ -218,7 +218,7 @@ export const DIAMOND_OFFERS: DiamondOffer[] = [
     {
         id: 'support_dev',
         title: 'Premium Pack',
-        subtitle: 'Exclusive Companion + Rewards',
+        subtitle: 'Special Companion + Rewards',
         diamonds: 1500,
         priceLabel: '$4.99',
         type: 'support',
@@ -229,7 +229,7 @@ export const DIAMOND_OFFERS: DiamondOffer[] = [
         id: 'starter_pack',
         title: 'Starter Pack',
         subtitle: 'Everything you need to begin',
-        diamonds: 1000,
+        diamonds: 500, // Changed from 1000
         includes: ['Auto & Scan Skill Unlocked', 'Piano Sound Pack Unlocked'],
         badge: 'BEST VALUE',
         priceLabel: '$2.99',
