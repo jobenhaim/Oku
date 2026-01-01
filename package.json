@@ -15,6 +15,7 @@
     "@capacitor/ios": "^6.0.0",
     "@capacitor/preferences": "^6.0.0",
     "@capacitor/screen-orientation": "^6.0.0",
+    "@capacitor-community/admob": "^6.0.0",
     "cordova-plugin-purchase": "^13.0.0",
     "framer-motion": "^11.0.0",
     "lucide-react": "^0.300.0",

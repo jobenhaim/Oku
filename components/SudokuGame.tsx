@@ -13,6 +13,7 @@ import { Storage } from '../utils/storage';
 import { sounds } from '../utils/sound';
 import { Icons } from './ui/Icons';
 import { formatTimeShort } from '../utils/constants';
+import { Ads, AD_IDS } from '../utils/ads';
 
 interface SudokuGameProps {
   difficulty: Difficulty;
@@ -57,6 +58,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   const [animatingSections, setAnimatingSections] = useState<Set<string>>(new Set());
   const [showStartHint, setShowStartHint] = useState(false);
+  
+  // Game-specific Loading Overlay (for Ad)
+  const [isWatchingAd, setIsWatchingAd] = useState(false);
   
   // Timer hook
   const { timer, setTimer } = useGameTimer(
@@ -246,6 +250,42 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       return () => clearTimeout(hintTimer);
   }, [difficulty, levelId, initializeBoard, setTimer, setScanUses, setRevealUses]);
   
+  const handleWatchScanAd = async () => {
+        setIsWatchingAd(true);
+        sounds.playClick();
+        
+        // Show Ad (Refill Scans)
+        const success = await Ads.showRewardVideo(AD_IDS.SCAN_REFILL, () => {
+            // Reward: 1 use
+            setScanUses(1);
+            sounds.playWin();
+        });
+
+        setIsWatchingAd(false);
+
+        if (!success) {
+            console.log("Ad failed to show");
+        }
+  };
+
+  const handleWatchRevealAd = async () => {
+        setIsWatchingAd(true);
+        sounds.playClick();
+        
+        // Show Ad (Refill Reveal)
+        const success = await Ads.showRewardVideo(AD_IDS.REVEAL_REFILL, () => {
+            // Reward: 1 use
+            setRevealUses(1);
+            sounds.playWin();
+        });
+
+        setIsWatchingAd(false);
+
+        if (!success) {
+            console.log("Ad failed to show");
+        }
+  };
+
   const generateReplay = () => {
         if (isGeneratingReplay || replayUrl) return;
         setIsGeneratingReplay(true);
@@ -464,7 +504,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                  revealingCell={revealingCell}
                  onAutoFill={() => handleAutoFill(purchasedSkills)}
                  onScan={() => handleScan(isPaused, isCompleted)}
+                 onWatchScanAd={handleWatchScanAd}
                  onReveal={() => handleReveal(isPaused, isCompleted)}
+                 onWatchRevealAd={handleWatchRevealAd}
                  timer={timer}
              />
          </div>
@@ -500,6 +542,15 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                      </div>
                   </div>
               )}
+          </div>
+      )}
+
+      {isWatchingAd && (
+          <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-md flex items-center justify-center animate-fade-in">
+              <div className="bg-t-surface p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 animate-pop">
+                  <div className="w-10 h-10 border-4 border-stone-200 border-t-blue-500 rounded-full animate-spin"></div>
+                  <p className="font-bold text-t-primary">Loading Reward...</p>
+              </div>
           </div>
       )}
 
