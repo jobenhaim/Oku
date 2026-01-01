@@ -7,12 +7,12 @@ import { sounds } from './utils/sound';
 import { getPackCost, NUMBER_COLORS, ALL_BACKGROUNDS } from './utils/constants';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
-import { IAP } from './utils/iap'; 
-import { Ads, AD_IDS } from './utils/ads'; // Import AD_IDS
+import { IAP } from './utils/iap'; // Import IAP Service
 
 // UI Components
 import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal } from './components/ui/Modals';
 import { LandscapeBlocker } from './components/ui/LandscapeBlocker';
+// AdOverlay removed
 
 // Screens
 import { SplashScreen } from './components/screens/SplashScreen';
@@ -68,7 +68,7 @@ export function App() {
   // Track actual dark mode state for JS logic
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Initialize Native Storage, Orientation, IAP, Ads
+  // Initialize Native Storage, Orientation, IAP
   useEffect(() => {
     const initStorage = async () => {
         // Initialize native storage
@@ -99,9 +99,6 @@ export function App() {
 
     // Init IAP
     IAP.initialize();
-    
-    // Init Ads
-    Ads.initialize();
 
     // Lock Orientation to Portrait
     const lockOrientation = async () => {
@@ -248,6 +245,7 @@ export function App() {
           // Prevent hiding the last visible difficulty
           const allDiffs = Object.values(Difficulty);
           if (allDiffs.length - currentHidden.length <= 1) {
+             // Maybe play error sound?
              return; 
           }
           newHidden = [...currentHidden, diff];
@@ -356,23 +354,18 @@ export function App() {
   const handleWatchAd = async () => {
         setShowNotEnoughPoints(false);
         setPurchaseCandidate(null);
+        setIsWatchingAd(true);
         sounds.playClick();
-        setIsWatchingAd(true); // Show spinner
         
-        // Show Ad (DIAMOND REWARD)
-        const success = await Ads.showRewardVideo(AD_IDS.DIAMOND_REWARD, () => {
+        // Simulating Loading Delay instead of Fake Ad Game
+        setTimeout(() => {
             handleAdReward();
-        });
-
-        setIsWatchingAd(false);
-
-        if (!success) {
-            console.log("Ad not ready or failed to show");
-        }
+        }, 2000);
   };
 
   const handleAdReward = () => {
       handleEarnPoints(25);
+      setIsWatchingAd(false);
       sounds.playWin();
   };
 
@@ -454,6 +447,8 @@ export function App() {
 
   let activeBackgroundClass = "bg-paper dark:bg-black"; 
   
+  // Logic: In Dark Mode, override selection to ensure OLED Black background
+  // In Light Mode, respect user selection
   if (selectedBackgroundId && !isDarkMode) {
       const bg = ALL_BACKGROUNDS.find(b => b.id === selectedBackgroundId);
       if (bg) {
@@ -465,9 +460,10 @@ export function App() {
 
   const numberColorClass = NUMBER_COLORS.find(n => n.id === selectedNumberColorId)?.class || 'text-blue-600';
   
+  // Calculate overlay opacity in JS for better reliability
   const isGradient = activeBackgroundClass.includes('bg-gradient');
   let overlayOpacityValue = 0;
-  const baseOverlayOpacity = isDarkMode ? 0.5 : 0;
+  const baseOverlayOpacity = isDarkMode ? 0.5 : 0; // Base opacity for dark mode
 
   if (isGradient) {
       if (screen === 'game') {
@@ -676,7 +672,7 @@ export function App() {
                     <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-md flex items-center justify-center animate-fade-in">
                         <div className="bg-t-surface p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 animate-pop">
                             <div className="w-10 h-10 border-4 border-stone-200 border-t-blue-500 rounded-full animate-spin"></div>
-                            <p className="font-bold text-t-primary">Loading Reward...</p>
+                            <p className="font-bold text-t-primary">Claiming Reward...</p>
                         </div>
                     </div>
                 )}

@@ -20,9 +20,7 @@ interface GameControlsProps {
     revealingCell: {r: number, c: number} | null;
     onAutoFill: (e: React.MouseEvent) => void;
     onScan: (e: React.MouseEvent) => void;
-    onWatchScanAd: (e: React.MouseEvent) => void;
     onReveal: (e: React.MouseEvent) => void;
-    onWatchRevealAd: (e: React.MouseEvent) => void;
     timer: number;
 }
 
@@ -42,9 +40,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
     revealingCell,
     onAutoFill,
     onScan,
-    onWatchScanAd,
     onReveal,
-    onWatchRevealAd,
     timer
 }) => {
     // Helper for common enabled/disabled styles
@@ -67,27 +63,23 @@ export const GameControls: React.FC<GameControlsProps> = ({
             {/* Reveal Skill Button */}
             {purchasedSkills.includes('skill-reveal') && (
                     <button 
-                        onClick={(e) => { 
-                            e.stopPropagation(); 
-                            if (revealUses > 0) onReveal(e);
-                            else onWatchRevealAd(e);
-                        }} 
-                        className={`flex flex-col items-center gap-1 transition relative ${getBaseButtonStyle(!revealingCell && !isRevealLocked)}`}
-                        disabled={!!revealingCell || isRevealLocked}
+                        onClick={(e) => { e.stopPropagation(); onReveal(e); }} 
+                        className={`flex flex-col items-center gap-1 transition relative ${getBaseButtonStyle(revealUses > 0 && !revealingCell && !isRevealLocked)}`}
+                        disabled={revealUses <= 0 || !!revealingCell || isRevealLocked}
                     >
                     {/* Removed border class */}
-                    <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative ${getBaseContainerStyle(!isRevealLocked)}`}>
+                    <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative ${getBaseContainerStyle(revealUses > 0 && !isRevealLocked)}`}>
                         {isRevealLocked ? (
                             <div className="w-5 h-5 flex items-center justify-center">
                                 <span className="text-[10px] font-bold text-stone-400 font-mono leading-none">{revealTimeLeft}s</span>
                             </div>
                         ) : (
-                            <Icons.Reveal className={`w-5 h-5 ${revealUses > 0 ? 'text-purple-600 dark:text-purple-400' : (revealUses === 0 ? 'text-blue-500' : 'text-stone-300 dark:text-stone-600')}`} />
+                            <Icons.Reveal className={`w-5 h-5 ${revealUses > 0 ? 'text-purple-600 dark:text-purple-400' : 'text-stone-300 dark:text-stone-600'}`} />
                         )}
                         
                         {/* Larger Badge for Reveal - Moved to -top-4 -right-4 */}
-                        <div className={`absolute -top-4 -right-4 w-7 h-7 rounded-full flex items-center justify-center text-base font-bold leading-none shadow-sm z-10 ${revealUses > 0 && !isRevealLocked ? 'bg-blue-600 text-white' : (revealUses === 0 && !isRevealLocked ? 'bg-blue-600 text-white' : 'bg-stone-300 text-white dark:bg-stone-600')}`}>
-                                {revealUses > 0 ? revealUses : (isRevealLocked ? '+' : <span className="text-[10px]">Ad</span>)}
+                        <div className={`absolute -top-4 -right-4 w-7 h-7 rounded-full flex items-center justify-center text-base font-bold leading-none shadow-sm z-10 ${revealUses > 0 && !isRevealLocked ? 'bg-blue-600 text-white' : 'bg-stone-300 text-white dark:bg-stone-600'}`}>
+                                {revealUses > 0 ? revealUses : '+'}
                         </div>
                     </div>
                     <span className="text-sm font-medium">Reveal</span>
@@ -97,23 +89,18 @@ export const GameControls: React.FC<GameControlsProps> = ({
             {/* Scan Skill Button */}
             {purchasedSkills.includes('skill-scan') && (
                     <button 
-                        onClick={(e) => { 
-                            e.stopPropagation(); 
-                            if (scanUses > 0) onScan(e);
-                            else onWatchScanAd(e);
-                        }} 
-                        // Enabled if uses > 0 OR if we can watch an ad (uses == 0)
-                        // Disabled only if active cooldown/scanning
-                        className={`flex flex-col items-center gap-1 transition relative ${getBaseButtonStyle(!scanCooldown && !isScanning)}`}
-                        disabled={scanCooldown || isScanning}
+                        onClick={(e) => { e.stopPropagation(); onScan(e); }} 
+                        className={`flex flex-col items-center gap-1 transition relative ${getBaseButtonStyle(scanUses > 0 && !scanCooldown && !isScanning)}`}
+                        disabled={scanUses <= 0 || scanCooldown || isScanning}
                     >
-                    <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative ${getBaseContainerStyle(!scanCooldown && !isScanning)}`}>
-                        <Icons.Scan className={`w-5 h-5 ${scanUses > 0 && !scanCooldown && !isScanning ? 'text-red-600 dark:text-red-400' : (scanUses === 0 ? 'text-blue-500' : 'text-stone-300 dark:text-stone-600')}`} />
-                        
-                        {/* Badge for Scan */}
-                        <div className={`absolute -top-4 -right-4 w-7 h-7 rounded-full flex items-center justify-center text-base font-bold leading-none shadow-sm z-10 ${scanUses > 0 ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white'}`}>
-                            {scanUses > 0 ? scanUses : <span className="text-[10px]">Ad</span>}
-                        </div>
+                    <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative ${getBaseContainerStyle(scanUses > 0 && !scanCooldown && !isScanning)}`}>
+                        <Icons.Scan className={`w-5 h-5 ${scanUses > 0 && !scanCooldown && !isScanning ? 'text-red-600 dark:text-red-400' : 'text-stone-300 dark:text-stone-600'}`} />
+                        {/* Larger Badge for Scan - Moved to -top-4 -right-4 */}
+                        {scanUses > 0 && (
+                            <div className={`absolute -top-4 -right-4 w-7 h-7 rounded-full flex items-center justify-center text-base font-bold leading-none shadow-sm z-10 ${scanUses > 0 ? 'bg-blue-600 text-white' : 'hidden'}`}>
+                                {scanUses}
+                            </div>
+                        )}
                     </div>
                     <span className="text-sm font-medium">Scan</span>
                 </button>

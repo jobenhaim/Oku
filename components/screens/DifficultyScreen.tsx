@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Difficulty } from '../../types';
 import { Storage } from '../../utils/storage';
@@ -28,7 +29,8 @@ const SUBTITLES = [
     "Enjoy the quiet",
     "A moment of zen",
     "Ready to play?",
-    "Sudoku awaits"
+    "Sudoku awaits",
+    "Breathe and begin"
 ];
 
 // Internal Hook for Counting Animation (Progress Bars)
