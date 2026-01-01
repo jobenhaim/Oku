@@ -6,6 +6,7 @@ import { DiamondOffer } from '../../types';
 import { Storage } from '../../utils/storage';
 import { FishTank } from '../ui/FishTank';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
+import { IAP } from '../../utils/iap'; // Import IAP Service
 
 interface DiamondShopScreenProps {
     points: number;
@@ -42,6 +43,16 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     const handleRewardClaim = (amount: number) => {
         if (amount > 0) {
             onEarnPoints(amount);
+        }
+    };
+
+    const handleRestore = async () => {
+        if(confirm("Restore previous purchases?")) {
+            try {
+                await IAP.restore();
+            } catch (e) {
+                console.error(e);
+            }
         }
     };
 
@@ -248,11 +259,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                     <div className="p-4 bg-t-surface-sec rounded-xl text-center mt-6">
                         <button 
                             className="text-xs font-bold text-t-primary underline" 
-                            onClick={() => {
-                                if(confirm("Restore Purchases?")) {
-                                    alert("Purchases Restored (Simulation)");
-                                }
-                            }}
+                            onClick={handleRestore}
                         >
                             Restore Purchases
                         </button>

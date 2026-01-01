@@ -217,6 +217,7 @@ export const DIAMOND_OFFERS: DiamondOffer[] = [
     // Premium Pack (Previously Support Developer)
     {
         id: 'support_dev',
+        productId: 'com.oku.sudoku.iap.premiumpack',
         title: 'Premium Pack',
         subtitle: 'Special Companion + Rewards',
         diamonds: 1500,
@@ -227,9 +228,10 @@ export const DIAMOND_OFFERS: DiamondOffer[] = [
     // Starter
     {
         id: 'starter_pack',
+        productId: 'com.oku.sudoku.iap.starterpack',
         title: 'Starter Pack',
         subtitle: 'Everything you need to begin',
-        diamonds: 500, // Changed from 1000
+        diamonds: 500,
         includes: ['Auto & Scan Skill Unlocked', 'Piano Sound Pack Unlocked'],
         badge: 'BEST VALUE',
         priceLabel: '$2.99',
@@ -237,10 +239,10 @@ export const DIAMOND_OFFERS: DiamondOffer[] = [
         gradientClass: 'bg-[#FFF5E1] border-amber-100'
     },
     // Packs
-    { id: 'gem_300', title: 'Handful', diamonds: 300, priceLabel: '$0.99', type: 'pack' },
-    { id: 'gem_1000', title: 'Pouch', diamonds: 1000, priceLabel: '$1.99', type: 'pack' },
-    { id: 'gem_2500', title: 'Chest', diamonds: 2500, priceLabel: '$3.99', type: 'pack' },
-    { id: 'gem_5000', title: 'Vault', diamonds: 5000, priceLabel: '$6.99', type: 'pack' },
+    { id: 'gem_300', productId: 'com.oku.sudoku.iap.diamonds300', title: 'Handful', diamonds: 300, priceLabel: '$0.99', type: 'pack' },
+    { id: 'gem_1000', productId: 'com.oku.sudoku.iap.diamonds1000', title: 'Pouch', diamonds: 1000, priceLabel: '$1.99', type: 'pack' },
+    { id: 'gem_2500', productId: 'com.oku.sudoku.iap.diamonds2500', title: 'Chest', diamonds: 2500, priceLabel: '$3.99', type: 'pack' },
+    { id: 'gem_5000', productId: 'com.oku.sudoku.iap.diamonds5000', title: 'Vault', diamonds: 5000, priceLabel: '$6.99', type: 'pack' },
 ];
 
 export function formatTimeShort(totalSeconds: number) {

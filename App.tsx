@@ -7,6 +7,7 @@ import { sounds } from './utils/sound';
 import { getPackCost, NUMBER_COLORS, ALL_BACKGROUNDS } from './utils/constants';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
+import { IAP } from './utils/iap'; // Import IAP Service
 
 // UI Components
 import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal } from './components/ui/Modals';
@@ -67,7 +68,7 @@ export function App() {
   // Track actual dark mode state for JS logic
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Initialize Native Storage & Orientation Lock
+  // Initialize Native Storage, Orientation, IAP
   useEffect(() => {
     const initStorage = async () => {
         // Initialize native storage
@@ -95,6 +96,9 @@ export function App() {
         else document.documentElement.classList.remove('dark');
     };
     initStorage();
+
+    // Init IAP
+    IAP.initialize();
 
     // Lock Orientation to Portrait
     const lockOrientation = async () => {

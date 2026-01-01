@@ -5,8 +5,9 @@ import { sounds } from '../../utils/sound';
 import { AppSettings, DiamondOffer, Difficulty } from '../../types';
 import { Storage } from '../../utils/storage';
 import { motion, AnimatePresence } from 'framer-motion';
+import { IAP } from '../../utils/iap'; // Import IAP Service
 
-// ... (Keep existing text constants PRIVACY_POLICY_TEXT and TERMS_OF_SERVICE_TEXT)
+// ... (Privacy Policy & Terms text remain unchanged)
 const PRIVACY_POLICY_TEXT = `Privacy Policy
 
 Last updated: December 26, 2025
@@ -257,26 +258,36 @@ interface PaymentModalProps {
 }
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, onCancel }) => {
-    const [status, setStatus] = useState<'confirm' | 'processing' | 'success'>('confirm');
+    const [status, setStatus] = useState<'confirm' | 'processing' | 'success' | 'failed'>('confirm');
     const [isClosing, setIsClosing] = useState(false);
     const purchaseBtnRef = useRef<HTMLButtonElement>(null);
 
-    const handlePurchase = () => {
+    const handlePurchase = async () => {
         sounds.playClick();
         setStatus('processing');
         
-        // Simulate network delay
-        setTimeout(() => {
-            setStatus('success');
-            sounds.playWin(); // Success sound
-            // Wait a bit on success screen then complete
-            setTimeout(() => {
-                setIsClosing(true);
+        try {
+            const success = await IAP.purchase(offer.productId);
+            if (success) {
+                setStatus('success');
+                sounds.playWin(); 
                 setTimeout(() => {
-                    onComplete();
-                }, 300);
-            }, 1000);
-        }, 1500);
+                    setIsClosing(true);
+                    setTimeout(() => {
+                        onComplete();
+                    }, 300);
+                }, 1000);
+            } else {
+                // If false (e.g. cancelled) reset or show fail
+                // In this simplified logic, cancel throws error, success returns true
+                setStatus('failed');
+            }
+        } catch (error) {
+            console.error("Purchase failed", error);
+            setStatus('failed');
+            // Allow retry or cancel after failure
+            setTimeout(() => setStatus('confirm'), 2000);
+        }
     };
 
     const handleCancel = () => {
@@ -321,6 +332,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
                 <div className="mx-auto w-16 h-16 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center mb-4 shadow-sm transition-colors duration-300">
                     {status === 'success' ? (
                         <Icons.Check className="w-8 h-8 text-green-500 animate-pop" />
+                    ) : status === 'failed' ? (
+                        <Icons.Close className="w-8 h-8 text-red-500 animate-pop" />
                     ) : offer.type === 'support' ? (
                         <Icons.Trophy className="w-8 h-8 text-amber-500 fill-current" />
                     ) : (
@@ -336,14 +349,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
                     {getDescription()}
                 </div>
 
-                {status === 'confirm' && (
+                {(status === 'confirm' || status === 'failed') && (
                     <div className="flex flex-col gap-3 animate-fade-in">
                         <button 
                             ref={purchaseBtnRef}
                             onClick={handlePurchase} 
                             className="w-full py-3.5 text-white bg-blue-500 hover:bg-blue-600 rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition flex items-center justify-center gap-2"
                         >
-                            <span className="tracking-wide">Purchase</span>
+                            <span className="tracking-wide">{status === 'failed' ? 'Retry' : 'Purchase'}</span>
                         </button>
                         <button 
                             onClick={handleCancel} 
@@ -372,6 +385,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
     );
 };
 
+// ... (Rest of modal components remain unchanged)
 interface NotEnoughPointsModalProps {
     onClose: () => void;
     onGetMore: () => void;

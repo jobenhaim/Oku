@@ -91,6 +91,7 @@ export interface StoredData {
 
 export type DiamondOffer = {
   id: string;
+  productId: string; // Apple/Google Store Product ID
   title: string;
   subtitle?: string;
   diamonds: number;
