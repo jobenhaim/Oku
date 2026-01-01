@@ -30,7 +30,8 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     numberColor,
     onCellClick
 }) => {
-    const squareSize = 'min(96vw, 53dvh)';
+    // iPad Fix: Clamp max size to 500px so font calc stops growing when container stops growing
+    const squareSize = 'min(96vw, 53dvh, 500px)';
     const mainFontSize = `calc(${squareSize} / 9 * 0.6)`;
     const noteFontSize = `calc(${squareSize} / 9 * 0.22)`;
     const noteLineHeight = `calc(${squareSize} / 9 * 0.25)`;
