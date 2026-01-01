@@ -12,7 +12,6 @@ import { IAP } from './utils/iap'; // Import IAP Service
 // UI Components
 import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal } from './components/ui/Modals';
 import { LandscapeBlocker } from './components/ui/LandscapeBlocker';
-// AdOverlay removed
 
 // Screens
 import { SplashScreen } from './components/screens/SplashScreen';
@@ -61,7 +60,6 @@ export function App() {
   const [paymentOffer, setPaymentOffer] = useState<DiamondOffer | null>(null);
   
   const [showNotEnoughPoints, setShowNotEnoughPoints] = useState(false);
-  const [isWatchingAd, setIsWatchingAd] = useState(false);
   
   const [nextBonusClaimTime, setNextBonusClaimTime] = useState(Storage.getNextBonusClaimTime());
   
@@ -351,24 +349,6 @@ export function App() {
       }
   };
 
-  const handleWatchAd = async () => {
-        setShowNotEnoughPoints(false);
-        setPurchaseCandidate(null);
-        setIsWatchingAd(true);
-        sounds.playClick();
-        
-        // Simulating Loading Delay instead of Fake Ad Game
-        setTimeout(() => {
-            handleAdReward();
-        }, 2000);
-  };
-
-  const handleAdReward = () => {
-      handleEarnPoints(25);
-      setIsWatchingAd(false);
-      sounds.playWin();
-  };
-
   const handleNavigateToShop = () => {
       setShowNotEnoughPoints(false);
       navigate('diamondShop', 'forward');
@@ -557,7 +537,6 @@ export function App() {
                                 <DiamondShopScreen 
                                     points={points}
                                     onBack={handleDiamondShopBack}
-                                    onWatchAd={handleWatchAd}
                                     onBuyOffer={handleBuyOffer}
                                     onEarnPoints={handleEarnPoints}
                                     starterPackPurchased={starterPackPurchased}
@@ -667,14 +646,6 @@ export function App() {
                         onGetMore={handleNavigateToShop} 
                         onGoPlay={handleGoPlay} 
                     />
-                )}
-                {isWatchingAd && (
-                    <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-md flex items-center justify-center animate-fade-in">
-                        <div className="bg-t-surface p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 animate-pop">
-                            <div className="w-10 h-10 border-4 border-stone-200 border-t-blue-500 rounded-full animate-spin"></div>
-                            <p className="font-bold text-t-primary">Claiming Reward...</p>
-                        </div>
-                    </div>
                 )}
               </div>
           </div>

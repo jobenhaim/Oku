@@ -11,7 +11,6 @@ import { IAP } from '../../utils/iap'; // Import IAP Service
 interface DiamondShopScreenProps {
     points: number;
     onBack: () => void;
-    onWatchAd: () => void;
     onBuyOffer: (offer: DiamondOffer) => void;
     onEarnPoints: (amount: number) => void;
     starterPackPurchased: boolean;
@@ -20,7 +19,6 @@ interface DiamondShopScreenProps {
 export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     points,
     onBack,
-    onWatchAd,
     onBuyOffer,
     onEarnPoints,
     starterPackPurchased
@@ -82,23 +80,6 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
             <div className="flex-1 w-full overflow-y-auto px-6 pb-6 hide-scrollbar flex flex-col items-center relative z-10">
                 <div className="w-full max-w-md pt-2 mx-auto">
                     
-                    <button 
-                        onClick={onWatchAd} 
-                        className="w-1/2 mx-auto block relative overflow-hidden bg-gradient-to-br from-amber-200 via-yellow-400 to-amber-500 bg-[length:200%_200%] animate-gradient rounded-2xl shadow-lg shadow-amber-500/30 active:scale-95 transition-transform group mb-8 border-t border-white/40"
-                    >
-                        <div className="py-3 flex items-center justify-center gap-3 relative z-10">
-                            <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm border border-white/20 shadow-sm">
-                                <Icons.Film className="w-6 h-6 text-stone-900" />
-                            </div>
-                            
-                            <div className="flex items-center gap-1.5 bg-white/30 px-3 py-1.5 rounded-xl backdrop-blur-md border border-white/20 shadow-sm">
-                                 <span className="text-2xl font-bold tracking-tighter leading-none text-black">+25</span>
-                                 <Icons.Diamond className="w-5 h-5 fill-current text-blue-600 drop-shadow-sm" />
-                            </div>
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent z-20 animate-shimmer pointer-events-none" />
-                    </button>
-
                     {pepinoState.unlocked ? (
                         <FishTank onRewardClaim={handleRewardClaim} showIntro={shouldShowIntro()} />
                     ) : (
