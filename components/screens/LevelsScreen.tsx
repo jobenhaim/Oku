@@ -7,6 +7,7 @@ import { UnlockCard } from '../ui/UnlockCard';
 import { getPackCost, formatTimeShort } from '../../utils/constants';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
 import { sounds } from '../../utils/sound';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- OPTIMIZED LEVEL BUTTON COMPONENT ---
 interface LevelButtonProps {
@@ -86,6 +87,9 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
     // --- TAB STATE ---
     const [activeTab, setActiveTab] = useState<1 | 2 | 3>(1);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    
+    // Toast State
+    const [showStrictModeToast, setShowStrictModeToast] = useState(false);
 
     // Reset scroll on tab change
     useEffect(() => {
@@ -93,6 +97,25 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
             scrollContainerRef.current.scrollTop = 0;
         }
     }, [activeTab]);
+
+    // Check for Strict Mode Warning (Trigger Logic)
+    useEffect(() => {
+        const isStrict = difficulty === Difficulty.Hard || difficulty === Difficulty.Intense || difficulty === Difficulty.Impossible;
+        if (isStrict && !Storage.hasSeenStrictModeWarning(difficulty)) {
+            setShowStrictModeToast(true);
+            Storage.setSeenStrictModeWarning(difficulty);
+        }
+    }, [difficulty]);
+
+    // Auto-hide Toast (Timer Logic)
+    useEffect(() => {
+        if (showStrictModeToast) {
+            const timer = setTimeout(() => {
+                setShowStrictModeToast(false);
+            }, 4000);
+            return () => clearTimeout(timer);
+        }
+    }, [showStrictModeToast]);
 
     // --- CALCULATE STATS ---
     const { globalBest, completedRange1, completedRange2 } = useMemo(() => {
@@ -235,7 +258,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
     };
 
     return (
-        <div className="flex-1 w-full flex flex-col items-center overflow-hidden">
+        <div className="flex-1 w-full flex flex-col items-center overflow-hidden relative">
             <div className="w-full max-w-md flex flex-col items-center px-6 pt-4 shrink-0 z-20 gap-4">
                 
                 {/* Header Row */}
@@ -297,6 +320,33 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                 {renderContent()}
                 <div className="h-safe-bottom w-full shrink-0" />
             </div>
+
+            {/* Strict Mode Toast Notification */}
+            <AnimatePresence>
+                {showStrictModeToast && (
+                    <motion.div
+                        key="strict-mode-toast"
+                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, transition: { duration: 1 } }}
+                        transition={{ duration: 0.3 }}
+                        className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none px-8"
+                    >
+                        <div className="bg-stone-900/50 dark:bg-stone-100/50 text-white dark:text-stone-900 py-2 px-5 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-2 border border-white/10 dark:border-stone-200/20 max-w-sm">
+                            <p className="text-sm font-semibold leading-relaxed drop-shadow-md">
+                                Errors will not be revealed automatically
+                            </p>
+                            <div className="flex items-center gap-2 text-xs font-bold bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-300 px-3 py-1.5 rounded-full shadow-inner">
+                                <span>Use</span>
+                                <div className="flex items-center gap-1 text-red-500 dark:text-red-400">
+                                    <Icons.Scan className="w-4 h-4" />
+                                    <span>Scan</span>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

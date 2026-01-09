@@ -57,6 +57,7 @@ function getStoredData(): StoredData {
           unlockedPack2: [],
           unlockedPack3: [],
           pepino: { unlocked: false, hasPendingGift: false },
+          seenStrictModeWarnings: [],
           stats: DEFAULT_STATS
       };
       
@@ -132,8 +133,12 @@ function getStoredData(): StoredData {
         data.stats = { ...DEFAULT_STATS, totalGamesWon: wonCount };
     }
 
+    if (!data.seenStrictModeWarnings) data.seenStrictModeWarnings = [];
+
     // Clean up deprecated fields if they exist from previous versions
     if ((data as any).purchasedBundles) delete (data as any).purchasedBundles;
+    // Clean up old boolean if exists (migration)
+    if ((data as any).hasSeenStrictModeWarning !== undefined) delete (data as any).hasSeenStrictModeWarning;
 
     return data;
   } catch (e) {
@@ -156,6 +161,7 @@ function getStoredData(): StoredData {
         unlockedPack2: [],
         unlockedPack3: [],
         pepino: { unlocked: false, hasPendingGift: false },
+        seenStrictModeWarnings: [],
         stats: DEFAULT_STATS
     };
   }
@@ -227,7 +233,6 @@ export const Storage = {
     return data.points;
   },
   
-  // ... existing methods ...
   getPurchasedBackgrounds: (): string[] => {
       return getStoredData().purchasedBackgrounds;
   },
@@ -475,49 +480,10 @@ export const Storage = {
     }
   },
   
-  // --- DEV TOOLS ---
-  debugCompleteLevels: async (difficulty: string, count: number) => {
-      const data = getStoredData();
-      // Ensure we have stats object
-      if (!data.stats) data.stats = { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 };
-
-      for (let i = 1; i <= count; i++) {
-          const key = `${difficulty}-${i}`;
-          data.progress[key] = {
-              levelId: i,
-              difficulty: difficulty as any,
-              status: 'completed',
-              timeElapsed: 60, // Dummy 1 min time
-              bestTime: 60,
-              scanUses: 3,
-              revealUses: 1,
-              lastPlayed: Date.now()
-          };
-          // Don't double count if already done in stats, simplistic approach
-          data.stats.totalGamesWon += 1;
-      }
-      
-      // Give enough money to test unlocks
-      data.points += 50000;
-      data.stats.totalDiamondsEarned += 50000;
-
-      await saveData(data);
-  },
-
   getCompletedCount: (difficulty: string, maxLevel: number = 200): number => {
       const progress = getStoredData().progress;
       return Object.values(progress).filter(p => 
         p.difficulty === difficulty && 
-        p.levelId <= maxLevel && 
-        (p.status === 'completed' || p.bestTime !== undefined)
-      ).length;
-  },
-
-  getCompletedCountInRange: (difficulty: string, minLevel: number, maxLevel: number): number => {
-      const progress = getStoredData().progress;
-      return Object.values(progress).filter(p => 
-        p.difficulty === difficulty && 
-        p.levelId >= minLevel && 
         p.levelId <= maxLevel && 
         (p.status === 'completed' || p.bestTime !== undefined)
       ).length;
@@ -551,6 +517,21 @@ export const Storage = {
       const data = getStoredData();
       if (data.pepino) {
           data.pepino.hasPendingGift = false;
+          saveData(data);
+      }
+  },
+
+  // STRICT MODE WARNING
+  hasSeenStrictModeWarning: (difficulty: string): boolean => {
+      const data = getStoredData();
+      return data.seenStrictModeWarnings?.includes(difficulty) ?? false;
+  },
+
+  setSeenStrictModeWarning: (difficulty: string) => {
+      const data = getStoredData();
+      if (!data.seenStrictModeWarnings) data.seenStrictModeWarnings = [];
+      if (!data.seenStrictModeWarnings.includes(difficulty)) {
+          data.seenStrictModeWarnings.push(difficulty);
           saveData(data);
       }
   },

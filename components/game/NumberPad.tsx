@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useRef } from 'react';
 
 interface NumberPadProps {
     activeNumber: number | null;
@@ -15,16 +16,59 @@ export const NumberPad: React.FC<NumberPadProps> = ({
     numberColor,
     onNumberClick
 }) => {
+    const lastTouchedNumRef = useRef<number | null>(null);
+
+    const handleTouch = (e: React.TouchEvent) => {
+        // Prevent default to disable scrolling and prevent phantom click events on mobile
+        if (e.cancelable) e.preventDefault();
+
+        const touch = e.touches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        if (target) {
+            // Find closest button parent if we hit the span number or padding
+            const button = target.closest('button[data-number]');
+            if (button) {
+                const num = parseInt(button.getAttribute('data-number') || '0', 10);
+                
+                // Only trigger if we moved to a NEW number
+                if (num > 0 && num !== lastTouchedNumRef.current) {
+                    lastTouchedNumRef.current = num;
+                    // Create a synthetic event for the handler
+                    const syntheticEvent = { 
+                        stopPropagation: () => {}, 
+                        preventDefault: () => {} 
+                    } as React.MouseEvent;
+                    
+                    onNumberClick(syntheticEvent, num);
+                }
+            }
+        }
+    };
+
+    const handleTouchEnd = () => {
+        lastTouchedNumRef.current = null;
+    };
+
     return (
-        <div className="grid grid-cols-9 gap-1">
+        <div 
+            className="grid grid-cols-9 gap-1 touch-none select-none"
+            onTouchStart={handleTouch}
+            onTouchMove={handleTouch}
+            onTouchEnd={handleTouchEnd}
+        >
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => {
                 const isFullyPlaced = numberCounts[num] >= 9;
                 const isActive = activeNumber === num;
                 
                 return (
-                    // Removed 'border' and 'border-t-border'. Removed 'border-blue-600' when active.
-                    <button key={num} onClick={(e) => onNumberClick(e, num)} className={`aspect-[4/5] flex items-center justify-center text-3xl font-medium rounded-lg shadow-sm active:shadow-none active:translate-y-[2px] transition-all ${isActive ? 'bg-blue-500 text-white' : 'bg-t-surface'} ${isFullyPlaced && !isActive ? 'opacity-25' : 'opacity-100'}`}>
-                        <span className={isPencilMode && !isActive ? 'text-stone-500' : (isActive ? 'text-white' : numberColor)}>{num}</span>
+                    <button 
+                        key={num} 
+                        data-number={num}
+                        onClick={(e) => onNumberClick(e, num)} 
+                        className={`aspect-[4/5] flex items-center justify-center text-3xl font-medium rounded-lg shadow-sm active:shadow-none active:translate-y-[2px] transition-all ${isActive ? 'bg-blue-500 text-white' : 'bg-t-surface'} ${isFullyPlaced && !isActive ? 'opacity-25' : 'opacity-100'}`}
+                    >
+                        <span className={`pointer-events-none ${isPencilMode && !isActive ? 'text-stone-500' : (isActive ? 'text-white' : numberColor)}`}>{num}</span>
                     </button>
                 );
             })}

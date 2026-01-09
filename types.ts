@@ -80,6 +80,7 @@ export interface StoredData {
   unlockedPack2?: string[]; // Array of difficulty names where Pack 2 (levels 101-200) is unlocked
   unlockedPack3?: string[]; // Array of difficulty names where Pack 3 (levels 201-300) is unlocked
   pepino?: PepinoState;
+  seenStrictModeWarnings?: string[]; // Track which difficulties the user has seen the hard mode warning for
   
   // Stats
   stats?: {
