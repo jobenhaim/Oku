@@ -17,12 +17,17 @@ export const NumberPad: React.FC<NumberPadProps> = ({
     onNumberClick
 }) => {
     const lastTouchedNumRef = useRef<number | null>(null);
+    const lastTouchTimeRef = useRef<number>(0);
 
     const handleTouch = (e: React.TouchEvent) => {
         // Prevent default to disable scrolling and prevent phantom click events on mobile
-        if (e.cancelable) e.preventDefault();
+        if (e.cancelable && e.type !== 'touchend') e.preventDefault();
+        
+        lastTouchTimeRef.current = Date.now();
 
         const touch = e.touches[0];
+        if (!touch) return;
+
         const target = document.elementFromPoint(touch.clientX, touch.clientY);
         
         if (target) {
@@ -48,6 +53,13 @@ export const NumberPad: React.FC<NumberPadProps> = ({
 
     const handleTouchEnd = () => {
         lastTouchedNumRef.current = null;
+        lastTouchTimeRef.current = Date.now();
+    };
+
+    const handleMouseClick = (e: React.MouseEvent, num: number) => {
+        // Ignore clicks that happen immediately after a touch event (phantom clicks)
+        if (Date.now() - lastTouchTimeRef.current < 500) return;
+        onNumberClick(e, num);
     };
 
     return (
@@ -65,7 +77,7 @@ export const NumberPad: React.FC<NumberPadProps> = ({
                     <button 
                         key={num} 
                         data-number={num}
-                        onClick={(e) => onNumberClick(e, num)} 
+                        onClick={(e) => handleMouseClick(e, num)} 
                         className={`aspect-[4/5] flex items-center justify-center text-3xl font-medium rounded-lg shadow-sm active:shadow-none active:translate-y-[2px] transition-all ${isActive ? 'bg-blue-500 text-white' : 'bg-t-surface'} ${isFullyPlaced && !isActive ? 'opacity-25' : 'opacity-100'}`}
                     >
                         <span className={`pointer-events-none ${isPencilMode && !isActive ? 'text-stone-500' : (isActive ? 'text-white' : numberColor)}`}>{num}</span>
