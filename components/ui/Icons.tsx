@@ -55,7 +55,14 @@ import {
   Medal,
   Flame,
   Star,
-  Crown
+  Crown,
+  Fish,
+  Mountain,
+  Disc,
+  CircleDot,
+  Flower2,
+  Gem,
+  Hexagon
 } from 'lucide-react';
 
 export const Icons = {
@@ -118,4 +125,9 @@ export const Icons = {
   Flame: (props: any) => <Flame {...props} />,
   Star: (props: any) => <Star {...props} />,
   Crown: (props: any) => <Crown {...props} />,
+  Fish: (props: any) => <Fish {...props} />,
+  Mountain: (props: any) => <Mountain {...props} />,
+  Stone: (props: any) => <Hexagon {...props} />,
+  Crystal: (props: any) => <Sparkles {...props} />,
+  Flower: (props: any) => <Flower2 {...props} />,
 };

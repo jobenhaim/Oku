@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Difficulty, AppSettings, DiamondOffer } from './types';
+import { Difficulty, AppSettings, DiamondOffer, PepinoState } from './types';
 import { SudokuGame } from './components/SudokuGame';
 import { Storage } from './utils/storage';
 import { sounds } from './utils/sound';
@@ -53,6 +53,8 @@ export function App() {
   const [unlockedPacks2, setUnlockedPacks2] = useState<string[]>(Storage.getUnlockedPacks2());
   const [unlockedPacks3, setUnlockedPacks3] = useState<string[]>(Storage.getUnlockedPacks3());
 
+  const [pepinoState, setPepinoState] = useState<PepinoState>(Storage.getPepinoState());
+
   const [showSettings, setShowSettings] = useState(false);
   const [replayLevelId, setReplayLevelId] = useState<number | null>(null);
   
@@ -87,6 +89,7 @@ export function App() {
         setUnlockedPacks2(data.unlockedPack2 || []);
         setUnlockedPacks3(data.unlockedPack3 || []);
         setNextBonusClaimTime(data.nextBonusClaimTime || 0);
+        setPepinoState(data.pepino || { unlocked: false, hasPendingGift: false });
         
         const isDark = data.settings.appearance === 'dark' || (data.settings.appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
         setIsDarkMode(isDark);
@@ -182,6 +185,7 @@ export function App() {
      setUnlockedPacks2(Storage.getUnlockedPacks2());
      setUnlockedPacks3(Storage.getUnlockedPacks3());
      setNextBonusClaimTime(Storage.getNextBonusClaimTime());
+     setPepinoState(Storage.getPepinoState());
   }, [screen]);
 
   const navigate = (nextScreen: Screen, dir: 'forward' | 'back' | 'none' = 'forward') => {
@@ -383,6 +387,7 @@ export function App() {
           Storage.purchaseSoundPack('snd-piano', 0);
       } else if (offer.type === 'support') {
           Storage.unlockPepino();
+          setPepinoState(Storage.getPepinoState());
       }
 
       setPurchasedSkills(Storage.getPurchasedSkills());
@@ -530,6 +535,7 @@ export function App() {
                                     onOpenStats={() => navigate('stats', 'forward')}
                                     nextBonusClaimTime={nextBonusClaimTime}
                                     hiddenDifficulties={settings.hiddenDifficulties}
+                                    hasPendingPepinoGift={pepinoState.hasPendingGift}
                                 />
                             )}
 
@@ -593,6 +599,7 @@ export function App() {
                                     onReturnToMenu={handleReturnToMenu}
                                     onComplete={() => {
                                         setPoints(Storage.getPoints());
+                                        setPepinoState(Storage.getPepinoState());
                                     }}
                                     onSettingsOpen={() => setShowSettings(true)}
                                     settings={settings}

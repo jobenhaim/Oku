@@ -152,11 +152,11 @@ export const NUMBER_COLORS = [
     { id: 'num-fuchsia', name: 'Fuchsia', cost: 125, class: 'text-pink-600 dark:text-pink-400', uiClass: 'text-pink-600 dark:text-pink-400', bgClass: 'bg-pink-50/50 dark:bg-pink-900/10' },
     { id: 'num-orange', name: 'Orange', cost: 125, class: 'text-orange-600 dark:text-orange-400', uiClass: 'text-orange-600 dark:text-orange-400', bgClass: 'bg-orange-50/50 dark:bg-orange-900/10' },
     { id: 'num-emerald', name: 'Emerald', cost: 125, class: 'text-emerald-600 dark:text-emerald-400', uiClass: 'text-emerald-600 dark:text-emerald-400', bgClass: 'bg-emerald-50/50 dark:bg-emerald-900/10' },
-    { id: 'num-indigo', name: 'Indigo', cost: 125, class: 'text-indigo-600 dark:text-indigo-400', uiClass: 'text-indigo-600 dark:text-indigo-400', bgClass: 'bg-indigo-50/50 dark:bg-indigo-900/10' },
+    { id: 'num-rainbow', name: 'Rainbow', cost: 400, class: 'text-shine-rainbow', uiClass: 'text-shine-rainbow', bgClass: 'bg-stone-100/50 dark:bg-stone-800/50' },
     // Premium last
-    { id: 'num-shine', name: 'Gold', cost: 500, class: 'text-shine-gold', uiClass: 'text-shine-gold', bgClass: 'bg-yellow-50/60 dark:bg-yellow-900/10' },
-    { id: 'num-rgb', name: 'Diamond', cost: 500, class: 'text-shine-diamond', uiClass: 'text-shine-diamond', bgClass: 'bg-cyan-50/60 dark:bg-cyan-900/10' },
-    { id: 'num-ruby', name: 'Ruby', cost: 500, class: 'text-shine-ruby', uiClass: 'text-shine-ruby', bgClass: 'bg-rose-50/60 dark:bg-rose-900/10' },
+    { id: 'num-shine', name: 'Gold', cost: 600, class: 'text-shine-gold', uiClass: 'text-shine-gold', bgClass: 'bg-yellow-50/60 dark:bg-yellow-900/10' },
+    { id: 'num-rgb', name: 'Diamond', cost: 600, class: 'text-shine-diamond', uiClass: 'text-shine-diamond', bgClass: 'bg-cyan-50/60 dark:bg-cyan-900/10' },
+    { id: 'num-ruby', name: 'Ruby', cost: 600, class: 'text-shine-ruby', uiClass: 'text-shine-ruby', bgClass: 'bg-rose-50/60 dark:bg-rose-900/10' },
 ];
 
 export const SOUND_PACKS = [
@@ -172,38 +172,83 @@ export const SOUND_PACKS = [
     { 
         id: 'snd-paper', 
         name: 'Paper', 
-        cost: 500, 
+        cost: 200, 
         icon: Icons.Paper, 
         description: 'Like a pencil on heavy paper. Warm, textured, and cozy.',
         colorClass: 'from-stone-200 to-orange-200 dark:from-stone-700 dark:to-orange-900',
         iconColor: 'text-stone-600 dark:text-stone-300'
     },
+    {
+        id: 'snd-stone',
+        name: 'Stone',
+        cost: 200,
+        icon: Icons.Stone,
+        description: 'Deep, resonant thuds. Solid and grounding.',
+        colorClass: 'from-stone-400 to-stone-600 dark:from-stone-600 dark:to-stone-800',
+        iconColor: 'text-stone-800 dark:text-stone-200'
+    },
+    { 
+        id: 'snd-water', 
+        name: 'Water', 
+        cost: 200, 
+        icon: Icons.Water, 
+        description: 'Refreshing droplets. Wet, bloopy, and relaxing.',
+        colorClass: 'from-cyan-100 to-blue-100 dark:from-cyan-900 dark:to-blue-900',
+        iconColor: 'text-cyan-600 dark:text-cyan-300'
+    },
+    {
+        id: 'snd-mech',
+        name: 'Type',
+        cost: 200,
+        icon: Icons.Keyboard,
+        description: 'Tactile mechanical switches. Satisfying clicks.',
+        colorClass: 'from-slate-200 to-slate-400 dark:from-slate-700 dark:to-slate-900',
+        iconColor: 'text-slate-700 dark:text-slate-300'
+    },
+    {
+        id: 'snd-retro',
+        name: '8-Bit',
+        cost: 400,
+        icon: Icons.Gamepad,
+        description: 'Classic arcade bleeps. Nostalgic and digital.',
+        colorClass: 'from-green-300 to-purple-300 dark:from-green-800 dark:to-purple-800',
+        iconColor: 'text-purple-600 dark:text-purple-400'
+    },
+    {
+        id: 'snd-crystal',
+        name: 'Crystal',
+        cost: 400,
+        icon: Icons.Crystal,
+        description: 'Pure, resonant chimes. Sharp, clear, and bright.',
+        colorClass: 'from-cyan-100 to-blue-100 dark:from-cyan-900 dark:to-blue-900',
+        iconColor: 'text-cyan-600 dark:text-cyan-300'
+    },
     { 
         id: 'snd-wood', 
         name: 'Wood', 
-        cost: 500, 
+        cost: 400, 
         icon: Icons.Wood, 
         description: 'Solid, resonant knocks. Like tapping a hardwood desk.',
         colorClass: 'from-amber-200 to-yellow-200 dark:from-amber-800 dark:to-yellow-800',
         iconColor: 'text-amber-700 dark:text-amber-300'
     },
     { 
-        id: 'snd-water', 
-        name: 'Water', 
-        cost: 500, 
-        icon: Icons.Water, 
-        description: 'Refreshing droplets. Wet, bloopy, and relaxing.',
-        colorClass: 'from-cyan-100 to-blue-100 dark:from-cyan-900 dark:to-blue-900',
-        iconColor: 'text-cyan-600 dark:text-cyan-300'
-    },
-    { 
         id: 'snd-piano', 
         name: 'Piano', 
-        cost: 500, 
+        cost: 700, 
         icon: Icons.Music, 
         description: 'Rich, melodic piano notes. Create harmony while you play.',
         colorClass: 'from-indigo-200 to-violet-200 dark:from-indigo-800 dark:to-violet-800',
         iconColor: 'text-indigo-700 dark:text-indigo-300'
+    },
+    {
+        id: 'snd-koto',
+        name: 'Koto',
+        cost: 700,
+        icon: Icons.Flower,
+        description: 'Traditional Japanese strings. Sharp, resonant, and Zen.',
+        colorClass: 'from-emerald-200 to-teal-200 dark:from-emerald-900 dark:to-teal-900',
+        iconColor: 'text-emerald-700 dark:text-emerald-300'
     }
 ];
 

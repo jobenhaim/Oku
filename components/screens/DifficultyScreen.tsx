@@ -16,7 +16,8 @@ interface DifficultyScreenProps {
     onClaimBonus: (e: React.MouseEvent) => void;
     onOpenStats: () => void;
     nextBonusClaimTime: number;
-    hiddenDifficulties?: Difficulty[]; // New prop
+    hiddenDifficulties?: Difficulty[]; 
+    hasPendingPepinoGift?: boolean;
 }
 
 const SUBTITLES = [
@@ -41,14 +42,11 @@ const useAnimatedCounter = (target: number, duration: number = 500) => {
         let startTime: number | null = null;
         let animationFrameId: number;
 
-        // Reset start value to 0 on target change to trigger animation
         setCount(0);
 
         const animate = (currentTime: number) => {
             if (!startTime) startTime = currentTime;
             const progress = Math.min((currentTime - startTime) / duration, 1);
-            
-            // Cubic Ease Out
             const ease = 1 - Math.pow(1 - progress, 3); 
             
             setCount(Math.floor(target * ease));
@@ -79,12 +77,11 @@ const DifficultyCard: React.FC<{
     onInfoToggle: (diff: Difficulty) => void;
     isClosing: boolean;
     description: string;
-    isPyramidTop?: boolean; // Prop to handle pyramid layout centering
+    isPyramidTop?: boolean;
     contentScale?: 'normal' | 'medium' | 'large';
     layoutStyle?: React.CSSProperties;
 }> = ({ diff, index, onSelect, activeInfo, onInfoToggle, isClosing, description, isPyramidTop, contentScale = 'normal', layoutStyle }) => {
     
-    // Data Loading
     const completed = Storage.getCompletedCount(diff, 300);
     const isPack2Unlocked = Storage.isPack2Unlocked(diff);
     const isPack3Unlocked = Storage.isPack3Unlocked(diff);
@@ -95,32 +92,24 @@ const DifficultyCard: React.FC<{
 
     const diffPoints = getDifficultyPoints(diff);
     
-    // Animation Logic
-    const delay = 100 + (index * 50); // Linear delay based on index is smoother
-    
+    const delay = 100 + (index * 50);
     const isInfoActive = activeInfo === diff;
-    // If pyramid top, tooltip should default to right or calculate based on screen
     const isLeftColumn = isPyramidTop ? true : index % 2 === 0;
 
-    // State to track if entry animation is done
     const [animating, setAnimating] = useState(true);
     useEffect(() => {
         const t = setTimeout(() => {
             setAnimating(false);
-        }, delay + 600); // delay + animation duration (400ms) + buffer
+        }, delay + 600);
         return () => clearTimeout(t);
     }, [delay]);
 
-    // Z-Index Logic
-    const baseZIndex = 30 - index; // Simple z-index stack
+    const baseZIndex = 30 - index;
     const finalZIndex = isInfoActive ? 100 : baseZIndex;
 
-    // Use animated counter hook
     const animatedCompleted = useAnimatedCounter(completed, 500);
-    
     const progressPercent = Math.min((animatedCompleted / maxLevels) * 100, 100);
 
-    // Default Style fallback (Grid Layout)
     const defaultStyle: React.CSSProperties = {
         width: '47.5%',
         aspectRatio: '1.55/1', 
@@ -128,23 +117,12 @@ const DifficultyCard: React.FC<{
 
     const finalStyle = { ...defaultStyle, ...layoutStyle, zIndex: finalZIndex, animationDelay: `${delay}ms` };
 
-    // Dynamic Scale classes
-    // Title: slightly adjusted to remove mb, relies on flex-between spacing
     const titleClass = contentScale === 'large' ? 'text-3xl' : (contentScale === 'medium' ? 'text-2xl' : 'text-lg');
-    
-    // Icon Size: Smaller
     const iconSizeClass = contentScale === 'large' ? 'w-5 h-5' : (contentScale === 'medium' ? 'w-4 h-4' : 'w-3 h-3');
-    
-    // Info Icon Size
     const infoIconSizeClass = contentScale === 'large' ? 'w-8 h-8 -ml-1.5' : (contentScale === 'medium' ? 'w-7 h-7 -ml-1' : 'w-6 h-6 -ml-0.5');
     const infoIconInnerSize = contentScale === 'large' ? 'w-6 h-6' : (contentScale === 'medium' ? 'w-5 h-5' : 'w-4 h-4');
-    
-    // Points Text: Visually smaller
     const pointsTextClass = contentScale === 'large' ? 'text-base' : (contentScale === 'medium' ? 'text-sm' : 'text-xs');
-    
-    // Progress Text: 40% smaller (Tiny)
     const progressTextClass = contentScale === 'large' ? 'text-sm' : (contentScale === 'medium' ? 'text-xs' : 'text-[10px]');
-    
     const progressBarHeight = contentScale === 'large' ? 'h-3' : (contentScale === 'medium' ? 'h-2.5' : 'h-1.5');
     const paddingClass = contentScale === 'large' ? 'p-6' : (contentScale === 'medium' ? 'p-5' : 'p-3.5');
 
@@ -152,30 +130,29 @@ const DifficultyCard: React.FC<{
         <button 
             onClick={() => onSelect(diff)} 
             style={finalStyle}
-            className={`bg-t-surface ${paddingClass} rounded-2xl shadow-sm flex flex-col justify-between transition-transform text-left relative group overflow-visible ${animating ? 'opacity-0 animate-slide-in-down' : 'opacity-100'}`}
+            // Frosted Glass: bg-white/90 instead of /80
+            className={`bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border border-white/40 dark:border-white/10 ${paddingClass} rounded-2xl shadow-sm flex flex-col justify-between transition-transform text-left relative group overflow-visible ${animating ? 'opacity-0 animate-slide-in-down' : 'opacity-100'}`}
         >
-            {/* Header: Title & Points - Aligned Center */}
             <div className="w-full flex justify-between items-center mb-1">
-                <span className={`font-semibold text-stone-700 dark:text-stone-300 leading-none tracking-tight truncate mr-1 ${titleClass}`}>{diff}</span>
+                {/* Title: Solid darker color */}
+                <span className={`font-bold text-stone-800 dark:text-white leading-none tracking-tight truncate mr-1 ${titleClass}`}>{diff}</span>
                 <div className="flex items-center gap-0.5 shrink-0">
-                    <span className={`${pointsTextClass} font-bold text-t-primary opacity-80 leading-none`}>+{diffPoints}</span>
+                    {/* Points: Removed opacity-80, using darker color */}
+                    <span className={`${pointsTextClass} font-bold text-stone-900 dark:text-stone-100 leading-none`}>+{diffPoints}</span>
                     <Icons.Diamond className={`${iconSizeClass} text-blue-500 fill-current`} />
                 </div>
             </div>
             
-            {/* Middle: Info & Progress Numbers - Closer to bar (mb-1) */}
             <div className="w-full flex justify-between items-end mb-1 mt-auto">
-                {/* Info Icon */}
                 <div className="relative z-50" onClick={(e) => e.stopPropagation()}>
                     <div 
                         role="button"
                         onClick={() => onInfoToggle(diff)}
-                        className={`flex items-center justify-center cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-700 rounded-full transition-colors ${infoIconSizeClass}`}
+                        className={`flex items-center justify-center cursor-pointer hover:bg-stone-900/5 dark:hover:bg-white/10 rounded-full transition-colors ${infoIconSizeClass}`}
                     >
-                        <Icons.Info className={`${infoIconInnerSize} transition-colors ${isInfoActive ? 'text-stone-800 dark:text-stone-200' : 'text-stone-400 dark:text-stone-500'}`} />
+                        <Icons.Info className={`${infoIconInnerSize} transition-colors ${isInfoActive ? 'text-stone-900 dark:text-white' : 'text-stone-500 dark:text-stone-400'}`} />
                     </div>
 
-                    {/* Tooltip */}
                     {isInfoActive && (
                         <div 
                             className={`absolute top-full mt-2 w-44 z-[60] cursor-default ${
@@ -185,9 +162,9 @@ const DifficultyCard: React.FC<{
                             } ${isClosing ? 'animate-tooltip-exit' : 'animate-tooltip-enter'}`}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="bg-white text-stone-900 text-xs font-medium p-3 rounded-xl relative text-left leading-relaxed border border-stone-400 dark:border-stone-500 shadow-lg">
+                            <div className="bg-white/95 backdrop-blur-xl text-stone-900 text-xs font-medium p-3 rounded-xl relative text-left leading-relaxed border border-stone-200 dark:border-stone-700 shadow-lg">
                                 {description}
-                                <div className={`absolute -top-[6px] w-3 h-3 bg-white border-t border-l border-stone-400 dark:border-stone-500 transform rotate-45 ${
+                                <div className={`absolute -top-[6px] w-3 h-3 bg-white/95 border-t border-l border-stone-200 dark:border-stone-700 transform rotate-45 ${
                                     isLeftColumn ? 'left-[14px]' : 'right-[14px]'
                                 }`}></div>
                             </div>
@@ -195,14 +172,14 @@ const DifficultyCard: React.FC<{
                     )}
                 </div>
                 
-                {/* Progress Numbers (Animated & Smaller) */}
-                <span className={`${progressTextClass} text-stone-700 dark:text-stone-300 font-bold tracking-wide font-sans leading-none opacity-90`}>
+                {/* Progress Text: Removed opacity-90, solid color */}
+                <span className={`${progressTextClass} text-stone-800 dark:text-stone-200 font-bold tracking-wide font-sans leading-none`}>
                     {animatedCompleted} / {maxLevels}
                 </span>
             </div>
             
-            {/* Bottom: Progress Bar (Animated) */}
-            <div className={`w-full bg-t-surface-sec rounded-full overflow-hidden ${progressBarHeight}`}>
+            {/* Progress Bar Track: Transparent black/white instead of solid gray for glass feel */}
+            <div className={`w-full bg-stone-900/10 dark:bg-white/10 rounded-full overflow-hidden ${progressBarHeight}`}>
                 <div 
                     className="h-full bg-loading-blue" 
                     style={{ 
@@ -224,7 +201,8 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     onClaimBonus, 
     onOpenStats, 
     nextBonusClaimTime,
-    hiddenDifficulties = [] 
+    hiddenDifficulties = [],
+    hasPendingPepinoGift = false
 }) => {
     const [timeLeft, setTimeLeft] = useState<string>("");
     const [activeInfo, setActiveInfo] = useState<Difficulty | null>(null);
@@ -272,47 +250,53 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
         }
     };
 
-    // Filter Difficulties
     const visibleDifficulties = Object.values(Difficulty).filter(d => !hiddenDifficulties.includes(d));
     const isOddCount = visibleDifficulties.length % 2 !== 0;
     const isVerticalStack = visibleDifficulties.length === 2;
     const isOneVisible = visibleDifficulties.length === 1;
+
+    // --- GLASSMORPHISM STYLES ---
+    // Background: bg-white/90 instead of /80
+    const BTN_BG_DEFAULT = "bg-white/90 dark:bg-stone-900/90 backdrop-blur-md";
+    // Text: Solid, high contrast
+    const BTN_TEXT_DEFAULT = "text-stone-900 dark:text-white";
+    // Border: Subtle glass border
+    const COMMON_BTN_STYLE = `h-14 px-3 rounded-2xl shadow-sm flex items-center justify-center gap-2 active:scale-95 transition hover:brightness-105 group border border-white/40 dark:border-white/10 whitespace-nowrap`;
 
     return (
         <div 
             className="flex-1 w-full flex flex-col items-center overflow-hidden" 
             onClick={() => activeInfo && handleClose()}
         >
-             {/* Content Container - removed overflow-y-auto, added overflow-hidden for non-scrollable */}
+             <style>{`
+                @keyframes diamond-scroll {
+                    from { background-position: 0 0; }
+                    to { background-position: 0 20px; }
+                }
+             `}</style>
+
              <div className="flex-1 w-full overflow-hidden px-6 pb-6 pt-4 flex flex-col items-center min-h-0">
                   
-                  {/* Hero Section - Clean Text Typography */}
                   <div className="flex flex-col items-center mb-8 shrink-0 pt-4">
                       <h1 className="text-6xl font-bold text-stone-800 dark:text-stone-100 tracking-tight leading-none mb-1">Oku</h1>
                       <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.4em] ml-1">Sudoku</span>
                   </div>
 
-                  {/* Difficulty Header */}
                   <div 
                     className="w-full max-w-md flex justify-center mb-2 opacity-0 animate-slide-in-down shrink-0" 
                     style={{ animationDelay: '50ms' }}
                   >
-                      <p className="text-xs font-semibold text-t-secondary uppercase tracking-[0.2em]">{subtitle}</p>
+                      <p className="text-xs font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-[0.2em]">{subtitle}</p>
                   </div>
 
-                  {/* Difficulty Grid */}
                   <div className="w-full max-w-md flex flex-wrap justify-center gap-3 mb-8 shrink-0 min-h-[330px] content-center">
                       {visibleDifficulties.map((diff, index) => {
                           const descriptions = DIFFICULTY_DESCRIPTIONS[diff];
                           const currentIndex = infoIndices[diff] || 0;
                           const description = descriptions[currentIndex % descriptions.length];
                           
-                          // Pyramid Layout Logic:
-                          // If odd total, the first item (index 0) becomes top of pyramid.
-                          // Exclude single item case from pyramid top logic to avoid wrapper redundancy if not needed
                           const isPyramidTop = isOddCount && index === 0 && !isOneVisible;
                           
-                          // Determine dynamic sizing props
                           let contentScale: 'normal' | 'medium' | 'large' = 'normal';
                           let layoutStyle: React.CSSProperties = {};
 
@@ -323,12 +307,10 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                               layoutStyle = { width: '55%', aspectRatio: '1.55/1' };
                               contentScale = 'normal';
                           } else if (isPyramidTop) {
-                              // Pyramid top (odd count) - Standard size but centered wrapper
                               layoutStyle = { width: '47.5%', aspectRatio: '1.55/1' };
                           }
 
                           if (isPyramidTop || isVerticalStack) {
-                              // Wrap the top item (or all items if vertical stack) in a full-width container to force a new row and centering
                               return (
                                   <div key={diff} className="w-full flex justify-center">
                                       <DifficultyCard 
@@ -364,85 +346,111 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                       })}
                   </div>
 
-                  {/* Footer Actions */}
+                  {/* Footer Actions - Frosted Glass Style */}
                   <div className="w-full max-w-md flex flex-col gap-3 shrink-0">
-                      {/* Row 1: Store & Get More */}
+                      {/* Row 1: Market & Get More */}
                       <div 
                         className="flex justify-center gap-3 opacity-0 animate-slide-in-down w-full" 
                         style={{ animationDelay: '250ms' }}
                       >
+                          {/* Market */}
                           <button 
                             onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenStore(); }} 
-                            style={{ width: '47.5%', background: 'linear-gradient(135deg, #E8BA6E 0%, #B78B4D 100%)' }}
-                            className="p-4 text-[#3f2e18] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] flex items-center justify-center gap-2 active:scale-95 transition relative"
+                            style={{ width: '47.5%' }}
+                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT}`}
                           >
-                              <Icons.Store className="w-5 h-5" /> <span className="font-semibold tracking-wide">Store</span>
+                              <Icons.Store className="w-5 h-5" /> 
+                              <span className="font-bold tracking-wide">Market</span>
                           </button>
                           
+                          {/* Diamonds */}
                           <button 
                             onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenDiamondShop(); }} 
-                            style={{ width: '47.5%', background: 'linear-gradient(135deg, #ffffff 0%, #f1f5f9 50%, #cbd5e1 100%)' }}
-                            className="p-4 text-slate-800 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] flex items-center justify-center gap-2 active:scale-95 transition-all relative overflow-hidden"
+                            style={{ width: '47.5%' }}
+                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} relative overflow-visible shadow-sm`}
                           >
-                              <div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-blue-100/30 to-transparent pointer-events-none" />
-                              <div className="absolute inset-0 -translate-x-full animate-[shimmer_4s_infinite] bg-gradient-to-r from-transparent via-white/80 to-transparent skew-x-[-20deg] pointer-events-none" />
-                              <Icons.Diamond className="w-4 h-4 text-blue-500 fill-current relative z-10 drop-shadow-sm" />
-                              <span className="font-bold tracking-wide relative z-10 text-slate-700">Shop</span> 
+                              {hasPendingPepinoGift && (
+                                <div className="absolute -top-1.5 -right-1.5 z-50 animate-pop">
+                                    <div className="w-[22px] h-[22px] bg-red-500 rounded-full flex items-center justify-center shadow-md animate-bounce">
+                                        <Icons.Gift className="w-3.5 h-3.5 text-white" />
+                                    </div>
+                                </div>
+                              )}
+
+                              {/* 1. Moving Diamond Pattern (Subtle Grey) */}
+                              <div 
+                                className="absolute inset-0 opacity-[0.05] pointer-events-none overflow-hidden rounded-2xl"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 2 L18 10 L10 18 L2 10 Z' fill='none' stroke='%23000000' stroke-width='1.5'/%3E%3C/svg%3E")`,
+                                    backgroundSize: '20px 20px',
+                                    animation: 'diamond-scroll 4s linear infinite'
+                                }}
+                              />
+                              
+                              <div className="relative z-10 flex items-center gap-2">
+                                  <Icons.Diamond className="w-5 h-5" />
+                                  <span className="font-bold tracking-wide">Diamonds</span> 
+                              </div>
                           </button>
                       </div>
                       
-                      {/* Row 2: Stats & Bonus */}
+                      {/* Row 2: Bonus & Stats */}
                       <div 
                         className="flex justify-center gap-3 opacity-0 animate-slide-in-down w-full"
                         style={{ animationDelay: '300ms' }}
                       >
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenStats(); }} 
-                            style={{ width: '47.5%', background: 'linear-gradient(135deg, #B8D3F5 0%, #79A6E3 100%)' }}
-                            className="p-4 text-[#102a43] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] flex items-center justify-center gap-2 active:scale-95 transition relative"
-                          >
-                              <Icons.BarChart className="w-5 h-5" /> <span className="font-semibold tracking-wide">Stats</span>
-                          </button>
-
+                          {/* Claim Bonus */}
                           <button 
                               onClick={onClaimBonus}
                               disabled={!!timeLeft}
-                              style={{ width: '47.5%', ...(!timeLeft ? { background: 'linear-gradient(135deg, #B8DBBE 0%, #8CB794 100%)' } : {}) }}
-                              className={`p-4 rounded-2xl flex items-center justify-center gap-2 transition overflow-hidden relative ${
+                              style={{ width: '47.5%' }}
+                              className={`${COMMON_BTN_STYLE} ${
                                   !!timeLeft 
-                                  ? 'bg-t-surface-sec border-t-border text-t-secondary cursor-not-allowed shadow-sm' 
-                                  : 'text-[#163c20] shadow-[0_2px_8px_rgba(0,0,0,0.08)] active:scale-95'
+                                  ? 'bg-white/30 dark:bg-stone-800/30 backdrop-blur-sm text-stone-500 dark:text-stone-400 cursor-not-allowed shadow-none border border-white/20 dark:border-white/5' 
+                                  : `${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT}`
                               }`}
                           >
                               {!!timeLeft ? (
-                                   <div className="flex items-center gap-2 h-6">
+                                   <div className="flex items-center gap-2">
                                       <Icons.Clock className="w-4 h-4" />
-                                      <span className="font-semibold text-xs tracking-wide">{timeLeft}</span>
+                                      <span className="font-bold text-xs tracking-wide opacity-100">{timeLeft}</span>
                                    </div>
                               ) : (
-                                   <div className="flex items-center gap-1.5 h-6">
+                                   <div className="flex items-center gap-1.5">
                                       <Icons.Gift className="w-5 h-5 animate-bounce" />
-                                      <span className="font-semibold tracking-wide">Claim +10</span>
-                                      <Icons.Diamond className="w-4 h-4 text-blue-500 fill-current" />
+                                      <div className="flex items-center gap-[1px]">
+                                          <span className="font-bold tracking-wide">Claim +10</span>
+                                          <Icons.Diamond className="w-3.5 h-3.5 text-blue-600 fill-current" />
+                                      </div>
                                    </div>
                               )}
+                          </button>
+
+                          {/* Stats */}
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenStats(); }} 
+                            style={{ width: '47.5%' }}
+                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT}`}
+                          >
+                              <Icons.BarChart className="w-5 h-5" /> 
+                              <span className="font-bold tracking-wide">Stats</span>
                           </button>
                       </div>
                   </div>
 
-                  {/* Utility Row (Points + Settings) */}
+                  {/* Bottom Pill - Glass Style */}
                   <div 
                     className="w-full max-w-md flex items-center justify-center gap-3 mt-6 mb-2 opacity-0 animate-slide-in-down shrink-0" 
                     style={{ animationDelay: '350ms' }}
                   >
                       <div 
-                        className="flex items-center gap-1.5 bg-t-surface px-3 py-1.5 rounded-full shadow-sm"
+                        className="flex items-center gap-1.5 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border border-white/40 dark:border-white/10 px-3 py-1.5 rounded-full shadow-sm"
                       >
                           <AnimatedNumber value={points} className="text-sm font-semibold text-t-primary tabular-nums leading-none pt-0.5" />
                           <div className="text-blue-500"><Icons.Diamond className="w-3.5 h-3.5 fill-current" /></div>
                       </div>
                       
-                      <button onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenSettings(); }} className="p-1.5 bg-t-surface rounded-full shadow-sm hover:bg-stone-100 dark:hover:bg-stone-800 transition active:scale-95 text-t-icon">
+                      <button onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenSettings(); }} className="p-1.5 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-full shadow-sm hover:bg-white/80 dark:hover:bg-stone-800 transition active:scale-95 text-t-icon">
                           <Icons.Settings className="w-5 h-5" />
                       </button>
                   </div>

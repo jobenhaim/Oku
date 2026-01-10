@@ -158,7 +158,6 @@ export const WinModal: React.FC<WinModalProps> = ({
     onReturnToMenu
 }) => {
     const [step, setStep] = useState(0);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
     
     // Animation Sequencing
     useEffect(() => {
@@ -185,100 +184,6 @@ export const WinModal: React.FC<WinModalProps> = ({
         };
     }, []);
 
-    // Confetti Effect
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        const resize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        };
-        resize();
-        window.addEventListener('resize', resize);
-
-        // Premium Palette: Gold, Silver, Soft Blue, White
-        const colors = ['#FCD34D', '#E2E8F0', '#93C5FD', '#FFFFFF'];
-        const particleCount = 150;
-        
-        interface Particle {
-            x: number;
-            y: number;
-            vx: number;
-            vy: number;
-            color: string;
-            size: number;
-            rotation: number;
-            rotationSpeed: number;
-            opacity: number;
-        }
-
-        const particles: Particle[] = [];
-        const cx = canvas.width / 2;
-        const cy = canvas.height / 2;
-
-        for (let i = 0; i < particleCount; i++) {
-            // Burst Physics
-            const angle = Math.random() * Math.PI * 2;
-            const velocity = Math.random() * 15 + 8;
-            
-            particles.push({
-                x: cx,
-                y: cy,
-                vx: Math.cos(angle) * velocity * (Math.random() * 0.8 + 0.2),
-                vy: Math.sin(angle) * velocity * (Math.random() * 0.8 + 0.2) - 6, // Initial upward pop
-                color: colors[Math.floor(Math.random() * colors.length)],
-                size: Math.random() * 8 + 6,
-                rotation: Math.random() * 360,
-                rotationSpeed: (Math.random() - 0.5) * 12,
-                opacity: 1
-            });
-        }
-
-        let animationId: number;
-
-        const animate = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            let active = false;
-
-            particles.forEach(p => {
-                // Physics Update
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += 0.35; // Gravity
-                p.vx *= 0.95; // Friction
-                p.vy *= 0.95;
-                p.rotation += p.rotationSpeed;
-                p.opacity -= 0.006; // Slow fade
-
-                if (p.opacity > 0) {
-                    active = true;
-                    ctx.save();
-                    ctx.globalAlpha = p.opacity;
-                    ctx.translate(p.x, p.y);
-                    ctx.rotate((p.rotation * Math.PI) / 180);
-                    ctx.fillStyle = p.color;
-                    // Draw confetti square
-                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-                    ctx.restore();
-                }
-            });
-
-            if (active) {
-                animationId = requestAnimationFrame(animate);
-            }
-        };
-
-        animate();
-
-        return () => {
-            window.removeEventListener('resize', resize);
-            cancelAnimationFrame(animationId);
-        };
-    }, []);
-
     const animatedPoints = useCounter(points, 800, step >= 4);
     const animatedTimeSeconds = useCounter(timer, 800, step >= 5);
 
@@ -295,9 +200,6 @@ export const WinModal: React.FC<WinModalProps> = ({
 
     return (
         <div className="fixed inset-0 bg-green-500/50 backdrop-blur-sm z-[100] flex flex-col items-center justify-center text-white animate-fade-in">
-            {/* Confetti Canvas - Behind Modal */}
-            <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-0" />
-
             <div className="bg-white dark:bg-stone-800 text-stone-800 dark:text-t-primary p-8 rounded-3xl shadow-2xl w-80 text-center relative overflow-hidden transform transition-all z-10">
                 
                 {/* Step 1: Checkmark Icon */}

@@ -13,6 +13,7 @@ import { Storage } from '../utils/storage';
 import { sounds } from '../utils/sound';
 import { Icons } from './ui/Icons';
 import { formatTimeShort } from '../utils/constants';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface SudokuGameProps {
   difficulty: Difficulty;
@@ -475,33 +476,76 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
          </div>
       </div>
 
+      <AnimatePresence>
       {(isPaused || showRestartConfirm) && (
-          <div className="fixed inset-0 bg-stone-50/90 dark:bg-stone-900/90 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in">
-              {!showRestartConfirm ? (
-                  <div className="flex flex-col gap-4 w-48 animate-pop">
-                    <h2 className="text-2xl font-bold text-stone-800 dark:text-t-primary mb-4 text-center">Game Paused</h2>
-                    <button onClick={() => { sounds.playClick(); setIsPaused(false); }} className="flex items-center justify-center gap-2 p-4 bg-stone-800 text-white dark:bg-blue-600 dark:text-white rounded-xl shadow-lg active:scale-95 transition hover:opacity-90">
-                        <Icons.Play className="w-5 h-5 fill-current" /> Resume
-                    </button>
-                    <button onClick={() => { sounds.playClick(); setShowRestartConfirm(true); }} className="flex items-center justify-center gap-2 p-4 bg-white text-stone-800 border border-stone-200 dark:bg-t-surface dark:text-t-primary dark:border-t-border rounded-xl active:scale-95 transition hover:bg-stone-50 dark:hover:bg-t-surface-sec">
-                        <Icons.Reset className="w-5 h-5" /> Restart Level
-                    </button>
-                    <button onClick={() => { sounds.playClick(); onBack(); }} className="flex items-center justify-center gap-2 p-4 text-stone-500 hover:text-stone-800 dark:text-t-secondary dark:hover:text-t-primary transition font-medium">
-                        Quit Game
-                    </button>
-                  </div>
-              ) : (
-                  <div className="bg-white dark:bg-t-surface p-6 rounded-2xl shadow-xl w-full max-w-sm text-center animate-pop">
-                     <h3 className="text-lg font-bold text-stone-800 dark:text-t-primary mb-2">Restart Level?</h3>
-                     <p className="text-stone-500 dark:text-t-secondary text-sm mb-6">Are you sure? This will reset your progress on this level.</p>
-                     <div className="flex gap-3">
-                         <button onClick={() => { sounds.playClick(); setShowRestartConfirm(false); }} className="flex-1 py-3 text-stone-600 bg-stone-100 dark:bg-t-surface-sec dark:text-t-primary rounded-xl font-medium active:scale-95 transition">Cancel</button>
-                         <button onClick={handleRestart} className="flex-1 py-3 text-white bg-red-500 rounded-xl font-medium shadow-md active:scale-95 transition">Restart</button>
-                     </div>
-                  </div>
-              )}
-          </div>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-white/85 dark:bg-stone-950/85 backdrop-blur-sm"
+          >
+              <div className="w-full max-w-[200px] flex flex-col items-center text-center relative z-10">
+                  <AnimatePresence mode="wait">
+                      {!showRestartConfirm ? (
+                          <motion.div 
+                            key="pause-menu"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className="w-full flex flex-col items-center"
+                          >
+                            {/* Smaller, cleaner title */}
+                            <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-6 tracking-tight">Paused</h2>
+                            
+                            <div className="flex flex-col gap-3 w-full">
+                                {/* Resume - Primary */}
+                                <button onClick={() => { sounds.playClick(); setIsPaused(false); }} className="w-full h-14 bg-stone-900 text-white dark:bg-white dark:text-stone-900 rounded-2xl font-bold text-base shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2.5">
+                                    <Icons.Play className="w-5 h-5 fill-current" /> Resume
+                                </button>
+                                
+                                {/* Restart - Secondary (Subtle) */}
+                                <button onClick={() => { sounds.playClick(); setShowRestartConfirm(true); }} className="w-full h-14 bg-white border border-stone-200 text-stone-600 dark:bg-stone-800 dark:border-stone-700 dark:text-stone-300 rounded-2xl font-bold text-base active:scale-95 transition-all flex items-center justify-center gap-2.5 hover:bg-stone-50 dark:hover:bg-stone-700/50">
+                                    <Icons.Reset className="w-5 h-5" /> Restart
+                                </button>
+                            </div>
+
+                            <button onClick={() => { sounds.playClick(); onBack(); }} className="mt-3 text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 transition font-bold text-xs uppercase tracking-widest px-4 py-2">
+                                Quit Game
+                            </button>
+                          </motion.div>
+                      ) : (
+                          <motion.div 
+                            key="restart-confirm"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className="w-full flex flex-col items-center"
+                          >
+                             <div className="space-y-1 mb-5 w-full">
+                                <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 leading-tight">Restart Level?</h3>
+                                <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">Progress will be lost.</p>
+                             </div>
+                             
+                             <div className="flex flex-col gap-3 w-full">
+                                 {/* Restart - Destructive */}
+                                 <button onClick={handleRestart} className="w-full h-14 bg-red-500 text-white rounded-2xl font-bold text-base shadow-xl active:scale-95 transition-all flex items-center justify-center">
+                                    Restart
+                                 </button>
+                                 {/* Cancel */}
+                                 <button onClick={() => { sounds.playClick(); setShowRestartConfirm(false); }} className="w-full h-14 bg-white border border-stone-200 text-stone-600 dark:bg-stone-800 dark:border-stone-700 dark:text-stone-300 rounded-2xl font-bold text-base active:scale-95 transition-all flex items-center justify-center hover:bg-stone-50 dark:hover:bg-stone-700/50">
+                                    Cancel
+                                 </button>
+                             </div>
+                          </motion.div>
+                      )}
+                  </AnimatePresence>
+              </div>
+          </motion.div>
       )}
+      </AnimatePresence>
 
       {isCompleted && (
           <WinModal 

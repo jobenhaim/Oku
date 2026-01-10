@@ -75,6 +75,66 @@ const PROFILES: Record<string, SoundProfile> = {
         duration: 1.5, // Long sustained tail
         volumeScale: 0.6,
         pitchDrop: false
+    },
+    'snd-stone': {
+        id: 'snd-stone',
+        type: 'sine',
+        uiClickFreq: 150,
+        uiTapFreq: 200,
+        // Deep pentatonic or chromatic low
+        numberFreqs: [130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94, 261.63, 293.66],
+        popFreq: 100,
+        duration: 0.1,
+        volumeScale: 1.5,
+        pitchDrop: false
+    },
+    'snd-mech': {
+        id: 'snd-mech',
+        type: 'square', // Clicky
+        uiClickFreq: 2000,
+        uiTapFreq: 2200,
+        numberFreqs: Array(9).fill(2500), // Mechs usually sound same, maybe slight var?
+        popFreq: 1500,
+        duration: 0.05,
+        volumeScale: 0.5,
+        pitchDrop: false
+    },
+    'snd-retro': {
+        id: 'snd-retro',
+        type: 'square',
+        uiClickFreq: 440,
+        uiTapFreq: 880,
+        // C Major Scale High
+        numberFreqs: [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50, 1174.66],
+        popFreq: 220,
+        duration: 0.1,
+        volumeScale: 0.3,
+        pitchDrop: false
+    },
+    'snd-crystal': {
+        id: 'snd-crystal',
+        type: 'sine',
+        uiClickFreq: 1200,
+        uiTapFreq: 1400,
+        // Pentatonic C Major High (Crystal Clear)
+        numberFreqs: [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98],
+        popFreq: 800,
+        duration: 0.8, // Ring out
+        volumeScale: 0.6,
+        pitchDrop: false
+    },
+    'snd-koto': {
+        id: 'snd-koto',
+        type: 'sawtooth',
+        uiClickFreq: 440,
+        uiTapFreq: 523,
+        tapFreqs: [440.00, 493.88, 523.25, 659.25, 698.46], // Hirajoshi: A, B, C, E, F
+        // Japanese Pentatonic (Hirajoshi): A, B, C, E, F
+        numberFreqs: [440.00, 493.88, 523.25, 659.25, 698.46, 880.00, 987.77, 1046.50, 1318.51],
+        popFreq: 220,
+        duration: 1.0, 
+        volumeScale: 0.6,
+        pitchDrop: false
     }
 };
 
@@ -97,6 +157,9 @@ class SoundController {
         // Migrations
         if (profileId === 'snd-glass') profileId = 'snd-water';
         if (profileId === 'snd-celeste') profileId = 'snd-piano';
+        if (profileId === 'snd-drum') profileId = 'snd-crystal';
+        if (profileId === 'snd-pop') profileId = 'snd-crystal'; // Migrate Pop to Crystal
+        if (profileId === 'snd-harp') profileId = 'snd-koto';
         
         if (PROFILES[profileId]) {
             this.activeProfile = PROFILES[profileId];
@@ -176,28 +239,18 @@ class SoundController {
 
         if (profile.id === 'snd-wood') {
              // Forest/Log Synthesis (FM)
-             // Carrier: Sine
-             // Modulator: Sine (Ratio 2:1 for hollow, woody sound)
              osc.type = 'sine';
-             
              const mod = ctx.createOscillator();
              const modGain = ctx.createGain();
-             
              mod.type = 'sine';
              mod.frequency.setValueAtTime(freq * 2.0, ctx.currentTime);
-             
-             // Mod Index Envelope (The "Thwack")
-             // High modulation at start (complex tone), fast decay to pure sine (resonance)
              const modDepth = freq * 0.8; 
              modGain.gain.setValueAtTime(modDepth, ctx.currentTime);
              modGain.gain.exponentialRampToValueAtTime(1, ctx.currentTime + 0.05);
-
              mod.connect(modGain);
              modGain.connect(osc.frequency);
-             
              mod.start();
              mod.stop(ctx.currentTime + duration + 0.1);
-             
              osc.connect(gain);
 
         } else if (profile.id === 'snd-piano') {
@@ -211,8 +264,81 @@ class SoundController {
             osc.connect(filter);
             filter.connect(gain);
             
+        } else if (profile.id === 'snd-stone') {
+            // Stone Synthesis (Deep Sine + Noise)
+            osc.type = 'sine';
+            
+            // Add subtle noise impulse for the "thud" impact
+            const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.02, ctx.sampleRate);
+            const data = noiseBuffer.getChannelData(0);
+            for(let i=0; i<data.length; i++) data[i] = Math.random() * 2 - 1;
+            const noise = ctx.createBufferSource();
+            noise.buffer = noiseBuffer;
+            const noiseGain = ctx.createGain();
+            const noiseFilter = ctx.createBiquadFilter();
+            noiseFilter.type = 'lowpass';
+            noiseFilter.frequency.value = 400;
+            noiseGain.gain.setValueAtTime(volume * 0.5, ctx.currentTime);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.02);
+            noise.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(ctx.destination);
+            noise.start();
+
+            osc.connect(gain);
+
+        } else if (profile.id === 'snd-mech') {
+            // Mechanical (Click + Thud)
+            osc.type = 'square';
+            
+            // Secondary oscillator for the low thud
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(200, ctx.currentTime);
+            gain2.gain.setValueAtTime(volume * 0.5, ctx.currentTime);
+            gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.start();
+            osc2.stop(ctx.currentTime + 0.1);
+
+            osc.connect(gain);
+
+        } else if (profile.id === 'snd-koto') {
+            // Koto (Twangy Pluck)
+            osc.type = 'sawtooth';
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.Q.value = 2; // Resonance for the twang
+            
+            filter.frequency.setValueAtTime(freq * 4, ctx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(freq, ctx.currentTime + 0.2);
+            
+            osc.connect(filter);
+            filter.connect(gain);
+
+        } else if (profile.id === 'snd-crystal') {
+            // Crystal (Glassy Sine + Slight FM)
+            osc.type = 'sine';
+            
+            // FM modulation for "shine"
+            const mod = ctx.createOscillator();
+            const modGain = ctx.createGain();
+            mod.type = 'sine';
+            mod.frequency.setValueAtTime(freq * 2.6, ctx.currentTime); // Inharmonic ratio
+            modGain.gain.setValueAtTime(freq * 0.3, ctx.currentTime);
+            modGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            
+            mod.connect(modGain);
+            modGain.connect(osc.frequency);
+            mod.start();
+            mod.stop(ctx.currentTime + duration);
+            
+            osc.connect(gain);
+
         } else {
-            // Standard (Zen, Water)
+            // Standard (Zen, Water, Retro)
             osc.type = type || (profile.type as any);
             osc.connect(gain);
         }
@@ -220,18 +346,19 @@ class SoundController {
         // --- PITCH ENVELOPES ---
         
         if (profile.id === 'snd-water') {
-            // Water Bubble Physics: Pitch Ramps UP ("Bloop")
-            // Start lower, slide up quickly to target freq
             osc.frequency.setValueAtTime(freq * 0.5, ctx.currentTime);
             osc.frequency.linearRampToValueAtTime(freq, ctx.currentTime + 0.04);
-            // Slight overshoot for bubble pop effect?
             osc.frequency.linearRampToValueAtTime(freq * 1.1, ctx.currentTime + duration);
 
-        } else if (profile.id === 'snd-wood') {
-             // Wood stays relatively constant pitch (FM handles the transient)
+        } else if (profile.id === 'snd-koto') {
+            // Koto: Slight pitch bend down (string settling)
+            osc.frequency.setValueAtTime(freq * 1.02, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(freq, ctx.currentTime + 0.1);
+
+        } else if (profile.id === 'snd-wood' || profile.id === 'snd-stone' || profile.id === 'snd-mech' || profile.id === 'snd-retro' || profile.id === 'snd-crystal') {
+             // Fixed pitch for these
              osc.frequency.setValueAtTime(freq, ctx.currentTime);
         } else if (profile.pitchDrop && !disablePitchDrop) {
-            // Zen/Standard Drop
             osc.frequency.setValueAtTime(freq, ctx.currentTime);
             const dropTarget = Math.max(20, freq * 0.1); 
             osc.frequency.exponentialRampToValueAtTime(dropTarget, ctx.currentTime + duration);
@@ -246,19 +373,32 @@ class SoundController {
         
         gain.gain.setValueAtTime(0, ctx.currentTime);
         
-        if (profile.id === 'snd-piano') {
-             gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.015);
+        if (profile.id === 'snd-piano' || profile.id === 'snd-koto') {
+             // Plucked/Struck String Envelope
+             gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.01);
              gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-        } else if (profile.id === 'snd-wood') {
-             // Perussive: Instant attack, fast exponential decay
+        } else if (profile.id === 'snd-wood' || profile.id === 'snd-mech') {
              gain.gain.setValueAtTime(vol, ctx.currentTime);
              gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        } else if (profile.id === 'snd-stone') {
+             // Thuddy envelope
+             gain.gain.setValueAtTime(0, ctx.currentTime);
+             gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.005);
+             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
         } else if (profile.id === 'snd-water') {
-             // Bubble: Softer attack, quick decay
              gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.02);
              gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        } else if (profile.id === 'snd-retro') {
+             // Square wave gate-like envelope
+             gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.005);
+             gain.gain.setValueAtTime(vol, ctx.currentTime + duration - 0.02);
+             gain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
+        } else if (profile.id === 'snd-crystal') {
+             // Crystal Envelope: Fast attack, very long tail
+             gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.005);
+             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
         } else {
-             // Zen
+             // Zen / Default
              gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.002);
              gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
         }
@@ -278,11 +418,19 @@ class SoundController {
                         this.playTone(f, 0.6, 0.2, 'triangle', undefined, true); 
                     }, i * 12); 
                 });
+            } else if (this.activeProfile.id === 'snd-koto') {
+                // Quick strum for Koto
+                const chord = [329.63, 440.00]; 
+                chord.forEach((f, i) => {
+                    setTimeout(() => {
+                        this.playTone(f, 0.8, 0.2, 'sawtooth', undefined, true);
+                    }, i * 20); 
+                });
             } else if (this.activeProfile.id === 'snd-wood') {
-                // Dry hollow click
                 this.playTone(330, 0.1, 0.4, 'sine', undefined, true);
+            } else if (this.activeProfile.id === 'snd-stone') {
+                this.playTone(150, 0.1, 0.6, 'sine', undefined, true);
             } else if (this.activeProfile.id === 'snd-water') {
-                // High bubble click
                 this.playTone(800, 0.08, 0.3, 'sine', undefined, true);
             } else {
                 this.playTone(this.activeProfile.uiClickFreq, this.activeProfile.duration, 0.4);
@@ -413,11 +561,17 @@ class SoundController {
             this.playNoiseBurst(1500, 0.01, 0.15); // Very short scratch
         } else if (pid === 'snd-wood') {
             this.playTone(800, 0.02, 0.15, 'sine', undefined, true);
+        } else if (pid === 'snd-stone') {
+            this.playTone(300, 0.02, 0.2, 'sine', undefined, true);
         } else if (pid === 'snd-water') {
             this.playTone(1000 + Math.random() * 200, 0.03, 0.15, 'sine', undefined, true);
-        } else if (pid === 'snd-piano') {
+        } else if (pid === 'snd-piano' || pid === 'snd-koto') {
             // High C7 is ~2093
             this.playTone(2093, 0.05, 0.1, 'triangle', undefined, true);
+        } else if (pid === 'snd-retro') {
+            this.playTone(1500, 0.02, 0.1, 'square', undefined, true);
+        } else if (pid === 'snd-crystal') {
+            this.playTone(2093, 0.05, 0.1, 'sine', undefined, true);
         } else {
             // Zen / Default
             this.playTone(1000, 0.02, 0.1, 'sine', undefined, true);
@@ -538,7 +692,6 @@ class SoundController {
             setTimeout(() => this.playNoiseBurst(1000, 0.1, 0.3), 100);
             
         } else if (pid === 'snd-wood') {
-            // Forest Rattle: Random pentatonic notes
             const notes = [440, 587, 659, 783]; 
             notes.forEach((f, i) => {
                 const delay = i * 40 + (Math.random() * 30);
@@ -548,16 +701,28 @@ class SoundController {
             });
 
         } else if (pid === 'snd-water') {
-             // River Stream: Rapid bubbling cascade
              const notes = [800, 700, 600, 500];
              notes.forEach((f, i) => {
                  setTimeout(() => this.playTone(f, 0.08, 0.3), i * 60);
              });
 
-        } else if (pid === 'snd-piano') {
+        } else if (pid === 'snd-piano' || pid === 'snd-koto') {
             const notes = [261.63, 329.63, 392.00, 493.88];
+            const type = pid === 'snd-koto' ? 'sawtooth' : 'triangle';
             notes.forEach((f, i) => {
-                setTimeout(() => this.playTone(f, 1.0, 0.4, 'triangle', undefined, false), i * 60);
+                setTimeout(() => this.playTone(f, 1.0, 0.4, type as any, undefined, false), i * 60);
+            });
+        } else if (pid === 'snd-crystal') {
+            [523, 659, 783].forEach((f, i) => {
+                setTimeout(() => this.playTone(f, 0.2, 0.6, 'sine', undefined, true), i * 50);
+            });
+        } else if (pid === 'snd-stone') {
+            this.playTone(100, 0.2, 0.8, 'sine', undefined, true);
+        } else if (pid === 'snd-retro') {
+            // Retro Power Up: C4, E4, G4, C5 rapid
+            const retroNotes = [261.63, 329.63, 392.00, 523.25];
+            retroNotes.forEach((f, i) => {
+                setTimeout(() => this.playTone(f, 0.1, 0.4, 'square', undefined, true), i * 60);
             });
         } else {
             const d = 0.035; 
@@ -569,55 +734,60 @@ class SoundController {
     }
 
     playZap() {
-        // "Auto" Skill Sound - "Cute Lightning"
-        // Satisfying, crisp, electric snap that "itches the brain"
+        // "Auto" Skill Sound - "Premium Mechanical Zap"
         if (this.soundEnabled) {
             const ctx = this.getCtx();
             const now = ctx.currentTime;
-            
-            // 1. The Electric Zap (Sawtooth Down-sweep)
-            // Provides the "Lightning" texture
-            const zapOsc = ctx.createOscillator();
-            const zapGain = ctx.createGain();
-            
-            zapOsc.type = 'sawtooth'; 
-            zapOsc.frequency.setValueAtTime(2200, now); // Sharp start
-            zapOsc.frequency.exponentialRampToValueAtTime(150, now + 0.1); // Fast snap down
-            
-            zapGain.gain.setValueAtTime(0, now);
-            zapGain.gain.linearRampToValueAtTime(0.12, now + 0.005); // Instant attack
-            zapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-            
-            // Highpass filter to remove muddy lows from the zap, keeping it crisp
-            const zapFilter = ctx.createBiquadFilter();
-            zapFilter.type = 'highpass';
-            zapFilter.frequency.value = 500;
 
-            zapOsc.connect(zapFilter);
-            zapFilter.connect(zapGain);
-            zapGain.connect(ctx.destination);
-            
-            zapOsc.start(now);
-            zapOsc.stop(now + 0.15);
+            // 1. The High Energy Arc (Sawtooth with fast filter sweep)
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            const filter1 = ctx.createBiquadFilter();
 
-            // 2. The "Cute" Aftertouch (Sine High Blip)
-            // Provides the "Satisfying" finish
-            const sparkOsc = ctx.createOscillator();
-            const sparkGain = ctx.createGain();
-            
-            sparkOsc.type = 'sine';
-            sparkOsc.frequency.setValueAtTime(1800, now);
-            sparkOsc.frequency.linearRampToValueAtTime(2200, now + 0.05); // Quick chirp up
-            
-            sparkGain.gain.setValueAtTime(0, now);
-            sparkGain.gain.linearRampToValueAtTime(0.15, now + 0.01);
-            sparkGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15); // Ring out slightly
-            
-            sparkOsc.connect(sparkGain);
-            sparkGain.connect(ctx.destination);
-            
-            sparkOsc.start(now);
-            sparkOsc.stop(now + 0.2);
+            osc1.type = 'sawtooth';
+            // Start lowish, zip up fast
+            osc1.frequency.setValueAtTime(400, now);
+            osc1.frequency.exponentialRampToValueAtTime(1200, now + 0.12);
+
+            // Filter opens up to create the "Zzzzip" texture
+            filter1.type = 'lowpass';
+            filter1.Q.value = 5; // Resonance for the zap feel
+            filter1.frequency.setValueAtTime(200, now);
+            filter1.frequency.exponentialRampToValueAtTime(3000, now + 0.1);
+
+            gain1.gain.setValueAtTime(0, now);
+            gain1.gain.linearRampToValueAtTime(0.1, now + 0.02); // Fast attack
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+            osc1.connect(filter1);
+            filter1.connect(gain1);
+            gain1.connect(ctx.destination);
+
+            osc1.start(now);
+            osc1.stop(now + 0.2);
+
+            // 2. The Mechanical Latch (Square Wave Clunk)
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            const filter2 = ctx.createBiquadFilter();
+
+            osc2.type = 'square';
+            osc2.frequency.setValueAtTime(150, now); // Low base
+            osc2.frequency.linearRampToValueAtTime(100, now + 0.05); // Pitch drop
+
+            filter2.type = 'lowpass';
+            filter2.frequency.value = 800; // Muffle the square wave
+
+            gain2.gain.setValueAtTime(0, now);
+            gain2.gain.linearRampToValueAtTime(0.15, now + 0.01);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+            osc2.connect(filter2);
+            filter2.connect(gain2);
+            gain2.connect(ctx.destination);
+
+            osc2.start(now);
+            osc2.stop(now + 0.15);
         }
 
         if (this.vibrationEnabled) {
@@ -732,6 +902,9 @@ class SoundController {
 
         if (profileId === 'snd-glass') profileId = 'snd-water';
         if (profileId === 'snd-celeste') profileId = 'snd-piano';
+        if (profileId === 'snd-drum') profileId = 'snd-crystal';
+        if (profileId === 'snd-pop') profileId = 'snd-crystal';
+        if (profileId === 'snd-harp') profileId = 'snd-koto';
 
         const profile = PROFILES[profileId];
         if (!profile) return;

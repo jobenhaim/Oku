@@ -269,7 +269,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                     
                     <div className="flex flex-col items-center absolute left-0 right-0 pointer-events-none z-20">
                         <h1 className="text-xl font-bold leading-none">{difficulty}</h1>
-                        <p className="text-xs text-t-secondary uppercase tracking-widest mt-1">Select Level</p>
+                        <p className="text-xs font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-[0.2em] mt-1">Select Level</p>
                         {globalBest !== undefined && (
                             <div className="flex flex-col items-center animate-fade-in mt-1">
                                 <span className="text-[10px] font-bold text-amber-500 tracking-widest uppercase mb-px opacity-90">Best: {formatTimeShort(globalBest)}</span>

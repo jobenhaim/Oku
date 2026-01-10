@@ -68,7 +68,8 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                  
                 <div className="flex items-center justify-center gap-2 absolute left-0 right-0 pointer-events-none z-20">
                     <Icons.Diamond className="w-5 h-5 text-blue-500 fill-current" />
-                    <h1 className="text-xl font-bold text-t-primary leading-none">Shop</h1>
+                    <h1 className="text-xl font-bold text-t-primary leading-none">Get More</h1>
+                    <Icons.Diamond className="w-5 h-5 text-blue-500 fill-current" />
                 </div>
 
                 <div className="flex items-center gap-1 bg-t-surface px-3 py-2 rounded-full shadow-sm relative z-30">

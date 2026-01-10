@@ -1,7 +1,3 @@
 
-import React from 'react';
-
-// Component removed as requested.
-export const CurrencyFlyIn: React.FC<any> = () => {
-    return null;
-};
+// Obsolete
+export const CurrencyFlyIn = () => null;
