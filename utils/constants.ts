@@ -131,8 +131,13 @@ export const STATIC_BACKGROUNDS = [
     { id: 'bg-default', name: 'Default', cost: 0, class: 'bg-paper dark:bg-stone-900' },
     { id: 'bg-dawn', name: 'Dawn', cost: 100, class: 'bg-gradient-to-br from-orange-100 to-rose-100' },
     { id: 'bg-ocean', name: 'Ocean', cost: 100, class: 'bg-gradient-to-br from-sky-100 to-cyan-200' },
-    { id: 'bg-forest', name: 'Forest', cost: 100, class: 'bg-gradient-to-br from-emerald-100 to-teal-100' },
-    { id: 'bg-dusk', name: 'Dusk', cost: 100, class: 'bg-gradient-to-br from-violet-100 to-indigo-100' },
+    { id: 'bg-forest', name: 'Forest', cost: 100, class: 'bg-gradient-to-br from-green-100 to-emerald-200' },
+    { id: 'bg-dusk', name: 'Dusk', cost: 100, class: 'bg-gradient-to-br from-indigo-100 to-slate-300' },
+    { id: 'bg-dune', name: 'Dune', cost: 100, class: 'bg-gradient-to-br from-amber-100 to-orange-100' },
+    { id: 'bg-lavender', name: 'Lavender', cost: 100, class: 'bg-gradient-to-br from-purple-100 to-violet-200' },
+    { id: 'bg-mint', name: 'Mint', cost: 100, class: 'bg-gradient-to-br from-emerald-50 to-teal-100' },
+    { id: 'bg-berry', name: 'Berry', cost: 100, class: 'bg-gradient-to-br from-pink-100 to-rose-100' },
+    { id: 'bg-glacier', name: 'Glacier', cost: 100, class: 'bg-gradient-to-br from-cyan-50 to-sky-100' },
 ];
 
 export const DYNAMIC_BACKGROUNDS = [

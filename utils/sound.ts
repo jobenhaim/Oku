@@ -108,7 +108,7 @@ const PROFILES: Record<string, SoundProfile> = {
         numberFreqs: [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50, 1174.66],
         popFreq: 220,
         duration: 0.1,
-        volumeScale: 0.3,
+        volumeScale: 0.10,
         pitchDrop: false
     },
     'snd-crystal': {

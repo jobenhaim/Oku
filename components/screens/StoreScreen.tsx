@@ -134,7 +134,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
     const renderSkills = () => (
         <div className="mb-8">
             <h2 className="text-lg font-bold text-t-primary mb-3 ml-1">Skills</h2>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
                 {SKILLS.map(skill => {
                     const isPurchased = purchasedSkills.includes(skill.id);
                     const isEnabled = enabledSkills.includes(skill.id);
@@ -179,7 +179,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
             <h2 className="text-lg font-bold text-t-primary mb-3 ml-1">Backgrounds</h2>
             <div className="mb-6">
                 <h3 className="text-xs font-bold text-t-secondary uppercase tracking-widest mb-3 ml-1">Static</h3>
-                <div className="grid grid-cols-5 gap-2 items-start">{STATIC_BACKGROUNDS.map(bg => {
+                <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{STATIC_BACKGROUNDS.map(bg => {
                     const isPurchased = purchasedBackgrounds.includes(bg.id);
                     const isSelected = selectedBackgroundId === bg.id;
                     return (
@@ -200,7 +200,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
             </div>
             <div className="mb-2">
                 <h3 className="text-xs font-bold text-t-secondary uppercase tracking-widest mb-3 ml-1">Atmosphere</h3>
-                <div className="grid grid-cols-5 gap-2 items-start">{DYNAMIC_BACKGROUNDS.map(bg => {
+                <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{DYNAMIC_BACKGROUNDS.map(bg => {
                     const isPurchased = purchasedBackgrounds.includes(bg.id);
                     const isSelected = selectedBackgroundId === bg.id;
                     return (
@@ -228,7 +228,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
     const renderSoundPacks = () => (
         <div className="mb-8">
             <h2 className="text-lg font-bold text-t-primary mb-3 ml-1">Sound Packs</h2>
-            <div className="grid grid-cols-5 gap-2 items-start">{SOUND_PACKS.map(pack => {
+            <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{SOUND_PACKS.map(pack => {
                 const isPurchased = purchasedSoundPacks.includes(pack.id);
                 const isSelected = selectedSoundPackId === pack.id;
                 const isInfoActive = activeInfoId === pack.id;
@@ -267,7 +267,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
     const renderNumbers = () => (
         <div className="mb-8">
             <h2 className="text-lg font-bold text-t-primary mb-3 ml-1">Number Styles</h2>
-            <div className="grid grid-cols-5 gap-2 items-start">{NUMBER_COLORS.map(num => {
+            <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{NUMBER_COLORS.map(num => {
                 const isPurchased = purchasedNumberColors.includes(num.id);
                 const isSelected = selectedNumberColorId === num.id;
                 return (
@@ -313,7 +313,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
         >
              {/* Header */}
              <div className="w-full max-w-md flex flex-col px-6 pt-4 pb-2 relative shrink-0 z-20 gap-4">
-                <div className="flex items-center justify-between w-full">
+                <div className="flex items-center justify-between w-full mb-2">
                     <button onClick={onBack} className="p-2 rounded-full hover:bg-stone-200 transition -ml-2 text-t-icon relative z-30">
                         <Icons.Back className="w-6 h-6 text-t-icon" />
                     </button>
@@ -329,28 +329,29 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                     </div>
                 </div>
 
-                {/* Category Pills */}
-                <div className="w-full overflow-x-auto hide-scrollbar touch-pan-x pb-2 -mx-6 px-6">
-                    <div className="flex gap-2 min-w-min mx-auto md:mx-0">
-                        {TABS.map((tab) => {
-                            const isActive = activeTab === tab.id;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => handleTabChange(tab.id as StoreTab)}
-                                    className={`
-                                        px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border
-                                        ${isActive 
-                                            ? 'bg-stone-800 border-stone-800 text-white dark:bg-stone-100 dark:border-stone-100 dark:text-stone-900 shadow-md scale-105' 
-                                            : 'bg-white border-stone-200 text-stone-500 dark:bg-stone-800 dark:border-stone-700 dark:text-stone-400 hover:border-stone-300 dark:hover:border-stone-600'
-                                        }
-                                    `}
-                                >
-                                    {tab.label}
-                                </button>
-                            );
-                        })}
-                    </div>
+                {/* Category Tabs (Table Style) */}
+                <div className="w-full flex items-center border-b border-stone-200 dark:border-stone-700 divide-x divide-stone-200 dark:divide-stone-700 mt-2">
+                    {TABS.map((tab) => {
+                        const isActive = activeTab === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => handleTabChange(tab.id as StoreTab)}
+                                className={`
+                                    flex-1 py-3 text-xs font-bold transition-all relative
+                                    ${isActive 
+                                        ? 'text-stone-800 dark:text-stone-100 bg-stone-100/50 dark:bg-white/5' 
+                                        : 'text-stone-400 dark:text-stone-500 hover:bg-stone-50 dark:hover:bg-white/5'
+                                    }
+                                `}
+                            >
+                                {tab.label}
+                                {isActive && (
+                                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-stone-800 dark:bg-stone-100" />
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
              </div>
 
@@ -358,7 +359,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                 ref={scrollContainerRef}
                 className="flex-1 w-full overflow-y-auto overflow-x-hidden px-6 pb-6 hide-scrollbar flex flex-col items-center relative"
              >
-                  <div className="w-full max-w-md pt-2">
+                  <div className="w-full max-w-md pt-6">
                       <AnimatePresence initial={false} custom={direction} mode="popLayout">
                           <motion.div
                               key={activeTab}
