@@ -130,14 +130,11 @@ const DifficultyCard: React.FC<{
         <button 
             onClick={() => onSelect(diff)} 
             style={finalStyle}
-            // Frosted Glass: bg-white/90 instead of /80
-            className={`bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border border-white/40 dark:border-white/10 ${paddingClass} rounded-2xl shadow-sm flex flex-col justify-between transition-transform text-left relative group overflow-visible ${animating ? 'opacity-0 animate-slide-in-down' : 'opacity-100'}`}
+            className={`bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border border-white/40 dark:border-white/10 ${paddingClass} rounded-2xl shadow-sm flex flex-col justify-between transition-all active:scale-95 hover:brightness-105 text-left relative group overflow-visible ${animating ? 'opacity-0 animate-slide-in-down' : 'opacity-100'}`}
         >
             <div className="w-full flex justify-between items-center mb-1">
-                {/* Title: Solid darker color */}
                 <span className={`font-bold text-stone-800 dark:text-white leading-none tracking-tight truncate mr-1 ${titleClass}`}>{diff}</span>
                 <div className="flex items-center gap-0.5 shrink-0">
-                    {/* Points: Removed opacity-80, using darker color */}
                     <span className={`${pointsTextClass} font-bold text-stone-900 dark:text-stone-100 leading-none`}>+{diffPoints}</span>
                     <Icons.Diamond className={`${iconSizeClass} text-blue-500 fill-current`} />
                 </div>
@@ -172,13 +169,11 @@ const DifficultyCard: React.FC<{
                     )}
                 </div>
                 
-                {/* Progress Text: Removed opacity-90, solid color */}
                 <span className={`${progressTextClass} text-stone-800 dark:text-stone-200 font-bold tracking-wide font-sans leading-none`}>
                     {animatedCompleted} / {maxLevels}
                 </span>
             </div>
             
-            {/* Progress Bar Track: Transparent black/white instead of solid gray for glass feel */}
             <div className={`w-full bg-stone-900/10 dark:bg-white/10 rounded-full overflow-hidden ${progressBarHeight}`}>
                 <div 
                     className="h-full bg-loading-blue" 
@@ -255,13 +250,10 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     const isVerticalStack = visibleDifficulties.length === 2;
     const isOneVisible = visibleDifficulties.length === 1;
 
-    // --- GLASSMORPHISM STYLES ---
-    // Background: bg-white/90 instead of /80
+    // Common style without hover/active scales
     const BTN_BG_DEFAULT = "bg-white/90 dark:bg-stone-900/90 backdrop-blur-md";
-    // Text: Solid, high contrast
     const BTN_TEXT_DEFAULT = "text-stone-900 dark:text-white";
-    // Border: Subtle glass border
-    const COMMON_BTN_STYLE = `h-14 px-3 rounded-2xl shadow-sm flex items-center justify-center gap-2 active:scale-95 transition hover:brightness-105 group border border-white/40 dark:border-white/10 whitespace-nowrap`;
+    const COMMON_BTN_STYLE = `h-14 px-3 rounded-2xl shadow-sm flex items-center justify-center gap-2 transition group border border-white/40 dark:border-white/10 whitespace-nowrap`;
 
     return (
         <div 
@@ -346,28 +338,25 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                       })}
                   </div>
 
-                  {/* Footer Actions - Frosted Glass Style */}
+                  {/* Footer Actions */}
                   <div className="w-full max-w-md flex flex-col gap-3 shrink-0">
-                      {/* Row 1: Market & Get More */}
                       <div 
                         className="flex justify-center gap-3 opacity-0 animate-slide-in-down w-full" 
                         style={{ animationDelay: '250ms' }}
                       >
-                          {/* Market */}
                           <button 
                             onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenStore(); }} 
                             style={{ width: '47.5%' }}
-                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT}`}
+                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} active:scale-95 hover:brightness-105`}
                           >
                               <Icons.Store className="w-5 h-5" /> 
                               <span className="font-bold tracking-wide">Market</span>
                           </button>
                           
-                          {/* Diamonds */}
                           <button 
                             onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenDiamondShop(); }} 
                             style={{ width: '47.5%' }}
-                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} relative overflow-visible shadow-sm`}
+                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} relative overflow-visible shadow-sm active:scale-95 hover:brightness-105`}
                           >
                               {hasPendingPepinoGift && (
                                 <div className="absolute -top-1.5 -right-1.5 z-50 animate-pop">
@@ -377,7 +366,6 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                 </div>
                               )}
 
-                              {/* 1. Moving Diamond Pattern (Subtle Grey) */}
                               <div 
                                 className="absolute inset-0 opacity-[0.05] pointer-events-none overflow-hidden rounded-2xl"
                                 style={{
@@ -394,12 +382,10 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                           </button>
                       </div>
                       
-                      {/* Row 2: Bonus & Stats */}
                       <div 
                         className="flex justify-center gap-3 opacity-0 animate-slide-in-down w-full"
                         style={{ animationDelay: '300ms' }}
                       >
-                          {/* Claim Bonus */}
                           <button 
                               onClick={onClaimBonus}
                               disabled={!!timeLeft}
@@ -407,7 +393,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                               className={`${COMMON_BTN_STYLE} ${
                                   !!timeLeft 
                                   ? 'bg-white/30 dark:bg-stone-800/30 backdrop-blur-sm text-stone-500 dark:text-stone-400 cursor-not-allowed shadow-none border border-white/20 dark:border-white/5' 
-                                  : `${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT}`
+                                  : `${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} active:scale-95 hover:brightness-105`
                               }`}
                           >
                               {!!timeLeft ? (
@@ -426,11 +412,10 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                               )}
                           </button>
 
-                          {/* Stats */}
                           <button 
                             onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenStats(); }} 
                             style={{ width: '47.5%' }}
-                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT}`}
+                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} active:scale-95 hover:brightness-105`}
                           >
                               <Icons.BarChart className="w-5 h-5" /> 
                               <span className="font-bold tracking-wide">Stats</span>
@@ -438,7 +423,6 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                       </div>
                   </div>
 
-                  {/* Bottom Pill - Glass Style */}
                   <div 
                     className="w-full max-w-md flex items-center justify-center gap-3 mt-6 mb-2 opacity-0 animate-slide-in-down shrink-0" 
                     style={{ animationDelay: '350ms' }}

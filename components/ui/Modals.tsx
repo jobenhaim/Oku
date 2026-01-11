@@ -212,6 +212,45 @@ export const ReplayModal: React.FC<ReplayModalProps> = ({ levelId, onConfirm, on
     );
 };
 
+interface ResetConfirmModalProps {
+    onConfirm: () => void;
+    onCancel: () => void;
+}
+
+export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ onConfirm, onCancel }) => {
+    const [isClosing, setIsClosing] = useState(false);
+    const handleAction = (action: () => void) => {
+        sounds.playClick();
+        setIsClosing(true);
+        setTimeout(() => action(), 300);
+    };
+
+    return (
+        <div 
+            className={`fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} 
+            onClick={() => handleAction(onCancel)}
+        >
+            <div className={`bg-t-surface p-6 rounded-3xl shadow-2xl w-full max-w-xs text-center border border-red-100 dark:border-red-900/30 transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} onClick={e => e.stopPropagation()}>
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                    <Icons.Trash className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold text-t-primary mb-2">Reset Progress?</h3>
+                <p className="text-sm text-t-secondary font-medium mb-6 leading-relaxed">
+                    This will permanently delete all your progress, unlocks, and stats. This cannot be undone.
+                </p>
+                <div className="flex flex-col gap-3">
+                    <button onClick={() => handleAction(onConfirm)} className="w-full py-3.5 text-white bg-red-500 hover:bg-red-600 rounded-xl font-bold shadow-lg shadow-red-500/20 active:scale-95 transition-all">
+                        Yes, Reset Everything
+                    </button>
+                    <button onClick={() => handleAction(onCancel)} className="w-full py-3.5 text-t-secondary bg-t-surface-sec rounded-xl font-bold active:scale-95 transition-all hover:text-t-primary">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 interface PurchaseModalProps {
     item: { id: string; name: string; cost: number; description?: string };
     onConfirm: () => void;

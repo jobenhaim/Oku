@@ -329,8 +329,8 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                     </div>
                 </div>
 
-                {/* Category Tabs (Table Style) */}
-                <div className="w-full flex items-center border-b border-stone-200 dark:border-stone-700 divide-x divide-stone-200 dark:divide-stone-700 mt-2">
+                {/* Cleaner Category Tabs (Segmented Control Style) */}
+                <div className="w-full p-1 bg-stone-200/50 dark:bg-white/5 rounded-xl flex items-center mt-2 relative">
                     {TABS.map((tab) => {
                         const isActive = activeTab === tab.id;
                         return (
@@ -338,16 +338,20 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 key={tab.id}
                                 onClick={() => handleTabChange(tab.id as StoreTab)}
                                 className={`
-                                    flex-1 py-3 text-xs font-bold transition-all relative
+                                    flex-1 py-2 text-[11px] font-bold transition-all relative z-10
                                     ${isActive 
-                                        ? 'text-stone-800 dark:text-stone-100 bg-stone-100/50 dark:bg-white/5' 
-                                        : 'text-stone-400 dark:text-stone-500 hover:bg-stone-50 dark:hover:bg-white/5'
+                                        ? 'text-stone-900 dark:text-white' 
+                                        : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'
                                     }
                                 `}
                             >
-                                {tab.label}
+                                <span className="relative z-20">{tab.label}</span>
                                 {isActive && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-stone-800 dark:bg-stone-100" />
+                                    <motion.div 
+                                        layoutId="activeTabPill"
+                                        className="absolute inset-0 bg-white dark:bg-stone-800 rounded-lg shadow-sm z-10"
+                                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                                    />
                                 )}
                             </button>
                         );

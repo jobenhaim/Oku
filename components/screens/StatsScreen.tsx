@@ -6,6 +6,7 @@ import { Icons } from '../ui/Icons';
 import { formatTimeShort, getDifficultyPoints } from '../../utils/constants';
 import { sounds } from '../../utils/sound';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface StatsScreenProps {
     onBack: () => void;
@@ -66,7 +67,7 @@ const useStatCounter = (target: number, dependency: any) => {
 export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, points }) => {
     // Stats State
     const [selectedDiff, setSelectedDiff] = useState<Difficulty>(Difficulty.Normal);
-    const [isDiffMenuOpen, setIsDiffMenuOpen] = useState(false);
+    const [direction, setDirection] = useState(0);
 
     // Load Data
     const [storedData, setStoredData] = useState(Storage.getStoredData());
@@ -115,6 +116,36 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
         return `${mStr}m ${sStr}s`;
     };
 
+    const handleDiffChange = (newDiff: Difficulty) => {
+        if (newDiff === selectedDiff) return;
+        sounds.playClick();
+        
+        const difficulties = Object.values(Difficulty);
+        const currentIndex = difficulties.indexOf(selectedDiff);
+        const newIndex = difficulties.indexOf(newDiff);
+        
+        setDirection(newIndex > currentIndex ? 1 : -1);
+        setSelectedDiff(newDiff);
+    };
+
+    const variants = {
+        enter: (dir: number) => ({
+            x: dir > 0 ? '100%' : '-100%',
+            opacity: 0,
+            scale: 0.95,
+        }),
+        center: {
+            x: 0,
+            opacity: 1,
+            scale: 1,
+        },
+        exit: (dir: number) => ({
+            x: dir > 0 ? '-100%' : '100%',
+            opacity: 0,
+            scale: 0.95,
+        }),
+    };
+
     return (
         <div className="flex-1 w-full flex flex-col items-center overflow-hidden">
             {/* Header */}
@@ -137,102 +168,128 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 w-full overflow-y-auto px-6 pb-6 hide-scrollbar flex flex-col items-center">
+            <div className="flex-1 w-full overflow-y-auto overflow-x-hidden px-6 pb-6 hide-scrollbar flex flex-col items-center">
                 <div className="w-full max-w-md pt-2">
                     
                     <div className="animate-fade-in space-y-4">
-                        {/* Difficulty Selector */}
-                        <div className="w-full z-20">
-                            <button 
-                                onClick={() => { sounds.playClick(); setIsDiffMenuOpen(!isDiffMenuOpen); }}
-                                className="w-full bg-t-surface p-4 rounded-2xl shadow-sm flex items-center justify-between active:scale-[0.98] transition-all relative z-10"
+                        
+                        {/* Difficulty Tabs (Segmented Control) */}
+                        <div className="w-full p-1 bg-stone-200/50 dark:bg-white/5 rounded-xl flex items-stretch relative min-h-[44px]">
+                            {Object.values(Difficulty).map((diff) => {
+                                const isActive = selectedDiff === diff;
+                                const words = diff.split(' ');
+                                
+                                return (
+                                    <button
+                                        key={diff}
+                                        onClick={() => handleDiffChange(diff)}
+                                        className={`
+                                            flex-1 py-2 px-0.5 text-[11px] font-bold transition-all relative z-10 flex flex-col items-center justify-center
+                                            ${isActive 
+                                                ? 'text-stone-900 dark:text-white' 
+                                                : 'text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300'
+                                            }
+                                        `}
+                                    >
+                                        <div className="relative z-20 flex flex-col items-center leading-none gap-0">
+                                            {words.map((w, i) => <span key={i}>{w}</span>)}
+                                        </div>
+                                        {isActive && (
+                                            <motion.div 
+                                                layoutId="activeDiffPill"
+                                                className="absolute inset-0 bg-white dark:bg-stone-800 rounded-lg shadow-sm z-10"
+                                                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                                            />
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <AnimatePresence initial={false} custom={direction} mode="popLayout">
+                            <motion.div
+                                key={selectedDiff}
+                                custom={direction}
+                                variants={variants}
+                                initial="enter"
+                                animate="center"
+                                exit="exit"
+                                transition={{
+                                    x: { type: "spring", stiffness: 200, damping: 25 },
+                                    opacity: { duration: 0.2 },
+                                    scale: { duration: 0.2 }
+                                }}
+                                className="w-full space-y-4"
                             >
-                                <span className="text-lg font-bold text-t-primary">{selectedDiff}</span>
-                                <Icons.Back className={`w-5 h-5 text-t-secondary transition-transform duration-300 ${isDiffMenuOpen ? '-rotate-90' : '-rotate-180'}`} /> 
-                            </button>
-                            
-                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isDiffMenuOpen ? 'max-h-[400px] opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'}`}>
-                                <div className="bg-t-surface rounded-2xl shadow-sm overflow-hidden flex flex-col">
-                                    {Object.values(Difficulty).map((diff) => (
-                                        <button
-                                            key={diff}
-                                            onClick={() => { sounds.playClick(); setSelectedDiff(diff); setIsDiffMenuOpen(false); }}
-                                            className={`w-full text-left px-5 py-4 text-lg font-bold border-b border-stone-200 dark:border-stone-700 last:border-0 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors ${selectedDiff === diff ? 'text-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'text-t-primary'}`}
-                                        >
-                                            {diff}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Big Stats Grid */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-t-surface p-6 rounded-3xl shadow-sm flex flex-col items-center text-center">
-                                <div className="w-12 h-12 bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-full flex items-center justify-center mb-3">
-                                    <Icons.Check className="w-6 h-6 stroke-[3]" />
-                                </div>
-                                <span className="text-3xl font-bold text-t-primary mb-1">
-                                    {Math.floor(animatedCompleted)}
-                                </span>
-                                <span className="text-xs font-bold text-t-secondary uppercase tracking-wider">Solved</span>
-                            </div>
-
-                            <div className="bg-t-surface p-6 rounded-3xl shadow-sm flex flex-col items-center text-center">
-                                <div className="w-12 h-12 bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 rounded-full flex items-center justify-center mb-3">
-                                    <Icons.Sparkles className="w-6 h-6" />
-                                </div>
-                                <span className="text-3xl font-bold text-t-primary mb-1">
-                                    {stats.bestTime === Infinity ? '--' : formatTimeShort(animatedBestTime)}
-                                </span>
-                                <span className="text-xs font-bold text-t-secondary uppercase tracking-wider">Best Time</span>
-                            </div>
-                        </div>
-
-                        {/* Detailed List */}
-                        <div className="bg-t-surface rounded-3xl shadow-sm overflow-hidden">
-                            <div className="p-5 border-b border-stone-200 dark:border-stone-700 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-full flex items-center justify-center">
-                                        <Icons.Clock className="w-5 h-5" />
+                                {/* Big Stats Grid */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-t-surface p-6 rounded-3xl shadow-sm flex flex-col items-center text-center">
+                                        <div className="w-12 h-12 bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-full flex items-center justify-center mb-3">
+                                            <Icons.Check className="w-6 h-6 stroke-[3]" />
+                                        </div>
+                                        <span className="text-3xl font-bold text-t-primary mb-1">
+                                            {Math.floor(animatedCompleted)}
+                                        </span>
+                                        <span className="text-xs font-bold text-t-secondary uppercase tracking-wider">Solved</span>
                                     </div>
-                                    <span className="text-xs font-bold text-t-secondary uppercase tracking-wider">Total Time</span>
-                                </div>
-                                <span className="text-lg font-bold text-t-primary">
-                                    {formatFullTime(animatedTotalTime)}
-                                </span>
-                            </div>
-                            
-                            <div className="p-5 border-b border-stone-200 dark:border-stone-700 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 rounded-full flex items-center justify-center">
-                                        <Icons.BarChart className="w-5 h-5" />
-                                    </div>
-                                    <span className="text-xs font-bold text-t-secondary uppercase tracking-wider">Avg Time</span>
-                                </div>
-                                <span className="text-lg font-bold text-t-primary">
-                                    {averageTime === 0 ? '--' : formatFullTime(animatedAvgTime)}
-                                </span>
-                            </div>
 
-                            <div className="p-5 flex items-center justify-between bg-gradient-to-r from-transparent via-blue-50/20 to-transparent dark:via-blue-900/5">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-blue-50 text-blue-500 dark:bg-blue-900/20 dark:text-blue-300 rounded-full flex items-center justify-center shadow-inner">
-                                        <Icons.Diamond className="w-5 h-5 fill-current" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-xs font-bold text-t-secondary uppercase tracking-wider">Earned</span>
-                                        <span className="text-[10px] font-medium text-blue-400 dark:text-blue-500 tracking-tight leading-none mt-0.5">+{pointsPerGame} / game</span>
+                                    <div className="bg-t-surface p-6 rounded-3xl shadow-sm flex flex-col items-center text-center">
+                                        <div className="w-12 h-12 bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 rounded-full flex items-center justify-center mb-3">
+                                            <Icons.Sparkles className="w-6 h-6" />
+                                        </div>
+                                        <span className="text-3xl font-bold text-t-primary mb-1">
+                                            {stats.bestTime === Infinity ? '--' : formatTimeShort(animatedBestTime)}
+                                        </span>
+                                        <span className="text-xs font-bold text-t-secondary uppercase tracking-wider">Best Time</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xl font-bold text-t-primary">
-                                        {Math.floor(animatedEarned).toLocaleString()}
-                                    </span>
-                                    <Icons.Diamond className="w-4 h-4 text-blue-500 fill-current" />
+
+                                {/* Detailed List */}
+                                <div className="bg-t-surface rounded-3xl shadow-sm overflow-hidden">
+                                    <div className="p-5 border-b border-stone-200 dark:border-stone-700 flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-full flex items-center justify-center">
+                                                <Icons.Clock className="w-5 h-5" />
+                                            </div>
+                                            <span className="text-xs font-bold text-t-secondary uppercase tracking-wider">Total Time</span>
+                                        </div>
+                                        <span className="text-lg font-bold text-t-primary">
+                                            {formatFullTime(animatedTotalTime)}
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="p-5 border-b border-stone-200 dark:border-stone-700 flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 rounded-full flex items-center justify-center">
+                                                <Icons.BarChart className="w-5 h-5" />
+                                            </div>
+                                            <span className="text-xs font-bold text-t-secondary uppercase tracking-wider">Avg Time</span>
+                                        </div>
+                                        <span className="text-lg font-bold text-t-primary">
+                                            {averageTime === 0 ? '--' : formatFullTime(animatedAvgTime)}
+                                        </span>
+                                    </div>
+
+                                    <div className="p-5 flex items-center justify-between bg-gradient-to-r from-transparent via-blue-50/20 to-transparent dark:via-blue-900/5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-blue-50 text-blue-500 dark:bg-blue-900/20 dark:text-blue-300 rounded-full flex items-center justify-center shadow-inner">
+                                                <Icons.Diamond className="w-5 h-5 fill-current" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-bold text-t-secondary uppercase tracking-wider">Earned</span>
+                                                <span className="text-[10px] font-medium text-blue-400 dark:text-blue-500 tracking-tight leading-none mt-0.5">+{pointsPerGame} / game</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xl font-bold text-t-primary">
+                                                {Math.floor(animatedEarned).toLocaleString()}
+                                            </span>
+                                            <Icons.Diamond className="w-4 h-4 text-blue-500 fill-current" />
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            </motion.div>
+                        </AnimatePresence>
                     </div>
 
                 </div>

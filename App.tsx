@@ -10,7 +10,7 @@ import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { IAP } from './utils/iap'; // Import IAP Service
 
 // UI Components
-import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal } from './components/ui/Modals';
+import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal, ResetConfirmModal } from './components/ui/Modals';
 import { LandscapeBlocker } from './components/ui/LandscapeBlocker';
 
 // Screens
@@ -62,6 +62,9 @@ export function App() {
   const [paymentOffer, setPaymentOffer] = useState<DiamondOffer | null>(null);
   
   const [showNotEnoughPoints, setShowNotEnoughPoints] = useState(false);
+  
+  // Added Reset Confirmation State
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   
   const [nextBonusClaimTime, setNextBonusClaimTime] = useState(Storage.getNextBonusClaimTime());
   
@@ -264,12 +267,14 @@ export function App() {
       Storage.saveSettings(newSettings);
   };
 
-  const resetProgress = async () => {
+  const resetProgress = () => {
       sounds.playClick();
-      if (confirm("Are you sure you want to reset all progress? This will clear data from Local Storage and Cloud Backup.")) {
-          await Storage.resetAllData();
-          window.location.reload();
-      }
+      setShowResetConfirm(true);
+  };
+
+  const handleFinalReset = async () => {
+      await Storage.resetAllData();
+      window.location.reload();
   };
 
   const handleSelectBackground = (id: string) => {
@@ -652,6 +657,12 @@ export function App() {
                         onClose={() => setShowNotEnoughPoints(false)} 
                         onGetMore={handleNavigateToShop} 
                         onGoPlay={handleGoPlay} 
+                    />
+                )}
+                {showResetConfirm && (
+                    <ResetConfirmModal 
+                        onConfirm={handleFinalReset}
+                        onCancel={() => setShowResetConfirm(false)}
                     />
                 )}
               </div>
