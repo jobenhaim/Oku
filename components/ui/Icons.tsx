@@ -62,7 +62,8 @@ import {
   CircleDot,
   Flower2,
   Gem,
-  Hexagon
+  Hexagon,
+  Ticket
 } from 'lucide-react';
 
 export const Icons = {
@@ -130,4 +131,5 @@ export const Icons = {
   Stone: (props: any) => <Hexagon {...props} />,
   Crystal: (props: any) => <Sparkles {...props} />,
   Flower: (props: any) => <Flower2 {...props} />,
+  Ticket: (props: any) => <Ticket {...props} />,
 };

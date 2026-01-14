@@ -424,7 +424,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
     );
 };
 
-// ... (Rest of modal components remain unchanged)
 interface NotEnoughPointsModalProps {
     onClose: () => void;
     onGetMore: () => void;
@@ -485,6 +484,7 @@ interface SettingsModalProps {
     onSetAppearance: (val: 'system' | 'light' | 'dark') => void;
     onReset: () => void;
     onClose: () => void;
+    onRedeemCode: (code: string) => boolean;
 }
 
 const SettingRow = ({ 
@@ -520,11 +520,16 @@ const SettingRow = ({
     </div>
 );
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle, onToggleDifficulty, onSetAppearance, onReset, onClose }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle, onToggleDifficulty, onSetAppearance, onReset, onClose, onRedeemCode }) => {
     const [isClosing, setIsClosing] = useState(false);
     const [isDifficultyExpanded, setIsDifficultyExpanded] = useState(false);
     const [activeDoc, setActiveDoc] = useState<'privacy' | 'terms' | null>(null);
     const [showDarkToast, setShowDarkToast] = useState(false);
+    
+    // Coupon State
+    const [showCouponInput, setShowCouponInput] = useState(false);
+    const [couponCode, setCouponCode] = useState("");
+    const [redeemStatus, setRedeemStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
     const handleClose = () => {
         sounds.playClick();
@@ -535,6 +540,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
     const handleDocBack = () => {
         sounds.playClick();
         setActiveDoc(null);
+    };
+
+    const handleCouponClick = () => {
+        sounds.playClick();
+        setShowCouponInput(true);
+    };
+
+    const handleCouponCancel = () => {
+        sounds.playClick();
+        setShowCouponInput(false);
+        setCouponCode("");
+        setRedeemStatus('idle');
+    };
+
+    const handleRedeemSubmit = () => {
+        const success = onRedeemCode(couponCode);
+        if (success) {
+            setRedeemStatus('success');
+            setTimeout(() => {
+                setShowCouponInput(false);
+                setCouponCode("");
+                setRedeemStatus('idle');
+            }, 1500);
+        } else {
+            setRedeemStatus('error');
+            setTimeout(() => setRedeemStatus('idle'), 1000);
+        }
     };
 
     return (
@@ -726,6 +758,66 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     settings={settings}
                                     onToggle={onToggle}
                                 />
+
+                                {/* Coupon Row */}
+                                {showCouponInput ? (
+                                    <div className="px-4 py-4 rounded-2xl bg-t-surface-sec transition-colors duration-300 flex flex-col gap-3 animate-fade-in">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Icons.Ticket className="w-5 h-5 text-blue-500" />
+                                            <span className="text-sm font-bold text-t-primary">Enter Code</span>
+                                        </div>
+                                        
+                                        <input 
+                                            type="text" 
+                                            value={couponCode}
+                                            onChange={(e) => {
+                                                setCouponCode(e.target.value);
+                                                if (redeemStatus === 'error') setRedeemStatus('idle');
+                                            }}
+                                            placeholder="CODE"
+                                            className={`w-full bg-t-surface border-2 rounded-xl px-4 py-3 outline-none text-stone-800 dark:text-stone-100 font-bold uppercase tracking-widest text-center transition-all ${
+                                                redeemStatus === 'error' 
+                                                ? 'border-red-500 ring-2 ring-red-500/20' 
+                                                : redeemStatus === 'success' 
+                                                ? 'border-green-500 ring-2 ring-green-500/20'
+                                                : 'border-transparent focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
+                                            }`}
+                                        />
+                                        
+                                        <div className="flex gap-2">
+                                            <button 
+                                                onClick={handleCouponCancel}
+                                                className="flex-1 py-3 text-sm font-bold text-stone-500 dark:text-stone-400 bg-t-surface rounded-xl hover:bg-stone-200 dark:hover:bg-stone-700 transition active:scale-95"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button 
+                                                onClick={handleRedeemSubmit}
+                                                className="flex-1 py-3 text-sm font-bold text-white bg-blue-500 rounded-xl hover:bg-blue-600 transition active:scale-95 shadow-lg shadow-blue-500/20"
+                                            >
+                                                {redeemStatus === 'success' ? 'Success!' : 'Redeem'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button 
+                                        onClick={handleCouponClick}
+                                        className="w-full flex items-center justify-between px-4 py-4 rounded-2xl bg-t-surface-sec hover:bg-stone-200 dark:hover:bg-stone-800 transition-all duration-300 group active:scale-[0.98]"
+                                    >
+                                        <div className="flex items-center gap-4 flex-1 pr-2">
+                                            <div className="p-2.5 rounded-xl bg-t-surface shadow-sm transition-colors duration-300 text-pink-500">
+                                                <Icons.Ticket className="w-6 h-6" />
+                                            </div>
+                                            <div className="flex flex-col gap-0.5 text-left">
+                                                <span className="text-base font-bold text-t-primary leading-tight transition-colors duration-300">Redeem Coupon</span>
+                                                <span className="text-xs font-medium text-t-secondary leading-tight transition-colors duration-300">Enter code for rewards</span>
+                                            </div>
+                                        </div>
+                                        <div className="bg-t-surface p-2 rounded-full text-t-icon group-hover:text-t-primary transition-colors">
+                                            <Icons.Next className="w-5 h-5" />
+                                        </div>
+                                    </button>
+                                )}
                             </div>
 
                             {/* Danger Zone */}

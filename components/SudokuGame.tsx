@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Difficulty, AppSettings, Board, MoveLogEntry } from '../types';
 import { useSudokuBoard } from '../hooks/useSudokuBoard';
@@ -244,7 +243,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       
       setShowStartHint(true);
       const hintTimer = setTimeout(() => setShowStartHint(false), 5000);
-      return () => clearTimeout(hintTimer);
+      return () => {
+          clearTimeout(hintTimer);
+      };
   }, [difficulty, levelId, initializeBoard, setTimer, setScanUses, setRevealUses]);
   
   const generateReplay = () => {
@@ -436,15 +437,15 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
             />
          </div>
 
-         {/* Number Pad - Wider [500px] to match grid */}
+         {/* Number Pad */}
          <div className="w-full max-w-[500px] px-2 mt-4 relative z-[100]" onClick={(e) => e.stopPropagation()}>
              <NumberPad 
-                 activeNumber={activeNumber}
-                 numberCounts={numberCounts}
-                 isPencilMode={isPencilMode}
-                 numberColor={numberColor}
-                 onNumberClick={onNumberClickWrapper}
-             />
+                activeNumber={activeNumber}
+                numberCounts={numberCounts}
+                isPencilMode={isPencilMode}
+                numberColor={numberColor}
+                onNumberClick={onNumberClickWrapper}
+            />
          </div>
 
          {/* Game Controls - Increased spacing (mt-10) */}
@@ -510,10 +511,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                                     <Icons.Reset className="w-5 h-5" /> Restart
                                 </button>
                             </div>
-
-                            <button onClick={() => { sounds.playClick(); onBack(); }} className="mt-3 text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 transition font-bold text-xs uppercase tracking-widest px-4 py-2">
-                                Quit Game
-                            </button>
                           </motion.div>
                       ) : (
                           <motion.div 

@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Difficulty, LevelProgress } from '../../types';
 import { Storage } from '../../utils/storage';
@@ -91,6 +90,19 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
     // Toast State
     const [showStrictModeToast, setShowStrictModeToast] = useState(false);
 
+    // Helper to determine if a level should actually be shown as "in-progress"
+    const getDisplayStatus = (progress?: LevelProgress) => {
+        if (!progress) return 'not-started';
+        if (progress.status !== 'in-progress') return progress.status;
+        
+        // Even if status is in-progress, check if there are any user values or notes
+        const hasUserInteraction = progress.boardState?.some(row => 
+            row.some(cell => !cell.isFixed && (cell.value !== null || cell.notes.length > 0))
+        );
+        
+        return hasUserInteraction ? 'in-progress' : 'not-started';
+    };
+
     // Reset scroll on tab change
     useEffect(() => {
         if (scrollContainerRef.current) {
@@ -168,7 +180,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                                 <LevelButton 
                                     key={lvl}
                                     levelId={lvl}
-                                    status={progress?.status}
+                                    status={getDisplayStatus(progress)}
                                     bestTime={progress?.bestTime}
                                     isGlobalBest={globalBest !== undefined && progress?.bestTime === globalBest}
                                     onSelect={onLevelSelect}
@@ -206,7 +218,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                                 <LevelButton 
                                     key={lvl}
                                     levelId={lvl}
-                                    status={progress?.status}
+                                    status={getDisplayStatus(progress)}
                                     bestTime={progress?.bestTime}
                                     isGlobalBest={globalBest !== undefined && progress?.bestTime === globalBest}
                                     onSelect={onLevelSelect}
@@ -244,7 +256,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                                 <LevelButton 
                                     key={lvl}
                                     levelId={lvl}
-                                    status={progress?.status}
+                                    status={getDisplayStatus(progress)}
                                     bestTime={progress?.bestTime}
                                     isGlobalBest={globalBest !== undefined && progress?.bestTime === globalBest}
                                     onSelect={onLevelSelect}
@@ -337,11 +349,11 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                                 Errors will not be revealed automatically
                             </p>
                             <div className="flex items-center gap-2 text-xs font-bold bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-300 px-3 py-1.5 rounded-full shadow-inner">
-                                <span>Use</span>
                                 <div className="flex items-center gap-1 text-red-500 dark:text-red-400">
                                     <Icons.Scan className="w-4 h-4" />
                                     <span>Scan</span>
                                 </div>
+                                <span>recommended</span>
                             </div>
                         </div>
                     </motion.div>

@@ -28,7 +28,8 @@ const DiamondBackground = () => (
   <div className="fixed inset-0 pointer-events-none z-0 bg-diamond-pattern" />
 );
 
-export function App() {
+// Inner Application Component that contains all state and logic
+const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset }) => {
   const [screen, setScreen] = useState<Screen>('splash');
   const [direction, setDirection] = useState<number>(0);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
@@ -273,8 +274,7 @@ export function App() {
   };
 
   const handleFinalReset = async () => {
-      await Storage.resetAllData();
-      window.location.reload();
+      await onHardReset();
   };
 
   const handleSelectBackground = (id: string) => {
@@ -435,6 +435,25 @@ export function App() {
       }
   };
 
+  const handleRedeemCode = (code: string): boolean => {
+      const normalizedCode = code.trim();
+      
+      if (Storage.isCouponRedeemed(normalizedCode)) {
+          sounds.playClick();
+          return false;
+      }
+
+      if (normalizedCode.toLowerCase() === 'haha5000') {
+          sounds.playWin();
+          handleEarnPoints(5000);
+          Storage.markCouponRedeemed(normalizedCode);
+          return true;
+      }
+      
+      sounds.playClick();
+      return false;
+  };
+
   let activeBackgroundClass = "bg-paper dark:bg-black"; 
   
   // Logic: In Dark Mode, override selection to ensure OLED Black background
@@ -474,18 +493,16 @@ export function App() {
       x: 0,
       opacity: 1,
       transition: { 
-          type: "spring", 
-          stiffness: 260, 
-          damping: 25
+          duration: 0.4,
+          ease: [0.32, 0.72, 0, 1] // Apple-style cubic-bezier for smooth iOS-like motion
       }
     },
     exit: (dir: number) => ({
       x: dir > 0 ? '-100%' : '100%',
       opacity: 0,
       transition: { 
-          type: "spring", 
-          stiffness: 260, 
-          damping: 25
+          duration: 0.35,
+          ease: [0.32, 0.72, 0, 1]
       }
     })
   };
@@ -525,7 +542,10 @@ export function App() {
                             animate="animate"
                             exit="exit"
                             className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent"
-                            style={{ pointerEvents: 'auto' }}
+                            style={{ 
+                                pointerEvents: 'auto',
+                                willChange: 'transform, opacity' // GPU promotion for smoother transitions
+                            }}
                         >
                             {screen === 'splash' && <SplashScreen />}
 
@@ -629,6 +649,7 @@ export function App() {
                         onSetAppearance={setAppearance}
                         onReset={resetProgress}
                         onClose={() => setShowSettings(false)} 
+                        onRedeemCode={handleRedeemCode}
                     />
                 )}
                 {replayLevelId !== null && selectedDifficulty && (
@@ -669,4 +690,17 @@ export function App() {
           </div>
       </>
   );
+}
+
+// Wrapper to handle Key-based App Reset
+export function App() {
+    const [uniqueKey, setUniqueKey] = useState(0);
+
+    const handleReset = async () => {
+        await Storage.resetAllData();
+        // Force remount of the entire app to re-initialize state from wiped storage
+        setUniqueKey(prev => prev + 1);
+    };
+
+    return <OkuApp key={uniqueKey} onHardReset={handleReset} />;
 }

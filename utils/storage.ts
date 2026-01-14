@@ -58,6 +58,7 @@ function getStoredData(): StoredData {
           unlockedPack3: [],
           pepino: { unlocked: false, hasPendingGift: false },
           seenStrictModeWarnings: [],
+          redeemedCoupons: [],
           stats: DEFAULT_STATS
       };
       
@@ -134,6 +135,7 @@ function getStoredData(): StoredData {
     }
 
     if (!data.seenStrictModeWarnings) data.seenStrictModeWarnings = [];
+    if (!data.redeemedCoupons) data.redeemedCoupons = [];
 
     // Clean up deprecated fields if they exist from previous versions
     if ((data as any).purchasedBundles) delete (data as any).purchasedBundles;
@@ -162,6 +164,7 @@ function getStoredData(): StoredData {
         unlockedPack3: [],
         pepino: { unlocked: false, hasPendingGift: false },
         seenStrictModeWarnings: [],
+        redeemedCoupons: [],
         stats: DEFAULT_STATS
     };
   }
@@ -532,6 +535,21 @@ export const Storage = {
       if (!data.seenStrictModeWarnings) data.seenStrictModeWarnings = [];
       if (!data.seenStrictModeWarnings.includes(difficulty)) {
           data.seenStrictModeWarnings.push(difficulty);
+          saveData(data);
+      }
+  },
+
+  // COUPONS
+  isCouponRedeemed: (code: string): boolean => {
+      const data = getStoredData();
+      return data.redeemedCoupons?.includes(code.toUpperCase()) ?? false;
+  },
+
+  markCouponRedeemed: (code: string) => {
+      const data = getStoredData();
+      if (!data.redeemedCoupons) data.redeemedCoupons = [];
+      if (!data.redeemedCoupons.includes(code.toUpperCase())) {
+          data.redeemedCoupons.push(code.toUpperCase());
           saveData(data);
       }
   },

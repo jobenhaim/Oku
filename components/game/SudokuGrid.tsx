@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Board, Cell, AppSettings } from '../../types';
 import SudokuCell from './SudokuCell';
@@ -87,7 +86,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     return (
         <div className="flex-none w-full flex flex-col items-center justify-start min-h-0 px-0 pb-2 pt-[10px]">
             <div 
-                className="bg-stone-900 rounded-lg overflow-hidden relative flex-none shadow-lg border-[3px] border-stone-900" 
+                className="bg-t-board rounded-lg overflow-hidden relative flex-none shadow-lg border-[3px] border-stone-900 dark:border-stone-800" 
                 style={{ 
                     width: squareSize, 
                     height: squareSize, 

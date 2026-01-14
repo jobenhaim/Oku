@@ -747,17 +747,17 @@ class SoundController {
             osc1.type = 'sawtooth';
             // Start lowish, zip up fast
             osc1.frequency.setValueAtTime(400, now);
-            osc1.frequency.exponentialRampToValueAtTime(1200, now + 0.12);
+            osc1.frequency.exponentialRampToValueAtTime(1200, now + 0.3);
 
             // Filter opens up to create the "Zzzzip" texture
             filter1.type = 'lowpass';
             filter1.Q.value = 5; // Resonance for the zap feel
             filter1.frequency.setValueAtTime(200, now);
-            filter1.frequency.exponentialRampToValueAtTime(3000, now + 0.1);
+            filter1.frequency.exponentialRampToValueAtTime(3000, now + 0.3);
 
             gain1.gain.setValueAtTime(0, now);
             gain1.gain.linearRampToValueAtTime(0.1, now + 0.02); // Fast attack
-            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
 
             osc1.connect(filter1);
             filter1.connect(gain1);
@@ -773,21 +773,21 @@ class SoundController {
 
             osc2.type = 'square';
             osc2.frequency.setValueAtTime(150, now); // Low base
-            osc2.frequency.linearRampToValueAtTime(100, now + 0.05); // Pitch drop
+            osc2.frequency.linearRampToValueAtTime(100, now + 0.2); // Pitch drop
 
             filter2.type = 'lowpass';
             filter2.frequency.value = 800; // Muffle the square wave
 
             gain2.gain.setValueAtTime(0, now);
             gain2.gain.linearRampToValueAtTime(0.15, now + 0.01);
-            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
 
             osc2.connect(filter2);
             filter2.connect(gain2);
             gain2.connect(ctx.destination);
 
             osc2.start(now);
-            osc2.stop(now + 0.15);
+            osc2.stop(now + 0.2);
         }
 
         if (this.vibrationEnabled) {

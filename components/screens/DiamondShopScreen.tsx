@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Icons } from '../ui/Icons';
 import { DIAMOND_OFFERS } from '../../utils/constants';
@@ -89,7 +88,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                 key={offer.id} 
                                 onClick={() => handleBuyOfferWrapper(offer)}
                                 // Card Container - Compact Premium with Price Header
-                                className="w-full relative overflow-hidden rounded-[1.5rem] p-4 shadow-2xl transition-transform mb-6 text-left bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 active:scale-[0.99] group border border-white/10"
+                                className="w-full h-56 relative overflow-hidden rounded-[1.75rem] p-5 shadow-2xl transition-transform mb-6 text-left bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 active:scale-[0.99] group border border-white/10"
                             >
                                 {/* Subtle Shine Effect */}
                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/0 to-white/10 pointer-events-none" />
@@ -126,41 +125,45 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     ))}
                                 </div>
 
-                                <div className="relative z-10 flex flex-col w-full">
-                                    {/* Top Row: Title + Price (Compact) */}
-                                    <div className="flex justify-between items-start mb-1.5">
-                                        <div className="flex flex-col">
-                                            <div className="inline-block px-1.5 py-0.5 rounded-[4px] bg-white/20 text-white text-[9px] font-bold tracking-widest uppercase mb-0.5 border border-white/20 leading-none w-fit backdrop-blur-sm">
+                                {/* Main Layout - Vertical Stack */}
+                                <div className="relative z-10 flex flex-col justify-between h-full">
+                                    
+                                    {/* Top Row: Title/Desc and Price */}
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex flex-col items-start pr-2">
+                                            <div className="inline-block px-2 py-0.5 rounded-[6px] bg-white/20 text-white text-[10px] font-bold tracking-widest uppercase mb-2 border border-white/20 leading-none w-fit backdrop-blur-sm shadow-sm">
                                                 EXCLUSIVE
                                             </div>
-                                            <h2 className="text-xl font-bold text-white leading-none drop-shadow-md">{offer.title}</h2>
+                                            <h2 className="text-2xl font-bold text-white leading-none drop-shadow-md mb-2">{offer.title}</h2>
+                                            
+                                            <p className="text-xs font-medium text-indigo-50 leading-snug mb-1 max-w-[85%] opacity-95">
+                                                Adopt an exclusive companion that grows with you and grants special rewards after every game.
+                                            </p>
                                         </div>
-                                        <div className={priceBadgeClass}>
+
+                                        <div className={`${priceBadgeClass} shrink-0 mt-0.5`}>
                                             {offer.priceLabel}
                                         </div>
                                     </div>
 
-                                    {/* Description Text - RESTORED */}
-                                    <p className="text-[10px] font-medium text-indigo-50 leading-tight mb-2.5 pr-1 max-w-full opacity-95">
-                                        Adopt an exclusive companion that grows with you and grants special rewards after every game. Support indie development and enjoy a distraction-free journey.
-                                    </p>
-
-                                    {/* Features List - Vertical Bullet Point Style */}
-                                    <div className="flex flex-col gap-0.5 w-full pl-0.5">
-                                        <div className="flex items-center gap-2">
-                                            <Icons.Check className="w-3 h-3 text-emerald-300 stroke-[3] shrink-0" />
-                                            <div className="flex items-center gap-1">
-                                                <span className="text-[10px] font-bold text-white">+1500</span>
-                                                <Icons.Diamond className="w-2.5 h-2.5 text-blue-300 fill-current" />
+                                    {/* Bottom Row: Checklist and Diamonds */}
+                                    <div className="flex items-end justify-between w-full">
+                                        {/* Features List */}
+                                        <div className="flex flex-col gap-1.5 pl-0.5 pb-0.5">
+                                            <div className="flex items-center gap-2">
+                                                <div className="bg-white/20 p-0.5 rounded-full"><Icons.Check className="w-2.5 h-2.5 text-white stroke-[4]" /></div>
+                                                <span className="text-[11px] font-bold text-white shadow-sm">No forced ads, ever</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="bg-white/20 p-0.5 rounded-full"><Icons.Check className="w-2.5 h-2.5 text-white stroke-[4]" /></div>
+                                                <span className="text-[11px] font-bold text-white shadow-sm">Support Indie Dev</span>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <Icons.Check className="w-3 h-3 text-emerald-300 stroke-[3] shrink-0" />
-                                            <span className="text-[10px] font-bold text-white">No forced ads, ever</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Icons.Check className="w-3 h-3 text-emerald-300 stroke-[3] shrink-0" />
-                                            <span className="text-[10px] font-bold text-white">Special Companion + Rewards</span>
+
+                                        {/* Value */}
+                                        <div className="flex items-center gap-1 pb-1">
+                                            <span className="text-3xl font-bold text-white tracking-tighter leading-none drop-shadow-md">+{offer.diamonds}</span>
+                                            <Icons.Diamond className="w-6 h-6 text-blue-200 fill-current drop-shadow-md mb-0.5" />
                                         </div>
                                     </div>
                                 </div>
