@@ -443,9 +443,19 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
           return false;
       }
 
-      if (normalizedCode.toLowerCase() === 'haha5000') {
+      const lowerCode = normalizedCode.toLowerCase();
+
+      if (lowerCode === 'haha5000') {
           sounds.playWin();
           handleEarnPoints(5000);
+          Storage.markCouponRedeemed(normalizedCode);
+          return true;
+      }
+
+      if (lowerCode === 'hahapepino') {
+          sounds.playWin();
+          Storage.unlockPepino();
+          setPepinoState(Storage.getPepinoState());
           Storage.markCouponRedeemed(normalizedCode);
           return true;
       }
