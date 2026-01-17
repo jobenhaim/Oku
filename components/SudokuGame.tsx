@@ -214,25 +214,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       timer
   });
 
-  // DEV SOLVE FUNCTION
-  const handleDevSolve = () => {
-      // Instantly solve the board based on solvedBoard
-      const solved = solvedBoard.map((row, r) => row.map((val, c) => ({
-          row: r,
-          col: c,
-          value: val as CellValue,
-          isFixed: initialBoardRef.current[r][c].isFixed,
-          notes: [],
-          isError: false,
-          isMarkedWrong: false,
-          isRevealed: false
-      })));
-      
-      setBoard(solved);
-      // Trigger completion logic immediately
-      handleGameComplete(solved, moveLog.current, true);
-  };
-
   useEffect(() => {
       const progress = Storage.getLevelProgress(difficulty, levelId);
       if (progress && progress.status === 'in-progress' && progress.boardState) {
@@ -382,6 +363,26 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setTimeout(() => setShowStartHint(false), 5000);
   };
   
+  const handleDevSolve = () => {
+      if (isCompleted || isEnding) return;
+      sounds.playWin();
+      
+      const newBoard = board.map((row, r) => row.map((cell, c) => ({
+          ...cell,
+          value: solvedBoard[r][c] as CellValue,
+          notes: [],
+          isError: false,
+          isMarkedWrong: false
+      })));
+      
+      setBoard(newBoard);
+      
+      // Since checkCompletion relies on state, and state update is async, 
+      // we can manually trigger complete logic or assume checkCompletion handles it.
+      // useSudokuBoard's checkCompletion uses the passed board argument, so it's safe.
+      checkCompletion(newBoard);
+  };
+  
   const handleBackgroundClick = (e: React.MouseEvent) => {
       if (e.target === e.currentTarget) {
           setSelectedCell(null);
@@ -488,8 +489,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                  onScan={() => handleScan(isPaused, isCompleted)}
                  onReveal={() => handleReveal(isPaused, isCompleted)}
                  timer={timer}
-                 showDevSolve={settings.devAutoSolve}
-                 onDevSolve={handleDevSolve}
+                 onDevSolve={settings.devAutoSolve ? handleDevSolve : undefined}
              />
          </div>
          

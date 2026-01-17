@@ -55,6 +55,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const [unlockedPacks3, setUnlockedPacks3] = useState<string[]>(Storage.getUnlockedPacks3());
 
   const [pepinoState, setPepinoState] = useState<PepinoState>(Storage.getPepinoState());
+  const [redeemedCoupons, setRedeemedCoupons] = useState<string[]>([]);
 
   const [showSettings, setShowSettings] = useState(false);
   const [replayLevelId, setReplayLevelId] = useState<number | null>(null);
@@ -94,6 +95,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
         setUnlockedPacks3(data.unlockedPack3 || []);
         setNextBonusClaimTime(data.nextBonusClaimTime || 0);
         setPepinoState(data.pepino || { unlocked: false, hasPendingGift: false });
+        setRedeemedCoupons(data.redeemedCoupons || []);
         
         const isDark = data.settings.appearance === 'dark' || (data.settings.appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
         setIsDarkMode(isDark);
@@ -190,6 +192,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
      setUnlockedPacks3(Storage.getUnlockedPacks3());
      setNextBonusClaimTime(Storage.getNextBonusClaimTime());
      setPepinoState(Storage.getPepinoState());
+     // We don't refresh redeemedCoupons here because it's updated via onRedeemCode
   }, [screen]);
 
   const navigate = (nextScreen: Screen, dir: 'forward' | 'back' | 'none' = 'forward') => {
@@ -403,54 +406,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       setPaymentOffer(null);
   };
 
-  // RESTORE PURCHASES LOGIC
-  const handleRestore = async () => {
-      sounds.playClick();
-      try {
-          const restoredProducts = await IAP.restore();
-          let restoredCount = 0;
-
-          // Check Starter Pack
-          if (restoredProducts.includes('com.oku.sudoku.iap.starterpack')) {
-              if (!Storage.isStarterPackPurchased()) {
-                  Storage.setStarterPackPurchased();
-                  setStarterPackPurchased(true);
-                  // Ensure content is unlocked
-                  Storage.purchaseSkill('skill-auto', 0);
-                  Storage.purchaseSkill('skill-scan', 0);
-                  Storage.purchaseSoundPack('snd-piano', 0);
-                  restoredCount++;
-              }
-          }
-
-          // Check Premium Pack (Pepino)
-          if (restoredProducts.includes('com.oku.sudoku.iap.premiumpack')) {
-              const currentPepino = Storage.getPepinoState();
-              if (!currentPepino.unlocked) {
-                  Storage.unlockPepino();
-                  setPepinoState(Storage.getPepinoState());
-                  restoredCount++;
-              }
-          }
-
-          // Sync state
-          setPurchasedSkills(Storage.getPurchasedSkills());
-          setEnabledSkills(Storage.getEnabledSkills());
-          setPurchasedSoundPacks(Storage.getPurchasedSoundPacks());
-
-          if (restoredCount > 0) {
-              sounds.playWin();
-              alert(`Successfully restored ${restoredCount} items.`);
-          } else {
-              alert("No purchases found to restore.");
-          }
-
-      } catch (e) {
-          console.error(e);
-          alert("Restore failed. Please try again.");
-      }
-  };
-
   const handleUnlockPack2 = () => {
       if (!selectedDifficulty) return;
       const cost = getPackCost(selectedDifficulty, 2);
@@ -497,6 +452,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
           sounds.playWin();
           handleEarnPoints(5000);
           Storage.markCouponRedeemed(normalizedCode);
+          setRedeemedCoupons(Storage.getStoredData().redeemedCoupons || []);
           return true;
       }
 
@@ -505,17 +461,14 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
           Storage.unlockPepino();
           setPepinoState(Storage.getPepinoState());
           Storage.markCouponRedeemed(normalizedCode);
+          setRedeemedCoupons(Storage.getStoredData().redeemedCoupons || []);
           return true;
       }
 
       if (lowerCode === 'hahasolve') {
           sounds.playWin();
           Storage.markCouponRedeemed(normalizedCode);
-          // Unlock the feature by setting it to false (visible but off) or true directly
-          // We will set it to enabled by default for convenience
-          const newSettings = { ...settings, devAutoSolve: true };
-          setSettings(newSettings);
-          Storage.saveSettings(newSettings);
+          setRedeemedCoupons(Storage.getStoredData().redeemedCoupons || []);
           return true;
       }
       
@@ -525,6 +478,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
   let activeBackgroundClass = "bg-paper dark:bg-black"; 
   
+  // Logic: In Dark Mode, override selection to ensure OLED Black background
+  // In Light Mode, respect user selection
   if (selectedBackgroundId && !isDarkMode) {
       const bg = ALL_BACKGROUNDS.find(b => b.id === selectedBackgroundId);
       if (bg) {
@@ -536,9 +491,10 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
   const numberColorClass = NUMBER_COLORS.find(n => n.id === selectedNumberColorId)?.class || 'text-blue-600';
   
+  // Calculate overlay opacity in JS for better reliability
   const isGradient = activeBackgroundClass.includes('bg-gradient');
   let overlayOpacityValue = 0;
-  const baseOverlayOpacity = isDarkMode ? 0.5 : 0;
+  const baseOverlayOpacity = isDarkMode ? 0.5 : 0; // Base opacity for dark mode
 
   if (isGradient) {
       if (screen === 'game') {
@@ -560,7 +516,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       opacity: 1,
       transition: { 
           duration: 0.4,
-          ease: [0.32, 0.72, 0, 1] 
+          ease: [0.32, 0.72, 0, 1] // Apple-style cubic-bezier for smooth iOS-like motion
       }
     },
     exit: (dir: number) => ({
@@ -575,10 +531,13 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
   return (
       <>
-          {/* Main App Wrapper */}
+          {/* Main App Wrapper: Fixed, Full Viewport, No Overflow */}
           <div className="fixed inset-0 z-0 w-full h-full overflow-hidden select-none touch-none">
+              
+              {/* Force Landscape Blocker */}
               <LandscapeBlocker />
 
+              {/* Background Layer (Persistent) */}
               <div 
                 className={`absolute inset-0 z-0 transition-all ease-in-out duration-500 ${activeBackgroundClass}`} 
                 style={{ width: '100%', height: '100%' }}
@@ -588,9 +547,13 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                 style={{ opacity: overlayOpacityValue }} 
               />
 
+              {/* Diamond Shop Background (Behind Safe Area Wrapper) */}
               {screen === 'diamondShop' && <DiamondBackground />}
 
-              <div className="relative z-10 w-full h-full flex flex-col pt-safe pb-safe">
+              {/* Content Wrapper with Safe Areas */}
+              <div 
+                 className="relative z-10 w-full h-full flex flex-col pt-safe pb-safe"
+              >
                 <div className="flex-1 relative w-full h-full overflow-hidden">
                     <AnimatePresence custom={direction} initial={false}>
                         <motion.div
@@ -603,7 +566,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                             className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent"
                             style={{ 
                                 pointerEvents: 'auto',
-                                willChange: 'transform, opacity'
+                                willChange: 'transform, opacity' // GPU promotion for smoother transitions
                             }}
                         >
                             {screen === 'splash' && <SplashScreen />}
@@ -630,7 +593,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     onBuyOffer={handleBuyOffer}
                                     onEarnPoints={handleEarnPoints}
                                     starterPackPurchased={starterPackPurchased}
-                                    onRestore={handleRestore}
                                 />
                             )}
                             
@@ -710,6 +672,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                         onReset={resetProgress}
                         onClose={() => setShowSettings(false)} 
                         onRedeemCode={handleRedeemCode}
+                        redeemedCoupons={redeemedCoupons}
                     />
                 )}
                 {replayLevelId !== null && selectedDifficulty && (
@@ -752,11 +715,13 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   );
 }
 
+// Wrapper to handle Key-based App Reset
 export function App() {
     const [uniqueKey, setUniqueKey] = useState(0);
 
     const handleReset = async () => {
         await Storage.resetAllData();
+        // Force remount of the entire app to re-initialize state from wiped storage
         setUniqueKey(prev => prev + 1);
     };
 

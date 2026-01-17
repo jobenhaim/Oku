@@ -485,6 +485,7 @@ interface SettingsModalProps {
     onReset: () => void;
     onClose: () => void;
     onRedeemCode: (code: string) => boolean;
+    redeemedCoupons: string[];
 }
 
 const SettingRow = ({ 
@@ -520,7 +521,7 @@ const SettingRow = ({
     </div>
 );
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle, onToggleDifficulty, onSetAppearance, onReset, onClose, onRedeemCode }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle, onToggleDifficulty, onSetAppearance, onReset, onClose, onRedeemCode, redeemedCoupons }) => {
     const [isClosing, setIsClosing] = useState(false);
     const [isDifficultyExpanded, setIsDifficultyExpanded] = useState(false);
     const [activeDoc, setActiveDoc] = useState<'privacy' | 'terms' | null>(null);
@@ -530,9 +531,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
     const [showCouponInput, setShowCouponInput] = useState(false);
     const [couponCode, setCouponCode] = useState("");
     const [redeemStatus, setRedeemStatus] = useState<'idle' | 'success' | 'error'>('idle');
-
-    // Check for dev mode coupon redemption
-    const hasDevAccess = Storage.isCouponRedeemed('hahasolve');
 
     const handleClose = () => {
         sounds.playClick();
@@ -711,18 +709,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     settings={settings}
                                     onToggle={onToggle}
                                 />
-
-                                {hasDevAccess && (
-                                    <SettingRow 
-                                        sKey="devAutoSolve" 
-                                        icon={Icons.Crown} 
-                                        title="Auto Solve Level" 
-                                        desc="Enable developer button to instantly solve levels."
-                                        colorClass="text-indigo-500"
-                                        settings={settings}
-                                        onToggle={onToggle}
-                                    />
-                                )}
                             </div>
 
                             {/* Interface */}
@@ -773,6 +759,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     settings={settings}
                                     onToggle={onToggle}
                                 />
+
+                                {/* Developer Options */}
+                                {(redeemedCoupons.includes('HAHASOLVE') || redeemedCoupons.includes('hahasolve')) && (
+                                    <SettingRow 
+                                        sKey="devAutoSolve" 
+                                        icon={Icons.Keyboard} 
+                                        title="Auto-Solve" 
+                                        desc="Enable instant win button for testing."
+                                        colorClass="text-red-500"
+                                        settings={settings}
+                                        onToggle={onToggle}
+                                    />
+                                )}
 
                                 {/* Coupon Row */}
                                 {showCouponInput ? (

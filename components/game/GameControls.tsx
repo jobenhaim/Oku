@@ -22,7 +22,6 @@ interface GameControlsProps {
     onScan: (e: React.MouseEvent) => void;
     onReveal: (e: React.MouseEvent) => void;
     timer: number;
-    showDevSolve?: boolean;
     onDevSolve?: () => void;
 }
 
@@ -44,7 +43,6 @@ export const GameControls: React.FC<GameControlsProps> = ({
     onScan,
     onReveal,
     timer,
-    showDevSolve,
     onDevSolve
 }) => {
     // Helper for common enabled/disabled styles
@@ -63,7 +61,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
     const isRevealLocked = revealTimeLeft > 0;
 
     return (
-        <div className="flex flex-col gap-4 w-full">
+        <div className="flex flex-col gap-4">
             <div className="flex justify-between w-full relative">
                 {/* Reveal Skill Button */}
                 {purchasedSkills.includes('skill-reveal') && (
@@ -171,14 +169,17 @@ export const GameControls: React.FC<GameControlsProps> = ({
                 </button>
             </div>
 
-            {/* DEV SOLVE BUTTON */}
-            {showDevSolve && onDevSolve && (
-                <button 
-                    onClick={(e) => { e.stopPropagation(); onDevSolve(); }}
-                    className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg active:scale-95 transition text-sm flex items-center justify-center gap-2"
-                >
-                    <Icons.Crown className="w-4 h-4" /> [dev] Auto Solve
-                </button>
+            {/* Dev Auto Solve Button */}
+            {onDevSolve && (
+                <div className="flex justify-center mt-2">
+                    <button 
+                        onClick={onDevSolve}
+                        className="px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold rounded-full shadow-sm active:scale-95 transition-all border border-red-200 dark:border-red-800/50 flex items-center gap-1"
+                    >
+                        <Icons.Keyboard className="w-3 h-3" />
+                        [DEV] AUTO SOLVE
+                    </button>
+                </div>
             )}
         </div>
     );

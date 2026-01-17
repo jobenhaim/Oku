@@ -1,5 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Icons } from '../ui/Icons';
 import { Difficulty } from '../../types';
 
@@ -76,7 +77,7 @@ const ReplayPlayer = ({ src, onShare, onClose }: { src: string, onShare: () => v
     };
 
     return (
-        <div className="fixed inset-0 bg-black z-[110] flex flex-col items-center justify-center animate-fade-in">
+        <div className="fixed inset-0 w-full h-full bg-black z-[150] flex flex-col items-center justify-center animate-fade-in touch-none">
              {/* Main Video Container */}
              <div 
                 className="relative w-full max-w-lg aspect-square bg-stone-900 shadow-2xl overflow-hidden rounded-none sm:rounded-2xl group cursor-pointer"
@@ -194,99 +195,103 @@ export const WinModal: React.FC<WinModalProps> = ({
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
+    let content: React.ReactNode;
+
     if (showReplay && replayUrl) {
-        return <ReplayPlayer src={replayUrl} onShare={onShareReplay} onClose={onCloseReplay} />;
-    }
-
-    return (
-        <div className="fixed inset-0 bg-green-500/50 backdrop-blur-sm z-[100] flex flex-col items-center justify-center text-white animate-fade-in">
-            <div className="bg-white dark:bg-stone-800 text-stone-800 dark:text-t-primary p-8 rounded-3xl shadow-2xl w-80 text-center relative overflow-hidden transform transition-all z-10">
-                
-                {/* Step 1: Checkmark Icon */}
-                <div 
-                    className={`w-20 h-20 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500 dark:text-green-400 relative z-10 transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1) ${step >= 1 ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}
-                >
-                    <Icons.Check className="w-10 h-10" />
-                </div>
-                
-                {/* Step 2: Difficulty Header */}
-                <div 
-                    className={`flex flex-col gap-0.5 mb-2 relative z-10 transition-all duration-500 ${step >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                >
-                    <div className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest">{difficulty} &bull; Level {levelId}</div>
-                </div>
-
-                {/* Step 3: Solved Title (Letter by Letter) */}
-                <div className="mb-8 relative z-10 h-10">
-                    <div className="flex justify-center items-center">
-                        {['S','o','l','v','e','d','!'].map((char, i) => (
-                            <span 
-                                key={i}
-                                className={`text-3xl font-bold text-stone-800 dark:text-white leading-tight inline-block transition-all duration-300`}
-                                style={{ 
-                                    transitionDelay: `${i * 40}ms`,
-                                    opacity: step >= 3 ? 1 : 0,
-                                    transform: step >= 3 ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.5)'
-                                }}
-                            >
-                                {char}
-                            </span>
-                        ))}
+        content = <ReplayPlayer src={replayUrl} onShare={onShareReplay} onClose={onCloseReplay} />;
+    } else {
+        content = (
+            <div className="fixed inset-0 w-full h-full bg-green-500/50 backdrop-blur-sm z-[140] flex flex-col items-center justify-center text-white animate-fade-in touch-none">
+                <div className="bg-white dark:bg-stone-800 text-stone-800 dark:text-t-primary p-8 rounded-3xl shadow-2xl w-80 text-center relative overflow-hidden transform transition-all z-10">
+                    
+                    {/* Step 1: Checkmark Icon */}
+                    <div 
+                        className={`w-20 h-20 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500 dark:text-green-400 relative z-10 transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1) ${step >= 1 ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}
+                    >
+                        <Icons.Check className="w-10 h-10" />
                     </div>
-                </div>
-                
-                {/* Step 4: Earnings Group */}
-                <div 
-                    className={`flex flex-col gap-1 mb-6 relative z-10 transition-all duration-500 ${step >= 4 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                >
-                    <p className="text-stone-500 dark:text-stone-400 text-xs font-bold uppercase tracking-widest">You Earned</p>
-                    <div className="flex items-center justify-center gap-1.5 h-8">
-                        <span className="text-3xl font-bold text-stone-800 dark:text-t-primary tabular-nums">+{animatedPoints}</span>
-                        <Icons.Diamond className="w-6 h-6 text-blue-500 fill-current" />
+                    
+                    {/* Step 2: Difficulty Header */}
+                    <div 
+                        className={`flex flex-col gap-0.5 mb-2 relative z-10 transition-all duration-500 ${step >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                    >
+                        <div className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest">{difficulty} &bull; Level {levelId}</div>
                     </div>
-                </div>
-                
-                {/* Step 5: Time Group */}
-                <div 
-                    className={`flex flex-col gap-0.5 mb-8 relative z-10 transition-all duration-500 ${step >= 5 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                >
-                    <p className="text-stone-400 dark:text-stone-500 text-[10px] uppercase tracking-widest font-bold">Time</p>
-                    <p className="text-2xl font-medium tabular-nums text-stone-800 dark:text-white leading-tight">{formatTime(animatedTimeSeconds)}</p>
-                </div>
-                
-                {/* Step 6: Actions */}
-                <div 
-                    className={`relative z-10 space-y-3 transition-all duration-700 ${step >= 6 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-                >
-                    {/* Replay Button */}
-                    {generateReplayEnabled && (
-                        isGeneratingReplay ? (
-                            <div className="w-full py-3.5 flex items-center justify-center gap-2 text-stone-500 font-bold animate-pulse bg-stone-50 dark:bg-stone-800/50 rounded-xl border border-dashed border-stone-200 dark:border-stone-700">
-                                <Icons.Video className="w-5 h-5" /> Generating Replay...
-                            </div>
-                        ) : replayUrl ? (
-                            <button 
-                            onClick={onReplay}
-                            className="w-full py-3.5 bg-blue-500 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition flex items-center justify-center gap-2 hover:bg-blue-600 animate-pop"
-                            >
-                            <Icons.Video className="w-5 h-5" /> Watch Replay
-                            </button>
-                        ) : (
-                            <button 
-                            onClick={onGenerateReplay}
-                            className="w-full py-3.5 bg-stone-100 text-stone-600 dark:bg-stone-700 dark:text-stone-300 rounded-xl font-bold shadow-sm active:scale-95 transition flex items-center justify-center gap-2 hover:bg-stone-200 dark:hover:bg-stone-600"
-                            >
-                            <Icons.Video className="w-5 h-5" /> Create Replay
-                            </button>
-                        )
-                    )}
 
-                    <div className="flex gap-3">
-                         <button onClick={onBack} className="flex-1 py-3.5 bg-stone-800 text-white dark:bg-stone-100 dark:text-stone-900 rounded-xl font-bold hover:bg-stone-700 dark:hover:bg-stone-200 active:scale-95 transition shadow-lg">Levels</button>
-                         <button onClick={onReturnToMenu} className="flex-1 py-3.5 bg-white text-stone-600 border border-stone-300 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-600 rounded-xl font-bold hover:bg-stone-50 dark:hover:bg-stone-700 active:scale-95 transition">Menu</button>
+                    {/* Step 3: Solved Title (Letter by Letter) */}
+                    <div className="mb-8 relative z-10 h-10">
+                        <div className="flex justify-center items-center">
+                            {['S','o','l','v','e','d','!'].map((char, i) => (
+                                <span 
+                                    key={i}
+                                    className={`text-3xl font-bold text-stone-800 dark:text-white leading-tight inline-block transition-all duration-300`}
+                                    style={{ 
+                                        transitionDelay: `${i * 40}ms`,
+                                        opacity: step >= 3 ? 1 : 0,
+                                        transform: step >= 3 ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.5)'
+                                    }}
+                                >
+                                    {char}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Step 4: Earnings Group */}
+                    <div 
+                        className={`flex flex-col gap-1 mb-6 relative z-10 transition-all duration-500 ${step >= 4 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                    >
+                        <p className="text-stone-500 dark:text-stone-400 text-xs font-bold uppercase tracking-widest">You Earned</p>
+                        <div className="flex items-center justify-center gap-1.5 h-8">
+                            <span className="text-3xl font-bold text-stone-800 dark:text-t-primary tabular-nums">+{animatedPoints}</span>
+                            <Icons.Diamond className="w-6 h-6 text-blue-500 fill-current" />
+                        </div>
+                    </div>
+                    
+                    {/* Step 5: Time Group */}
+                    <div 
+                        className={`flex flex-col gap-0.5 mb-8 relative z-10 transition-all duration-500 ${step >= 5 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                    >
+                        <p className="text-stone-400 dark:text-stone-500 text-[10px] uppercase tracking-widest font-bold">Time</p>
+                        <p className="text-2xl font-medium tabular-nums text-stone-800 dark:text-white leading-tight">{formatTime(animatedTimeSeconds)}</p>
+                    </div>
+                    
+                    {/* Step 6: Actions */}
+                    <div 
+                        className={`relative z-10 space-y-3 transition-all duration-700 ${step >= 6 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                    >
+                        {/* Replay Button */}
+                        {generateReplayEnabled && (
+                            isGeneratingReplay ? (
+                                <div className="w-full py-3.5 flex items-center justify-center gap-2 text-stone-500 font-bold animate-pulse bg-stone-50 dark:bg-stone-800/50 rounded-xl border border-dashed border-stone-200 dark:border-stone-700">
+                                    <Icons.Video className="w-5 h-5" /> Generating Replay...
+                                </div>
+                            ) : replayUrl ? (
+                                <button 
+                                onClick={onReplay}
+                                className="w-full py-3.5 bg-blue-500 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition flex items-center justify-center gap-2 hover:bg-blue-600 animate-pop"
+                                >
+                                <Icons.Video className="w-5 h-5" /> Watch Replay
+                                </button>
+                            ) : (
+                                <button 
+                                onClick={onGenerateReplay}
+                                className="w-full py-3.5 bg-stone-100 text-stone-600 dark:bg-stone-700 dark:text-stone-300 rounded-xl font-bold shadow-sm active:scale-95 transition flex items-center justify-center gap-2 hover:bg-stone-200 dark:hover:bg-stone-600"
+                                >
+                                <Icons.Video className="w-5 h-5" /> Create Replay
+                                </button>
+                            )
+                        )}
+
+                        <div className="flex gap-3">
+                             <button onClick={onBack} className="flex-1 py-3.5 bg-stone-800 text-white dark:bg-stone-100 dark:text-stone-900 rounded-xl font-bold hover:bg-stone-700 dark:hover:bg-stone-200 active:scale-95 transition shadow-lg">Levels</button>
+                             <button onClick={onReturnToMenu} className="flex-1 py-3.5 bg-white text-stone-600 border border-stone-300 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-600 rounded-xl font-bold hover:bg-stone-50 dark:hover:bg-stone-700 active:scale-95 transition">Menu</button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    );
+        );
+    }
+
+    return createPortal(content, document.body);
 };

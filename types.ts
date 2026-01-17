@@ -54,7 +54,7 @@ export interface AppSettings {
   screenWakeLock: boolean; // Keep screen on
   generateReplay: boolean; // Generate video replay on completion
   hiddenDifficulties: Difficulty[]; // List of difficulties to hide from main screen
-  devAutoSolve?: boolean; // Developer Auto Solve Toggle
+  devAutoSolve?: boolean; // Developer setting to enable auto-solve button
 }
 
 export interface PepinoState {
