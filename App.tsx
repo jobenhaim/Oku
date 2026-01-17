@@ -550,9 +550,9 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
               {/* Diamond Shop Background (Behind Safe Area Wrapper) */}
               {screen === 'diamondShop' && <DiamondBackground />}
 
-              {/* Content Wrapper with Safe Areas */}
+              {/* Content Wrapper */}
               <div 
-                 className="relative z-10 w-full h-full flex flex-col pt-safe pb-safe"
+                 className="relative z-10 w-full h-full flex flex-col"
               >
                 <div className="flex-1 relative w-full h-full overflow-hidden">
                     <AnimatePresence custom={direction} initial={false}>
@@ -563,7 +563,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                             initial="initial"
                             animate="animate"
                             exit="exit"
-                            className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent"
+                            className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
                             style={{ 
                                 pointerEvents: 'auto',
                                 willChange: 'transform, opacity' // GPU promotion for smoother transitions

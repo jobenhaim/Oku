@@ -101,40 +101,42 @@ const ReplayPlayer = ({ src, onShare, onClose }: { src: string, onShare: () => v
                   )}
              </div>
              
-             {/* Unified Control Bar */}
-             <div className="absolute bottom-10 left-0 right-0 flex items-center justify-center gap-2 px-4 pointer-events-none flex-wrap sm:flex-nowrap">
-                 {/* Share/Save - Primary Action */}
-                 <button 
-                     onClick={onShare}
-                     className="h-14 px-6 bg-white text-black rounded-full font-bold shadow-xl active:scale-95 transition flex items-center gap-2 pointer-events-auto"
-                 >
-                     <Icons.Share className="w-5 h-5 text-blue-500" /> Share/Save
-                 </button>
-
-                 <div className="flex gap-2">
-                     {/* Pause/Play */}
+             {/* Unified Control Bar - Respects Safe Area */}
+             <div className="absolute bottom-0 w-full pb-safe pointer-events-none">
+                 <div className="mb-10 flex items-center justify-center gap-2 px-4 flex-wrap sm:flex-nowrap">
+                     {/* Share/Save - Primary Action */}
                      <button 
-                        onClick={togglePlay}
-                        className="w-14 h-14 bg-stone-800 text-white rounded-full shadow-xl active:scale-95 transition flex items-center justify-center pointer-events-auto"
+                         onClick={onShare}
+                         className="h-14 px-6 bg-white text-black rounded-full font-bold shadow-xl active:scale-95 transition flex items-center gap-2 pointer-events-auto"
                      >
-                         {isPlaying ? <Icons.Pause className="w-6 h-6 fill-current" /> : <Icons.Play className="w-6 h-6 fill-current ml-1" />}
+                         <Icons.Share className="w-5 h-5 text-blue-500" /> Share/Save
                      </button>
 
-                     {/* Mute/Unmute */}
-                     <button 
-                        onClick={toggleMute}
-                        className="w-14 h-14 bg-stone-800 text-white rounded-full shadow-xl active:scale-95 transition flex items-center justify-center pointer-events-auto"
-                     >
-                         {isMuted ? <Icons.Mute className="w-6 h-6" /> : <Icons.Sound className="w-6 h-6" />}
-                     </button>
+                     <div className="flex gap-2">
+                         {/* Pause/Play */}
+                         <button 
+                            onClick={togglePlay}
+                            className="w-14 h-14 bg-stone-800 text-white rounded-full shadow-xl active:scale-95 transition flex items-center justify-center pointer-events-auto"
+                         >
+                             {isPlaying ? <Icons.Pause className="w-6 h-6 fill-current" /> : <Icons.Play className="w-6 h-6 fill-current ml-1" />}
+                         </button>
 
-                     {/* Close */}
-                     <button 
-                         onClick={onClose}
-                         className="w-14 h-14 bg-stone-800 text-white rounded-full shadow-xl active:scale-95 transition flex items-center justify-center pointer-events-auto"
-                     >
-                         <Icons.Close className="w-6 h-6" />
-                     </button>
+                         {/* Mute/Unmute */}
+                         <button 
+                            onClick={toggleMute}
+                            className="w-14 h-14 bg-stone-800 text-white rounded-full shadow-xl active:scale-95 transition flex items-center justify-center pointer-events-auto"
+                         >
+                             {isMuted ? <Icons.Mute className="w-6 h-6" /> : <Icons.Sound className="w-6 h-6" />}
+                         </button>
+
+                         {/* Close */}
+                         <button 
+                             onClick={onClose}
+                             className="w-14 h-14 bg-stone-800 text-white rounded-full shadow-xl active:scale-95 transition flex items-center justify-center pointer-events-auto"
+                         >
+                             <Icons.Close className="w-6 h-6" />
+                         </button>
+                     </div>
                  </div>
              </div>
         </div>

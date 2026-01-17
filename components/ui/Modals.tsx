@@ -591,7 +591,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                 )}
             </AnimatePresence>
 
-            <div className={`bg-t-surface w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transition-colors duration-300 ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} onClick={e => e.stopPropagation()}>
+            {/* Added pb-safe to allow bottom sheet to respect home indicator */}
+            <div className={`bg-t-surface w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transition-colors duration-300 pb-safe ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} onClick={e => e.stopPropagation()}>
                 
                 {/* Header */}
                 <div className="flex justify-between items-center p-6 pb-2 shrink-0 bg-t-surface z-10 transition-colors duration-300">
