@@ -61,7 +61,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
     const isRevealLocked = revealTimeLeft > 0;
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 relative">
             <div className="flex justify-between w-full relative">
                 {/* Reveal Skill Button */}
                 {purchasedSkills.includes('skill-reveal') && (
@@ -169,12 +169,12 @@ export const GameControls: React.FC<GameControlsProps> = ({
                 </button>
             </div>
 
-            {/* Dev Auto Solve Button */}
+            {/* Dev Auto Solve Button - Absolutely positioned to prevent layout shift */}
             {onDevSolve && (
-                <div className="flex justify-center mt-2">
+                <div className="absolute left-0 right-0 -bottom-14 flex justify-center pointer-events-none">
                     <button 
                         onClick={onDevSolve}
-                        className="px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold rounded-full shadow-sm active:scale-95 transition-all border border-red-200 dark:border-red-800/50 flex items-center gap-1"
+                        className="pointer-events-auto px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold rounded-full shadow-sm active:scale-95 transition-all border border-red-200 dark:border-red-800/50 flex items-center gap-1"
                     >
                         <Icons.Keyboard className="w-3 h-3" />
                         [DEV] AUTO SOLVE
