@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Difficulty, AppSettings, Board, MoveLogEntry } from '../types';
+import { Difficulty, AppSettings, Board, MoveLogEntry, CellValue } from '../types';
 import { useSudokuBoard } from '../hooks/useSudokuBoard';
 import { useGameSkills } from '../hooks/useGameSkills';
 import { useGameTimer } from '../hooks/useGameTimer';
@@ -212,6 +213,25 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       onSectionComplete: handleSectionComplete,
       timer
   });
+
+  // DEV SOLVE FUNCTION
+  const handleDevSolve = () => {
+      // Instantly solve the board based on solvedBoard
+      const solved = solvedBoard.map((row, r) => row.map((val, c) => ({
+          row: r,
+          col: c,
+          value: val as CellValue,
+          isFixed: initialBoardRef.current[r][c].isFixed,
+          notes: [],
+          isError: false,
+          isMarkedWrong: false,
+          isRevealed: false
+      })));
+      
+      setBoard(solved);
+      // Trigger completion logic immediately
+      handleGameComplete(solved, moveLog.current, true);
+  };
 
   useEffect(() => {
       const progress = Storage.getLevelProgress(difficulty, levelId);
@@ -468,6 +488,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                  onScan={() => handleScan(isPaused, isCompleted)}
                  onReveal={() => handleReveal(isPaused, isCompleted)}
                  timer={timer}
+                 showDevSolve={settings.devAutoSolve}
+                 onDevSolve={handleDevSolve}
              />
          </div>
          

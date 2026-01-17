@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   screenWakeLock: false, // Default OFF
   generateReplay: true, // Default ON
   hiddenDifficulties: [], // Default show all
+  devAutoSolve: false, // Default OFF
 };
 
 const DEFAULT_STATS = {
@@ -97,6 +98,7 @@ function getStoredData(): StoredData {
     if (data.settings.screenWakeLock === undefined) data.settings.screenWakeLock = false;
     if (data.settings.generateReplay === undefined) data.settings.generateReplay = true; // Default ON
     if (data.settings.hiddenDifficulties === undefined) data.settings.hiddenDifficulties = [];
+    if (data.settings.devAutoSolve === undefined) data.settings.devAutoSolve = false;
 
     if (data.settings.appearance === undefined) {
         data.settings.appearance = 'light'; 

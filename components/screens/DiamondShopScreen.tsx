@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Icons } from '../ui/Icons';
 import { DIAMOND_OFFERS } from '../../utils/constants';
@@ -13,6 +14,7 @@ interface DiamondShopScreenProps {
     onBuyOffer: (offer: DiamondOffer) => void;
     onEarnPoints: (amount: number) => void;
     starterPackPurchased: boolean;
+    onRestore: () => void;
 }
 
 export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
@@ -20,7 +22,8 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     onBack,
     onBuyOffer,
     onEarnPoints,
-    starterPackPurchased
+    starterPackPurchased,
+    onRestore
 }) => {
     const pepinoState = Storage.getPepinoState();
     
@@ -30,7 +33,6 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
 
     const shouldShowIntro = () => {
         if (!pepinoState.unlocked) return false;
-        // If we have an unlock timestamp, check if it was recent (15s)
         if (pepinoState.unlockedAt) {
             return (Date.now() - pepinoState.unlockedAt) < 15000;
         }
@@ -43,23 +45,16 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
         }
     };
 
-    const handleRestore = async () => {
+    const handleRestoreWrapper = () => {
         if(confirm("Restore previous purchases?")) {
-            try {
-                await IAP.restore();
-            } catch (e) {
-                console.error(e);
-            }
+            onRestore();
         }
     };
 
-    // Unified Price Badge Style
     const priceBadgeClass = "px-3 py-1.5 rounded-lg text-sm font-bold text-stone-800 shadow-sm min-w-[70px] text-center flex items-center justify-center border border-stone-900/10 bg-gradient-to-br from-white via-gray-100 to-gray-200 active:scale-95 transition-transform tracking-wide";
 
     return (
         <div className="flex-1 w-full flex flex-col items-center overflow-hidden relative">
-            {/* Background is now handled in App.tsx to cover safe areas */}
-
             <div className="w-full max-w-md flex items-center justify-between px-6 pt-4 pb-4 relative shrink-0 z-20 mx-auto">
                 <button onClick={onBack} className="p-2 rounded-full hover:bg-stone-200 transition -ml-2 text-t-icon relative z-30">
                     <Icons.Back className="w-6 h-6 text-t-icon" />
@@ -87,20 +82,14 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                             <button 
                                 key={offer.id} 
                                 onClick={() => handleBuyOfferWrapper(offer)}
-                                // Card Container - Compact Premium with Price Header
                                 className="w-full h-56 relative overflow-hidden rounded-[1.75rem] p-5 shadow-2xl transition-transform mb-6 text-left bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 active:scale-[0.99] group border border-white/10"
                             >
-                                {/* Subtle Shine Effect */}
                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/0 to-white/10 pointer-events-none" />
-
-                                {/* Giant Faded Crown/Star Background */}
                                 <div className="absolute -right-6 -bottom-8 opacity-[0.12] pointer-events-none z-0 rotate-12">
                                      <svg viewBox="0 0 24 24" className="w-48 h-48 fill-current text-white">
                                          <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5ZM19 19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V18H19V19Z" />
                                      </svg>
                                 </div>
-
-                                {/* Floating Premium Particles */}
                                 <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
                                     {[...Array(8)].map((_, i) => (
                                         <div 
@@ -109,13 +98,11 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                             style={{
                                                 left: `${Math.random() * 100}%`,
                                                 bottom: '-20px',
-                                                // Negative delay ensures particles are already mid-flight when component mounts
                                                 animationDelay: `-${Math.random() * 5}s`,
                                                 animationDuration: `${5 + Math.random() * 5}s`,
                                                 opacity: 0 
                                             }}
                                         >
-                                            {/* Alternating Hearts and Crowns */}
                                             {i % 2 === 0 ? (
                                                 <Icons.Crown className="fill-current" style={{ width: `${14 + Math.random() * 10}px`, height: `${14 + Math.random() * 10}px` }} />
                                             ) : (
@@ -124,31 +111,22 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         </div>
                                     ))}
                                 </div>
-
-                                {/* Main Layout - Vertical Stack */}
                                 <div className="relative z-10 flex flex-col justify-between h-full">
-                                    
-                                    {/* Top Row: Title/Desc and Price */}
                                     <div className="flex justify-between items-start">
                                         <div className="flex flex-col items-start pr-2">
                                             <div className="inline-block px-2 py-0.5 rounded-[6px] bg-white/20 text-white text-[10px] font-bold tracking-widest uppercase mb-2 border border-white/20 leading-none w-fit backdrop-blur-sm shadow-sm">
                                                 EXCLUSIVE
                                             </div>
                                             <h2 className="text-2xl font-bold text-white leading-none drop-shadow-md mb-2">{offer.title}</h2>
-                                            
                                             <p className="text-xs font-medium text-indigo-50 leading-snug mb-1 max-w-[85%] opacity-95">
                                                 Adopt an exclusive companion that grows with you and grants special rewards after every game.
                                             </p>
                                         </div>
-
                                         <div className={`${priceBadgeClass} shrink-0 mt-0.5`}>
                                             {offer.priceLabel}
                                         </div>
                                     </div>
-
-                                    {/* Bottom Row: Checklist and Diamonds */}
                                     <div className="flex items-end justify-between w-full">
-                                        {/* Features List */}
                                         <div className="flex flex-col gap-1.5 pl-0.5 pb-0.5">
                                             <div className="flex items-center gap-2">
                                                 <div className="bg-white/20 p-0.5 rounded-full"><Icons.Check className="w-2.5 h-2.5 text-white stroke-[4]" /></div>
@@ -159,8 +137,6 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                                 <span className="text-[11px] font-bold text-white shadow-sm">Support Indie Dev</span>
                                             </div>
                                         </div>
-
-                                        {/* Value */}
                                         <div className="flex items-center gap-1 pb-1">
                                             <span className="text-3xl font-bold text-white tracking-tighter leading-none drop-shadow-md">+{offer.diamonds}</span>
                                             <Icons.Diamond className="w-6 h-6 text-blue-200 fill-current drop-shadow-md mb-0.5" />
@@ -244,7 +220,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                     <div className="p-4 bg-t-surface-sec rounded-xl text-center mt-6">
                         <button 
                             className="text-xs font-bold text-t-primary underline" 
-                            onClick={handleRestore}
+                            onClick={handleRestoreWrapper}
                         >
                             Restore Purchases
                         </button>

@@ -531,6 +531,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
     const [couponCode, setCouponCode] = useState("");
     const [redeemStatus, setRedeemStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
+    // Check for dev mode coupon redemption
+    const hasDevAccess = Storage.isCouponRedeemed('hahasolve');
+
     const handleClose = () => {
         sounds.playClick();
         setIsClosing(true);
@@ -708,6 +711,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     settings={settings}
                                     onToggle={onToggle}
                                 />
+
+                                {hasDevAccess && (
+                                    <SettingRow 
+                                        sKey="devAutoSolve" 
+                                        icon={Icons.Crown} 
+                                        title="Auto Solve Level" 
+                                        desc="Enable developer button to instantly solve levels."
+                                        colorClass="text-indigo-500"
+                                        settings={settings}
+                                        onToggle={onToggle}
+                                    />
+                                )}
                             </div>
 
                             {/* Interface */}

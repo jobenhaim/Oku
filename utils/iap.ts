@@ -58,13 +58,10 @@ class IAPManager {
 
         try {
             // 1. Fetch the product details from RevenueCat
-            // Note: In RevenueCat, it's often better to use Offerings, but fetching by Product ID 
-            // works for simple setups matching the IDs in constants.ts
             const products = await Purchases.getProducts({ productIdentifiers: [productId] });
             
             if (products.products.length === 0) {
                 console.error(`IAP: Product not found: ${productId}`);
-                console.warn("IAP: Ensure this ID matches RevenueCat & App Store Connect exactly.");
                 return false;
             }
 
@@ -76,8 +73,6 @@ class IAPManager {
             });
 
             // 3. Success!
-            // The App.tsx logic handles the actual "rewarding" (adding diamonds) 
-            // based on this returning true.
             console.log("IAP: Purchase Successful", customerInfo);
             return true;
 
@@ -91,24 +86,21 @@ class IAPManager {
         }
     }
 
-    async restore(): Promise<void> {
+    async restore(): Promise<string[]> {
         if (!Capacitor.isNativePlatform()) {
             console.log("IAP: Mock Restore");
-            alert("Restore successful (Mock Mode)");
-            return;
+            return []; // Web mock returns empty or test data
         }
 
         try {
             const { customerInfo } = await Purchases.restorePurchases();
             console.log("IAP: Restore Complete", customerInfo);
             
-            // Basic feedback. 
-            // Note: Consumables (Diamonds) are NOT restored by Apple/Google. 
-            // Only Non-Consumables (like Starter Pack if configured that way) are restored.
-            alert("Purchases restored successfully.");
+            // Return all active purchased products so the App can update state
+            return customerInfo.allPurchasedProductIdentifiers || [];
         } catch (e) {
             console.error("IAP: Restore failed", e);
-            alert("Failed to restore purchases. Please try again.");
+            throw e;
         }
     }
 }
