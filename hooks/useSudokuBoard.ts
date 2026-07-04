@@ -56,6 +56,22 @@ export const useSudokuBoard = ({
 
   const moveLog = useRef<MoveLogEntry[]>([]);
   const errorCountRef = useRef<number>(0);
+
+  // Refs to always have the latest values of fast-changing states
+  const boardRef = useRef(board);
+  boardRef.current = board;
+
+  const isPencilModeRef = useRef(isPencilMode);
+  isPencilModeRef.current = isPencilMode;
+
+  const activeNumberRef = useRef(activeNumber);
+  activeNumberRef.current = activeNumber;
+
+  const selectedCellRef = useRef(selectedCell);
+  selectedCellRef.current = selectedCell;
+
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
   
   const initializeBoard = useCallback((savedBoard?: Board, savedMoveLog?: MoveLogEntry[]) => {
     setHistory([]);
@@ -124,39 +140,45 @@ export const useSudokuBoard = ({
       }
   }, [isBoardComplete, onComplete]);
 
-  // Memoize handlers to avoid re-renders on timer ticks
+  // Memoize handlers using references to prevent any hook recreation
   const handleCellClick = useCallback((row: number, col: number, isPaused: boolean, isCompleted: boolean) => {
     if (isPaused || isCompleted) return;
     
-    if (settings.digitFirst) {
-        if (activeNumber !== null) {
+    const currentBoard = boardRef.current;
+    const currentIsPencilMode = isPencilModeRef.current;
+    const currentActiveNumber = activeNumberRef.current;
+    const currentSelectedCell = selectedCellRef.current;
+    const currentSettings = settingsRef.current;
+
+    if (currentSettings.digitFirst) {
+        if (currentActiveNumber !== null) {
             sounds.playTap();
-            const currentCell = board[row][col];
+            const currentCell = currentBoard[row][col];
             if (currentCell.isFixed || currentCell.isRevealed) return;
             
-            setHistory(prev => [...prev.slice(-20), JSON.parse(JSON.stringify(board))]);
-            const newBoard = board.map(r => [...r]);
+            setHistory(prev => [...prev.slice(-20), JSON.parse(JSON.stringify(currentBoard))]);
+            const newBoard = currentBoard.map(r => [...r]);
             const newCell = { ...newBoard[row][col] };
             newCell.isMarkedWrong = false;
 
-            if (isPencilMode) {
-                 if (newCell.notes.includes(activeNumber)) {
-                     newCell.notes = newCell.notes.filter(n => n !== activeNumber);
+            if (currentIsPencilMode) {
+                 if (newCell.notes.includes(currentActiveNumber)) {
+                     newCell.notes = newCell.notes.filter(n => n !== currentActiveNumber);
                  } else {
-                     newCell.notes = [...newCell.notes, activeNumber].sort();
+                     newCell.notes = [...newCell.notes, currentActiveNumber].sort();
                  }
                  newBoard[row][col] = newCell;
             } else {
-                 if (newCell.value === activeNumber) {
+                 if (newCell.value === currentActiveNumber) {
                      newCell.value = null;
                      newCell.isError = false;
                      newBoard[row][col] = newCell;
                  } else {
-                     newCell.value = activeNumber as any;
+                     newCell.value = currentActiveNumber as any;
                      newCell.notes = [];
                      
                      const isHarderDifficulty = difficulty === Difficulty.Hard || difficulty === Difficulty.Intense || difficulty === Difficulty.Impossible;
-                     const isError = activeNumber !== solvedBoard[row][col];
+                     const isError = currentActiveNumber !== solvedBoard[row][col];
                      
                      if (!isHarderDifficulty) newCell.isError = isError;
                      else newCell.isError = false;
@@ -180,17 +202,17 @@ export const useSudokuBoard = ({
                         }
                      }
 
-                     if (settings.autoEraseNotes) {
-                         removeNotesFromPeers(newBoard, row, col, activeNumber);
+                     if (currentSettings.autoEraseNotes) {
+                         removeNotesFromPeers(newBoard, row, col, currentActiveNumber);
                      }
                  }
             }
             setBoard(newBoard);
             if (onBoardChange) onBoardChange(newBoard, moveLog.current);
-            if (!isPencilMode && newCell.value) checkCompletion(newBoard);
+            if (!currentIsPencilMode && newCell.value) checkCompletion(newBoard);
         } else {
              sounds.playTap();
-             if (selectedCell && selectedCell[0] === row && selectedCell[1] === col) {
+             if (currentSelectedCell && currentSelectedCell[0] === row && currentSelectedCell[1] === col) {
                  setSelectedCell(null);
              } else {
                  setSelectedCell([row, col]);
@@ -198,20 +220,26 @@ export const useSudokuBoard = ({
         }
     } else {
         sounds.playTap();
-        if (selectedCell && selectedCell[0] === row && selectedCell[1] === col) {
+        if (currentSelectedCell && currentSelectedCell[0] === row && currentSelectedCell[1] === col) {
             setSelectedCell(null);
         } else {
             setSelectedCell([row, col]);
         }
     }
-  }, [board, settings.digitFirst, settings.autoEraseNotes, activeNumber, isPencilMode, selectedCell, difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete]);
+  }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete]);
 
   const handleNumberInput = useCallback((num: number, isPaused: boolean, isCompleted: boolean) => {
     if (isPaused || isCompleted) return;
     
-    if (settings.digitFirst) {
+    const currentBoard = boardRef.current;
+    const currentIsPencilMode = isPencilModeRef.current;
+    const currentActiveNumber = activeNumberRef.current;
+    const currentSelectedCell = selectedCellRef.current;
+    const currentSettings = settingsRef.current;
+
+    if (currentSettings.digitFirst) {
         sounds.playClick();
-        if (activeNumber === num) {
+        if (currentActiveNumber === num) {
             setActiveNumber(null);
         } else {
             setActiveNumber(num);
@@ -220,19 +248,19 @@ export const useSudokuBoard = ({
         return;
     }
 
-    if (!selectedCell) return;
+    if (!currentSelectedCell) return;
     sounds.playNumber(num);
-    const [r, c] = selectedCell;
-    const currentCell = board[r][c];
+    const [r, c] = currentSelectedCell;
+    const currentCell = currentBoard[r][c];
     if (currentCell.isFixed || currentCell.isRevealed) return; 
 
-    setHistory(prev => [...prev.slice(-20), JSON.parse(JSON.stringify(board))]);
-    const newBoard = board.map(row => [...row]);
+    setHistory(prev => [...prev.slice(-20), JSON.parse(JSON.stringify(currentBoard))]);
+    const newBoard = currentBoard.map(row => [...row]);
     const newCell = { ...newBoard[r][c] };
 
     newCell.isMarkedWrong = false;
 
-    if (isPencilMode) {
+    if (currentIsPencilMode) {
       if (newCell.notes.includes(num)) newCell.notes = newCell.notes.filter(n => n !== num);
       else newCell.notes = [...newCell.notes, num].sort();
       newBoard[r][c] = newCell;
@@ -269,7 +297,7 @@ export const useSudokuBoard = ({
             }
         }
 
-        if (settings.autoEraseNotes) {
+        if (currentSettings.autoEraseNotes) {
              removeNotesFromPeers(newBoard, r, c, num);
         }
       }
@@ -277,34 +305,39 @@ export const useSudokuBoard = ({
     
     setBoard(newBoard);
     if (onBoardChange) onBoardChange(newBoard, moveLog.current);
-    if (!isPencilMode && newCell.value) checkCompletion(newBoard);
-  }, [board, selectedCell, settings.digitFirst, settings.autoEraseNotes, activeNumber, isPencilMode, difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete]);
+    if (!currentIsPencilMode && newCell.value) checkCompletion(newBoard);
+  }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete]);
 
   const handleUndo = useCallback((isPaused: boolean, isCompleted: boolean) => {
-    if (history.length === 0 || isPaused || isCompleted) return;
-    sounds.playClick();
-    const previous = history[history.length - 1];
-    setBoard(previous);
-    setHistory(prev => prev.slice(0, -1));
-    if (onBoardChange) onBoardChange(previous, moveLog.current);
-  }, [history, onBoardChange]);
+    if (isPaused || isCompleted) return;
+    setHistory(prevHistory => {
+        if (prevHistory.length === 0) return prevHistory;
+        sounds.playClick();
+        const previous = prevHistory[prevHistory.length - 1];
+        setBoard(previous);
+        if (onBoardChange) onBoardChange(previous, moveLog.current);
+        return prevHistory.slice(0, -1);
+    });
+  }, [onBoardChange]);
 
   const handleErase = useCallback((isPaused: boolean, isCompleted: boolean) => {
-    if (!selectedCell || isPaused || isCompleted) return;
+    const currentSelectedCell = selectedCellRef.current;
+    const currentBoard = boardRef.current;
+    if (!currentSelectedCell || isPaused || isCompleted) return;
     sounds.playClick();
-    const [r, c] = selectedCell;
-    const currentCell = board[r][c];
+    const [r, c] = currentSelectedCell;
+    const currentCell = currentBoard[r][c];
     if (currentCell.isFixed || currentCell.isRevealed) return; 
 
-    setHistory(prev => [...prev, JSON.parse(JSON.stringify(board))]);
-    const newBoard = board.map(row => [...row]);
+    setHistory(prev => [...prev, JSON.parse(JSON.stringify(currentBoard))]);
+    const newBoard = currentBoard.map(row => [...row]);
     newBoard[r][c].value = null; 
     newBoard[r][c].notes = []; 
     newBoard[r][c].isError = false;
     newBoard[r][c].isMarkedWrong = false; 
     setBoard(newBoard);
     if (onBoardChange) onBoardChange(newBoard, moveLog.current);
-  }, [board, selectedCell, onBoardChange]);
+  }, [onBoardChange]);
 
   const conflicts = useMemo(() => {
       const conf = new Set<string>();

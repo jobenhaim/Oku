@@ -115,21 +115,21 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
             <span className={`leading-none pt-[0.1em] relative z-10 ${!cell.isFixed && !cell.isError && !cell.isMarkedWrong && !cell.isRevealed ? numberColor : ''}`}>
                 {animatingValue !== null ? animatingValue : cell.value}
             </span>
-        ) : (
+        ) : cell.notes.length > 0 ? (
             <div className="grid grid-cols-3 grid-rows-3 w-full h-full p-[1px] pointer-events-none relative z-10">
                 {[1,2,3,4,5,6,7,8,9].map(n => {
-                    const noteClass = cell.notes.includes(n) 
-                        ? 'text-stone-500 dark:text-stone-400 font-medium'
-                        : 'invisible';
-                        
+                    const hasNote = cell.notes.includes(n);
+                    if (!hasNote) {
+                        return <div key={n} />;
+                    }
                     return (
                         <div key={n} className="flex items-center justify-center leading-none" style={{ fontSize: noteFontSize, lineHeight: noteLineHeight }}>
-                            <span className={noteClass}>{n}</span>
+                            <span className="text-stone-500 dark:text-stone-400 font-medium">{n}</span>
                         </div>
                     )
                 })}
             </div>
-        )}
+        ) : null}
         </div>
     );
 };
