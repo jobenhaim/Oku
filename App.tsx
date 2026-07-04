@@ -583,6 +583,12 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     nextBonusClaimTime={nextBonusClaimTime}
                                     hiddenDifficulties={settings.hiddenDifficulties}
                                     hasPendingPepinoGift={pepinoState.hasPendingGift}
+                                    onContinue={(diff, levelId) => {
+                                        sounds.playLevelEnter();
+                                        setSelectedDifficulty(diff);
+                                        setSelectedLevel(levelId);
+                                        navigate('game', 'forward');
+                                    }}
                                 />
                             )}
 

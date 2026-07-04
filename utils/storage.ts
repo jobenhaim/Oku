@@ -420,6 +420,14 @@ export const Storage = {
       return false;
   },
 
+  getLastPlayedGame: (): LevelProgress | undefined => {
+    const data = getStoredData();
+    const inProgressGames = Object.values(data.progress).filter(p => p.status === 'in-progress');
+    if (inProgressGames.length === 0) return undefined;
+    inProgressGames.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
+    return inProgressGames[0];
+  },
+
   getLevelProgress: (difficulty: string, levelId: number): LevelProgress | undefined => {
     const key = `${difficulty}-${levelId}`;
     return getStoredData().progress[key];

@@ -18,6 +18,7 @@ interface DifficultyScreenProps {
     nextBonusClaimTime: number;
     hiddenDifficulties?: Difficulty[]; 
     hasPendingPepinoGift?: boolean;
+    onContinue?: (diff: Difficulty, levelId: number) => void;
 }
 
 const SUBTITLES = [
@@ -197,12 +198,15 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     onOpenStats, 
     nextBonusClaimTime,
     hiddenDifficulties = [],
-    hasPendingPepinoGift = false
+    hasPendingPepinoGift = false,
+    onContinue
 }) => {
     const [timeLeft, setTimeLeft] = useState<string>("");
     const [activeInfo, setActiveInfo] = useState<Difficulty | null>(null);
     const [isClosing, setIsClosing] = useState(false);
     const [subtitle] = useState(() => SUBTITLES[Math.floor(Math.random() * SUBTITLES.length)]);
+    
+    const lastPlayedGame = Storage.getLastPlayedGame();
     
     const [infoIndices, setInfoIndices] = useState<Record<string, number>>({});
 
@@ -281,7 +285,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                       <p className="text-xs font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-[0.2em]">{subtitle}</p>
                   </div>
 
-                  <div className="w-full max-w-md flex flex-wrap justify-center gap-3 mb-8 shrink-0 min-h-[330px] content-center">
+                  <div className={`w-full max-w-md flex flex-wrap justify-center gap-3 shrink-0 min-h-[330px] content-center ${lastPlayedGame ? 'mb-4' : 'mb-8'}`}>
                       {visibleDifficulties.map((diff, index) => {
                           const descriptions = DIFFICULTY_DESCRIPTIONS[diff];
                           const currentIndex = infoIndices[diff] || 0;
@@ -337,6 +341,26 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                           );
                       })}
                   </div>
+
+                  {/* Continue Button */}
+                  {lastPlayedGame && (
+                  <div 
+                    className="w-full max-w-md flex justify-center mb-4 opacity-0 animate-slide-in-down shrink-0" 
+                    style={{ animationDelay: '200ms' }}
+                  >
+                      <button 
+                        onClick={(e) => { 
+                            e.stopPropagation(); 
+                            sounds.playClick(); 
+                            if (onContinue) onContinue(lastPlayedGame.difficulty, lastPlayedGame.levelId);
+                        }}
+                        className="flex items-center justify-center gap-2 w-[47.5%] py-3 bg-blue-500/10 dark:bg-blue-500/20 backdrop-blur-sm border border-blue-500/30 dark:border-blue-500/30 rounded-2xl text-sm font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 dark:hover:bg-blue-500/30 transition-all active:scale-95 shadow-sm"
+                      >
+                          <span>Continue Game</span>
+                          <Icons.Next className="w-4 h-4" />
+                      </button>
+                  </div>
+                  )}
 
                   {/* Footer Actions */}
                   <div className="w-full max-w-md flex flex-col gap-3 shrink-0">

@@ -1,0 +1,10 @@
+{
+	"appId": "com.oku.sudoku",
+	"appName": "Oku",
+	"webDir": "dist",
+	"packageClassList": [
+		"HapticsPlugin",
+		"PreferencesPlugin",
+		"ScreenOrientationPlugin"
+	]
+}
