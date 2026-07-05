@@ -550,6 +550,29 @@ export const Storage = {
   },
 
   // COUPONS
+  completeSuperEasyLevels: () => {
+      const data = getStoredData();
+      if (!data.stats) data.stats = { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 };
+      
+      for (let lvl = 1; lvl <= 50; lvl++) {
+          const key = `${Difficulty.SuperEasy}-${lvl}`;
+          const existing = data.progress[key];
+          if (!existing || existing.status !== 'completed') {
+              data.progress[key] = {
+                  levelId: lvl,
+                  difficulty: Difficulty.SuperEasy,
+                  status: 'completed',
+                  timeElapsed: 60,
+                  bestTime: existing?.bestTime !== undefined ? Math.min(existing.bestTime, 60) : 60,
+                  scanUses: 3,
+                  revealUses: 1
+              };
+              data.stats.totalGamesWon += 1;
+          }
+      }
+      saveData(data);
+  },
+
   isCouponRedeemed: (code: string): boolean => {
       const data = getStoredData();
       return data.redeemedCoupons?.includes(code.toUpperCase()) ?? false;

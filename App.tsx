@@ -455,6 +455,15 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
           return true;
       }
 
+      if (lowerCode === 'haha50se') {
+          sounds.playWin();
+          Storage.completeSuperEasyLevels();
+          Storage.markCouponRedeemed(normalizedCode);
+          setRedeemedCoupons(Storage.getStoredData().redeemedCoupons || []);
+          setStats(Storage.getStoredData().stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
+          return true;
+      }
+
       if (lowerCode === 'hahapepino') {
           sounds.playWin();
           Storage.unlockPepino();

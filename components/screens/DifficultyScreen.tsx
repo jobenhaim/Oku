@@ -51,7 +51,7 @@ const useAnimatedCounter = (target: number, duration: number = 500, delay: numbe
             const animate = (currentTime: number) => {
                 if (!startTime) startTime = currentTime;
                 const progress = Math.min((currentTime - startTime) / duration, 1);
-                const ease = 1 - Math.pow(1 - progress, 3); 
+                const ease = progress; // Linear animation
                 
                 setCount(Math.floor(target * ease));
 
