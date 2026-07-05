@@ -11,6 +11,7 @@ interface DifficultyScreenProps {
     points: number;
     onDifficultySelect: (diff: Difficulty) => void;
     onOpenSettings: () => void;
+    onOpenProfile: () => void;
     onOpenStore: () => void;
     onOpenDiamondShop: () => void;
     onClaimBonus: (e: React.MouseEvent) => void;
@@ -36,35 +37,44 @@ const SUBTITLES = [
 ];
 
 // Internal Hook for Counting Animation (Progress Bars)
-const useAnimatedCounter = (target: number, duration: number = 500) => {
+const useAnimatedCounter = (target: number, duration: number = 500, delay: number = 200) => {
     const [count, setCount] = useState(0);
 
     useEffect(() => {
         let startTime: number | null = null;
         let animationFrameId: number;
+        let timeoutId: any;
 
         setCount(0);
 
-        const animate = (currentTime: number) => {
-            if (!startTime) startTime = currentTime;
-            const progress = Math.min((currentTime - startTime) / duration, 1);
-            const ease = 1 - Math.pow(1 - progress, 3); 
-            
-            setCount(Math.floor(target * ease));
+        const startAnimation = () => {
+            const animate = (currentTime: number) => {
+                if (!startTime) startTime = currentTime;
+                const progress = Math.min((currentTime - startTime) / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 3); 
+                
+                setCount(Math.floor(target * ease));
 
-            if (progress < 1) {
-                animationFrameId = requestAnimationFrame(animate);
-            } else {
-                setCount(target);
-            }
+                if (progress < 1) {
+                    animationFrameId = requestAnimationFrame(animate);
+                } else {
+                    setCount(target);
+                }
+            };
+            animationFrameId = requestAnimationFrame(animate);
         };
 
-        animationFrameId = requestAnimationFrame(animate);
+        if (delay > 0) {
+            timeoutId = setTimeout(startAnimation, delay);
+        } else {
+            startAnimation();
+        }
 
         return () => {
+            if (timeoutId) clearTimeout(timeoutId);
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
         };
-    }, [target, duration]);
+    }, [target, duration, delay]);
 
     return count;
 };
@@ -74,14 +84,10 @@ const DifficultyCard: React.FC<{
     diff: Difficulty;
     index: number;
     onSelect: (diff: Difficulty) => void;
-    activeInfo: Difficulty | null;
-    onInfoToggle: (diff: Difficulty) => void;
-    isClosing: boolean;
-    description: string;
     isPyramidTop?: boolean;
     contentScale?: 'normal' | 'medium' | 'large';
     layoutStyle?: React.CSSProperties;
-}> = ({ diff, index, onSelect, activeInfo, onInfoToggle, isClosing, description, isPyramidTop, contentScale = 'normal', layoutStyle }) => {
+}> = ({ diff, index, onSelect, isPyramidTop, contentScale = 'normal', layoutStyle }) => {
     
     const completed = Storage.getCompletedCount(diff, 300);
     const isPack2Unlocked = Storage.isPack2Unlocked(diff);
@@ -94,8 +100,6 @@ const DifficultyCard: React.FC<{
     const diffPoints = getDifficultyPoints(diff);
     
     const delay = 100 + (index * 50);
-    const isInfoActive = activeInfo === diff;
-    const isLeftColumn = isPyramidTop ? true : index % 2 === 0;
 
     const [animating, setAnimating] = useState(true);
     useEffect(() => {
@@ -106,22 +110,20 @@ const DifficultyCard: React.FC<{
     }, [delay]);
 
     const baseZIndex = 30 - index;
-    const finalZIndex = isInfoActive ? 100 : baseZIndex;
+    const finalZIndex = baseZIndex;
 
-    const animatedCompleted = useAnimatedCounter(completed, 500);
+    const animatedCompleted = useAnimatedCounter(completed, 1500);
     const progressPercent = Math.min((animatedCompleted / maxLevels) * 100, 100);
 
     const defaultStyle: React.CSSProperties = {
         width: '47.5%',
-        aspectRatio: '1.55/1', 
+        aspectRatio: '1.91/1', 
     };
 
     const finalStyle = { ...defaultStyle, ...layoutStyle, zIndex: finalZIndex, animationDelay: `${delay}ms` };
 
     const titleClass = contentScale === 'large' ? 'text-3xl' : (contentScale === 'medium' ? 'text-2xl' : 'text-lg');
     const iconSizeClass = contentScale === 'large' ? 'w-5 h-5' : (contentScale === 'medium' ? 'w-4 h-4' : 'w-3 h-3');
-    const infoIconSizeClass = contentScale === 'large' ? 'w-8 h-8 -ml-1.5' : (contentScale === 'medium' ? 'w-7 h-7 -ml-1' : 'w-6 h-6 -ml-0.5');
-    const infoIconInnerSize = contentScale === 'large' ? 'w-6 h-6' : (contentScale === 'medium' ? 'w-5 h-5' : 'w-4 h-4');
     const pointsTextClass = contentScale === 'large' ? 'text-base' : (contentScale === 'medium' ? 'text-sm' : 'text-xs');
     const progressTextClass = contentScale === 'large' ? 'text-sm' : (contentScale === 'medium' ? 'text-xs' : 'text-[10px]');
     const progressBarHeight = contentScale === 'large' ? 'h-3' : (contentScale === 'medium' ? 'h-2.5' : 'h-1.5');
@@ -142,33 +144,7 @@ const DifficultyCard: React.FC<{
             </div>
             
             <div className="w-full flex justify-between items-end mb-1 mt-auto">
-                <div className="relative z-50" onClick={(e) => e.stopPropagation()}>
-                    <div 
-                        role="button"
-                        onClick={() => onInfoToggle(diff)}
-                        className={`flex items-center justify-center cursor-pointer hover:bg-stone-900/5 dark:hover:bg-white/10 rounded-full transition-colors ${infoIconSizeClass}`}
-                    >
-                        <Icons.Info className={`${infoIconInnerSize} transition-colors ${isInfoActive ? 'text-stone-900 dark:text-white' : 'text-stone-500 dark:text-stone-400'}`} />
-                    </div>
-
-                    {isInfoActive && (
-                        <div 
-                            className={`absolute top-full mt-2 w-44 z-[60] cursor-default ${
-                                isLeftColumn 
-                                    ? '-left-2 origin-top-left' 
-                                    : '-right-2 origin-top-right'
-                            } ${isClosing ? 'animate-tooltip-exit' : 'animate-tooltip-enter'}`}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="bg-white/95 backdrop-blur-xl text-stone-900 text-xs font-medium p-3 rounded-xl relative text-left leading-relaxed border border-stone-200 dark:border-stone-700 shadow-lg">
-                                {description}
-                                <div className={`absolute -top-[6px] w-3 h-3 bg-white/95 border-t border-l border-stone-200 dark:border-stone-700 transform rotate-45 ${
-                                    isLeftColumn ? 'left-[14px]' : 'right-[14px]'
-                                }`}></div>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                <div className="relative z-50"></div>
                 
                 <span className={`${progressTextClass} text-stone-800 dark:text-stone-200 font-bold tracking-wide font-sans leading-none`}>
                     {animatedCompleted} / {maxLevels}
@@ -180,7 +156,7 @@ const DifficultyCard: React.FC<{
                     className="h-full bg-loading-blue" 
                     style={{ 
                         width: `${progressPercent}%`,
-                        transition: 'width 0.1s linear' 
+                        transition: 'none' 
                     }}
                 ></div>
             </div>
@@ -192,6 +168,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     points, 
     onDifficultySelect, 
     onOpenSettings, 
+    onOpenProfile,
     onOpenStore, 
     onOpenDiamondShop, 
     onClaimBonus, 
@@ -202,13 +179,9 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     onContinue
 }) => {
     const [timeLeft, setTimeLeft] = useState<string>("");
-    const [activeInfo, setActiveInfo] = useState<Difficulty | null>(null);
-    const [isClosing, setIsClosing] = useState(false);
     const [subtitle] = useState(() => SUBTITLES[Math.floor(Math.random() * SUBTITLES.length)]);
     
     const lastPlayedGame = Storage.getLastPlayedGame();
-    
-    const [infoIndices, setInfoIndices] = useState<Record<string, number>>({});
 
     useEffect(() => {
         const updateTimer = () => {
@@ -225,30 +198,6 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
         return () => clearInterval(interval);
     }, [nextBonusClaimTime]);
 
-    const handleClose = () => {
-        if (!activeInfo) return;
-        setIsClosing(true);
-        const closingDiff = activeInfo;
-        setTimeout(() => {
-            setActiveInfo(null);
-            setIsClosing(false);
-            setInfoIndices(prev => ({
-                ...prev,
-                [closingDiff]: (prev[closingDiff] || 0) + 1
-            }));
-        }, 150);
-    };
-
-    const handleInfoToggle = (diff: Difficulty) => {
-        sounds.playTap();
-        if (activeInfo === diff) {
-            handleClose();
-        } else {
-            setActiveInfo(diff);
-            setIsClosing(false);
-        }
-    };
-
     const visibleDifficulties = Object.values(Difficulty).filter(d => !hiddenDifficulties.includes(d));
     const isOddCount = visibleDifficulties.length % 2 !== 0;
     const isVerticalStack = visibleDifficulties.length === 2;
@@ -262,7 +211,6 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     return (
         <div 
             className="flex-1 w-full flex flex-col items-center overflow-hidden" 
-            onClick={() => activeInfo && handleClose()}
         >
              <style>{`
                 @keyframes diamond-scroll {
@@ -287,23 +235,19 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
 
                   <div className={`w-full max-w-md flex flex-wrap justify-center gap-3 shrink-0 min-h-[330px] content-center ${lastPlayedGame ? 'mb-4' : 'mb-8'}`}>
                       {visibleDifficulties.map((diff, index) => {
-                          const descriptions = DIFFICULTY_DESCRIPTIONS[diff];
-                          const currentIndex = infoIndices[diff] || 0;
-                          const description = descriptions[currentIndex % descriptions.length];
-                          
                           const isPyramidTop = isOddCount && index === 0 && !isOneVisible;
                           
                           let contentScale: 'normal' | 'medium' | 'large' = 'normal';
                           let layoutStyle: React.CSSProperties = {};
 
                           if (isOneVisible) {
-                              layoutStyle = { width: '62%', aspectRatio: '1.55/1' };
+                              layoutStyle = { width: '62%', aspectRatio: '1.91/1' };
                               contentScale = 'normal';
                           } else if (isVerticalStack) {
-                              layoutStyle = { width: '55%', aspectRatio: '1.55/1' };
+                              layoutStyle = { width: '55%', aspectRatio: '1.91/1' };
                               contentScale = 'normal';
                           } else if (isPyramidTop) {
-                              layoutStyle = { width: '47.5%', aspectRatio: '1.55/1' };
+                              layoutStyle = { width: '47.5%', aspectRatio: '1.91/1' };
                           }
 
                           if (isPyramidTop || isVerticalStack) {
@@ -313,10 +257,6 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                           diff={diff}
                                           index={index}
                                           onSelect={onDifficultySelect}
-                                          activeInfo={activeInfo}
-                                          onInfoToggle={handleInfoToggle}
-                                          isClosing={isClosing && activeInfo === diff}
-                                          description={description}
                                           isPyramidTop={true}
                                           contentScale={contentScale}
                                           layoutStyle={layoutStyle}
@@ -331,10 +271,6 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                   diff={diff}
                                   index={index}
                                   onSelect={onDifficultySelect}
-                                  activeInfo={activeInfo}
-                                  onInfoToggle={handleInfoToggle}
-                                  isClosing={isClosing && activeInfo === diff}
-                                  description={description}
                                   contentScale={contentScale}
                                   layoutStyle={layoutStyle}
                               />
@@ -354,7 +290,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                             sounds.playClick(); 
                             if (onContinue) onContinue(lastPlayedGame.difficulty, lastPlayedGame.levelId);
                         }}
-                        className="flex items-center justify-center gap-2 w-[47.5%] py-3 bg-blue-500/10 dark:bg-blue-500/20 backdrop-blur-sm border border-blue-500/30 dark:border-blue-500/30 rounded-2xl text-sm font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 dark:hover:bg-blue-500/30 transition-all active:scale-95 shadow-sm"
+                        className="flex items-center justify-center gap-2 w-[47.5%] py-3 bg-white dark:bg-stone-900 border border-blue-200 dark:border-blue-900/60 rounded-2xl text-sm font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-stone-850 transition-all active:scale-95 shadow-md"
                       >
                           <span>Continue Game</span>
                           <Icons.Next className="w-4 h-4" />
@@ -451,6 +387,10 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                     className="w-full max-w-md flex items-center justify-center gap-3 mt-6 mb-2 opacity-0 animate-slide-in-down shrink-0" 
                     style={{ animationDelay: '350ms' }}
                   >
+                      <button onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenProfile(); }} className="p-1.5 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-full shadow-sm hover:bg-white/80 dark:hover:bg-stone-800 transition active:scale-95 text-t-icon">
+                          <Icons.User className="w-5 h-5" />
+                      </button>
+
                       <div 
                         className="flex items-center gap-1.5 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border border-white/40 dark:border-white/10 px-3 py-1.5 rounded-full shadow-sm"
                       >

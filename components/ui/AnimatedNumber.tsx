@@ -1,22 +1,22 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { sounds } from '../../utils/sound';
 
 interface AnimatedNumberProps {
     value: number;
     className?: string;
+    startFromZero?: boolean;
 }
 
-export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({ value, className = "" }) => {
-    const [displayValue, setDisplayValue] = useState(value);
-    const startValue = useRef(value);
+export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({ value, className = "", startFromZero = false }) => {
+    const [displayValue, setDisplayValue] = useState(startFromZero ? 0 : value);
+    const startValue = useRef(startFromZero ? 0 : value);
     const startTime = useRef<number | null>(null);
     const rafId = useRef<number | null>(null);
-    const lastSoundValue = useRef(value);
+    const lastSoundValue = useRef(startFromZero ? 0 : value);
 
     useEffect(() => {
         if (value === displayValue && rafId.current === null) return;
-
+        
         // Capture starting state
         startValue.current = displayValue;
         startTime.current = null;
@@ -27,10 +27,6 @@ export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({ value, className
         
         // Dynamic duration: Longer animation for bigger numbers
         // Base 600ms + 100ms per unit difference, capped at 4000ms (4 seconds)
-        // Examples:
-        // +5 diamonds  -> 1100ms
-        // +10 diamonds -> 1600ms
-        // +1000 diamonds -> 4000ms
         const duration = Math.min(4000, 600 + (delta * 100));
 
         const animate = (time: number) => {

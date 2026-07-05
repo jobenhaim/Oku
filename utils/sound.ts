@@ -24,7 +24,7 @@ const PROFILES: Record<string, SoundProfile> = {
         numberFreqs: Array(9).fill(600),
         popFreq: 400,
         duration: 0.035, 
-        volumeScale: 1.0, 
+        volumeScale: 0.5, 
         pitchDrop: true
     },
     'snd-paper': {
@@ -35,7 +35,7 @@ const PROFILES: Record<string, SoundProfile> = {
         numberFreqs: Array(9).fill(1000), 
         popFreq: 800,
         duration: 0.05,
-        volumeScale: 0.9,
+        volumeScale: 0.6,
         noiseFilterFreq: 800
     },
     'snd-wood': {
@@ -60,7 +60,7 @@ const PROFILES: Record<string, SoundProfile> = {
         numberFreqs: [523.25, 587.33, 659.25, 739.99, 830.61, 932.33, 1046.50, 1174.66, 1318.51],
         popFreq: 400,
         duration: 0.1, 
-        volumeScale: 0.9,
+        volumeScale: 0.5,
         pitchDrop: false // We use upward ramp
     },
     'snd-piano': {
@@ -73,7 +73,7 @@ const PROFILES: Record<string, SoundProfile> = {
         numberFreqs: [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99],
         popFreq: 196, // G3
         duration: 1.5, // Long sustained tail
-        volumeScale: 0.6,
+        volumeScale: 0.4,
         pitchDrop: false
     },
     'snd-stone': {
@@ -96,7 +96,7 @@ const PROFILES: Record<string, SoundProfile> = {
         numberFreqs: Array(9).fill(2500), // Mechs usually sound same, maybe slight var?
         popFreq: 1500,
         duration: 0.05,
-        volumeScale: 0.5,
+        volumeScale: 0.15,
         pitchDrop: false
     },
     'snd-retro': {
@@ -108,7 +108,7 @@ const PROFILES: Record<string, SoundProfile> = {
         numberFreqs: [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50, 1174.66],
         popFreq: 220,
         duration: 0.1,
-        volumeScale: 0.10,
+        volumeScale: 0.03,
         pitchDrop: false
     },
     'snd-crystal': {
@@ -120,7 +120,7 @@ const PROFILES: Record<string, SoundProfile> = {
         numberFreqs: [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98],
         popFreq: 800,
         duration: 0.8, // Ring out
-        volumeScale: 0.6,
+        volumeScale: 0.25,
         pitchDrop: false
     },
     'snd-koto': {
@@ -133,7 +133,7 @@ const PROFILES: Record<string, SoundProfile> = {
         numberFreqs: [440.00, 493.88, 523.25, 659.25, 698.46, 880.00, 987.77, 1046.50, 1318.51],
         popFreq: 220,
         duration: 1.0, 
-        volumeScale: 0.6,
+        volumeScale: 0.3,
         pitchDrop: false
     }
 };
@@ -467,56 +467,11 @@ class SoundController {
     }
 
     playPop() {
-        if (this.soundEnabled) {
-            // New Fun Pop: Quick upward sweep
-            const ctx = this.getCtx();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            
-            osc.type = 'sine';
-            // Start low, go high quickly
-            osc.frequency.setValueAtTime(400, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.1);
-            
-            gain.gain.setValueAtTime(0, ctx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.01);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-            
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            
-            osc.start();
-            osc.stop(ctx.currentTime + 0.15);
-        }
-        if (this.vibrationEnabled) {
-            Haptics.impact({ style: ImpactStyle.Light });
-        }
+        this.playClick();
     }
 
     playBubblePop() {
-        if (this.soundEnabled) {
-            const ctx = this.getCtx();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            
-            // "Bloop" - start lower, rise fast, short decay
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(300, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.1);
-            
-            gain.gain.setValueAtTime(0, ctx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.01); // Fast attack
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1); // Short decay
-            
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            
-            osc.start();
-            osc.stop(ctx.currentTime + 0.15);
-        }
-        if (this.vibrationEnabled) {
-            Haptics.impact({ style: ImpactStyle.Light });
-        }
+        this.playClick();
     }
 
     playPepinoTap() {
@@ -734,60 +689,58 @@ class SoundController {
     }
 
     playZap() {
-        // "Auto" Skill Sound - "Premium Mechanical Zap"
+        this.playClick();
+        // "Auto" Skill Sound - "Snappy Flashy Zap"
         if (this.soundEnabled) {
             const ctx = this.getCtx();
             const now = ctx.currentTime;
-
-            // 1. The High Energy Arc (Sawtooth with fast filter sweep)
-            const osc1 = ctx.createOscillator();
-            const gain1 = ctx.createGain();
-            const filter1 = ctx.createBiquadFilter();
-
-            osc1.type = 'sawtooth';
-            // Start lowish, zip up fast
-            osc1.frequency.setValueAtTime(400, now);
-            osc1.frequency.exponentialRampToValueAtTime(1200, now + 0.3);
-
-            // Filter opens up to create the "Zzzzip" texture
-            filter1.type = 'lowpass';
-            filter1.Q.value = 5; // Resonance for the zap feel
-            filter1.frequency.setValueAtTime(200, now);
-            filter1.frequency.exponentialRampToValueAtTime(3000, now + 0.3);
-
-            gain1.gain.setValueAtTime(0, now);
-            gain1.gain.linearRampToValueAtTime(0.1, now + 0.02); // Fast attack
-            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-
-            osc1.connect(filter1);
-            filter1.connect(gain1);
-            gain1.connect(ctx.destination);
-
-            osc1.start(now);
-            osc1.stop(now + 0.2);
-
-            // 2. The Mechanical Latch (Square Wave Clunk)
-            const osc2 = ctx.createOscillator();
-            const gain2 = ctx.createGain();
-            const filter2 = ctx.createBiquadFilter();
-
-            osc2.type = 'square';
-            osc2.frequency.setValueAtTime(150, now); // Low base
-            osc2.frequency.linearRampToValueAtTime(100, now + 0.2); // Pitch drop
-
-            filter2.type = 'lowpass';
-            filter2.frequency.value = 800; // Muffle the square wave
-
-            gain2.gain.setValueAtTime(0, now);
-            gain2.gain.linearRampToValueAtTime(0.15, now + 0.01);
-            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-
-            osc2.connect(filter2);
-            filter2.connect(gain2);
-            gain2.connect(ctx.destination);
-
-            osc2.start(now);
-            osc2.stop(now + 0.2);
+            
+            // 1. Flashy Upward Arpeggio (A Major: A5, C#6, E6, A6)
+            const freqs = [880.00, 1108.73, 1318.51, 1760.00]; 
+            
+            freqs.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = i === freqs.length - 1 ? 'triangle' : 'sine'; // Final note has more edge
+                osc.frequency.setValueAtTime(freq, now + i * 0.03); // Very fast 30ms stagger
+                
+                gain.gain.setValueAtTime(0, now + i * 0.03);
+                // Low volume (0.05) to prevent piercing high pitches
+                gain.gain.linearRampToValueAtTime(0.05, now + i * 0.03 + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.03 + 0.15);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start(now + i * 0.03);
+                osc.stop(now + i * 0.03 + 0.2);
+            });
+            
+            // 2. Snappy Electric Underlay (Fast sawtooth sweep)
+            const zapOsc = ctx.createOscillator();
+            const zapGain = ctx.createGain();
+            const zapFilter = ctx.createBiquadFilter();
+            
+            zapOsc.type = 'sawtooth';
+            zapOsc.frequency.setValueAtTime(1500, now);
+            zapOsc.frequency.exponentialRampToValueAtTime(200, now + 0.1); // Quick pitch drop
+            
+            zapFilter.type = 'bandpass';
+            zapFilter.frequency.setValueAtTime(2000, now);
+            zapFilter.frequency.exponentialRampToValueAtTime(500, now + 0.1);
+            zapFilter.Q.value = 2; // Slight resonance for electric feel
+            
+            zapGain.gain.setValueAtTime(0, now);
+            zapGain.gain.linearRampToValueAtTime(0.04, now + 0.01); // Snappy attack, low volume
+            zapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            
+            zapOsc.connect(zapFilter);
+            zapFilter.connect(zapGain);
+            zapGain.connect(ctx.destination);
+            
+            zapOsc.start(now);
+            zapOsc.stop(now + 0.15);
         }
 
         if (this.vibrationEnabled) {
@@ -796,6 +749,7 @@ class SoundController {
     }
 
     playScan() {
+        this.playClick();
         if (this.soundEnabled) {
             const ctx = this.getCtx();
             const now = ctx.currentTime;
@@ -866,6 +820,7 @@ class SoundController {
     }
 
     playReveal() {
+        this.playClick();
         if (!this.soundEnabled) return;
         const ctx = this.getCtx();
         const now = ctx.currentTime;

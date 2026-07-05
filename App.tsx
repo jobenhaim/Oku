@@ -11,6 +11,7 @@ import { IAP } from './utils/iap'; // Import IAP Service
 
 // UI Components
 import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal, ResetConfirmModal } from './components/ui/Modals';
+import { ProfileModal } from './components/ui/ProfileModal';
 import { LandscapeBlocker } from './components/ui/LandscapeBlocker';
 
 // Screens
@@ -58,6 +59,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const [redeemedCoupons, setRedeemedCoupons] = useState<string[]>([]);
 
   const [showSettings, setShowSettings] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [stats, setStats] = useState(Storage.getStoredData().stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
   const [replayLevelId, setReplayLevelId] = useState<number | null>(null);
   
   const [purchaseCandidate, setPurchaseCandidate] = useState<{id: string, name: string, cost: number, type: 'bg' | 'num' | 'skill' | 'sound', description?: string} | null>(null);
@@ -84,6 +87,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
         
         setPoints(data.points);
         setSettings(data.settings);
+        setStats(data.stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
         setPurchasedBackgrounds(data.purchasedBackgrounds);
         setPurchasedNumberColors(data.purchasedNumberColors);
         setPurchasedSoundPacks(data.purchasedSoundPacks || ['snd-zen']);
@@ -188,6 +192,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
      setEnabledSkills(Storage.getEnabledSkills());
      setStarterPackPurchased(Storage.isStarterPackPurchased());
      setPoints(Storage.getPoints());
+     setStats(Storage.getStoredData().stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
      setUnlockedPacks2(Storage.getUnlockedPacks2());
      setUnlockedPacks3(Storage.getUnlockedPacks3());
      setNextBonusClaimTime(Storage.getNextBonusClaimTime());
@@ -576,6 +581,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     points={points}
                                     onDifficultySelect={handleDifficultySelect}
                                     onOpenSettings={() => setShowSettings(true)}
+                                    onOpenProfile={() => setShowProfile(true)}
                                     onOpenStore={() => navigate('store', 'forward')}
                                     onOpenDiamondShop={() => navigate('diamondShop', 'forward')}
                                     onClaimBonus={handleClaimBonus}
@@ -680,6 +686,12 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                         onRedeemCode={handleRedeemCode}
                         redeemedCoupons={redeemedCoupons}
                     />
+                )}
+                {showProfile && (
+                        <ProfileModal
+                            onClose={() => setShowProfile(false)}
+                            stats={stats}
+                        />
                 )}
                 {replayLevelId !== null && selectedDifficulty && (
                     <ReplayModal 

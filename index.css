@@ -37,6 +37,28 @@
   --grid-thick: #a8a29e; /* Stone 400 */
 }
 
+/* SAFE HIGH-PERFORMANCE THEME TRANSITIONS
+   Only transition specific classes that are bound to the theme variables, avoiding any interference with Framer Motion, animations, or layout. */
+html, body, #root,
+.bg-t-bg,
+.bg-t-surface,
+.bg-t-surface-sec,
+.text-t-primary,
+.text-t-secondary,
+.border-t-border,
+.text-stone-800,
+.dark .text-stone-100,
+.text-stone-500,
+.dark .text-stone-400,
+.border-stone-200,
+.dark .border-stone-700 {
+  transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              fill 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              stroke 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* STRICT VIEWPORT LOCKING FOR MOBILE */
 html, body {
   margin: 0;
@@ -50,7 +72,7 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
-  transition: background-color 0.3s;
+  transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   
   /* Disable selection and zooming */
   user-select: none;
