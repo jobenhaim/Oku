@@ -159,36 +159,72 @@ export async function generateReplayVideo(
     // scale factor k = s / 100
     const k = s / 100;
     
-    const drawRect = (lx: number, ly: number, color1: string, color2: string) => {
-        const rx = x + lx * k;
-        const ry = y + ly * k;
-        const rw = 42 * k;
-        const rh = 42 * k;
-        const rr = 12 * k;
-        
-        const grad = ctx.createLinearGradient(rx, ry, rx + rw, ry + rh);
-        grad.addColorStop(0, color1);
-        grad.addColorStop(1, color2);
-        
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        // Fallback for browsers/environments that might not support roundRect (though most do)
-        if (ctx.roundRect) {
-            ctx.roundRect(rx, ry, rw, rh, rr);
-        } else {
-            ctx.rect(rx, ry, rw, rh); // Fallback to square if needed
-        }
-        ctx.fill();
-    };
+    // Draw Background White Rounded Square
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    if (ctx.roundRect) {
+        ctx.roundRect(x, y, s, s, 22 * k);
+    } else {
+        ctx.rect(x, y, s, s);
+    }
+    ctx.fill();
+
+    // Set Stroke Styles for Grid Lines
+    ctx.strokeStyle = '#D2C5B8';
+    ctx.lineWidth = 3.5 * k;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Top-Left Curve
+    ctx.beginPath();
+    ctx.moveTo(x + 35 * k, y + 0 * k);
+    ctx.lineTo(x + 35 * k, y + 27 * k);
+    ctx.arcTo(x + 35 * k, y + 35 * k, x + 27 * k, y + 35 * k, 8 * k);
+    ctx.lineTo(x + 0 * k, y + 35 * k);
+    ctx.stroke();
+
+    // Top-Right Curve
+    ctx.beginPath();
+    ctx.moveTo(x + 65 * k, y + 0 * k);
+    ctx.lineTo(x + 65 * k, y + 27 * k);
+    ctx.arcTo(x + 65 * k, y + 35 * k, x + 73 * k, y + 35 * k, 8 * k);
+    ctx.lineTo(x + 100 * k, y + 35 * k);
+    ctx.stroke();
+
+    // Bottom-Left Curve
+    ctx.beginPath();
+    ctx.moveTo(x + 0 * k, y + 65 * k);
+    ctx.lineTo(x + 27 * k, y + 65 * k);
+    ctx.arcTo(x + 35 * k, y + 65 * k, x + 35 * k, y + 73 * k, 8 * k);
+    ctx.lineTo(x + 35 * k, y + 100 * k);
+    ctx.stroke();
+
+    // Bottom-Right Curve
+    ctx.beginPath();
+    ctx.moveTo(x + 100 * k, y + 65 * k);
+    ctx.lineTo(x + 73 * k, y + 65 * k);
+    ctx.arcTo(x + 65 * k, y + 65 * k, x + 65 * k, y + 73 * k, 8 * k);
+    ctx.lineTo(x + 65 * k, y + 100 * k);
+    ctx.stroke();
+
+    // Center rounded square
+    ctx.beginPath();
+    if (ctx.roundRect) {
+        ctx.roundRect(x + 35 * k, y + 35 * k, 30 * k, 30 * k, 8 * k);
+    } else {
+        ctx.rect(x + 35 * k, y + 35 * k, 30 * k, 30 * k);
+    }
+    ctx.stroke();
+
+    // Draw Letters O K U
+    ctx.fillStyle = '#292524';
+    ctx.font = `bold ${26 * k}px "Outfit", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     
-    // TL - Gold
-    drawRect(5, 5, '#E8BA6E', '#B78B4D');
-    // TR - Silver
-    drawRect(53, 5, '#F0F0F0', '#C0C0C0');
-    // BL - Blue
-    drawRect(5, 53, '#B8D3F5', '#79A6E3');
-    // BR - Green
-    drawRect(53, 53, '#B8DBBE', '#8CB794');
+    ctx.fillText('O', x + 17.5 * k, y + 50 * k);
+    ctx.fillText('K', x + 50 * k, y + 50 * k);
+    ctx.fillText('U', x + 82.5 * k, y + 50 * k);
   };
 
   // --- VISUAL RENDERER ---
@@ -230,25 +266,12 @@ export async function generateReplayVideo(
       ctx.font = 'bold 40px "Outfit", sans-serif';
       ctx.fillText(formatTime(currentSeconds), size/2, titleY + 31);
 
-      // Watermark with Logo
+      // Watermark text only (centered)
       const watermarkText = "OKU: SUDOKU";
-      const logoSize = 44;
-      const logoSpacing = 16;
-      
-      ctx.font = '500 30px "Outfit", sans-serif';
-      const textMetrics = ctx.measureText(watermarkText);
-      const totalContentWidth = logoSize + logoSpacing + textMetrics.width;
-      
-      const contentStartX = (size - totalContentWidth) / 2;
-      const contentCenterY = size - (padding / 2);
-      
-      // Draw Logo
-      drawLogo(ctx, contentStartX, contentCenterY - (logoSize / 2), logoSize);
-      
-      // Draw Text
-      ctx.textAlign = 'left';
+      ctx.font = 'bold 36px "Outfit", sans-serif';
+      ctx.textAlign = 'center';
       ctx.fillStyle = c.watermark;
-      ctx.fillText(watermarkText, contentStartX + logoSize + logoSpacing, contentCenterY + 2);
+      ctx.fillText(watermarkText, size / 2, size - (padding / 2) + 2);
 
       // Board Base
       ctx.shadowColor = "rgba(0,0,0,0.1)";

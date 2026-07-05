@@ -16,39 +16,96 @@ export const Logo: React.FC<LogoProps> = ({ className = "", size = 80 }) => {
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      <defs>
-        <linearGradient id="logo-tl" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#E8BA6E" />
-          <stop offset="100%" stopColor="#B78B4D" />
-        </linearGradient>
-        <linearGradient id="logo-tr" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#F0F0F0" />
-          <stop offset="100%" stopColor="#C0C0C0" />
-        </linearGradient>
-        <linearGradient id="logo-bl" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#B8D3F5" />
-          <stop offset="100%" stopColor="#79A6E3" />
-        </linearGradient>
-        <linearGradient id="logo-br" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#B8DBBE" />
-          <stop offset="100%" stopColor="#8CB794" />
-        </linearGradient>
-      </defs>
-      
       {/* Background - White Rounded Square */}
       <rect width="100" height="100" rx="22" fill="#ffffff" />
       
-      {/* Top Left - Gold */}
-      <rect x="9" y="9" width="38" height="38" rx="12" fill="url(#logo-tl)" />
+      {/* Top-Left Curve */}
+      <path 
+        d="M 35 0 L 35 27 A 8 8 0 0 1 27 35 L 0 35" 
+        stroke="#D2C5B8" 
+        strokeWidth="3.5" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+      />
       
-      {/* Top Right - Silver */}
-      <rect x="53" y="9" width="38" height="38" rx="12" fill="url(#logo-tr)" />
+      {/* Top-Right Curve */}
+      <path 
+        d="M 65 0 L 65 27 A 8 8 0 0 0 73 35 L 100 35" 
+        stroke="#D2C5B8" 
+        strokeWidth="3.5" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+      />
       
-      {/* Bottom Left - Blue */}
-      <rect x="9" y="53" width="38" height="38" rx="12" fill="url(#logo-bl)" />
+      {/* Bottom-Left Curve */}
+      <path 
+        d="M 0 65 L 27 65 A 8 8 0 0 1 35 73 L 35 100" 
+        stroke="#D2C5B8" 
+        strokeWidth="3.5" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+      />
       
-      {/* Bottom Right - Green */}
-      <rect x="53" y="53" width="38" height="38" rx="12" fill="url(#logo-br)" />
+      {/* Bottom-Right Curve */}
+      <path 
+        d="M 100 65 L 73 65 A 8 8 0 0 0 65 73 L 65 100" 
+        stroke="#D2C5B8" 
+        strokeWidth="3.5" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+      />
+      
+      {/* Center rounded square */}
+      <rect 
+        x="35" 
+        y="35" 
+        width="30" 
+        height="30" 
+        rx="8" 
+        stroke="#D2C5B8" 
+        strokeWidth="3.5" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        fill="none"
+      />
+      
+      {/* Letters O K U */}
+      <text 
+        x="17.5" 
+        y="50" 
+        fill="#292524" 
+        fontSize="26" 
+        fontWeight="bold" 
+        fontFamily="Outfit, sans-serif" 
+        textAnchor="middle" 
+        dominantBaseline="central"
+      >
+        O
+      </text>
+      <text 
+        x="50" 
+        y="50" 
+        fill="#292524" 
+        fontSize="26" 
+        fontWeight="bold" 
+        fontFamily="Outfit, sans-serif" 
+        textAnchor="middle" 
+        dominantBaseline="central"
+      >
+        K
+      </text>
+      <text 
+        x="82.5" 
+        y="50" 
+        fill="#292524" 
+        fontSize="26" 
+        fontWeight="bold" 
+        fontFamily="Outfit, sans-serif" 
+        textAnchor="middle" 
+        dominantBaseline="central"
+      >
+        U
+      </text>
     </svg>
   );
 };

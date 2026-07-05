@@ -31,7 +31,7 @@ const DiamondBackground = () => (
 
 // Inner Application Component that contains all state and logic
 const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset }) => {
-  const [screen, setScreen] = useState<Screen>('splash');
+  const [screen, setScreen] = useState<Screen>('difficulty');
   const [direction, setDirection] = useState<number>(0);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
@@ -173,13 +173,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       sounds.setProfile(selectedSoundPackId);
   }, [settings.sound, settings.vibration, selectedSoundPackId]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-        setDirection(1);
-        setScreen('difficulty');
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+
 
   useEffect(() => {
      setPurchasedBackgrounds(Storage.getPurchasedBackgrounds());

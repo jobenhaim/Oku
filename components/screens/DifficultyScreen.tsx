@@ -290,7 +290,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                             sounds.playClick(); 
                             if (onContinue) onContinue(lastPlayedGame.difficulty, lastPlayedGame.levelId);
                         }}
-                        className="flex items-center justify-center gap-2 w-[47.5%] py-3 bg-white dark:bg-stone-900 border border-blue-200 dark:border-blue-900/60 rounded-2xl text-sm font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-stone-850 transition-all active:scale-95 shadow-md"
+                        className="flex items-center justify-center gap-2 w-[47.5%] py-3 bg-white dark:bg-stone-900 border border-blue-200 dark:border-blue-900/60 rounded-2xl text-sm font-bold text-blue-600 dark:text-blue-400 active:scale-95 shadow-md"
                       >
                           <span>Continue Game</span>
                           <Icons.Next className="w-4 h-4" />
