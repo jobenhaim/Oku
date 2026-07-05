@@ -233,7 +233,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                       <p className="text-xs font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-[0.2em]">{subtitle}</p>
                   </div>
 
-                  <div className={`w-full max-w-md flex flex-wrap justify-center gap-3 shrink-0 min-h-[330px] content-center ${lastPlayedGame ? 'mb-4' : 'mb-8'}`}>
+                  <div className={`w-full max-w-md flex flex-wrap justify-center gap-3 shrink-0 ${lastPlayedGame ? 'mb-4' : 'mb-8'}`}>
                       {visibleDifficulties.map((diff, index) => {
                           const isPyramidTop = isOddCount && index === 0 && !isOneVisible;
                           
