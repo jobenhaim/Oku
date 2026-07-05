@@ -424,3 +424,12 @@ html, body {
   from { background-position: 0 0; }
   to { background-position: 0 -30px; }
 }
+
+/* Faster cell selection and highlighting transitions (0.2 seconds) */
+.sudoku-cell {
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.sudoku-cell * {
+  transition: none !important;
+}
+

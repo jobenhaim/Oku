@@ -45,7 +45,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     noteFontSize,
     noteLineHeight
 }) => {
-    let classes = "w-full h-full flex items-center justify-center cursor-pointer select-none relative overflow-hidden ";
+    let classes = "w-full h-full flex items-center justify-center cursor-pointer select-none relative sudoku-cell ";
     
     let bgClass = ''; 
 
@@ -112,7 +112,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
             style={{ fontSize: mainFontSize }}
         >
         {(cell.value || animatingValue !== null) ? (
-            <span className={`leading-none pt-[0.1em] relative z-10 ${!cell.isFixed && !cell.isError && !cell.isMarkedWrong && !cell.isRevealed ? numberColor : ''}`}>
+            <span className={`leading-none pt-[0.1em] relative z-10 ${!cell.isFixed && !isError && !isConflict && !isMarkedWrong && !isRevealed ? numberColor : ''}`}>
                 {animatingValue !== null ? animatingValue : cell.value}
             </span>
         ) : cell.notes.length > 0 ? (

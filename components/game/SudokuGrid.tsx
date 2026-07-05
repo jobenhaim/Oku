@@ -100,18 +100,20 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
             )}
             
             <div className="absolute inset-0 pointer-events-none z-20">
-                <svg width="100%" height="100%" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
+                <svg width="100%" height="100%" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }} shapeRendering="crispEdges">
                     <defs>
                         <style>{`
                             .grid-line-thin { 
                                 stroke: var(--grid-thin); 
                                 stroke-width: 1px; 
                                 vector-effect: non-scaling-stroke; 
+                                shape-rendering: crispEdges;
                             } 
                             .grid-line-thick { 
                                 stroke: var(--grid-thick); 
                                 stroke-width: 3px; 
                                 vector-effect: non-scaling-stroke; 
+                                shape-rendering: crispEdges;
                             } 
                         `}</style>
                     </defs>
