@@ -515,26 +515,23 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   }
 
   const variants: Variants = {
-    initial: (dir: number) => ({
-      x: dir > 0 ? '100%' : (dir < 0 ? '-100%' : 0),
+    initial: {
       opacity: 0
-    }),
+    },
     animate: {
-      x: 0,
       opacity: 1,
       transition: { 
-          duration: 0.4,
-          ease: [0.32, 0.72, 0, 1] // Apple-style cubic-bezier for smooth iOS-like motion
+          duration: 0.22,
+          ease: "easeInOut"
       }
     },
-    exit: (dir: number) => ({
-      x: dir > 0 ? '-100%' : '100%',
+    exit: {
       opacity: 0,
       transition: { 
-          duration: 0.35,
-          ease: [0.32, 0.72, 0, 1]
+          duration: 0.18,
+          ease: "easeInOut"
       }
-    })
+    }
   };
 
   return (

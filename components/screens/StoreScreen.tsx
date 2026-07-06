@@ -34,6 +34,31 @@ const TABS = [
     { id: 'num', label: 'Numbers' }
 ];
 
+interface StoreItemWrapperProps {
+    children: React.ReactNode;
+    delay: number;
+}
+
+const StoreItemWrapper: React.FC<StoreItemWrapperProps> = ({ children, delay }) => {
+    const [animating, setAnimating] = useState(true);
+
+    useEffect(() => {
+        const t = setTimeout(() => {
+            setAnimating(false);
+        }, delay + 600);
+        return () => clearTimeout(t);
+    }, [delay]);
+
+    return (
+        <div 
+            className={animating ? 'opacity-0 animate-slide-in-down' : 'opacity-100'}
+            style={{ animationDelay: `${delay}ms` }}
+        >
+            {children}
+        </div>
+    );
+};
+
 export const StoreScreen: React.FC<StoreScreenProps> = ({
     points,
     onBack,
@@ -135,39 +160,41 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
         <div className="mb-8">
             <h2 className="text-lg font-bold text-t-primary mb-3 ml-1">Skills</h2>
             <div className="flex flex-col gap-4">
-                {SKILLS.map(skill => {
+                {SKILLS.map((skill, idx) => {
                     const isPurchased = purchasedSkills.includes(skill.id);
                     const isEnabled = enabledSkills.includes(skill.id);
                     const SkillIcon = skill.icon;
+                    const delay = idx * 35;
                     
                     return (
-                        <button 
-                            key={skill.id}
-                            onClick={(e) => handleSkillInteraction(e, skill)}
-                            className={`w-full h-[74px] px-3 py-2 rounded-[1.25rem] shadow-sm flex items-center gap-3 text-left active:scale-[0.98] transition-all bg-t-surface relative overflow-hidden group`}
-                        >
-                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${skill.bgClass} transition-transform group-active:scale-95`}>
-                                <SkillIcon className={`w-6 h-6 ${skill.class}`} />
-                            </div>
+                        <StoreItemWrapper delay={delay} key={skill.id}>
+                            <button 
+                                onClick={(e) => handleSkillInteraction(e, skill)}
+                                className={`w-full h-[74px] px-3 py-2 rounded-[1.25rem] shadow-sm flex items-center gap-3 text-left active:scale-[0.98] transition-all bg-t-surface relative overflow-hidden group`}
+                            >
+                                <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${skill.bgClass} transition-transform group-active:scale-95`}>
+                                    <SkillIcon className={`w-6 h-6 ${skill.class}`} />
+                                </div>
 
-                            <div className="flex-1 min-w-0 py-0.5">
-                                <h3 className="text-[15px] font-bold text-t-primary leading-tight mb-0.5">{skill.name}</h3>
-                                <p className="text-[10px] font-medium text-t-secondary leading-[1.15] line-clamp-2">{skill.description}</p>
-                            </div>
+                                <div className="flex-1 min-w-0 py-0.5">
+                                    <h3 className="text-[15px] font-bold text-t-primary leading-tight mb-0.5">{skill.name}</h3>
+                                    <p className="text-[10px] font-medium text-t-secondary leading-[1.15] line-clamp-2">{skill.description}</p>
+                                </div>
 
-                            <div className="shrink-0 w-[68px] flex justify-end">
-                                {isPurchased ? (
-                                        <div className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ease-out ${isEnabled ? 'bg-stone-600 dark:bg-stone-400' : 'bg-stone-300 dark:bg-stone-700'}`}>
-                                            <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-transform duration-300 ease-out ${isEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
-                                        </div>
-                                ) : (
-                                        <div className="flex items-center justify-center bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 h-8 px-2.5 rounded-full min-w-[60px] gap-1">
-                                            <span className="text-xs font-bold text-t-primary leading-none pt-0.5">{skill.cost}</span>
-                                            <Icons.Diamond className="w-3 h-3 text-blue-500 fill-current" />
-                                        </div>
-                                )}
-                            </div>
-                        </button>
+                                <div className="shrink-0 w-[68px] flex justify-end">
+                                    {isPurchased ? (
+                                            <div className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ease-out ${isEnabled ? 'bg-stone-600 dark:bg-stone-400' : 'bg-stone-300 dark:bg-stone-700'}`}>
+                                                <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-transform duration-300 ease-out ${isEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                                            </div>
+                                    ) : (
+                                            <div className="flex items-center justify-center bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 h-8 px-2.5 rounded-full min-w-[60px] gap-1">
+                                                <span className="text-xs font-bold text-t-primary leading-none pt-0.5">{skill.cost}</span>
+                                                <Icons.Diamond className="w-3 h-3 text-blue-500 fill-current" />
+                                            </div>
+                                    )}
+                                </div>
+                            </button>
+                        </StoreItemWrapper>
                     );
                 })}
             </div>
@@ -179,46 +206,52 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
             <h2 className="text-lg font-bold text-t-primary mb-3 ml-1">Backgrounds</h2>
             <div className="mb-6">
                 <h3 className="text-xs font-bold text-t-secondary uppercase tracking-widest mb-3 ml-1">Static</h3>
-                <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{STATIC_BACKGROUNDS.map(bg => {
+                <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{STATIC_BACKGROUNDS.map((bg, idx) => {
                     const isPurchased = purchasedBackgrounds.includes(bg.id);
                     const isSelected = selectedBackgroundId === bg.id;
+                    const delay = activeTab === 'all' ? (3 + idx) * 35 : idx * 35;
                     return (
-                        <div key={bg.id} className="flex flex-col items-center gap-1.5">
-                            <button 
-                                onClick={() => isPurchased ? onSelectBackground(bg.id) : onPurchase(bg, 'bg')} 
-                                className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 bg-gradient-to-t from-stone-200 to-white dark:bg-none dark:bg-stone-800 ${isSelected ? 'border border-stone-600 dark:border-stone-400 scale-105 z-10' : ''}`}
-                            >
-                                <div className={`flex-1 relative overflow-hidden ${bg.class}`}>
-                                        <div className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-500" style={{ opacity: bg.id === 'bg-default' ? 'calc(var(--overlay-opacity) * 0.6)' : 'calc(var(--overlay-opacity) * 1.6)' }} />
-                                </div>
-                                <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={bg.cost} />
-                            </button>
-                            <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-800 dark:text-stone-200' : 'text-t-secondary'}`}>{bg.name}</span>
-                        </div>
+                        <StoreItemWrapper delay={delay} key={bg.id}>
+                            <div className="flex flex-col items-center gap-1.5">
+                                <button 
+                                    onClick={() => isPurchased ? onSelectBackground(bg.id) : onPurchase(bg, 'bg')} 
+                                    className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 bg-gradient-to-t from-stone-200 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 z-10' : 'border-transparent'}`}
+                                >
+                                    <div className={`flex-1 relative overflow-hidden ${bg.class}`}>
+                                            <div className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-500" style={{ opacity: bg.id === 'bg-default' ? 'calc(var(--overlay-opacity) * 0.6)' : 'calc(var(--overlay-opacity) * 1.6)' }} />
+                                    </div>
+                                    <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={bg.cost} />
+                                </button>
+                                <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-800 dark:text-stone-200' : 'text-t-secondary'}`}>{bg.name}</span>
+                            </div>
+                        </StoreItemWrapper>
                     );
                 })}</div>
             </div>
             <div className="mb-2">
                 <h3 className="text-xs font-bold text-t-secondary uppercase tracking-widest mb-3 ml-1">Atmosphere</h3>
-                <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{DYNAMIC_BACKGROUNDS.map(bg => {
+                <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{DYNAMIC_BACKGROUNDS.map((bg, idx) => {
                     const isPurchased = purchasedBackgrounds.includes(bg.id);
                     const isSelected = selectedBackgroundId === bg.id;
+                    const delay = activeTab === 'all' ? (3 + STATIC_BACKGROUNDS.length + idx) * 35 : (STATIC_BACKGROUNDS.length + idx) * 35;
                     return (
-                        <div key={bg.id} className="flex flex-col items-center gap-1.5">
-                            <button 
-                                onClick={() => isPurchased ? onSelectBackground(bg.id) : onPurchase(bg, 'bg')} 
-                                className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 bg-gradient-to-t from-stone-200 to-white dark:bg-none dark:bg-stone-800 ${isSelected ? 'border border-stone-600 dark:border-stone-400 scale-105 z-10' : ''}`}
-                            >
-                                <div 
-                                className={`flex-1 relative overflow-hidden ${bg.class}`} 
-                                style={{ backgroundSize: '300% 300%' }}
+                        <StoreItemWrapper delay={delay} key={bg.id}>
+                            <div className="flex flex-col items-center gap-1.5">
+                                <button 
+                                    onClick={() => isPurchased ? onSelectBackground(bg.id) : onPurchase(bg, 'bg')} 
+                                    className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 bg-gradient-to-t from-stone-200 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 z-10' : 'border-transparent'}`}
                                 >
-                                        <div className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-500" style={{ opacity: 'calc(var(--overlay-opacity) * 1.6)' }} />
-                                </div>
-                                <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={bg.cost} />
-                            </button>
-                            <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-800 dark:text-stone-200' : 'text-t-secondary'}`}>{bg.name}</span>
-                        </div>
+                                    <div 
+                                    className={`flex-1 relative overflow-hidden ${bg.class}`} 
+                                    style={{ backgroundSize: '300% 300%' }}
+                                    >
+                                            <div className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-500" style={{ opacity: 'calc(var(--overlay-opacity) * 1.6)' }} />
+                                    </div>
+                                    <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={bg.cost} />
+                                </button>
+                                <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-800 dark:text-stone-200' : 'text-t-secondary'}`}>{bg.name}</span>
+                            </div>
+                        </StoreItemWrapper>
                     );
                 })}</div>
             </div>
@@ -228,37 +261,43 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
     const renderSoundPacks = () => (
         <div className="mb-8">
             <h2 className="text-lg font-bold text-t-primary mb-3 ml-1">Sound Packs</h2>
-            <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{SOUND_PACKS.map(pack => {
+            <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{SOUND_PACKS.map((pack, idx) => {
                 const isPurchased = purchasedSoundPacks.includes(pack.id);
                 const isSelected = selectedSoundPackId === pack.id;
                 const isInfoActive = activeInfoId === pack.id;
                 const PackIcon = pack.icon;
                 
+                const delay = activeTab === 'all' 
+                    ? (3 + STATIC_BACKGROUNDS.length + DYNAMIC_BACKGROUNDS.length + idx) * 35 
+                    : idx * 35;
+                
                 return (
-                    <div key={pack.id} className={`flex flex-col items-center gap-1.5 ${isSelected ? 'relative z-20' : 'relative z-0'}`}>
-                        {isInfoActive && (
-                            <div className="absolute left-1/2 -translate-x-1/2 -top-2 -translate-y-full w-32 pointer-events-none z-50">
-                                <div className={`origin-bottom ${isClosing ? 'animate-tooltip-exit' : 'animate-tooltip-enter'}`}>
-                                    <div className="bg-stone-800 text-white dark:bg-white dark:text-stone-900 text-[10px] p-2 rounded-lg shadow-xl text-center font-medium leading-tight relative border border-stone-600/30">
-                                        {pack.description}
-                                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-4 border-transparent border-t-stone-800 dark:border-t-white"></div>
+                    <StoreItemWrapper delay={delay} key={pack.id}>
+                        <div className={`flex flex-col items-center gap-1.5 ${isSelected ? 'relative z-20' : 'relative z-0'}`}>
+                            {isInfoActive && (
+                                <div className="absolute left-1/2 -translate-x-1/2 -top-2 -translate-y-full w-32 pointer-events-none z-50">
+                                    <div className={`origin-bottom ${isClosing ? 'animate-tooltip-exit' : 'animate-tooltip-enter'}`}>
+                                        <div className="bg-stone-800 text-white dark:bg-white dark:text-stone-900 text-[10px] p-2 rounded-lg shadow-xl text-center font-medium leading-tight relative border border-stone-600/30">
+                                            {pack.description}
+                                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-4 border-transparent border-t-stone-800 dark:border-t-white"></div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        <button 
-                            onClick={(e) => handleSoundPackClick(e, pack)} 
-                            className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all bg-gradient-to-t from-stone-100 to-white dark:bg-none dark:bg-stone-800 ${isSelected ? 'border border-stone-600 dark:border-stone-400 scale-105 shadow-md' : 'active:scale-95'}`}
-                        >
-                            <div className={`flex-1 flex items-center justify-center relative z-10 overflow-hidden`}>
-                                <PackIcon className={`w-8 h-8 ${pack.iconColor} relative z-20`} />
-                            </div>
-                            <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={pack.cost} />
-                        </button>
-                        
-                        <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-800 dark:text-stone-200' : 'text-t-secondary'}`}>{pack.name}</span>
-                    </div>
+                            <button 
+                                onClick={(e) => handleSoundPackClick(e, pack)} 
+                                className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all bg-gradient-to-t from-stone-100 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 shadow-md' : 'border-transparent active:scale-95'}`}
+                            >
+                                <div className={`flex-1 flex items-center justify-center relative z-10 overflow-hidden`}>
+                                    <PackIcon className={`w-8 h-8 ${pack.iconColor} relative z-20`} />
+                                </div>
+                                <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={pack.cost} />
+                            </button>
+                            
+                            <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-800 dark:text-stone-200' : 'text-t-secondary'}`}>{pack.name}</span>
+                        </div>
+                    </StoreItemWrapper>
                 );
             })}</div>
         </div>
@@ -267,22 +306,29 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
     const renderNumbers = () => (
         <div className="mb-8">
             <h2 className="text-lg font-bold text-t-primary mb-3 ml-1">Number Styles</h2>
-            <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{NUMBER_COLORS.map(num => {
+            <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{NUMBER_COLORS.map((num, idx) => {
                 const isPurchased = purchasedNumberColors.includes(num.id);
                 const isSelected = selectedNumberColorId === num.id;
+                
+                const delay = activeTab === 'all'
+                    ? (3 + STATIC_BACKGROUNDS.length + DYNAMIC_BACKGROUNDS.length + SOUND_PACKS.length + idx) * 35
+                    : idx * 35;
+                
                 return (
-                    <div key={num.id} className="flex flex-col items-center gap-1.5">
-                        <button 
-                            onClick={() => isPurchased ? onSelectNumberColor(num.id) : onPurchase(num, 'num')} 
-                            className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all bg-gradient-to-t from-stone-100 to-white dark:bg-none dark:bg-stone-800 ${isSelected ? 'border border-stone-600 dark:border-stone-400 scale-105 z-10' : 'active:scale-95'}`}
-                        >
-                            <div className={`flex-1 flex items-center justify-center w-full`}>
-                                <span className={`text-3xl font-bold ${num.uiClass}`}>5</span>
-                            </div>
-                            <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={num.cost} />
-                        </button>
-                        <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-800 dark:text-stone-200' : 'text-t-secondary'}`}>{num.name}</span>
-                    </div>
+                    <StoreItemWrapper delay={delay} key={num.id}>
+                        <div className="flex flex-col items-center gap-1.5">
+                            <button 
+                                onClick={() => isPurchased ? onSelectNumberColor(num.id) : onPurchase(num, 'num')} 
+                                className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all bg-gradient-to-t from-stone-100 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 z-10' : 'border-transparent active:scale-95'}`}
+                            >
+                                <div className={`flex-1 flex items-center justify-center w-full`}>
+                                    <span className={`text-3xl font-bold ${num.uiClass}`}>5</span>
+                                </div>
+                                <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={num.cost} />
+                            </button>
+                            <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-800 dark:text-stone-200' : 'text-t-secondary'}`}>{num.name}</span>
+                        </div>
+                    </StoreItemWrapper>
                 );
             })}</div>
         </div>

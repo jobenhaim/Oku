@@ -35,7 +35,7 @@ const PROFILES: Record<string, SoundProfile> = {
         numberFreqs: Array(9).fill(1000), 
         popFreq: 800,
         duration: 0.05,
-        volumeScale: 0.6,
+        volumeScale: 0.5,
         noiseFilterFreq: 800
     },
     'snd-wood': {
@@ -48,7 +48,7 @@ const PROFILES: Record<string, SoundProfile> = {
         numberFreqs: [329.63, 392.00, 440.00, 493.88, 587.33, 659.25, 783.99, 880.00, 987.77],
         popFreq: 164.8, // E3 (Deep Thud)
         duration: 0.15, 
-        volumeScale: 1.4, // FM sounds can be quieter
+        volumeScale: 1.0, // FM sounds can be quieter
         pitchDrop: false 
     },
     'snd-water': {
@@ -60,7 +60,7 @@ const PROFILES: Record<string, SoundProfile> = {
         numberFreqs: [523.25, 587.33, 659.25, 739.99, 830.61, 932.33, 1046.50, 1174.66, 1318.51],
         popFreq: 400,
         duration: 0.1, 
-        volumeScale: 0.5,
+        volumeScale: 0.6,
         pitchDrop: false // We use upward ramp
     },
     'snd-piano': {
@@ -96,7 +96,7 @@ const PROFILES: Record<string, SoundProfile> = {
         numberFreqs: Array(9).fill(2500), // Mechs usually sound same, maybe slight var?
         popFreq: 1500,
         duration: 0.05,
-        volumeScale: 0.15,
+        volumeScale: 0.1,
         pitchDrop: false
     },
     'snd-retro': {
@@ -108,7 +108,7 @@ const PROFILES: Record<string, SoundProfile> = {
         numberFreqs: [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50, 1174.66],
         popFreq: 220,
         duration: 0.1,
-        volumeScale: 0.03,
+        volumeScale: 0.1,
         pitchDrop: false
     },
     'snd-crystal': {
@@ -133,7 +133,7 @@ const PROFILES: Record<string, SoundProfile> = {
         numberFreqs: [440.00, 493.88, 523.25, 659.25, 698.46, 880.00, 987.77, 1046.50, 1318.51],
         popFreq: 220,
         duration: 1.0, 
-        volumeScale: 0.3,
+        volumeScale: 0.25,
         pitchDrop: false
     }
 };
@@ -612,28 +612,56 @@ class SoundController {
 
     playWin() {
         if (this.soundEnabled) {
-            const sequence = [1046.50, 1318.51, 1567.98, 2093.00]; 
-            const timings = [0, 60, 120, 180]; 
+            // A warm, gentle, melodic victory cascade
+            // Chord Progression: C Maj -> G Maj -> C Maj (Sparkly Chords with lower volume scale)
+            const chords = [
+                { freqs: [523.25, 659.25], time: 0, gain: 0.05 },      // C5 + E5
+                { freqs: [587.33, 783.99], time: 130, gain: 0.05 },    // D5 + G5
+                { freqs: [659.25, 1046.50], time: 260, gain: 0.05 },   // E5 + C6
+                { freqs: [783.99, 1318.51], time: 390, gain: 0.05 },   // G5 + E6
+                { freqs: [1046.50, 1567.98, 2093.00], time: 520, gain: 0.04 } // C6 + G6 + C7 Sparkly peak
+            ];
             
-            sequence.forEach((freq, i) => {
+            chords.forEach(({ freqs, time, gain: maxGain }) => {
                 setTimeout(() => {
                     const ctx = this.getCtx();
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(freq, ctx.currentTime);
-                    gain.gain.setValueAtTime(0, ctx.currentTime);
-                    gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 0.01);
-                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start();
-                    osc.stop(ctx.currentTime + 0.25);
-                }, timings[i]);
+                    freqs.forEach(freq => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                        
+                        gain.gain.setValueAtTime(0, ctx.currentTime);
+                        // Gentler, slower attack to remove the harsh transient click
+                        gain.gain.linearRampToValueAtTime(maxGain, ctx.currentTime + 0.03);
+                        // Softer exponential decay for a ringing chime effect
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+                        
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start();
+                        osc.stop(ctx.currentTime + 0.7);
+                    });
+                }, time);
             });
         }
+        
         if (this.vibrationEnabled) {
-            Haptics.notification({ type: NotificationType.Success });
+            // Sync the phone haptic vibration perfectly with the melodic beats!
+            // Patterns of vibrations & pauses (in ms): Vibrate 35ms, Rest 95ms, Vibrate 35ms, Rest 95ms...
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                try {
+                    navigator.vibrate([35, 95, 35, 95, 35, 95, 35, 95, 150]);
+                } catch (e) {
+                    // Ignore browser security restrictions for iframe haptics
+                }
+            }
+            try {
+                Haptics.notification({ type: NotificationType.Success });
+            } catch (e) {
+                // Fail-safe
+            }
         }
     }
 

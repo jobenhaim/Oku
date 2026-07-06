@@ -22,6 +22,8 @@ interface SudokuCellProps {
     mainFontSize: string;
     noteFontSize: string;
     noteLineHeight: string;
+    onlyBackground?: boolean;
+    onlyContent?: boolean;
 }
 
 const SudokuCell: React.FC<SudokuCellProps> = ({
@@ -43,7 +45,9 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     onCellClick,
     mainFontSize,
     noteFontSize,
-    noteLineHeight
+    noteLineHeight,
+    onlyBackground = false,
+    onlyContent = false
 }) => {
     let classes = "w-full h-full flex items-center justify-center cursor-pointer select-none relative sudoku-cell ";
     
@@ -77,10 +81,8 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     } else if (isRevealed) {
          bgClass = 'bg-amber-100 dark:bg-amber-900 '; 
     } else {
-         bgClass = 'bg-t-board '; 
+         bgClass = 'bg-transparent '; 
     }
-
-    classes += bgClass;
     
     if (isRevealingCell) {
         classes += "animate-reveal-premium z-50 relative ";
@@ -111,25 +113,33 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
             }} 
             style={{ fontSize: mainFontSize }}
         >
-        {(cell.value || animatingValue !== null) ? (
-            <span className={`leading-none pt-[0.1em] relative z-10 ${!cell.isFixed && !isError && !isConflict && !isMarkedWrong && !isRevealed ? numberColor : ''}`}>
-                {animatingValue !== null ? animatingValue : cell.value}
-            </span>
-        ) : cell.notes.length > 0 ? (
-            <div className="grid grid-cols-3 grid-rows-3 w-full h-full p-[1px] pointer-events-none relative z-10">
-                {[1,2,3,4,5,6,7,8,9].map(n => {
-                    const hasNote = cell.notes.includes(n);
-                    if (!hasNote) {
-                        return <div key={n} />;
-                    }
-                    return (
-                        <div key={n} className="flex items-center justify-center leading-none" style={{ fontSize: noteFontSize, lineHeight: noteLineHeight }}>
-                            <span className="text-stone-500 dark:text-stone-400 font-medium">{n}</span>
-                        </div>
-                    )
-                })}
-            </div>
-        ) : null}
+        {/* Cell Background Layer */}
+        {!onlyContent && (
+            <div className={`absolute inset-0 ${bgClass} sudoku-cell-bg pointer-events-none z-0`} />
+        )}
+        
+        {/* Cell Content Layer */}
+        {!onlyBackground && (
+            (cell.value || animatingValue !== null) ? (
+                <span className={`leading-none pt-[0.1em] relative z-20 ${!cell.isFixed && !isError && !isConflict && !isMarkedWrong && !isRevealed ? numberColor : ''}`}>
+                    {animatingValue !== null ? animatingValue : cell.value}
+                </span>
+            ) : cell.notes.length > 0 ? (
+                <div className="grid grid-cols-3 grid-rows-3 w-full h-full p-[1px] pointer-events-none relative z-20">
+                    {[1,2,3,4,5,6,7,8,9].map(n => {
+                        const hasNote = cell.notes.includes(n);
+                        if (!hasNote) {
+                            return <div key={n} />;
+                        }
+                        return (
+                            <div key={n} className="flex items-center justify-center leading-none" style={{ fontSize: noteFontSize, lineHeight: noteLineHeight }}>
+                                <span className="text-stone-500 dark:text-stone-400 font-medium">{n}</span>
+                            </div>
+                        )
+                    })}
+                </div>
+            ) : null
+        )}
         </div>
     );
 };

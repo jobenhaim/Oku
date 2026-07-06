@@ -16,9 +16,9 @@ interface UseSudokuBoardProps {
 const checkSectionCompletion = (board: Board, solvedBoard: number[][], r: number, c: number) => {
     const sections: string[] = [];
     // Row
-    if (board[r].every((cell, idx) => cell.value === solvedBoard[r][idx])) sections.push(`row-${r}`);
+    if (board[r].every((cell, idx) => cell.value === solvedBoard[r][idx])) sections.push(`row_${r}:${r}_${c}`);
     // Col
-    if (board.every((row, idx) => row[c].value === solvedBoard[idx][c])) sections.push(`col-${c}`);
+    if (board.every((row, idx) => row[c].value === solvedBoard[idx][c])) sections.push(`col_${c}:${r}_${c}`);
     // Box
     const startR = Math.floor(r/3)*3;
     const startC = Math.floor(c/3)*3;
@@ -32,7 +32,7 @@ const checkSectionCompletion = (board: Board, solvedBoard: number[][], r: number
             }
         }
     }
-    if (boxOk) sections.push(`box-${boxIdx}`);
+    if (boxOk) sections.push(`box_${boxIdx}:${r}_${c}`);
     return sections;
 };
 

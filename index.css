@@ -432,4 +432,55 @@ html, body {
 .sudoku-cell * {
   transition: none !important;
 }
+.sudoku-cell .sudoku-cell-bg {
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Minimalistic Completion Soft Glow & Expanding Radial Ripple */
+@keyframes completion-ripple-expand {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.95;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.15);
+    opacity: 0;
+  }
+}
+
+.completion-ripple {
+  animation: completion-ripple-expand 1.8s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* Elegant full board win outline green glow pulse */
+@keyframes board-complete-glow {
+  0% {
+    box-shadow: 0 0 0px rgba(16, 185, 129, 0);
+    border-color: rgba(16, 185, 129, 0);
+    background-color: rgba(16, 185, 129, 0);
+  }
+  20% {
+    box-shadow: 0 0 25px rgba(52, 211, 153, 0.6), inset 0 0 25px rgba(52, 211, 153, 0.3);
+    border-color: rgba(52, 211, 153, 0.9);
+    background-color: rgba(16, 185, 129, 0.05);
+  }
+  100% {
+    box-shadow: 0 0 0px rgba(16, 185, 129, 0);
+    border-color: rgba(16, 185, 129, 0);
+    background-color: rgba(16, 185, 129, 0);
+  }
+}
+
+.completion-sweep-board {
+  border: 4px solid transparent;
+  border-radius: 8px;
+  box-sizing: border-box;
+  animation: board-complete-glow 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  pointer-events: none;
+}
+
 

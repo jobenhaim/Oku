@@ -86,18 +86,21 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   const handleSectionComplete = useCallback((sections: string[]) => {
       if (sections.length > 0) {
+          // Generate unique IDs for each completed section so multiple triggers can occur/repeat instantly
+          const uniqueSections = sections.map(s => `${s}:${Date.now()}_${Math.random().toString(36).substring(2, 7)}`);
+          
           setAnimatingSections(prev => {
               const next = new Set(prev);
-              sections.forEach(s => next.add(s));
+              uniqueSections.forEach(s => next.add(s));
               return next;
           });
           setTimeout(() => {
               setAnimatingSections(prev => {
                   const next = new Set(prev);
-                  sections.forEach(s => next.delete(s));
+                  uniqueSections.forEach(s => next.delete(s));
                   return next;
               });
-          }, 1000);
+          }, 2000);
       }
   }, []);
 
@@ -109,7 +112,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setAnimatingSections(new Set(['full-board']));
       setTimeout(() => {
           setAnimatingSections(new Set());
-      }, 1500);
+      }, 2500);
       
       let points = 0;
       switch(difficulty) {

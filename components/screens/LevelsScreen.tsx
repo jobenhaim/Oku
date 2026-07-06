@@ -11,15 +11,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 // --- OPTIMIZED LEVEL BUTTON COMPONENT ---
 interface LevelButtonProps {
     levelId: number;
+    index: number;
     status?: 'locked' | 'not-started' | 'in-progress' | 'completed';
     bestTime?: number;
     isGlobalBest: boolean;
     onSelect: (levelId: number) => void;
 }
 
-const LevelButton = React.memo(({ levelId, status, bestTime, isGlobalBest, onSelect }: LevelButtonProps) => {
+const LevelButton = React.memo(({ levelId, index, status, bestTime, isGlobalBest, onSelect }: LevelButtonProps) => {
     const isSolved = bestTime !== undefined || status === 'completed';
     const isInProgress = status === 'in-progress';
+
+    const rowIndex = Math.floor(index / 5);
+    const colIndex = index % 5;
+    const delay = 50 + (rowIndex * 30) + (colIndex * 15);
+
+    const [animating, setAnimating] = useState(true);
+    useEffect(() => {
+        const t = setTimeout(() => {
+            setAnimating(false);
+        }, delay + 600);
+        return () => clearTimeout(t);
+    }, [delay]);
 
     let buttonClass = 'aspect-square rounded-xl relative transition-all active:scale-90 shadow-sm ';
     
@@ -34,8 +47,14 @@ const LevelButton = React.memo(({ levelId, status, bestTime, isGlobalBest, onSel
         buttonClass += 'bg-t-surface hover:shadow-md text-t-primary ';
     }
 
+    buttonClass += animating ? 'opacity-0 animate-slide-in-down ' : 'opacity-100 ';
+
     return (
-        <button onClick={() => onSelect(levelId)} className={buttonClass}>
+        <button 
+            onClick={() => onSelect(levelId)} 
+            className={buttonClass}
+            style={{ animationDelay: `${delay}ms` }}
+        >
             <div className="absolute inset-0 flex items-center justify-center"><span className="font-bold text-2xl leading-none">{levelId}</span></div>
             {bestTime ? (
                 isGlobalBest ? (
@@ -173,13 +192,14 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
             return (
                 <div className="flex flex-col items-center w-full max-w-md">
                     <div className="w-full grid grid-cols-5 gap-3 pt-2 pb-6">
-                        {levels.map(lvl => {
+                        {levels.map((lvl, idx) => {
                             const key = `${difficulty}-${lvl}`;
                             const progress = progressMap[key];
                             return (
                                 <LevelButton 
                                     key={lvl}
                                     levelId={lvl}
+                                    index={idx}
                                     status={getDisplayStatus(progress)}
                                     bestTime={progress?.bestTime}
                                     isGlobalBest={globalBest !== undefined && progress?.bestTime === globalBest}
@@ -211,13 +231,14 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
             return (
                 <div className="flex flex-col items-center w-full max-w-md">
                     <div className="w-full grid grid-cols-5 gap-3 pt-2 pb-6 animate-fade-in">
-                        {levels.map(lvl => {
+                        {levels.map((lvl, idx) => {
                             const key = `${difficulty}-${lvl}`;
                             const progress = progressMap[key];
                             return (
                                 <LevelButton 
                                     key={lvl}
                                     levelId={lvl}
+                                    index={idx}
                                     status={getDisplayStatus(progress)}
                                     bestTime={progress?.bestTime}
                                     isGlobalBest={globalBest !== undefined && progress?.bestTime === globalBest}
@@ -249,13 +270,14 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
             return (
                 <div className="flex flex-col items-center w-full max-w-md animate-fade-in">
                     <div className="w-full grid grid-cols-5 gap-3 pt-2 pb-6">
-                        {levels.map(lvl => {
+                        {levels.map((lvl, idx) => {
                             const key = `${difficulty}-${lvl}`;
                             const progress = progressMap[key];
                             return (
                                 <LevelButton 
                                     key={lvl}
                                     levelId={lvl}
+                                    index={idx}
                                     status={getDisplayStatus(progress)}
                                     bestTime={progress?.bestTime}
                                     isGlobalBest={globalBest !== undefined && progress?.bestTime === globalBest}
