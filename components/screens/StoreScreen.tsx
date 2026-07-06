@@ -40,18 +40,9 @@ interface StoreItemWrapperProps {
 }
 
 const StoreItemWrapper: React.FC<StoreItemWrapperProps> = ({ children, delay }) => {
-    const [animating, setAnimating] = useState(true);
-
-    useEffect(() => {
-        const t = setTimeout(() => {
-            setAnimating(false);
-        }, delay + 600);
-        return () => clearTimeout(t);
-    }, [delay]);
-
     return (
         <div 
-            className={animating ? 'opacity-0 animate-slide-in-down' : 'opacity-100'}
+            className="opacity-0 animate-slide-in-down"
             style={{ animationDelay: `${delay}ms` }}
         >
             {children}

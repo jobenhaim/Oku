@@ -410,7 +410,12 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   return (
     <>
-      <div className="w-full flex justify-center px-6 pt-4 pb-4 relative z-40 shrink-0">
+      <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full flex justify-center px-6 pt-4 pb-4 relative z-40 shrink-0"
+      >
           <div className="w-full max-w-md flex items-center justify-between relative">
               {/* Left Column: Back Button */}
               <button onClick={onBack} className="p-2 rounded-full hover:bg-stone-200/50 transition -ml-2 text-t-icon relative z-30">
@@ -439,13 +444,18 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                   </button>
               </div>
           </div>
-      </div>
+      </motion.div>
 
       <div 
           className="flex-1 w-full flex flex-col items-center justify-start relative cursor-default" 
           onClick={handleBackgroundClick}
       >
-         <div className="contents">
+         <motion.div 
+             initial={{ opacity: 0, scale: 0.96 }}
+             animate={{ opacity: 1, scale: 1 }}
+             transition={{ duration: 0.5, delay: 0.08, type: "spring", stiffness: 100, damping: 15 }}
+             className="w-full flex justify-center"
+         >
             <SudokuGrid 
                 board={board}
                 selectedCell={selectedCell}
@@ -459,10 +469,16 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                 numberColor={numberColor}
                 onCellClick={onCellClickWrapper}
             />
-         </div>
+         </motion.div>
 
          {/* Number Pad */}
-         <div className="w-full max-w-[500px] px-2 mt-4 relative z-[100]" onClick={(e) => e.stopPropagation()}>
+         <motion.div 
+             initial={{ opacity: 0, y: 15 }}
+             animate={{ opacity: 1, y: 0 }}
+             transition={{ duration: 0.45, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+             className="w-full max-w-[500px] px-2 mt-4 relative z-[100]" 
+             onClick={(e) => e.stopPropagation()}
+         >
              <NumberPad 
                 activeNumber={activeNumber}
                 numberCounts={numberCounts}
@@ -470,10 +486,16 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                 numberColor={numberColor}
                 onNumberClick={onNumberClickWrapper}
             />
-         </div>
+         </motion.div>
 
          {/* Game Controls - Increased spacing (mt-10) */}
-         <div className="w-full max-w-md px-6 mt-10 relative z-[100]" onClick={(e) => e.stopPropagation()}>
+         <motion.div 
+             initial={{ opacity: 0, y: 15 }}
+             animate={{ opacity: 1, y: 0 }}
+             transition={{ duration: 0.45, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
+             className="w-full max-w-md px-6 mt-10 relative z-[100]" 
+             onClick={(e) => e.stopPropagation()}
+         >
              <GameControls 
                  canUndo={history.length > 0}
                  canErase={canErase}
@@ -494,12 +516,17 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                  timer={timer}
                  onDevSolve={settings.devAutoSolve ? handleDevSolve : undefined}
              />
-         </div>
+         </motion.div>
          
          {/* Deselect Text - Increased spacing (mt-8) */}
-         <div className={`mt-8 mb-4 pointer-events-none transition-opacity duration-1000 ${showStartHint ? 'opacity-100' : 'opacity-0'}`}>
+         <motion.div 
+             initial={{ opacity: 0 }}
+             animate={{ opacity: showStartHint ? 1 : 0 }}
+             transition={{ duration: 1, delay: 0.3 }}
+             className="mt-8 mb-4 pointer-events-none"
+         >
              <span className="text-xs font-light text-stone-400 dark:text-stone-500 tracking-wide">Tap here to deselect</span>
-         </div>
+         </motion.div>
       </div>
 
       <AnimatePresence>

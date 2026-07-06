@@ -49,7 +49,13 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     onlyBackground = false,
     onlyContent = false
 }) => {
-    let classes = "w-full h-full flex items-center justify-center cursor-pointer select-none relative sudoku-cell ";
+    let cornerClass = '';
+    if (r === 0 && c === 0) cornerClass = 'rounded-tl-[5px] ';
+    else if (r === 0 && c === 8) cornerClass = 'rounded-tr-[5px] ';
+    else if (r === 8 && c === 0) cornerClass = 'rounded-bl-[5px] ';
+    else if (r === 8 && c === 8) cornerClass = 'rounded-br-[5px] ';
+
+    let classes = `w-full h-full flex items-center justify-center cursor-pointer select-none relative sudoku-cell ${cornerClass}`;
     
     let bgClass = ''; 
 
@@ -115,7 +121,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
         >
         {/* Cell Background Layer */}
         {!onlyContent && (
-            <div className={`absolute inset-0 ${bgClass} sudoku-cell-bg pointer-events-none z-0`} />
+            <div className={`absolute inset-0 ${bgClass} ${cornerClass} sudoku-cell-bg pointer-events-none z-0`} />
         )}
         
         {/* Cell Content Layer */}

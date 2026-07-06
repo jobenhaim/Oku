@@ -92,12 +92,20 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                     width: squareSize, 
                     height: squareSize, 
                     maxWidth: '500px', 
-                    maxHeight: '500px'
+                    maxHeight: '500px',
+                    clipPath: 'inset(0 round 8px)',
+                    WebkitClipPath: 'inset(0 round 8px)'
                 }}
             >
             
             {/* Inner Grid Area (Inset to sit perfectly inside the 3px outer border) */}
-            <div className="absolute inset-[3px] rounded-[5px] overflow-hidden z-10 bg-t-board">
+            <div 
+                className="absolute inset-[3px] rounded-[5px] overflow-hidden z-10 bg-t-board"
+                style={{
+                    clipPath: 'inset(0 round 5px)',
+                    WebkitClipPath: 'inset(0 round 5px)'
+                }}
+            >
                 {isScanning && (
                     <div className="absolute left-0 right-0 h-1 bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)] z-40 animate-scan pointer-events-none"></div>
                 )}
@@ -170,56 +178,12 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                             );
                         }
 
-                        const parts = sectionId.split(':');
-                        const typeAndIdx = parts[0];
-                        const [type] = typeAndIdx.split('_');
-
-                        // Calculate start coordinates relative to the completed section overlay
-                        let startX = '50%';
-                        let startY = '50%';
-                        
-                        if (parts[1]) {
-                            const [rStr, cStr] = parts[1].split('_');
-                            const srcR = parseInt(rStr);
-                            const srcC = parseInt(cStr);
-                            
-                            if (type === 'row') {
-                                startX = `${((srcC + 0.5) / 9) * 100}%`;
-                                startY = '50%';
-                            } else if (type === 'col') {
-                                startX = '50%';
-                                startY = `${((srcR + 0.5) / 9) * 100}%`;
-                            } else if (type === 'box') {
-                                const localR = srcR % 3;
-                                const localC = srcC % 3;
-                                startX = `${((localC + 0.5) / 3) * 100}%`;
-                                startY = `${((localR + 0.5) / 3) * 100}%`;
-                            }
-                        }
-
-                        // Compute responsive scale/size based on section type
-                        const rippleSize = type === 'box' 
-                            ? `calc(${squareSize} * 0.8)` 
-                            : `calc(${squareSize} * 2.2)`;
-
                         return (
                             <div 
                                 key={sectionId} 
-                                className="absolute overflow-hidden pointer-events-none rounded-sm"
+                                className="absolute pointer-events-none rounded-sm bg-emerald-500 dark:bg-emerald-400 animate-section-fade"
                                 style={getSectionOverlayStyle(sectionId)}
-                            >
-                                {/* Expanding radial ripple starting from the coordinates of the completed number */}
-                                <div 
-                                    className="absolute pointer-events-none -translate-x-1/2 -translate-y-1/2 rounded-full completion-ripple"
-                                    style={{
-                                        left: startX,
-                                        top: startY,
-                                        background: 'radial-gradient(circle, rgba(52, 211, 153, 0.45) 0%, rgba(16, 185, 129, 0.12) 45%, rgba(16, 185, 129, 0) 100%)',
-                                        width: rippleSize,
-                                        height: rippleSize,
-                                    }}
-                                />
-                            </div>
+                            />
                         );
                     })}
                 </div>

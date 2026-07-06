@@ -709,9 +709,9 @@ class SoundController {
             });
         } else {
             const d = 0.035; 
-            this.playTone(1200, d, 0.5, 'sine', undefined, true); 
+            this.playTone(1200, d, 0.35, 'sine', undefined, true); 
             setTimeout(() => {
-                this.playTone(1600, d, 0.5, 'sine', undefined, true);
+                this.playTone(1600, d, 0.35, 'sine', undefined, true);
             }, 60); 
         }
     }

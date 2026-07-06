@@ -456,6 +456,24 @@ html, body {
   will-change: transform, opacity;
 }
 
+/* Simpler full opacity 0 to 100 to 0 animation for row/col/box completion */
+@keyframes section-fade-pulse {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-section-fade {
+  animation: section-fade-pulse 1.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  will-change: opacity;
+}
+
 /* Elegant full board win outline green glow pulse */
 @keyframes board-complete-glow {
   0% {

@@ -26,15 +26,7 @@ const LevelButton = React.memo(({ levelId, index, status, bestTime, isGlobalBest
     const colIndex = index % 5;
     const delay = 50 + (rowIndex * 30) + (colIndex * 15);
 
-    const [animating, setAnimating] = useState(true);
-    useEffect(() => {
-        const t = setTimeout(() => {
-            setAnimating(false);
-        }, delay + 600);
-        return () => clearTimeout(t);
-    }, [delay]);
-
-    let buttonClass = 'aspect-square rounded-xl relative transition-all active:scale-90 shadow-sm ';
+    let buttonClass = 'aspect-square rounded-xl relative transition-all active:scale-90 shadow-sm opacity-0 animate-slide-in-down ';
     
     if (isSolved) {
         buttonClass += 'bg-t-surface-sec text-t-secondary ring-1 ring-inset ring-stone-900/5 ';
@@ -46,8 +38,6 @@ const LevelButton = React.memo(({ levelId, index, status, bestTime, isGlobalBest
     } else {
         buttonClass += 'bg-t-surface hover:shadow-md text-t-primary ';
     }
-
-    buttonClass += animating ? 'opacity-0 animate-slide-in-down ' : 'opacity-100 ';
 
     return (
         <button 
