@@ -354,7 +354,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
              {/* Header */}
              <div className="w-full max-w-md flex flex-col px-6 pt-4 pb-2 relative shrink-0 z-20 gap-4">
                 <div className="flex items-center justify-between w-full mb-2">
-                    <button onClick={onBack} className="p-2 rounded-full hover:bg-stone-200 transition -ml-2 text-t-icon relative z-30">
+                    <button onClick={onBack} className="p-2 rounded-full -ml-2 text-t-icon relative z-30">
                         <Icons.Back className="w-6 h-6 text-t-icon" />
                     </button>
                     

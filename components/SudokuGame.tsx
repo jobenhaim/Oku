@@ -421,7 +421,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       >
           <div className="w-full max-w-md flex items-center justify-between relative">
               {/* Left Column: Back Button */}
-              <button onClick={onBack} className="p-2 rounded-full hover:bg-stone-200/50 transition -ml-2 text-t-icon relative z-30">
+              <button onClick={onBack} className="p-2 rounded-full -ml-2 text-t-icon relative z-30">
                   <Icons.Back className="w-6 h-6" />
               </button>
 
@@ -439,10 +439,10 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
               
               {/* Right Column: Actions */}
               <div className="flex items-center gap-1 relative z-30 -mr-2">
-                  <button onClick={() => { sounds.playClick(); setIsPaused(true); }} className="p-2 rounded-full hover:bg-stone-200/50 transition text-t-icon">
+                  <button onClick={() => { sounds.playClick(); setIsPaused(true); }} className="p-2 rounded-full transition text-t-icon">
                       <Icons.Pause className="w-6 h-6" />
                   </button>
-                  <button onClick={onSettingsOpen} className="p-2 rounded-full hover:bg-stone-200/50 transition text-t-icon">
+                  <button onClick={onSettingsOpen} className="p-2 rounded-full transition text-t-icon">
                       <Icons.Settings className="w-6 h-6" />
                   </button>
               </div>
