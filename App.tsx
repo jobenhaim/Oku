@@ -309,7 +309,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const handleClaimBonus = (e: React.MouseEvent) => {
     const now = Date.now();
     if (now < nextBonusClaimTime) return;
-    sounds.playWin();
+    sounds.playGiftClaim();
     
     const nextDate = new Date();
     nextDate.setDate(nextDate.getDate() + 1);
@@ -516,10 +516,12 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
   const variants: Variants = {
     initial: {
-      opacity: 0
+      opacity: 0,
+      pointerEvents: 'auto' as any
     },
     animate: {
       opacity: 1,
+      pointerEvents: 'auto' as any,
       transition: { 
           duration: 0.22,
           ease: "easeInOut"
@@ -527,6 +529,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
     },
     exit: {
       opacity: 0,
+      pointerEvents: 'none' as any,
       transition: { 
           duration: 0.18,
           ease: "easeInOut"
@@ -570,7 +573,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                             exit="exit"
                             className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
                             style={{ 
-                                pointerEvents: 'auto',
                                 willChange: 'transform, opacity' // GPU promotion for smoother transitions
                             }}
                         >

@@ -665,6 +665,47 @@ class SoundController {
         }
     }
 
+    playGiftClaim() {
+        if (this.soundEnabled) {
+            // A short, crisp, bright 3-note chime/arpeggio for receiving gifts or rewards
+            const notes = [1046.50, 1318.51, 1567.98];
+            const ctx = this.getCtx();
+            const now = ctx.currentTime;
+
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + i * 0.04);
+                
+                const startTime = now + (i * 0.04);
+                gain.gain.setValueAtTime(0, startTime);
+                // Very fast attack
+                gain.gain.linearRampToValueAtTime(0.08, startTime + 0.01);
+                // Sharp decay for punchiness
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.22);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(startTime);
+                osc.stop(startTime + 0.25);
+            });
+        }
+        
+        if (this.vibrationEnabled) {
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                try {
+                    // Crisp double-tap vibration
+                    navigator.vibrate([30, 50, 30]);
+                } catch (e) {}
+            }
+            try {
+                Haptics.impact({ style: ImpactStyle.Medium });
+            } catch (e) {}
+        }
+    }
+
     playLevelEnter() {
         if (!this.soundEnabled) return;
 
@@ -878,6 +919,208 @@ class SoundController {
             osc.start(startTime);
             osc.stop(startTime + 1.3);
         });
+    }
+
+    playSectionComplete() {
+        if (!this.soundEnabled) return;
+        const ctx = this.getCtx();
+        const now = ctx.currentTime;
+        const pid = this.activeProfile.id;
+
+        if (pid === 'snd-paper') {
+            this.playNoiseBurst(1200, 0.08, 0.4);
+            setTimeout(() => this.playNoiseBurst(1800, 0.06, 0.3), 60);
+        } else if (pid === 'snd-retro') {
+            const notes = [1318.51, 1975.53];
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(freq, now + i * 0.08);
+                const start = now + i * 0.08;
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.06, start + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.15);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + 0.2);
+            });
+        } else if (pid === 'snd-wood') {
+            const notes = [659.25, 880.00];
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                
+                const mod = ctx.createOscillator();
+                const modGain = ctx.createGain();
+                mod.type = 'sine';
+                mod.frequency.setValueAtTime(freq * 1.5, now + i * 0.07);
+                modGain.gain.setValueAtTime(freq * 0.4, now + i * 0.07);
+                mod.connect(modGain);
+                modGain.connect(osc.frequency);
+                
+                osc.frequency.setValueAtTime(freq, now + i * 0.07);
+                const start = now + i * 0.07;
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.2, start + 0.005);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.12);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                mod.start(start);
+                osc.start(start);
+                mod.stop(start + 0.15);
+                osc.stop(start + 0.15);
+            });
+        } else if (pid === 'snd-water') {
+            const notes = [783.99, 1046.50];
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                const start = now + i * 0.08;
+                osc.frequency.setValueAtTime(freq * 0.7, start);
+                osc.frequency.exponentialRampToValueAtTime(freq, start + 0.05);
+                
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.25, start + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.15);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + 0.2);
+            });
+        } else if (pid === 'snd-piano') {
+            const notes = [523.25, 659.25, 783.99];
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const filter = ctx.createBiquadFilter();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                filter.type = 'lowpass';
+                filter.Q.value = 1;
+                filter.frequency.setValueAtTime(freq * 3, now + i * 0.06);
+                filter.frequency.exponentialRampToValueAtTime(freq * 1.2, now + i * 0.06 + 0.2);
+                
+                osc.frequency.setValueAtTime(freq, now + i * 0.06);
+                const start = now + i * 0.06;
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.15, start + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.5);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + 0.6);
+            });
+        } else if (pid === 'snd-stone') {
+            const notes = [329.63, 440.00];
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                
+                const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.015, ctx.sampleRate);
+                const noiseData = noiseBuffer.getChannelData(0);
+                for(let k=0; k<noiseData.length; k++) noiseData[k] = Math.random() * 2 - 1;
+                const noise = ctx.createBufferSource();
+                noise.buffer = noiseBuffer;
+                const noiseGain = ctx.createGain();
+                noiseGain.gain.setValueAtTime(0.08, now + i * 0.08);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.01);
+                noise.connect(noiseGain);
+                noiseGain.connect(ctx.destination);
+                
+                const start = now + i * 0.08;
+                osc.frequency.setValueAtTime(freq, start);
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.3, start + 0.005);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.2);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                noise.start(start);
+                osc.start(start);
+                osc.stop(start + 0.25);
+            });
+        } else if (pid === 'snd-koto') {
+            const notes = [440.00, 523.25, 659.25];
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const filter = ctx.createBiquadFilter();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                filter.type = 'lowpass';
+                filter.Q.value = 2;
+                filter.frequency.setValueAtTime(freq * 3, now + i * 0.05);
+                filter.frequency.exponentialRampToValueAtTime(freq * 1.1, now + i * 0.05 + 0.15);
+                
+                const start = now + i * 0.05;
+                osc.frequency.setValueAtTime(freq, start);
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.1, start + 0.005);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.4);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + 0.5);
+            });
+        } else if (pid === 'snd-crystal') {
+            const notes = [1046.50, 1567.98];
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                
+                const start = now + i * 0.06;
+                osc.frequency.setValueAtTime(freq, start);
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.12, start + 0.005);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.5);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + 0.6);
+            });
+        } else {
+            const notes = [783.99, 1046.50];
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                
+                const start = now + (i * 0.07);
+                osc.frequency.setValueAtTime(freq, start);
+                osc.frequency.linearRampToValueAtTime(freq * 1.01, start + 0.15);
+                
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.15, start + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.3);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + 0.35);
+            });
+        }
+
+        if (this.vibrationEnabled) {
+            try {
+                Haptics.impact({ style: ImpactStyle.Light });
+                setTimeout(() => {
+                    if (this.vibrationEnabled) {
+                        Haptics.impact({ style: ImpactStyle.Light });
+                    }
+                }, 75);
+            } catch (e) {}
+        }
     }
 
     playPreview(profileId: string) {

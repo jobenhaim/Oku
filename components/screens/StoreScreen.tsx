@@ -40,9 +40,18 @@ interface StoreItemWrapperProps {
 }
 
 const StoreItemWrapper: React.FC<StoreItemWrapperProps> = ({ children, delay }) => {
+    const [isClickable, setIsClickable] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsClickable(true);
+        }, delay + 350);
+        return () => clearTimeout(timer);
+    }, [delay]);
+
     return (
         <div 
-            className="opacity-0 animate-slide-in-down"
+            className={`opacity-0 animate-slide-in-down ${!isClickable ? 'pointer-events-none' : ''}`}
             style={{ animationDelay: `${delay}ms` }}
         >
             {children}

@@ -86,6 +86,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   const handleSectionComplete = useCallback((sections: string[]) => {
       if (sections.length > 0) {
+          // Play the minimalistic, addictive section complete sound
+          sounds.playSectionComplete();
+
           // Generate unique IDs for each completed section so multiple triggers can occur/repeat instantly
           const uniqueSections = sections.map(s => `${s}:${Date.now()}_${Math.random().toString(36).substring(2, 7)}`);
           

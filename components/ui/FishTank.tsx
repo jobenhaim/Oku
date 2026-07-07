@@ -352,8 +352,8 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
         else amount = 5;
 
         if (amount > 0) {
-            // New "Bubbly" sound for gift
-            sounds.playBubblePop();
+            // New short, punchy gift claim sound
+            sounds.playGiftClaim();
             onRewardClaim(amount);
             showReward({ amount });
         }
