@@ -928,26 +928,33 @@ class SoundController {
         const pid = this.activeProfile.id;
 
         if (pid === 'snd-paper') {
-            this.playNoiseBurst(1200, 0.08, 0.4);
-            setTimeout(() => this.playNoiseBurst(1800, 0.06, 0.3), 60);
+            // Satisfying 3-step crisp paper rustling ripple
+            const centerFreqs = [1200, 1600, 2200];
+            centerFreqs.forEach((freq, i) => {
+                setTimeout(() => {
+                    this.playNoiseBurst(freq, 0.045, 0.35);
+                }, i * 45);
+            });
         } else if (pid === 'snd-retro') {
-            const notes = [1318.51, 1975.53];
+            // Rapid ascending arcade blips
+            const notes = [1046.50, 1318.51, 1567.98]; // C6, E6, G6
             notes.forEach((freq, i) => {
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'square';
-                osc.frequency.setValueAtTime(freq, now + i * 0.08);
-                const start = now + i * 0.08;
+                osc.frequency.setValueAtTime(freq, now + i * 0.05);
+                const start = now + i * 0.05;
                 gain.gain.setValueAtTime(0, start);
-                gain.gain.linearRampToValueAtTime(0.06, start + 0.01);
-                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.15);
+                gain.gain.linearRampToValueAtTime(0.04, start + 0.005);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.1);
                 osc.connect(gain);
                 gain.connect(ctx.destination);
                 osc.start(start);
-                osc.stop(start + 0.2);
+                osc.stop(start + 0.15);
             });
         } else if (pid === 'snd-wood') {
-            const notes = [659.25, 880.00];
+            // Triple snappy wood-block percussion knocks
+            const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
             notes.forEach((freq, i) => {
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
@@ -956,36 +963,37 @@ class SoundController {
                 const mod = ctx.createOscillator();
                 const modGain = ctx.createGain();
                 mod.type = 'sine';
-                mod.frequency.setValueAtTime(freq * 1.5, now + i * 0.07);
-                modGain.gain.setValueAtTime(freq * 0.4, now + i * 0.07);
+                mod.frequency.setValueAtTime(freq * 1.5, now + i * 0.045);
+                modGain.gain.setValueAtTime(freq * 0.3, now + i * 0.045);
                 mod.connect(modGain);
                 modGain.connect(osc.frequency);
                 
-                osc.frequency.setValueAtTime(freq, now + i * 0.07);
-                const start = now + i * 0.07;
+                osc.frequency.setValueAtTime(freq, now + i * 0.045);
+                const start = now + i * 0.045;
                 gain.gain.setValueAtTime(0, start);
-                gain.gain.linearRampToValueAtTime(0.2, start + 0.005);
-                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.12);
+                gain.gain.linearRampToValueAtTime(0.18, start + 0.005);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.1);
                 
                 osc.connect(gain);
                 gain.connect(ctx.destination);
                 mod.start(start);
                 osc.start(start);
-                mod.stop(start + 0.15);
-                osc.stop(start + 0.15);
+                mod.stop(start + 0.12);
+                osc.stop(start + 0.12);
             });
         } else if (pid === 'snd-water') {
-            const notes = [783.99, 1046.50];
+            // Triple bubbly drops
+            const notes = [1046.50, 1318.51, 1567.98]; // C6, E6, G6
             notes.forEach((freq, i) => {
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'sine';
-                const start = now + i * 0.08;
-                osc.frequency.setValueAtTime(freq * 0.7, start);
-                osc.frequency.exponentialRampToValueAtTime(freq, start + 0.05);
+                const start = now + i * 0.055;
+                osc.frequency.setValueAtTime(freq * 0.8, start);
+                osc.frequency.exponentialRampToValueAtTime(freq * 1.15, start + 0.05);
                 
                 gain.gain.setValueAtTime(0, start);
-                gain.gain.linearRampToValueAtTime(0.25, start + 0.01);
+                gain.gain.linearRampToValueAtTime(0.12, start + 0.012);
                 gain.gain.exponentialRampToValueAtTime(0.001, start + 0.15);
                 
                 osc.connect(gain);
@@ -994,7 +1002,8 @@ class SoundController {
                 osc.stop(start + 0.2);
             });
         } else if (pid === 'snd-piano') {
-            const notes = [523.25, 659.25, 783.99];
+            // Beautiful piano chord-arpeggio
+            const notes = [523.25, 659.25, 783.99, 987.77]; // C5, E5, G5, B5
             notes.forEach((freq, i) => {
                 const osc = ctx.createOscillator();
                 const filter = ctx.createBiquadFilter();
@@ -1002,53 +1011,43 @@ class SoundController {
                 osc.type = 'triangle';
                 filter.type = 'lowpass';
                 filter.Q.value = 1;
-                filter.frequency.setValueAtTime(freq * 3, now + i * 0.06);
-                filter.frequency.exponentialRampToValueAtTime(freq * 1.2, now + i * 0.06 + 0.2);
+                filter.frequency.setValueAtTime(freq * 3, now + i * 0.04);
+                filter.frequency.exponentialRampToValueAtTime(freq * 1.2, now + i * 0.04 + 0.2);
                 
-                osc.frequency.setValueAtTime(freq, now + i * 0.06);
-                const start = now + i * 0.06;
+                osc.frequency.setValueAtTime(freq, now + i * 0.04);
+                const start = now + i * 0.04;
                 gain.gain.setValueAtTime(0, start);
-                gain.gain.linearRampToValueAtTime(0.15, start + 0.01);
-                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.5);
+                gain.gain.linearRampToValueAtTime(0.12, start + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.45);
                 
                 osc.connect(filter);
                 filter.connect(gain);
                 gain.connect(ctx.destination);
                 osc.start(start);
-                osc.stop(start + 0.6);
+                osc.stop(start + 0.5);
             });
         } else if (pid === 'snd-stone') {
-            const notes = [329.63, 440.00];
+            // Resonant stone chime-thud
+            const notes = [196.00, 261.63, 329.63]; // G3, C4, E4
             notes.forEach((freq, i) => {
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'sine';
                 
-                const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.015, ctx.sampleRate);
-                const noiseData = noiseBuffer.getChannelData(0);
-                for(let k=0; k<noiseData.length; k++) noiseData[k] = Math.random() * 2 - 1;
-                const noise = ctx.createBufferSource();
-                noise.buffer = noiseBuffer;
-                const noiseGain = ctx.createGain();
-                noiseGain.gain.setValueAtTime(0.08, now + i * 0.08);
-                noiseGain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.01);
-                noise.connect(noiseGain);
-                noiseGain.connect(ctx.destination);
-                
-                const start = now + i * 0.08;
+                const start = now + i * 0.06;
                 osc.frequency.setValueAtTime(freq, start);
                 gain.gain.setValueAtTime(0, start);
-                gain.gain.linearRampToValueAtTime(0.3, start + 0.005);
-                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.2);
+                gain.gain.linearRampToValueAtTime(0.25, start + 0.005);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.18);
                 
                 osc.connect(gain);
                 gain.connect(ctx.destination);
-                noise.start(start);
                 osc.start(start);
-                osc.stop(start + 0.25);
+                osc.stop(start + 0.22);
             });
         } else if (pid === 'snd-koto') {
-            const notes = [440.00, 523.25, 659.25];
+            // Traditional Japanese pluck cascade
+            const notes = [440.00, 523.25, 659.25]; // A4, C5, E5
             notes.forEach((freq, i) => {
                 const osc = ctx.createOscillator();
                 const filter = ctx.createBiquadFilter();
@@ -1063,51 +1062,52 @@ class SoundController {
                 osc.frequency.setValueAtTime(freq, start);
                 gain.gain.setValueAtTime(0, start);
                 gain.gain.linearRampToValueAtTime(0.1, start + 0.005);
-                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.4);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
                 
                 osc.connect(filter);
                 filter.connect(gain);
                 gain.connect(ctx.destination);
                 osc.start(start);
-                osc.stop(start + 0.5);
+                osc.stop(start + 0.4);
             });
         } else if (pid === 'snd-crystal') {
-            const notes = [1046.50, 1567.98];
+            // Glassy high shimmering crystals
+            const notes = [1567.98, 2093.00, 2637.02]; // G6, C7, E7
             notes.forEach((freq, i) => {
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'sine';
                 
-                const start = now + i * 0.06;
+                const start = now + i * 0.05;
                 osc.frequency.setValueAtTime(freq, start);
                 gain.gain.setValueAtTime(0, start);
-                gain.gain.linearRampToValueAtTime(0.12, start + 0.005);
-                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.5);
+                gain.gain.linearRampToValueAtTime(0.05, start + 0.005);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.4);
                 
                 osc.connect(gain);
                 gain.connect(ctx.destination);
                 osc.start(start);
-                osc.stop(start + 0.6);
+                osc.stop(start + 0.45);
             });
         } else {
-            const notes = [783.99, 1046.50];
+            // Default Zen: Pure, beautiful, extremely satisfying 3-note ascending sine arpeggio
+            const notes = [1318.51, 1567.98, 2093.00]; // E6, G6, C7
             notes.forEach((freq, i) => {
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'sine';
                 
-                const start = now + (i * 0.07);
+                const start = now + (i * 0.055); // 55ms delay per note
                 osc.frequency.setValueAtTime(freq, start);
-                osc.frequency.linearRampToValueAtTime(freq * 1.01, start + 0.15);
                 
                 gain.gain.setValueAtTime(0, start);
-                gain.gain.linearRampToValueAtTime(0.15, start + 0.01);
-                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.3);
+                gain.gain.linearRampToValueAtTime(0.08, start + 0.01); // Soft click-less attack
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.18); // Snappy, clean ring-out
                 
                 osc.connect(gain);
                 gain.connect(ctx.destination);
                 osc.start(start);
-                osc.stop(start + 0.35);
+                osc.stop(start + 0.22);
             });
         }
 

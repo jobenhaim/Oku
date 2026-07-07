@@ -26,20 +26,7 @@ const LevelButton = React.memo(({ levelId, index, status, bestTime, isGlobalBest
     const colIndex = index % 5;
     const delay = 50 + (rowIndex * 30) + (colIndex * 15);
 
-    const [isClickable, setIsClickable] = useState(false);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsClickable(true);
-        }, delay + 350); // Clickable after slide-in transition finishes
-        return () => clearTimeout(timer);
-    }, [delay]);
-
     let buttonClass = 'aspect-square rounded-xl relative transition-all active:scale-90 shadow-sm opacity-0 animate-slide-in-down ';
-    
-    if (!isClickable) {
-        buttonClass += 'pointer-events-none ';
-    }
     
     if (isSolved) {
         buttonClass += 'bg-t-surface-sec text-t-secondary ring-1 ring-inset ring-stone-900/5 ';

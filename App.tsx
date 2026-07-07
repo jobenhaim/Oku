@@ -517,7 +517,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const variants: Variants = {
     initial: {
       opacity: 0,
-      pointerEvents: 'auto' as any
+      pointerEvents: 'none' as any
     },
     animate: {
       opacity: 1,
@@ -532,7 +532,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       pointerEvents: 'none' as any,
       transition: { 
           duration: 0.18,
-          ease: "easeInOut"
+          ease: "easeInOut",
+          pointerEvents: { duration: 0 }
       }
     }
   };
