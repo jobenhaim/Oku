@@ -24,7 +24,7 @@ const LevelButton = React.memo(({ levelId, index, status, bestTime, isGlobalBest
 
     const rowIndex = Math.floor(index / 5);
     const colIndex = index % 5;
-    const delay = 50 + (rowIndex * 30) + (colIndex * 15);
+    const delay = (rowIndex * 4) + (colIndex * 2);
 
     let buttonClass = 'aspect-square rounded-xl relative transition-all active:scale-90 shadow-sm opacity-0 animate-slide-in-down ';
     

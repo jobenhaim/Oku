@@ -864,7 +864,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                             <div className="flex items-center gap-3 px-6 py-4 border-b border-stone-200 dark:border-stone-800 shrink-0 bg-white dark:bg-stone-900 z-10 transition-colors duration-300">
                                 <button 
                                     onClick={handleDocBack} 
-                                    className="p-2 -ml-2 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 transition-all duration-300 text-stone-600 dark:text-stone-300"
+                                    className="p-2 -ml-2 rounded-full text-stone-600 dark:text-stone-300"
                                 >
                                     <Icons.Back className="w-6 h-6" />
                                 </button>

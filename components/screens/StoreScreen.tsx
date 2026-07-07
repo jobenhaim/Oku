@@ -155,7 +155,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                     const isPurchased = purchasedSkills.includes(skill.id);
                     const isEnabled = enabledSkills.includes(skill.id);
                     const SkillIcon = skill.icon;
-                    const delay = idx * 35;
+                    const delay = idx * 5;
                     
                     return (
                         <StoreItemWrapper delay={delay} key={skill.id}>
@@ -200,7 +200,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                 <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{STATIC_BACKGROUNDS.map((bg, idx) => {
                     const isPurchased = purchasedBackgrounds.includes(bg.id);
                     const isSelected = selectedBackgroundId === bg.id;
-                    const delay = activeTab === 'all' ? (3 + idx) * 35 : idx * 35;
+                    const delay = activeTab === 'all' ? (3 + idx) * 5 : idx * 5;
                     return (
                         <StoreItemWrapper delay={delay} key={bg.id}>
                             <div className="flex flex-col items-center gap-1.5">
@@ -224,7 +224,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                 <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{DYNAMIC_BACKGROUNDS.map((bg, idx) => {
                     const isPurchased = purchasedBackgrounds.includes(bg.id);
                     const isSelected = selectedBackgroundId === bg.id;
-                    const delay = activeTab === 'all' ? (3 + STATIC_BACKGROUNDS.length + idx) * 35 : (STATIC_BACKGROUNDS.length + idx) * 35;
+                    const delay = activeTab === 'all' ? (3 + STATIC_BACKGROUNDS.length + idx) * 5 : (STATIC_BACKGROUNDS.length + idx) * 5;
                     return (
                         <StoreItemWrapper delay={delay} key={bg.id}>
                             <div className="flex flex-col items-center gap-1.5">
@@ -259,8 +259,8 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                 const PackIcon = pack.icon;
                 
                 const delay = activeTab === 'all' 
-                    ? (3 + STATIC_BACKGROUNDS.length + DYNAMIC_BACKGROUNDS.length + idx) * 35 
-                    : idx * 35;
+                    ? (3 + STATIC_BACKGROUNDS.length + DYNAMIC_BACKGROUNDS.length + idx) * 5 
+                    : idx * 5;
                 
                 return (
                     <StoreItemWrapper delay={delay} key={pack.id}>
@@ -302,8 +302,8 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                 const isSelected = selectedNumberColorId === num.id;
                 
                 const delay = activeTab === 'all'
-                    ? (3 + STATIC_BACKGROUNDS.length + DYNAMIC_BACKGROUNDS.length + SOUND_PACKS.length + idx) * 35
-                    : idx * 35;
+                    ? (3 + STATIC_BACKGROUNDS.length + DYNAMIC_BACKGROUNDS.length + SOUND_PACKS.length + idx) * 5
+                    : idx * 5;
                 
                 return (
                     <StoreItemWrapper delay={delay} key={num.id}>
