@@ -41,10 +41,7 @@ interface StoreItemWrapperProps {
 
 const StoreItemWrapper: React.FC<StoreItemWrapperProps> = ({ children, delay }) => {
     return (
-        <div 
-            className="opacity-0 animate-slide-in-down"
-            style={{ animationDelay: `${delay}ms` }}
-        >
+        <div className="animate-fade-in-fast">
             {children}
         </div>
     );
@@ -348,7 +345,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
 
     return (
         <div 
-            className="flex-1 w-full flex flex-col items-center overflow-hidden"
+            className="flex-1 w-full flex flex-col items-center overflow-hidden animate-fade-in-fast"
             onClick={handleCloseInfo}
         >
              {/* Header */}

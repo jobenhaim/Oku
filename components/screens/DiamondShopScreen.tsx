@@ -57,7 +57,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     const priceBadgeClass = "px-3 py-1.5 rounded-lg text-sm font-bold text-stone-800 shadow-sm min-w-[70px] text-center flex items-center justify-center border border-stone-900/10 bg-gradient-to-br from-white via-gray-100 to-gray-200 active:scale-95 transition-transform tracking-wide";
 
     return (
-        <div className="flex-1 w-full flex flex-col items-center overflow-hidden relative">
+        <div className="flex-1 w-full flex flex-col items-center overflow-hidden relative animate-fade-in-fast">
             {/* Background is now handled in App.tsx to cover safe areas */}
 
             <div className="w-full max-w-md flex items-center justify-between px-6 pt-4 pb-4 relative shrink-0 z-20 mx-auto">

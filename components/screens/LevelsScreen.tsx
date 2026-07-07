@@ -26,7 +26,7 @@ const LevelButton = React.memo(({ levelId, index, status, bestTime, isGlobalBest
     const colIndex = index % 5;
     const delay = (rowIndex * 4) + (colIndex * 2);
 
-    let buttonClass = 'aspect-square rounded-xl relative transition-all active:scale-90 shadow-sm opacity-0 animate-slide-in-down ';
+    let buttonClass = 'aspect-square rounded-xl relative transition-all active:scale-90 shadow-sm ';
     
     if (isSolved) {
         buttonClass += 'bg-t-surface-sec text-t-secondary ring-1 ring-inset ring-stone-900/5 ';
@@ -43,7 +43,6 @@ const LevelButton = React.memo(({ levelId, index, status, bestTime, isGlobalBest
         <button 
             onClick={() => onSelect(levelId)} 
             className={buttonClass}
-            style={{ animationDelay: `${delay}ms` }}
         >
             <div className="absolute inset-0 flex items-center justify-center"><span className="font-bold text-2xl leading-none">{levelId}</span></div>
             {bestTime ? (
@@ -205,7 +204,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
         if (activeTab === 2) {
             if (!isPack2Unlocked) {
                 return (
-                    <div className="flex-1 flex flex-col items-center justify-center w-full max-w-md pb-20 animate-fade-in">
+                    <div className="flex-1 flex flex-col items-center justify-center w-full max-w-md pb-20 animate-fade-in-fast">
                         <UnlockCard 
                             startLevel={101}
                             endLevel={200}
@@ -220,7 +219,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
             const levels = Array.from({ length: 100 }, (_, i) => i + 101);
             return (
                 <div className="flex flex-col items-center w-full max-w-md">
-                    <div className="w-full grid grid-cols-5 gap-3 pt-2 pb-6 animate-fade-in">
+                    <div className="w-full grid grid-cols-5 gap-3 pt-2 pb-6 animate-fade-in-fast">
                         {levels.map((lvl, idx) => {
                             const key = `${difficulty}-${lvl}`;
                             const progress = progressMap[key];
@@ -244,7 +243,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
         if (activeTab === 3) {
             if (!isPack3Unlocked) {
                 return (
-                    <div className="flex-1 flex flex-col items-center justify-center w-full max-w-md pb-20 animate-fade-in">
+                    <div className="flex-1 flex flex-col items-center justify-center w-full max-w-md pb-20 animate-fade-in-fast">
                         <UnlockCard 
                             startLevel={201}
                             endLevel={300}
@@ -258,7 +257,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
             }
             const levels = Array.from({ length: 100 }, (_, i) => i + 201);
             return (
-                <div className="flex flex-col items-center w-full max-w-md animate-fade-in">
+                <div className="flex flex-col items-center w-full max-w-md animate-fade-in-fast">
                     <div className="w-full grid grid-cols-5 gap-3 pt-2 pb-6">
                         {levels.map((lvl, idx) => {
                             const key = `${difficulty}-${lvl}`;
@@ -282,7 +281,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
     };
 
     return (
-        <div className="flex-1 w-full flex flex-col items-center overflow-hidden relative">
+        <div className="flex-1 w-full flex flex-col items-center overflow-hidden relative animate-fade-in-fast">
             <div className="w-full max-w-md flex flex-col items-center px-6 pt-4 shrink-0 z-20 gap-4">
                 
                 {/* Header Row */}
@@ -295,7 +294,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                         <h1 className="text-xl font-bold leading-none">{difficulty}</h1>
                         <p className="text-xs font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-[0.2em] mt-1">Select Level</p>
                         {globalBest !== undefined && (
-                            <div className="flex flex-col items-center animate-fade-in mt-1">
+                            <div className="flex flex-col items-center animate-fade-in-fast mt-1">
                                 <span className="text-[10px] font-bold text-amber-500 tracking-widest uppercase mb-px opacity-90">Best: {formatTimeShort(globalBest)}</span>
                             </div>
                         )}
