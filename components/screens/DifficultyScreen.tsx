@@ -125,7 +125,7 @@ const DifficultyCard: React.FC<{
         <button 
             onClick={() => onSelect(diff)} 
             style={finalStyle}
-            className={`bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border border-white/40 dark:border-white/10 ${paddingClass} rounded-2xl shadow-sm flex flex-col justify-between transition-all active:scale-95 hover:brightness-105 text-left relative group overflow-visible opacity-0 animate-slide-in-down`}
+            className={`bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border border-white/40 dark:border-white/10 ${paddingClass} rounded-2xl shadow-sm flex flex-col justify-between transition-all active:scale-95 text-left relative group overflow-visible opacity-0 animate-slide-in-down`}
         >
             <div className="w-full flex justify-between items-center mb-1">
                 <span className={`font-bold text-stone-800 dark:text-white leading-none tracking-tight truncate mr-1 ${titleClass}`}>{diff}</span>

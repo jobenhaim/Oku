@@ -36,7 +36,7 @@ const LevelButton = React.memo(({ levelId, index, status, bestTime, isGlobalBest
     } else if (isInProgress) {
         buttonClass += 'bg-t-surface ring-2 ring-blue-400 shadow-md text-t-primary ';
     } else {
-        buttonClass += 'bg-t-surface hover:shadow-md text-t-primary ';
+        buttonClass += 'bg-t-surface text-t-primary ';
     }
 
     return (

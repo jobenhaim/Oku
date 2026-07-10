@@ -612,39 +612,35 @@ class SoundController {
 
     playWin() {
         if (this.soundEnabled) {
-            // A warm, gentle, melodic victory cascade
-            // Chord Progression: C Maj -> G Maj -> C Maj (Sparkly Chords with lower volume scale)
-            const chords = [
-                { freqs: [523.25, 659.25], time: 0, gain: 0.05 },      // C5 + E5
-                { freqs: [587.33, 783.99], time: 130, gain: 0.05 },    // D5 + G5
-                { freqs: [659.25, 1046.50], time: 260, gain: 0.05 },   // E5 + C6
-                { freqs: [783.99, 1318.51], time: 390, gain: 0.05 },   // G5 + E6
-                { freqs: [1046.50, 1567.98, 2093.00], time: 520, gain: 0.04 } // C6 + G6 + C7 Sparkly peak
-            ];
+            // Minimalistic success chime (e.g., C6 -> G6)
+            const ctx = this.getCtx();
+            const time = ctx.currentTime;
             
-            chords.forEach(({ freqs, time, gain: maxGain }) => {
-                setTimeout(() => {
-                    const ctx = this.getCtx();
-                    freqs.forEach(freq => {
-                        const osc = ctx.createOscillator();
-                        const gain = ctx.createGain();
-                        
-                        osc.type = 'sine';
-                        osc.frequency.setValueAtTime(freq, ctx.currentTime);
-                        
-                        gain.gain.setValueAtTime(0, ctx.currentTime);
-                        // Gentler, slower attack to remove the harsh transient click
-                        gain.gain.linearRampToValueAtTime(maxGain, ctx.currentTime + 0.03);
-                        // Softer exponential decay for a ringing chime effect
-                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-                        
-                        osc.connect(gain);
-                        gain.connect(ctx.destination);
-                        osc.start();
-                        osc.stop(ctx.currentTime + 0.7);
-                    });
-                }, time);
-            });
+            // First note
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(1046.50, time); // C6
+            gain1.gain.setValueAtTime(0, time);
+            gain1.gain.linearRampToValueAtTime(0.05, time + 0.05);
+            gain1.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.start(time);
+            osc1.stop(time + 0.5);
+
+            // Second note
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(1567.98, time + 0.15); // G6
+            gain2.gain.setValueAtTime(0, time + 0.15);
+            gain2.gain.linearRampToValueAtTime(0.08, time + 0.2);
+            gain2.gain.exponentialRampToValueAtTime(0.001, time + 1.2);
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.start(time + 0.15);
+            osc2.stop(time + 1.2);
         }
         
         if (this.vibrationEnabled) {

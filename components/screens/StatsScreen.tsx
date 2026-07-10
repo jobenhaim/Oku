@@ -247,7 +247,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                                             flex-1 py-2 px-0.5 text-[11px] font-bold transition-all relative z-10 flex flex-col items-center justify-center
                                             ${isActive 
                                                 ? 'text-stone-900 dark:text-white' 
-                                                : 'text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300'
+                                                : 'text-stone-400 dark:text-stone-500'
                                             }
                                         `}
                                     >

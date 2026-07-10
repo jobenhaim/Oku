@@ -2,6 +2,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Icons } from '../ui/Icons';
 import { Difficulty } from '../../types';
+import { sounds } from '../../utils/sound';
 
 interface WinModalProps {
     difficulty: Difficulty;
@@ -22,9 +23,11 @@ interface WinModalProps {
 
 const useCounter = (target: number, duration: number = 800, start: boolean = false) => {
     const [count, setCount] = useState(0);
+    const lastTickRef = useRef(0);
     useEffect(() => {
         if (!start) {
             setCount(0);
+            lastTickRef.current = 0;
             return;
         }
         let startTime: number;
@@ -35,7 +38,17 @@ const useCounter = (target: number, duration: number = 800, start: boolean = fal
             const progress = Math.min((time - startTime) / duration, 1);
             // Cubic ease out
             const ease = 1 - Math.pow(1 - progress, 3); 
-            setCount(Math.floor(target * ease));
+            const currentCount = Math.floor(target * ease);
+            
+            if (currentCount > lastTickRef.current) {
+                // Throttle tick sounds to avoid overwhelming the audio context
+                if (currentCount % Math.max(1, Math.floor(target / 10)) === 0) {
+                    sounds.playCounterTick();
+                }
+                lastTickRef.current = currentCount;
+            }
+
+            setCount(currentCount);
             
             if (progress < 1) {
                 animationFrame = requestAnimationFrame(animate);
@@ -160,21 +173,54 @@ export const WinModal: React.FC<WinModalProps> = ({
     onReturnToMenu
 }) => {
     const [step, setStep] = useState(0);
+    const [revealedLetters, setRevealedLetters] = useState(0);
     
     // Animation Sequencing
     useEffect(() => {
-        // Step 1: Checkmark (Immediate)
-        const t1 = setTimeout(() => setStep(1), 100);
-        // Step 2: Difficulty/Level Header
-        const t2 = setTimeout(() => setStep(2), 500);
-        // Step 3: "Solved!" Title
-        const t3 = setTimeout(() => setStep(3), 800);
-        // Step 4: Points Earned
-        const t4 = setTimeout(() => setStep(4), 1400);
-        // Step 5: Time
-        const t5 = setTimeout(() => setStep(5), 2000);
-        // Step 6: Actions
-        const t6 = setTimeout(() => setStep(6), 2800);
+        // Step 1: Trophy/Icon pops up instantly
+        const t1 = setTimeout(() => {
+            setStep(1);
+            sounds.playPepinoTap();
+        }, 150);
+
+        // Step 2: Difficulty/Level subtitle appears
+        const t2 = setTimeout(() => {
+            setStep(2);
+            sounds.playPepinoTap();
+        }, 400);
+
+        // Step 3: Solved title appears with perfectly synchronized letters and tick sounds
+        const t3 = setTimeout(() => {
+            setStep(3);
+            let currentCount = 0;
+            const letterInterval = setInterval(() => {
+                currentCount++;
+                setRevealedLetters(currentCount);
+                sounds.playCounterTick();
+                
+                if (currentCount >= 7) {
+                    clearInterval(letterInterval);
+                }
+            }, 75); // Snappy, frame-accurate 75ms spacing
+        }, 650);
+
+        // Step 4: Points Card appears
+        const t4 = setTimeout(() => {
+            setStep(4);
+            sounds.playPop();
+        }, 1300);
+
+        // Step 5: Time Card appears
+        const t5 = setTimeout(() => {
+            setStep(5);
+            sounds.playPop();
+        }, 1550);
+
+        // Step 6: Action buttons slide up
+        const t6 = setTimeout(() => {
+            setStep(6);
+            sounds.playPop();
+        }, 1800);
 
         return () => {
             clearTimeout(t1);
@@ -201,35 +247,34 @@ export const WinModal: React.FC<WinModalProps> = ({
     }
 
     return (
-        <div className="fixed inset-0 w-full h-full bg-green-500/50 backdrop-blur-sm z-[140] flex flex-col items-center justify-center text-white animate-fade-in touch-none">
-            <div className="bg-white dark:bg-stone-800 text-stone-800 dark:text-t-primary p-8 rounded-3xl shadow-2xl w-80 text-center relative overflow-hidden transform transition-all z-10">
+        <div className="fixed inset-0 w-full h-full bg-stone-950/40 dark:bg-black/60 backdrop-blur-md z-[140] flex flex-col items-center justify-center animate-fade-in touch-none">
+            <div className="bg-white dark:bg-stone-900/95 border border-stone-200 dark:border-white/10 text-stone-800 dark:text-white p-5 rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[260px] text-center relative overflow-hidden transform transition-all duration-300 z-10">
                 
-                {/* Step 1: Checkmark Icon */}
+                {/* Step 1: Trophy Icon */}
                 <div 
-                    className={`w-20 h-20 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500 dark:text-green-400 relative z-10 transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1) ${step >= 1 ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}
+                    className={`w-14 h-14 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-3 text-amber-600 dark:text-amber-400 relative z-10 transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1) ${step >= 1 ? 'scale-100 opacity-100 rotate-0' : 'scale-0 opacity-0 -rotate-180'}`}
                 >
-                    <Icons.Check className="w-10 h-10" />
+                    <Icons.Trophy className="w-7 h-7 filter drop-shadow-[0_0_8px_rgba(245,158,11,0.3)] dark:drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                 </div>
                 
                 {/* Step 2: Difficulty Header */}
                 <div 
-                    className={`flex flex-col gap-0.5 mb-2 relative z-10 transition-all duration-500 ${step >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                    className={`flex flex-col gap-0.5 mb-1 relative z-10 transition-all duration-500 ${step >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
                 >
-                    <div className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest">{difficulty} &bull; Level {levelId}</div>
+                    <div className="text-[9px] font-bold text-amber-600 dark:text-amber-400/90 uppercase tracking-[0.15em]">{difficulty} &bull; Level {levelId}</div>
                 </div>
 
                 {/* Step 3: Solved Title (Letter by Letter) */}
-                <div className="mb-8 relative z-10 h-10">
-                    <div className="flex justify-center items-center">
+                <div className="mb-3 relative z-10 h-7 flex justify-center items-center">
+                    <div className="flex justify-center items-center gap-0.5">
                         {['S','o','l','v','e','d','!'].map((char, i) => (
                             <span 
                                 key={i}
-                                className={`text-3xl font-bold text-stone-800 dark:text-white leading-tight inline-block transition-all duration-300`}
-                                style={{ 
-                                    transitionDelay: `${i * 40}ms`,
-                                    opacity: step >= 3 ? 1 : 0,
-                                    transform: step >= 3 ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.5)'
-                                }}
+                                className={`text-xl font-bold leading-none inline-block transition-all duration-200 text-stone-800 dark:text-white ${
+                                    revealedLetters > i 
+                                    ? 'scale-100 opacity-100 translate-y-0' 
+                                    : 'scale-50 opacity-0 translate-y-2'
+                                }`}
                             >
                                 {char}
                             </span>
@@ -237,55 +282,72 @@ export const WinModal: React.FC<WinModalProps> = ({
                     </div>
                 </div>
                 
-                {/* Step 4: Earnings Group */}
-                <div 
-                    className={`flex flex-col gap-1 mb-6 relative z-10 transition-all duration-500 ${step >= 4 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                >
-                    <p className="text-stone-500 dark:text-stone-400 text-xs font-bold uppercase tracking-widest">You Earned</p>
-                    <div className="flex items-center justify-center gap-1.5 h-8">
-                        <span className="text-3xl font-bold text-stone-800 dark:text-t-primary tabular-nums">+{animatedPoints}</span>
-                        <Icons.Diamond className="w-6 h-6 text-blue-500 fill-current" />
+                {/* Grid of stats (Side-by-side to minimize height and eliminate empty space) */}
+                <div className="grid grid-cols-2 gap-2 mb-4 relative z-10">
+                    {/* Step 4: Earnings */}
+                    <div 
+                        className={`bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 rounded-2xl p-2 transition-all duration-500 ${
+                            step >= 4 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+                        }`}
+                    >
+                        <p className="text-stone-500 dark:text-stone-400 text-[8px] font-bold uppercase tracking-wider mb-0.5">Points</p>
+                        <div className="flex items-center justify-center gap-1">
+                            <span className="text-sm font-extrabold text-stone-800 dark:text-white tabular-nums">+{animatedPoints}</span>
+                            <Icons.Diamond className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 fill-current" />
+                        </div>
                     </div>
-                </div>
-                
-                {/* Step 5: Time Group */}
-                <div 
-                    className={`flex flex-col gap-0.5 mb-8 relative z-10 transition-all duration-500 ${step >= 5 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                >
-                    <p className="text-stone-400 dark:text-stone-500 text-[10px] uppercase tracking-widest font-bold">Time</p>
-                    <p className="text-2xl font-medium tabular-nums text-stone-800 dark:text-white leading-tight">{formatTime(animatedTimeSeconds)}</p>
+                    
+                    {/* Step 5: Time */}
+                    <div 
+                        className={`bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 rounded-2xl p-2 transition-all duration-500 ${
+                            step >= 5 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+                        }`}
+                    >
+                        <p className="text-stone-500 dark:text-stone-400 text-[8px] font-bold uppercase tracking-wider mb-0.5">Time</p>
+                        <p className="text-sm font-extrabold tabular-nums text-stone-800 dark:text-white leading-none pt-0.5">{formatTime(animatedTimeSeconds)}</p>
+                    </div>
                 </div>
                 
                 {/* Step 6: Actions */}
                 <div 
-                    className={`relative z-10 space-y-3 transition-all duration-700 ${step >= 6 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                    className={`relative z-10 space-y-2 transition-all duration-700 ${step >= 6 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                 >
                     {/* Replay Button */}
                     {generateReplayEnabled && (
                         isGeneratingReplay ? (
-                            <div className="w-full py-3.5 flex items-center justify-center gap-2 text-stone-500 font-bold animate-pulse bg-stone-50 dark:bg-stone-800/50 rounded-xl border border-dashed border-stone-200 dark:border-stone-700">
-                                <Icons.Video className="w-5 h-5" /> Generating Replay...
+                            <div className="w-full py-2 flex items-center justify-center gap-1.5 text-stone-500 dark:text-stone-400 font-bold text-[10px] animate-pulse bg-stone-50 dark:bg-white/5 rounded-xl border border-dashed border-stone-200 dark:border-white/10">
+                                <Icons.Video className="w-3.5 h-3.5" /> Generating Replay...
                             </div>
                         ) : replayUrl ? (
                             <button 
-                            onClick={onReplay}
-                            className="w-full py-3.5 bg-blue-500 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition flex items-center justify-center gap-2 hover:bg-blue-600 animate-pop"
+                                onClick={onReplay}
+                                className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-[11px] shadow-lg shadow-blue-600/10 dark:shadow-blue-600/20 active:scale-95 transition flex items-center justify-center gap-1.5"
                             >
-                            <Icons.Video className="w-5 h-5" /> Watch Replay
+                                <Icons.Video className="w-3.5 h-3.5" /> Watch Replay
                             </button>
                         ) : (
                             <button 
-                            onClick={onGenerateReplay}
-                            className="w-full py-3.5 bg-stone-100 text-stone-600 dark:bg-stone-700 dark:text-stone-300 rounded-xl font-bold shadow-sm active:scale-95 transition flex items-center justify-center gap-2 hover:bg-stone-200 dark:hover:bg-stone-600"
+                                onClick={onGenerateReplay}
+                                className="w-full py-2 bg-stone-100 hover:bg-stone-200 dark:bg-white/10 dark:hover:bg-white/15 text-stone-700 dark:text-stone-200 rounded-xl font-bold text-[11px] active:scale-95 transition flex items-center justify-center gap-1.5 border border-stone-200/60 dark:border-white/5"
                             >
-                            <Icons.Video className="w-5 h-5" /> Create Replay
+                                <Icons.Video className="w-3.5 h-3.5" /> Create Replay
                             </button>
                         )
                     )}
 
-                    <div className="flex gap-3">
-                            <button onClick={onBack} className="flex-1 py-3.5 bg-stone-800 text-white dark:bg-stone-100 dark:text-stone-900 rounded-xl font-bold hover:bg-stone-700 dark:hover:bg-stone-200 active:scale-95 transition shadow-lg">Levels</button>
-                            <button onClick={onReturnToMenu} className="flex-1 py-3.5 bg-white text-stone-600 border border-stone-300 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-600 rounded-xl font-bold hover:bg-stone-50 dark:hover:bg-stone-700 active:scale-95 transition">Menu</button>
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={onBack} 
+                            className="flex-1 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl font-bold text-[11px] active:scale-95 transition shadow-lg shadow-amber-500/10"
+                        >
+                            Levels
+                        </button>
+                        <button 
+                            onClick={onReturnToMenu} 
+                            className="flex-1 py-2 bg-stone-100 hover:bg-stone-200 dark:bg-white/10 dark:hover:bg-white/15 text-stone-700 dark:text-stone-200 border border-stone-200/60 dark:border-white/5 rounded-xl font-bold text-[11px] active:scale-95 transition"
+                        >
+                            Menu
+                        </button>
                     </div>
                 </div>
             </div>
