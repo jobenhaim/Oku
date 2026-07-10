@@ -754,60 +754,7 @@ class SoundController {
     }
 
     playZap() {
-        this.playClick();
-        // "Auto" Skill Sound - "Snappy Flashy Zap"
-        if (this.soundEnabled) {
-            const ctx = this.getCtx();
-            const now = ctx.currentTime;
-            
-            // 1. Flashy Upward Arpeggio (A Major: A5, C#6, E6, A6)
-            const freqs = [880.00, 1108.73, 1318.51, 1760.00]; 
-            
-            freqs.forEach((freq, i) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                
-                osc.type = i === freqs.length - 1 ? 'triangle' : 'sine'; // Final note has more edge
-                osc.frequency.setValueAtTime(freq, now + i * 0.03); // Very fast 30ms stagger
-                
-                gain.gain.setValueAtTime(0, now + i * 0.03);
-                // Low volume (0.05) to prevent piercing high pitches
-                gain.gain.linearRampToValueAtTime(0.05, now + i * 0.03 + 0.01);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.03 + 0.15);
-                
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                
-                osc.start(now + i * 0.03);
-                osc.stop(now + i * 0.03 + 0.2);
-            });
-            
-            // 2. Snappy Electric Underlay (Fast sawtooth sweep)
-            const zapOsc = ctx.createOscillator();
-            const zapGain = ctx.createGain();
-            const zapFilter = ctx.createBiquadFilter();
-            
-            zapOsc.type = 'sawtooth';
-            zapOsc.frequency.setValueAtTime(1500, now);
-            zapOsc.frequency.exponentialRampToValueAtTime(200, now + 0.1); // Quick pitch drop
-            
-            zapFilter.type = 'bandpass';
-            zapFilter.frequency.setValueAtTime(2000, now);
-            zapFilter.frequency.exponentialRampToValueAtTime(500, now + 0.1);
-            zapFilter.Q.value = 2; // Slight resonance for electric feel
-            
-            zapGain.gain.setValueAtTime(0, now);
-            zapGain.gain.linearRampToValueAtTime(0.04, now + 0.01); // Snappy attack, low volume
-            zapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-            
-            zapOsc.connect(zapFilter);
-            zapFilter.connect(zapGain);
-            zapGain.connect(ctx.destination);
-            
-            zapOsc.start(now);
-            zapOsc.stop(now + 0.15);
-        }
-
+        // "Auto" Skill Sound - Removed to prevent overlapping with row/column/box completion sounds
         if (this.vibrationEnabled) {
             Haptics.impact({ style: ImpactStyle.Medium });
         }

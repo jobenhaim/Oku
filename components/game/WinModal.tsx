@@ -1,5 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Icons } from '../ui/Icons';
 import { Difficulty } from '../../types';
 import { sounds } from '../../utils/sound';
@@ -246,8 +247,8 @@ export const WinModal: React.FC<WinModalProps> = ({
         return <ReplayPlayer src={replayUrl} onShare={onShareReplay} onClose={onCloseReplay} />;
     }
 
-    return (
-        <div className="fixed inset-0 w-full h-full bg-stone-950/40 dark:bg-black/60 backdrop-blur-md z-[140] flex flex-col items-center justify-center animate-fade-in touch-none">
+    return createPortal(
+        <div className="fixed inset-0 w-full h-full bg-stone-950/40 dark:bg-black/60 backdrop-blur-sm z-[140] flex flex-col items-center justify-center animate-fade-in touch-none">
             <div className="bg-white dark:bg-stone-900/95 border border-stone-200 dark:border-white/10 text-stone-800 dark:text-white p-5 rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[260px] text-center relative overflow-hidden transform transition-all duration-300 z-10">
                 
                 {/* Step 1: Trophy Icon */}
@@ -290,7 +291,7 @@ export const WinModal: React.FC<WinModalProps> = ({
                             step >= 4 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
                         }`}
                     >
-                        <p className="text-stone-500 dark:text-stone-400 text-[8px] font-bold uppercase tracking-wider mb-0.5">Points</p>
+                        <p className="text-stone-500 dark:text-stone-400 text-[8px] font-bold uppercase tracking-wider mb-0.5">Diamonds</p>
                         <div className="flex items-center justify-center gap-1">
                             <span className="text-sm font-extrabold text-stone-800 dark:text-white tabular-nums">+{animatedPoints}</span>
                             <Icons.Diamond className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 fill-current" />
@@ -338,7 +339,7 @@ export const WinModal: React.FC<WinModalProps> = ({
                     <div className="flex gap-2">
                         <button 
                             onClick={onBack} 
-                            className="flex-1 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl font-bold text-[11px] active:scale-95 transition shadow-lg shadow-amber-500/10"
+                            className="flex-1 py-2 bg-stone-100 hover:bg-stone-200 dark:bg-white/10 dark:hover:bg-white/15 text-stone-700 dark:text-stone-200 border border-stone-200/60 dark:border-white/5 rounded-xl font-bold text-[11px] active:scale-95 transition"
                         >
                             Levels
                         </button>
@@ -351,6 +352,7 @@ export const WinModal: React.FC<WinModalProps> = ({
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

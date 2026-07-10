@@ -112,10 +112,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setIsEnding(true);
       sounds.playWin();
       
-      setAnimatingSections(new Set(['full-board']));
-      setTimeout(() => {
-          setAnimatingSections(new Set());
-      }, 2500);
+      // Clear selection and active numbers immediately
+      setSelectedCell(null);
+      setActiveNumber(null);
       
       let points = 0;
       switch(difficulty) {
@@ -153,7 +152,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setTimeout(() => {
           setIsCompleted(true);
           onComplete();
-      }, 1500);
+      }, 1000);
   };
 
   const {
