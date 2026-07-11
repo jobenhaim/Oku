@@ -438,6 +438,15 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
               
               {/* Right Column: Actions */}
               <div className="flex items-center gap-1 relative z-30 -mr-2">
+                  {settings.devAutoSolve && (
+                      <button 
+                          onClick={() => { sounds.playClick(); handleDevSolve(); }} 
+                          className="p-2 rounded-full transition text-red-600 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 active:scale-90"
+                          title="Dev Auto Solve"
+                      >
+                          <Icons.Dev className="w-6 h-6" />
+                      </button>
+                  )}
                   <button onClick={() => { sounds.playClick(); setIsPaused(true); }} className="p-2 rounded-full transition text-t-icon">
                       <Icons.Pause className="w-6 h-6" />
                   </button>

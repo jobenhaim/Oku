@@ -455,15 +455,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
           return true;
       }
 
-      if (lowerCode === 'haha50se') {
-          sounds.playWin();
-          Storage.completeSuperEasyLevels();
-          Storage.markCouponRedeemed(normalizedCode);
-          setRedeemedCoupons(Storage.getStoredData().redeemedCoupons || []);
-          setStats(Storage.getStoredData().stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
-          return true;
-      }
-
       if (lowerCode === 'hahapepino') {
           sounds.playWin();
           Storage.unlockPepino();
@@ -473,8 +464,11 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
           return true;
       }
 
-      if (lowerCode === 'hahasolve') {
+      if (lowerCode === 'hahadev') {
           sounds.playWin();
+          const newSettings = { ...settings, devAutoSolve: true };
+          setSettings(newSettings);
+          Storage.saveSettings(newSettings);
           Storage.markCouponRedeemed(normalizedCode);
           setRedeemedCoupons(Storage.getStoredData().redeemedCoupons || []);
           return true;
@@ -517,22 +511,25 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const variants: Variants = {
     initial: {
       opacity: 0,
+      scale: 0.97,
       pointerEvents: 'none' as any
     },
     animate: {
       opacity: 1,
+      scale: 1,
       pointerEvents: 'auto' as any,
       transition: { 
-          duration: 0.22,
-          ease: "easeInOut"
+          duration: 0.25,
+          ease: [0.16, 1, 0.3, 1]
       }
     },
     exit: {
       opacity: 0,
+      scale: 1.03,
       pointerEvents: 'none' as any,
       transition: { 
-          duration: 0.18,
-          ease: "easeInOut",
+          duration: 0.2,
+          ease: [0.16, 1, 0.3, 1],
           pointerEvents: { duration: 0 }
       }
     }

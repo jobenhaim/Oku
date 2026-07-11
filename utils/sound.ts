@@ -754,7 +754,8 @@ class SoundController {
     }
 
     playZap() {
-        // "Auto" Skill Sound - Removed to prevent overlapping with row/column/box completion sounds
+        // "Auto" Skill Sound - Plays the same sound effect as pressing a normal button based on chosen sound pack
+        this.playClick();
         if (this.vibrationEnabled) {
             Haptics.impact({ style: ImpactStyle.Medium });
         }

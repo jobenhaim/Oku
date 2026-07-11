@@ -837,12 +837,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
 
                             {/* Danger Zone */}
                             <div className="pt-4 border-t border-t-border flex flex-col gap-3 transition-colors duration-300">
-                                <p className="text-[10px] text-center text-t-secondary font-medium mb-1 px-4 leading-relaxed transition-colors duration-300">
-                                    Your progress is saved in your device's Cloud Backup.<br/>We cannot access your data.
-                                </p>
                                 <button onClick={onReset} className="w-full py-4 flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-2xl transition-all duration-300 font-bold text-base">
                                     <Icons.Trash className="w-5 h-5" /> Reset All Progress
                                 </button>
+                                <p className="text-[10px] text-center text-t-secondary font-medium mt-1 px-4 leading-relaxed transition-colors duration-300">
+                                    Your progress is saved in your device's Cloud Backup.<br/>We cannot access your data.
+                                </p>
                             </div>
 
                             {/* Legal Links */}
@@ -852,7 +852,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     <div className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700 transition-colors duration-300" />
                                     <button onClick={() => { sounds.playClick(); setActiveDoc('terms'); }} className="hover:text-stone-600 dark:hover:text-stone-300 transition-colors duration-300 px-2 py-1">Terms of Service</button>
                                 </div>
-                                <span className="text-[9px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v1.0.0</span>
+                                <span className="text-[9px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.8.0</span>
                             </div>
                         </div>
                     )}

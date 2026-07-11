@@ -63,10 +63,12 @@ import {
   Flower2,
   Gem,
   Hexagon,
-  Ticket
+  Ticket,
+  Terminal
 } from 'lucide-react';
 
 export const Icons = {
+  Dev: (props: any) => <Terminal {...props} />,
   Settings: (props: any) => <Settings {...props} />,
   Back: (props: any) => <ChevronLeft {...props} />,
   Next: (props: any) => <ChevronRight {...props} />,

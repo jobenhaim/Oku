@@ -1,6 +1,5 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { Icons } from '../ui/Icons';
 import { Difficulty } from '../../types';
 import { sounds } from '../../utils/sound';
@@ -247,7 +246,7 @@ export const WinModal: React.FC<WinModalProps> = ({
         return <ReplayPlayer src={replayUrl} onShare={onShareReplay} onClose={onCloseReplay} />;
     }
 
-    return createPortal(
+    return (
         <div className="fixed inset-0 w-full h-full bg-stone-950/40 dark:bg-black/60 backdrop-blur-sm z-[140] flex flex-col items-center justify-center animate-fade-in touch-none">
             <div className="bg-white dark:bg-stone-900/95 border border-stone-200 dark:border-white/10 text-stone-800 dark:text-white p-5 rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[260px] text-center relative overflow-hidden transform transition-all duration-300 z-10">
                 
@@ -315,44 +314,43 @@ export const WinModal: React.FC<WinModalProps> = ({
                 >
                     {/* Replay Button */}
                     {generateReplayEnabled && (
-                        isGeneratingReplay ? (
-                            <div className="w-full py-2 flex items-center justify-center gap-1.5 text-stone-500 dark:text-stone-400 font-bold text-[10px] animate-pulse bg-stone-50 dark:bg-white/5 rounded-xl border border-dashed border-stone-200 dark:border-white/10">
-                                <Icons.Video className="w-3.5 h-3.5" /> Generating Replay...
+                         isGeneratingReplay ? (
+                            <div className="w-full h-11 flex items-center justify-center gap-1.5 text-stone-500 dark:text-stone-400 font-bold text-[13px] animate-pulse bg-stone-50 dark:bg-white/5 rounded-xl border border-dashed border-stone-200 dark:border-white/10">
+                                <Icons.Video className="w-4 h-4" /> Generating Replay...
                             </div>
                         ) : replayUrl ? (
                             <button 
                                 onClick={onReplay}
-                                className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-[11px] shadow-lg shadow-blue-600/10 dark:shadow-blue-600/20 active:scale-95 transition flex items-center justify-center gap-1.5"
+                                className="w-full h-11 bg-blue-600 text-white rounded-xl font-bold text-[13px] shadow-lg shadow-blue-600/10 dark:shadow-blue-600/20 active:scale-95 transition flex items-center justify-center gap-1.5 border border-transparent"
                             >
-                                <Icons.Video className="w-3.5 h-3.5" /> Watch Replay
+                                <Icons.Video className="w-4 h-4" /> Watch Replay
                             </button>
                         ) : (
                             <button 
                                 onClick={onGenerateReplay}
-                                className="w-full py-2 bg-stone-100 hover:bg-stone-200 dark:bg-white/10 dark:hover:bg-white/15 text-stone-700 dark:text-stone-200 rounded-xl font-bold text-[11px] active:scale-95 transition flex items-center justify-center gap-1.5 border border-stone-200/60 dark:border-white/5"
+                                className="w-full h-11 bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-200 rounded-xl font-bold text-[13px] active:scale-95 transition flex items-center justify-center gap-1.5 border border-stone-200/60 dark:border-white/5"
                             >
-                                <Icons.Video className="w-3.5 h-3.5" /> Create Replay
+                                <Icons.Video className="w-4 h-4" /> Create Replay
                             </button>
                         )
                     )}
 
                     <div className="flex gap-2">
                         <button 
-                            onClick={onBack} 
-                            className="flex-1 py-2 bg-stone-100 hover:bg-stone-200 dark:bg-white/10 dark:hover:bg-white/15 text-stone-700 dark:text-stone-200 border border-stone-200/60 dark:border-white/5 rounded-xl font-bold text-[11px] active:scale-95 transition"
+                             onClick={onBack} 
+                            className="flex-1 h-11 bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-200 border border-stone-200/60 dark:border-white/5 rounded-xl font-bold text-[13px] active:scale-95 transition flex items-center justify-center"
                         >
                             Levels
                         </button>
                         <button 
-                            onClick={onReturnToMenu} 
-                            className="flex-1 py-2 bg-stone-100 hover:bg-stone-200 dark:bg-white/10 dark:hover:bg-white/15 text-stone-700 dark:text-stone-200 border border-stone-200/60 dark:border-white/5 rounded-xl font-bold text-[11px] active:scale-95 transition"
+                             onClick={onReturnToMenu} 
+                            className="flex-1 h-11 bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-200 border border-stone-200/60 dark:border-white/5 rounded-xl font-bold text-[13px] active:scale-95 transition flex items-center justify-center"
                         >
                             Menu
                         </button>
                     </div>
                 </div>
             </div>
-        </div>,
-        document.body
+        </div>
     );
 };
