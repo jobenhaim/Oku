@@ -58,6 +58,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   const [animatingSections, setAnimatingSections] = useState<Set<string>>(new Set());
   const [showStartHint, setShowStartHint] = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
   
   // Timer hook
   const { timer, setTimer } = useGameTimer(
@@ -253,6 +254,33 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           clearTimeout(hintTimer);
       };
   }, [difficulty, levelId, initializeBoard, setTimer, setScanUses, setRevealUses]);
+
+  // Handle the automatic fade-in/fade-out warning for Hard, Intense, and Impossible levels
+  useEffect(() => {
+      const isHardOrAbove = difficulty === Difficulty.Hard || difficulty === Difficulty.Intense || difficulty === Difficulty.Impossible;
+      if (!isHardOrAbove) {
+          setShowWarning(false);
+          return;
+      }
+
+      // Hide immediately on level/difficulty change
+      setShowWarning(false);
+
+      // Start a 2-second delay before fading in
+      const delayTimer = setTimeout(() => {
+          setShowWarning(true);
+      }, 2000);
+
+      // Keep it visible for 5s (so 2s delay + 1s fade-in + 5s fully visible = 8s total before starting fade-out)
+      const hideTimer = setTimeout(() => {
+          setShowWarning(false);
+      }, 8000);
+
+      return () => {
+          clearTimeout(delayTimer);
+          clearTimeout(hideTimer);
+      };
+  }, [difficulty, levelId]);
   
   const generateReplay = () => {
         if (isGeneratingReplay || replayUrl) return;
@@ -461,6 +489,29 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           className="flex-1 w-full flex flex-col items-center justify-start relative cursor-default" 
           onClick={handleBackgroundClick}
       >
+         {/* Non-shifting container for difficulty warnings */}
+         <div className="w-full h-8 flex items-center justify-center relative z-20">
+             <AnimatePresence>
+             {showWarning && (
+                 <motion.div
+                     initial={{ opacity: 0 }}
+                     animate={{ opacity: 1 }}
+                     exit={{ opacity: 0 }}
+                     transition={{ duration: 1.0, ease: "easeInOut" }}
+                     className="pointer-events-none text-center px-4"
+                 >
+                     <span className="text-[11px] md:text-xs font-semibold text-stone-600 dark:text-stone-700 bg-stone-50 dark:bg-stone-100 border border-stone-200/80 px-4 py-1.5 rounded-full backdrop-blur-md inline-flex items-center gap-1.5 leading-none shadow-md">
+                         Errors won't be revealed automatically,
+                         <span className="inline-flex items-center gap-1 text-red-500 font-bold">
+                             <Icons.Scan className="w-3.5 h-3.5 shrink-0 text-red-500" />
+                             Scan recommended
+                         </span>
+                     </span>
+                 </motion.div>
+             )}
+             </AnimatePresence>
+         </div>
+
          <motion.div 
              initial={{ opacity: 0, scale: 0.96 }}
              animate={{ opacity: 1, scale: 1 }}

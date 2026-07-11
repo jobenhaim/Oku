@@ -41,7 +41,16 @@ interface StoreItemWrapperProps {
 
 const StoreItemWrapper: React.FC<StoreItemWrapperProps> = ({ children, delay }) => {
     return (
-        <div className="animate-fade-in-fast">
+        <div 
+            className="animate-fade-in-fast"
+            style={{
+                transform: 'translateZ(0)',
+                WebkitTransform: 'translate3d(0, 0, 0)',
+                isolation: 'isolate',
+                backfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden'
+            }}
+        >
             {children}
         </div>
     );
