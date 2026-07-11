@@ -205,25 +205,31 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                         zIndex: 10,
                     }}
                 >
-                    {/* Vertical Lines */}
+                    {/* Thin Lines (Rendered first so they are behind thick lines) */}
+                    {/* Vertical Thin */}
                     <div className="absolute top-0 bottom-0 left-[11.111111%] w-[1px] bg-[var(--grid-thin)]" />
                     <div className="absolute top-0 bottom-0 left-[22.222222%] w-[1px] bg-[var(--grid-thin)]" />
-                    <div className="absolute top-0 bottom-0 left-[33.333333%] w-[3px] -ml-[1px] bg-[var(--grid-thick)]" />
                     <div className="absolute top-0 bottom-0 left-[44.444444%] w-[1px] bg-[var(--grid-thin)]" />
                     <div className="absolute top-0 bottom-0 left-[55.555556%] w-[1px] bg-[var(--grid-thin)]" />
-                    <div className="absolute top-0 bottom-0 left-[66.666667%] w-[3px] -ml-[1px] bg-[var(--grid-thick)]" />
                     <div className="absolute top-0 bottom-0 left-[77.777778%] w-[1px] bg-[var(--grid-thin)]" />
                     <div className="absolute top-0 bottom-0 left-[88.888889%] w-[1px] bg-[var(--grid-thin)]" />
 
-                    {/* Horizontal Lines */}
+                    {/* Horizontal Thin */}
                     <div className="absolute left-0 right-0 top-[11.111111%] h-[1px] bg-[var(--grid-thin)]" />
                     <div className="absolute left-0 right-0 top-[22.222222%] h-[1px] bg-[var(--grid-thin)]" />
-                    <div className="absolute left-0 right-0 top-[33.333333%] h-[3px] -mt-[1px] bg-[var(--grid-thick)]" />
                     <div className="absolute left-0 right-0 top-[44.444444%] h-[1px] bg-[var(--grid-thin)]" />
                     <div className="absolute left-0 right-0 top-[55.555556%] h-[1px] bg-[var(--grid-thin)]" />
-                    <div className="absolute left-0 right-0 top-[66.666667%] h-[3px] -mt-[1px] bg-[var(--grid-thick)]" />
                     <div className="absolute left-0 right-0 top-[77.777778%] h-[1px] bg-[var(--grid-thin)]" />
                     <div className="absolute left-0 right-0 top-[88.888889%] h-[1px] bg-[var(--grid-thin)]" />
+
+                    {/* Thick Lines (Rendered last so they draw over thin lines) */}
+                    {/* Vertical Thick */}
+                    <div className="absolute top-0 bottom-0 left-[33.333333%] w-[3px] -ml-[1px] bg-[var(--grid-thick)]" />
+                    <div className="absolute top-0 bottom-0 left-[66.666667%] w-[3px] -ml-[1px] bg-[var(--grid-thick)]" />
+
+                    {/* Horizontal Thick */}
+                    <div className="absolute left-0 right-0 top-[33.333333%] h-[3px] -mt-[1px] bg-[var(--grid-thick)]" />
+                    <div className="absolute left-0 right-0 top-[66.666667%] h-[3px] -mt-[1px] bg-[var(--grid-thick)]" />
                 </div>
 
                 {/* Layer 3: Interactive Numbers & Notes Grid (z-20) */}

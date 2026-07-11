@@ -70,11 +70,11 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
          // Scanner Detection: Bright Red Flash
          bgClass = 'bg-red-500 animate-pulse shadow-inner '; 
     } else if (isSelected && (isError || isConflict)) {
-         // Selected Error:
-         bgClass = 'bg-red-200 dark:bg-red-900/80 '; 
+         // Selected Error: 20% more red/saturated
+         bgClass = 'bg-red-200/90 dark:bg-red-900/80 z-20 '; 
     } else if (isError || isConflict) {
-         // Error:
-         bgClass = 'bg-red-100 dark:bg-red-900/50 ';
+         // Error: 20% more red/saturated
+         bgClass = 'bg-red-100 dark:bg-red-950/60 z-10 ';
     } else if (isSelected) {
          // Selected: Blue 200 (Light) / Dark Blue (Dark Mode)
          bgClass = 'bg-blue-200 dark:bg-blue-900 '; 
@@ -103,8 +103,8 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
             // Scanner Detection Text: White for contrast against bright red
             classes += "font-bold text-white ";
         } else if (isError || isConflict) {
-            // Error Text: Dark red / Light red
-            classes += "font-medium text-red-600 dark:text-red-400 ";
+            // Error Text: Bright red, keeping original font-medium
+            classes += "font-medium text-red-500 dark:text-red-500 ";
         } else {
             classes += "font-medium ";
         }
