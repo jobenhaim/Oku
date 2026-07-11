@@ -11,6 +11,7 @@ import { IAP } from './utils/iap'; // Import IAP Service
 
 // UI Components
 import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal, ResetConfirmModal } from './components/ui/Modals';
+import { WelcomeGiftModal } from './components/ui/WelcomeGiftModal';
 import { ProfileModal } from './components/ui/ProfileModal';
 import { LandscapeBlocker } from './components/ui/LandscapeBlocker';
 
@@ -76,6 +77,9 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   // Track actual dark mode state for JS logic
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+  // Welcome Gift Popup State
+  const [showWelcomeGift, setShowWelcomeGift] = useState(false);
+
   // Initialize Native Storage, Orientation, IAP
   useEffect(() => {
     const initStorage = async () => {
@@ -105,6 +109,11 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
         setIsDarkMode(isDark);
         if (isDark) document.documentElement.classList.add('dark');
         else document.documentElement.classList.remove('dark');
+
+        // Check and trigger welcome gift
+        if (!Storage.isWelcomeGiftClaimed()) {
+            setShowWelcomeGift(true);
+        }
     };
     initStorage();
 
@@ -304,6 +313,12 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const handleEarnPoints = (amount: number) => {
     const newTotal = Storage.addPoints(amount);
     setPoints(newTotal);
+  };
+
+  const handleClaimWelcomeGift = (amount: number) => {
+      Storage.claimWelcomeGift();
+      handleEarnPoints(amount);
+      setShowWelcomeGift(false);
   };
   
   const handleClaimBonus = (e: React.MouseEvent) => {
@@ -558,7 +573,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
               {/* Content Wrapper */}
               <div 
-                 className="relative z-10 w-full h-full flex flex-col"
+                 className={`relative z-10 w-full h-full flex flex-col transition-all duration-500 ${showWelcomeGift ? 'blur-sm pointer-events-none' : ''}`}
               >
                 <div className="flex-1 relative w-full h-full overflow-hidden">
                     <AnimatePresence custom={direction} initial={false}>
@@ -728,6 +743,12 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                     />
                 )}
               </div>
+
+              {showWelcomeGift && (
+                  <WelcomeGiftModal 
+                      onClose={handleClaimWelcomeGift}
+                  />
+              )}
           </div>
       </>
   );

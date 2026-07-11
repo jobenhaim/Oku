@@ -60,6 +60,7 @@ function getStoredData(): StoredData {
           pepino: { unlocked: false, hasPendingGift: false },
           seenStrictModeWarnings: [],
           redeemedCoupons: [],
+          welcomeGiftClaimed: false,
           stats: DEFAULT_STATS
       };
       
@@ -138,6 +139,7 @@ function getStoredData(): StoredData {
 
     if (!data.seenStrictModeWarnings) data.seenStrictModeWarnings = [];
     if (!data.redeemedCoupons) data.redeemedCoupons = [];
+    if (data.welcomeGiftClaimed === undefined) data.welcomeGiftClaimed = false;
 
     // Clean up deprecated fields if they exist from previous versions
     if ((data as any).purchasedBundles) delete (data as any).purchasedBundles;
@@ -167,6 +169,7 @@ function getStoredData(): StoredData {
         pepino: { unlocked: false, hasPendingGift: false },
         seenStrictModeWarnings: [],
         redeemedCoupons: [],
+        welcomeGiftClaimed: false,
         stats: DEFAULT_STATS
     };
   }
@@ -585,5 +588,15 @@ export const Storage = {
           data.redeemedCoupons.push(code.toUpperCase());
           saveData(data);
       }
+  },
+
+  isWelcomeGiftClaimed: (): boolean => {
+      return !!getStoredData().welcomeGiftClaimed;
+  },
+
+  claimWelcomeGift: () => {
+      const data = getStoredData();
+      data.welcomeGiftClaimed = true;
+      saveData(data);
   },
 };

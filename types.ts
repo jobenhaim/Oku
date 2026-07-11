@@ -83,6 +83,7 @@ export interface StoredData {
   pepino?: PepinoState;
   seenStrictModeWarnings?: string[]; // Track which difficulties the user has seen the hard mode warning for
   redeemedCoupons?: string[]; // Track redeemed coupon codes
+  welcomeGiftClaimed?: boolean; // Track if the welcome gift has been claimed
   
   // Stats
   stats?: {
