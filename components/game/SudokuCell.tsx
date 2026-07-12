@@ -100,8 +100,8 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
         classes += "font-semibold text-stone-800 dark:text-stone-200 ";
     } else {
         if (isMarkedWrong) {
-            // Scanner Detection Text: White for contrast against bright red
-            classes += "font-bold text-white ";
+            // Scanner Detection Text: stay black/dark and same font-medium, not bold/black
+            classes += "font-medium text-stone-900 dark:text-stone-900 ";
         } else if (isError || isConflict) {
             // Error Text: Bright red, keeping original font-medium
             classes += "font-medium text-red-500 dark:text-red-500 ";

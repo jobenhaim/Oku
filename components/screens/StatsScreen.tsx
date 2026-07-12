@@ -14,7 +14,7 @@ interface StatsScreenProps {
     points: number;
 }
 
-// Hook for 1.5s counter animation with sound feedback
+// Hook for 1.5s counter animation with sound feedback (delayed by 0.5s)
 const useStatCounter = (target: number, dependency: any) => {
     const [count, setCount] = useState(0);
     const lastSoundValue = useRef(0);
@@ -56,9 +56,14 @@ const useStatCounter = (target: number, dependency: any) => {
             }
         };
 
-        animationFrame = requestAnimationFrame(animate);
+        const timer = setTimeout(() => {
+            animationFrame = requestAnimationFrame(animate);
+        }, 500);
 
-        return () => cancelAnimationFrame(animationFrame);
+        return () => {
+            clearTimeout(timer);
+            if (animationFrame) cancelAnimationFrame(animationFrame);
+        };
     }, [target, dependency]);
 
     return count;

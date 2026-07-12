@@ -145,6 +145,36 @@ class SoundController {
     private activeProfile: SoundProfile = PROFILES['snd-zen'];
     private lastTickTime: number = 0;
 
+    constructor() {
+        if (typeof window !== 'undefined') {
+            const handleResume = () => {
+                if (this.ctx) {
+                    if ((this.ctx.state as string) === 'interrupted') {
+                        try {
+                            this.ctx.close();
+                        } catch (e) {}
+                        this.ctx = null;
+                    } else if (this.ctx.state === 'suspended') {
+                        this.ctx.resume().catch(() => {});
+                    }
+                }
+            };
+            window.addEventListener('focus', handleResume);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    handleResume();
+                }
+            });
+            const unlock = () => {
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume().catch(() => {});
+                }
+            };
+            window.addEventListener('click', unlock, { capture: true, passive: true });
+            window.addEventListener('touchstart', unlock, { capture: true, passive: true });
+        }
+    }
+
     setEnabled(enabled: boolean) {
         this.soundEnabled = enabled;
     }
@@ -169,12 +199,29 @@ class SoundController {
     }
 
     private getCtx() {
+        if (this.ctx && (this.ctx.state as string) === 'interrupted') {
+            try {
+                this.ctx.close();
+            } catch (e) {}
+            this.ctx = null;
+        }
+
         if (!this.ctx) {
             const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
             this.ctx = new AudioContext();
+            
+            this.ctx.addEventListener('statechange', () => {
+                if (this.ctx && (this.ctx.state as string) === 'interrupted') {
+                    try {
+                        this.ctx.close();
+                    } catch (e) {}
+                    this.ctx = null;
+                }
+            });
         }
-        if (this.ctx.state === 'suspended') {
-            this.ctx.resume();
+
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
         }
         return this.ctx;
     }
@@ -829,6 +876,204 @@ class SoundController {
         if (this.vibrationEnabled) {
             Haptics.impact({ style: ImpactStyle.Medium });
             setTimeout(() => { if (this.vibrationEnabled) Haptics.impact({ style: ImpactStyle.Light }); }, 600);
+        }
+    }
+
+    playCheck() {
+        if (!this.soundEnabled) return;
+        const ctx = this.getCtx();
+        const now = ctx.currentTime;
+        const pid = this.activeProfile.id;
+
+        if (pid === 'snd-paper') {
+            // Short satisfying crisp clean paper rustle double snap
+            this.playNoiseBurst(1800, 0.03, 0.3);
+            setTimeout(() => this.playNoiseBurst(2400, 0.04, 0.25), 50);
+        } else if (pid === 'snd-retro') {
+            // Retro positive double chime
+            const notes = [1318.51, 1975.53]; // E6 -> B6
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(freq, now + i * 0.04);
+                const start = now + i * 0.04;
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.04, start + 0.005);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.08);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + 0.12);
+            });
+        } else if (pid === 'snd-wood') {
+            // Quick wood-block snap arpeggio
+            const notes = [659.25, 880.00]; // E5, A5
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                
+                const mod = ctx.createOscillator();
+                const modGain = ctx.createGain();
+                mod.type = 'sine';
+                mod.frequency.setValueAtTime(freq * 1.5, now + i * 0.04);
+                modGain.gain.setValueAtTime(freq * 0.3, now + i * 0.04);
+                mod.connect(modGain);
+                modGain.connect(osc.frequency);
+                
+                osc.frequency.setValueAtTime(freq, now + i * 0.04);
+                const start = now + i * 0.04;
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.15, start + 0.005);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.08);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                mod.start(start);
+                osc.start(start);
+                mod.stop(start + 0.1);
+                osc.stop(start + 0.1);
+            });
+        } else if (pid === 'snd-water') {
+            // Double water droplets rising
+            const notes = [1174.66, 1567.98]; // D6, G6
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                const start = now + i * 0.045;
+                osc.frequency.setValueAtTime(freq * 0.8, start);
+                osc.frequency.exponentialRampToValueAtTime(freq * 1.15, start + 0.04);
+                
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.12, start + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.12);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + 0.15);
+            });
+        } else if (pid === 'snd-piano') {
+            // Crisp piano perfect interval
+            const notes = [659.25, 987.77]; // E5, B5
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const filter = ctx.createBiquadFilter();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                filter.type = 'lowpass';
+                filter.Q.value = 1;
+                filter.frequency.setValueAtTime(freq * 3, now + i * 0.04);
+                filter.frequency.exponentialRampToValueAtTime(freq * 1.2, now + i * 0.04 + 0.1);
+                
+                osc.frequency.setValueAtTime(freq, now + i * 0.04);
+                const start = now + i * 0.04;
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.12, start + 0.005);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.3);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + 0.35);
+            });
+        } else if (pid === 'snd-stone') {
+            // Dual stone clink
+            const notes = [329.63, 440.00]; // E4, A4
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                
+                const start = now + i * 0.05;
+                osc.frequency.setValueAtTime(freq, start);
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.2, start + 0.005);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.12);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + 0.15);
+            });
+        } else if (pid === 'snd-koto') {
+            // Traditional snappy Japanese pluck check
+            const notes = [523.25, 659.25]; // C5, E5
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const filter = ctx.createBiquadFilter();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                filter.type = 'lowpass';
+                filter.Q.value = 2;
+                filter.frequency.setValueAtTime(freq * 3, now + i * 0.04);
+                filter.frequency.exponentialRampToValueAtTime(freq * 1.1, now + i * 0.04 + 0.1);
+                
+                const start = now + i * 0.04;
+                osc.frequency.setValueAtTime(freq, start);
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.1, start + 0.005);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.25);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + 0.3);
+            });
+        } else if (pid === 'snd-crystal') {
+            // Shimmering glassy high check sound
+            const notes = [1567.98, 2093.00]; // G6, C7
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                
+                const start = now + i * 0.04;
+                osc.frequency.setValueAtTime(freq, start);
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.06, start + 0.005);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.3);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + 0.35);
+            });
+        } else {
+            // Default Zen: Pure, satisfying, clean arpeggio of two rising high notes
+            const notes = [1318.51, 1975.53]; // E6, B6
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                
+                const start = now + (i * 0.045); // 45ms stagger
+                osc.frequency.setValueAtTime(freq, start);
+                
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.08, start + 0.008); 
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.15); 
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + 0.18);
+            });
+        }
+
+        if (this.vibrationEnabled) {
+            try {
+                Haptics.impact({ style: ImpactStyle.Light });
+                setTimeout(() => {
+                    if (this.vibrationEnabled) {
+                        Haptics.impact({ style: ImpactStyle.Light });
+                    }
+                }, 60);
+            } catch (e) {}
         }
     }
 

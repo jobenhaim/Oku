@@ -10,6 +10,7 @@ interface SudokuGridProps {
     revealingCell: {r: number, c: number} | null;
     animatingCell: {r: number, c: number, value: number} | null;
     isScanning: boolean;
+    isScanSuccess?: boolean;
     animatingSections: Set<string>;
     settings: AppSettings;
     numberColor: string;
@@ -24,6 +25,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     revealingCell,
     animatingCell,
     isScanning,
+    isScanSuccess,
     animatingSections,
     settings,
     numberColor,
@@ -119,6 +121,15 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                 {isScanning && (
                     <div className="absolute left-0 right-0 h-1 bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)] z-40 animate-scan pointer-events-none"></div>
                 )}
+                
+                {/* Green Illumination Overlay when Scan is Successful (No Errors) */}
+                <div 
+                    className={`absolute inset-0 bg-emerald-500/10 dark:bg-emerald-400/5 transition-all duration-300 pointer-events-none z-30 ${
+                        isScanSuccess 
+                            ? 'opacity-100 shadow-[inset_0_0_30px_rgba(16,185,129,0.35)]' 
+                            : 'opacity-0'
+                    }`} 
+                />
                 
                 {/* Layer 1: Backgrounds Grid (z-1) */}
                 <div 
@@ -284,7 +295,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
             </div>
             
             {/* Crisp vector overlay outer border on top of grid lines and cell backgrounds */}
-            <div className="absolute inset-0 rounded-lg border-[3px] border-stone-900 dark:border-stone-800 pointer-events-none z-30" />
+            <div className={`absolute inset-0 rounded-lg border-[3px] transition-all duration-300 pointer-events-none z-30 ${isScanSuccess ? 'border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'border-stone-900 dark:border-stone-800'}`} />
 
          </div>
          </div>

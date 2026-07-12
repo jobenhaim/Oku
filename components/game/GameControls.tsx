@@ -48,7 +48,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
     // Helper for common enabled/disabled styles
     const getBaseButtonStyle = (isEnabled: boolean) => 
         isEnabled 
-            ? 'text-stone-900 dark:text-stone-100 cursor-pointer hover:brightness-95 active:scale-95' 
+            ? 'text-stone-900 dark:text-stone-100 cursor-pointer active:scale-95' 
             : 'text-stone-300 dark:text-stone-600 cursor-not-allowed';
 
     // Removed borders from base container styles
@@ -143,7 +143,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
                 {/* PENCIL BUTTON */}
                 <button 
                     onClick={onTogglePencil} 
-                    className={`flex flex-col items-center gap-1 active:scale-95 transition cursor-pointer hover:brightness-95 ${isPencilMode ? 'text-blue-700 dark:text-blue-300' : 'text-stone-900 dark:text-stone-100'}`}
+                    className={`flex flex-col items-center gap-1 active:scale-95 transition cursor-pointer ${isPencilMode ? 'text-blue-700 dark:text-blue-300' : 'text-stone-900 dark:text-stone-100'}`}
                 >
                     {/* Removed borders */}
                     <div className={`p-3 rounded-full shadow-sm transition-colors ${

@@ -192,6 +192,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       scanUses,
       setScanUses,
       isScanning,
+      isScanSuccess,
       scanCooldown,
       revealUses,
       setRevealUses,
@@ -526,6 +527,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                 revealingCell={revealingCell}
                 animatingCell={animatingCell}
                 isScanning={isScanning}
+                isScanSuccess={isScanSuccess}
                 animatingSections={animatingSections}
                 settings={settings}
                 numberColor={numberColor}

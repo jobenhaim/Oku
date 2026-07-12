@@ -63,6 +63,7 @@ export const useGameSkills = ({
     const [scanUses, setScanUses] = useState(3);
     const [isScanning, setIsScanning] = useState(false);
     const [scanCooldown, setScanCooldown] = useState(false);
+    const [isScanSuccess, setIsScanSuccess] = useState(false);
     
     const [revealUses, setRevealUses] = useState(1);
     const [revealingCell, setRevealingCell] = useState<{r: number, c: number} | null>(null);
@@ -195,10 +196,14 @@ export const useGameSkills = ({
         setScanCooldown(true);
         sounds.playScan();
         setTimeout(() => {
+            let hasErrors = false;
             const newBoard = board.map(row => row.map(cell => {
                 if (!cell.isFixed && cell.value !== null) {
                     const isCorrect = cell.value === solvedBoard[cell.row][cell.col];
-                    if (!isCorrect) return { ...cell, isMarkedWrong: true };
+                    if (!isCorrect) {
+                        hasErrors = true;
+                        return { ...cell, isMarkedWrong: true };
+                    }
                 }
                 return cell;
             }));
@@ -210,6 +215,14 @@ export const useGameSkills = ({
                 return next;
             });
             setScanCooldown(false);
+
+            if (!hasErrors) {
+                setIsScanSuccess(true);
+                sounds.playCheck();
+                setTimeout(() => {
+                    setIsScanSuccess(false);
+                }, 1000);
+            }
         }, 1200); 
     };
 
@@ -287,6 +300,7 @@ export const useGameSkills = ({
         scanUses,
         setScanUses,
         isScanning,
+        isScanSuccess,
         scanCooldown,
         revealUses,
         setRevealUses,
