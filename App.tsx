@@ -662,27 +662,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                             </motion.div>
                         )}
                         
-                        {screen === 'stats' && (
-                            <motion.div
-                                key="stats"
-                                custom={direction}
-                                variants={variants}
-                                initial="initial"
-                                animate="animate"
-                                exit="exit"
-                                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
-                                style={{ 
-                                    willChange: 'transform, opacity'
-                                }}
-                            >
-                                <StatsScreen 
-                                    onBack={handleStatsBack}
-                                    onEarnPoints={handleEarnPoints}
-                                    points={points}
-                                />
-                            </motion.div>
-                        )}
-                        
                         {screen === 'levels' && selectedDifficulty && (
                             <motion.div
                                 key="levels"
@@ -777,6 +756,16 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                             </motion.div>
                         )}
                     </AnimatePresence>
+
+                    {screen === 'stats' && (
+                        <div className="absolute inset-0 z-20 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe">
+                            <StatsScreen
+                                onBack={handleStatsBack}
+                                onEarnPoints={handleEarnPoints}
+                                points={points}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Modals & Overlays */}
