@@ -87,7 +87,8 @@ const DifficultyCard: React.FC<{
     isPyramidTop?: boolean;
     contentScale?: 'normal' | 'medium' | 'large';
     layoutStyle?: React.CSSProperties;
-}> = ({ diff, index, onSelect, isPyramidTop, contentScale = 'normal', layoutStyle }) => {
+    celebrateProgress?: boolean;
+}> = ({ diff, index, onSelect, isPyramidTop, contentScale = 'normal', layoutStyle, celebrateProgress = false }) => {
     
     const completed = Storage.getCompletedCount(diff, 300);
     const isPack2Unlocked = Storage.isPack2Unlocked(diff);
@@ -106,6 +107,23 @@ const DifficultyCard: React.FC<{
 
     const animatedCompleted = useAnimatedCounter(completed, 1500);
     const progressPercent = Math.min((animatedCompleted / maxLevels) * 100, 100);
+
+    useEffect(() => {
+        if (!celebrateProgress || completed <= 0) return;
+
+        let stopEffect: (() => void) | undefined;
+        const startTimer = window.setTimeout(() => {
+            stopEffect = sounds.playDifficultyProgressHaptics(
+                Math.min(completed, maxLevels),
+                1.5
+            );
+        }, 200);
+
+        return () => {
+            window.clearTimeout(startTimer);
+            stopEffect?.();
+        };
+    }, [celebrateProgress, completed, maxLevels]);
 
     const defaultStyle: React.CSSProperties = {
         width: '47.5%',
@@ -195,6 +213,21 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     }, [nextBonusClaimTime]);
 
     const visibleDifficulties = Object.values(Difficulty).filter(d => !hiddenDifficulties.includes(d));
+    const progressLeader = visibleDifficulties.reduce<Difficulty | null>((leader, diff) => {
+        const getProgressRatio = (difficulty: Difficulty) => {
+            const maxLevels = Storage.isPack3Unlocked(difficulty)
+                ? 300
+                : Storage.isPack2Unlocked(difficulty)
+                    ? 200
+                    : 100;
+            return Storage.getCompletedCount(difficulty, 300) / maxLevels;
+        };
+
+        const progress = getProgressRatio(diff);
+        if (progress <= 0) return leader;
+        if (!leader) return diff;
+        return progress > getProgressRatio(leader) ? diff : leader;
+    }, null);
     const isOddCount = visibleDifficulties.length % 2 !== 0;
     const isVerticalStack = visibleDifficulties.length === 2;
     const isOneVisible = visibleDifficulties.length === 1;
@@ -256,6 +289,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                           isPyramidTop={true}
                                           contentScale={contentScale}
                                           layoutStyle={layoutStyle}
+                                          celebrateProgress={diff === progressLeader}
                                       />
                                   </div>
                               );
@@ -269,6 +303,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                   onSelect={onDifficultySelect}
                                   contentScale={contentScale}
                                   layoutStyle={layoutStyle}
+                                  celebrateProgress={diff === progressLeader}
                               />
                           );
                       })}

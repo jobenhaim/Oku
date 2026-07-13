@@ -142,10 +142,10 @@ export const STATIC_BACKGROUNDS = [
 
 export const DYNAMIC_BACKGROUNDS = [
     { id: 'bg-prism', name: 'Aurora', cost: 300, class: 'bg-atmosphere-aurora' },
-    { id: 'bg-horizon', name: 'Meadow', cost: 300, class: 'bg-atmosphere-meadow' },
-    { id: 'bg-coral', name: 'Blush', cost: 300, class: 'bg-atmosphere-blush' },
-    { id: 'bg-orbit', name: 'Golden', cost: 300, class: 'bg-atmosphere-golden' },
-    { id: 'bg-flux', name: 'Platinum', cost: 300, class: 'bg-atmosphere-platinum' },
+    { id: 'bg-horizon', name: 'Canopy', cost: 300, class: 'bg-atmosphere-meadow' },
+    { id: 'bg-coral', name: 'Sakura', cost: 300, class: 'bg-atmosphere-blush' },
+    { id: 'bg-orbit', name: 'Sunroom', cost: 300, class: 'bg-atmosphere-golden' },
+    { id: 'bg-flux', name: 'Snowfall', cost: 300, class: 'bg-atmosphere-platinum' },
 ];
 
 export const ALL_BACKGROUNDS = [...STATIC_BACKGROUNDS, ...DYNAMIC_BACKGROUNDS];
@@ -268,8 +268,8 @@ export const DIAMOND_OFFERS: DiamondOffer[] = [
     {
         id: 'support_dev',
         productId: 'com.oku.sudoku.iap.premiumpack',
-        title: 'Premium Pack',
-        subtitle: 'Special Companion + Rewards',
+        title: 'Oku Premium',
+        subtitle: 'Pepino Companion + Rewards',
         diamonds: 1500,
         priceLabel: '$4.99',
         type: 'support',

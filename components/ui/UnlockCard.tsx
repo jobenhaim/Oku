@@ -104,7 +104,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, co
                 className={`w-full h-36 rounded-[1.5rem] relative overflow-hidden transition-all duration-500 ease-out group ${
                     showUnlockUI 
                         ? 'bg-gradient-to-b from-white to-blue-50/50 dark:from-stone-800 dark:to-stone-900 shadow-lg active:scale-[0.98] cursor-pointer' 
-                        : 'bg-stone-200 dark:bg-stone-800/80 cursor-default'
+                        : 'bg-white/45 dark:bg-stone-800/80 border border-white/40 dark:border-white/5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] backdrop-blur-md cursor-default'
                 }`}
             >
                 {/* Background Decor for Unlock State */}
@@ -146,7 +146,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, co
                     ) : (
                         <div className="flex flex-row items-center justify-between w-full gap-5">
                             {/* Left Side: Locked Status Box */}
-                            <div className="w-20 h-20 rounded-3xl bg-stone-300/50 dark:bg-stone-700/50 flex flex-col items-center justify-center shrink-0 border border-stone-300/30 dark:border-stone-600/30 shadow-inner">
+                            <div className="w-20 h-20 rounded-3xl bg-white/35 dark:bg-stone-700/50 flex flex-col items-center justify-center shrink-0 border border-white/50 dark:border-stone-600/30 shadow-sm">
                                 <Icons.Lock className="w-8 h-8 text-stone-500 dark:text-stone-400 opacity-80" />
                             </div>
                             
@@ -162,7 +162,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, co
                                 </div>
 
                                 {/* Modern Progress Bar */}
-                                <div className="w-full h-4 bg-stone-300/50 dark:bg-stone-700/50 rounded-full overflow-hidden p-[3px] shadow-sm">
+                                <div className="w-full h-4 bg-white/50 dark:bg-stone-700/50 border border-white/35 dark:border-stone-600/20 rounded-full overflow-hidden p-[3px] shadow-sm">
                                     <div 
                                         className={`h-full bg-stone-500 dark:bg-stone-400 rounded-full shadow-sm transition-all duration-75 ease-linear relative overflow-hidden ${animatedPercent > 0 ? 'min-w-[8px]' : 'opacity-0'}`} 
                                         style={{ width: `${animatedPercent}%` }}

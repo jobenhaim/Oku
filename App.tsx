@@ -25,11 +25,6 @@ import { StatsScreen } from './components/screens/StatsScreen';
 
 type Screen = 'splash' | 'difficulty' | 'levels' | 'game' | 'settings' | 'store' | 'diamondShop' | 'stats';
 
-// Optimized Diamond Background Component (CSS-based)
-const DiamondBackground = () => (
-  <div className="fixed inset-0 pointer-events-none z-0 bg-diamond-pattern" />
-);
-
 // Inner Application Component that contains all state and logic
 const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset }) => {
   const [screen, setScreen] = useState<Screen>('difficulty');
@@ -490,6 +485,16 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
           setRedeemedCoupons(Storage.getStoredData().redeemedCoupons || []);
           return true;
       }
+
+      if (lowerCode === 'slvse100') {
+          sounds.playWin();
+          Storage.completeSuperEasyLevels();
+          Storage.markCouponRedeemed(normalizedCode);
+          const updatedData = Storage.getStoredData();
+          setStats(updatedData.stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
+          setRedeemedCoupons(updatedData.redeemedCoupons || []);
+          return true;
+      }
       
       sounds.playClick();
       return false;
@@ -576,15 +581,12 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                 style={{ opacity: overlayOpacityValue }} 
               />
 
-              {/* Diamond Shop Background (Behind Safe Area Wrapper) */}
-              {screen === 'diamondShop' && <DiamondBackground />}
-
               {/* Content Wrapper */}
               <div 
                  className={`relative z-10 w-full h-full flex flex-col transition-all duration-500 ${showWelcomeGift ? 'blur-sm pointer-events-none' : ''}`}
               >
                 <div className="flex-1 relative w-full h-full overflow-hidden">
-                    <AnimatePresence custom={direction} initial={false}>
+                    <AnimatePresence custom={direction} initial={false} mode="sync">
                         {screen === 'splash' && (
                             <motion.div
                                 key="splash"

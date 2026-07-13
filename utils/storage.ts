@@ -558,21 +558,25 @@ export const Storage = {
       const data = getStoredData();
       if (!data.stats) data.stats = { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 };
       
-      for (let lvl = 1; lvl <= 50; lvl++) {
+      for (let lvl = 1; lvl <= 100; lvl++) {
           const key = `${Difficulty.SuperEasy}-${lvl}`;
           const existing = data.progress[key];
-          if (!existing || existing.status !== 'completed') {
+          const wasAlreadyCompleted = existing?.status === 'completed' || existing?.bestTime !== undefined;
+
+          if (existing?.status !== 'completed') {
               data.progress[key] = {
+                  ...existing,
                   levelId: lvl,
                   difficulty: Difficulty.SuperEasy,
                   status: 'completed',
-                  timeElapsed: 60,
+                  timeElapsed: existing?.timeElapsed || 60,
                   bestTime: existing?.bestTime !== undefined ? Math.min(existing.bestTime, 60) : 60,
-                  scanUses: 3,
-                  revealUses: 1,
-                  autoUses: 5,
+                  scanUses: existing?.scanUses ?? 3,
+                  revealUses: existing?.revealUses ?? 1,
+                  autoUses: existing?.autoUses ?? 5,
               };
-              data.stats.totalGamesWon += 1;
+
+              if (!wasAlreadyCompleted) data.stats.totalGamesWon += 1;
           }
       }
       saveData(data);

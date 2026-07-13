@@ -340,7 +340,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
         if (offer.type === 'support') {
             return (
                 <span>
-                    Adopt an exclusive companion that grows with you and grants special rewards after every game. Support indie development and enjoy a distraction-free journey.
+                    Meet <span className="font-bold">Pepino</span>, a little companion who lives in a peaceful aquarium, grows with you, and brings a diamond gift after every completed game. Includes <span className="font-bold">1,500 Diamonds</span> and no forced ads.
                 </span>
             );
         }
@@ -852,7 +852,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     <div className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700 transition-colors duration-300" />
                                     <button onClick={() => { sounds.playClick(); setActiveDoc('terms'); }} className="hover:text-stone-600 dark:hover:text-stone-300 transition-colors duration-300 px-2 py-1">Terms of Service</button>
                                 </div>
-                                <span className="text-[9px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.8.5</span>
+                                <span className="text-[9px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.8.6</span>
                             </div>
                         </div>
                     )}

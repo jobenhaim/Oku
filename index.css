@@ -336,46 +336,186 @@ html, body {
   100% { background-position: 0% 50%; }
 }
 
-@keyframes atmosphere-wander {
-  0% { background-position: 10% 10%; }
-  20% { background-position: 80% 20%; }
-  40% { background-position: 20% 80%; }
-  60% { background-position: 90% 90%; }
-  80% { background-position: 30% 50%; }
-  100% { background-position: 10% 10%; }
+@keyframes aurora-ribbon {
+  0%, 100% { transform: translate3d(-7%, -3%, 0) rotate(-8deg) scale(1); }
+  50% { transform: translate3d(8%, 5%, 0) rotate(8deg) scale(1.12); }
 }
 
-/* Atmosphere Backgrounds - High Contrast Holographic Flow */
-/* Using hex codes for precise control over gradient "punch" */
+@keyframes canopy-breathe {
+  0%, 100% { transform: translate3d(-5%, -3%, 0) rotate(-2deg) scale(1); }
+  50% { transform: translate3d(6%, 4%, 0) rotate(4deg) scale(1.1); }
+}
+
+@keyframes canopy-light {
+  0%, 100% { transform: translate3d(-8%, 0, 0) rotate(-5deg); opacity: .52; }
+  50% { transform: translate3d(9%, 2%, 0) rotate(3deg); opacity: .82; }
+}
+
+@keyframes sakura-drift {
+  from { transform: translate3d(-32px, -72px, 0) rotate(-5deg); }
+  to { transform: translate3d(40px, 72px, 0) rotate(5deg); }
+}
+
+@keyframes sakura-haze {
+  0%, 100% { transform: translate3d(-6%, 2%, 0) scale(1); opacity: .62; }
+  50% { transform: translate3d(7%, -4%, 0) scale(1.12); opacity: .88; }
+}
+
+@keyframes sunroom-glow {
+  0%, 100% { transform: translate3d(-2%, 1%, 0) scale(1); opacity: .58; }
+  50% { transform: translate3d(2%, -1%, 0) scale(1.05); opacity: .76; }
+}
+
+@keyframes snowfall-haze {
+  0%, 100% { transform: translate3d(-4%, 2%, 0) scale(1); opacity: .58; }
+  50% { transform: translate3d(5%, -3%, 0) scale(1.09); opacity: .78; }
+}
+
+@keyframes snowfall-drift {
+  0% { transform: translate3d(-20px, -72px, 0) rotate(-2deg); opacity: 0; }
+  12% { opacity: .62; }
+  82% { opacity: .58; }
+  100% { transform: translate3d(26px, 76px, 0) rotate(2deg); opacity: 0; }
+}
+
+@keyframes snowfall-sky {
+  0%, 100% { background-position: 12% 16%; }
+  50% { background-position: 88% 84%; }
+}
+
+/* Atmospheres use calm, layered motion so they remain readable behind the board. */
+.bg-atmosphere-aurora,
+.bg-atmosphere-meadow,
+.bg-atmosphere-blush,
+.bg-atmosphere-golden,
+.bg-atmosphere-platinum {
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.bg-atmosphere-aurora::before,
+.bg-atmosphere-aurora::after,
+.bg-atmosphere-meadow::before,
+.bg-atmosphere-meadow::after,
+.bg-atmosphere-blush::before,
+.bg-atmosphere-blush::after,
+.bg-atmosphere-golden::before,
+.bg-atmosphere-golden::after,
+.bg-atmosphere-platinum::before,
+.bg-atmosphere-platinum::after {
+  content: "";
+  position: absolute;
+  inset: -32%;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
 
 .bg-atmosphere-aurora {
-  background: linear-gradient(135deg, #a5f3fc 0%, #d8b4fe 50%, #fbcfe8 100%);
-  background-size: 400% 400%;
-  animation: atmosphere-wander 30s ease-in-out infinite;
+  background: linear-gradient(145deg, #e5fbff 0%, #eee8ff 52%, #ffe7f3 100%);
+}
+
+.bg-atmosphere-aurora::before {
+  background: conic-gradient(from 220deg at 50% 50%, transparent 0 12%, rgba(34, 211, 238, .42) 23%, rgba(124, 58, 237, .3) 34%, transparent 46% 68%, rgba(244, 114, 182, .32) 78%, transparent 91%);
+  filter: blur(24px);
+  animation: aurora-ribbon 18s ease-in-out infinite;
+}
+
+.bg-atmosphere-aurora::after {
+  background: linear-gradient(112deg, transparent 30%, rgba(255, 255, 255, .72) 43%, rgba(103, 232, 249, .25) 49%, transparent 61%);
+  filter: blur(12px);
+  animation: aurora-ribbon 13s ease-in-out infinite reverse;
 }
 
 .bg-atmosphere-meadow {
-  background: linear-gradient(135deg, #d9f99d 0%, #d1fae5 50%, #fef08a 100%);
-  background-size: 400% 400%;
-  animation: atmosphere-wander 30s ease-in-out infinite;
+  background: linear-gradient(145deg, #f5f3d9 0%, #d7eacb 46%, #a9cdb8 100%);
+}
+
+.bg-atmosphere-meadow::before {
+  background: radial-gradient(ellipse at 15% 22%, rgba(23, 86, 62, .3) 0 10%, transparent 27%), radial-gradient(ellipse at 80% 18%, rgba(38, 105, 70, .22) 0 12%, transparent 30%), radial-gradient(ellipse at 68% 75%, rgba(25, 89, 66, .28) 0 14%, transparent 34%), radial-gradient(ellipse at 28% 82%, rgba(73, 126, 77, .18) 0 11%, transparent 29%);
+  filter: blur(10px);
+  animation: canopy-breathe 22s ease-in-out infinite;
+}
+
+.bg-atmosphere-meadow::after {
+  background: linear-gradient(112deg, transparent 24%, rgba(255, 252, 207, .72) 33%, transparent 43%, transparent 53%, rgba(255, 255, 225, .48) 60%, transparent 70%), radial-gradient(circle at 32% 40%, rgba(255, 252, 207, .82) 0 5%, transparent 18%), radial-gradient(circle at 70% 56%, rgba(255, 255, 224, .58) 0 4%, transparent 15%);
+  filter: blur(3px);
+  animation: canopy-light 17s ease-in-out infinite;
 }
 
 .bg-atmosphere-blush {
-  background: linear-gradient(135deg, #fecdd3 0%, #fed7aa 50%, #fee2e2 100%);
-  background-size: 400% 400%;
-  animation: atmosphere-wander 30s ease-in-out infinite;
+  background: linear-gradient(155deg, #fff8f2 0%, #f9ddd8 48%, #e9bed1 100%);
+}
+
+.bg-atmosphere-blush::before {
+  background: radial-gradient(ellipse at 15% 62%, rgba(255, 255, 255, .86) 0 15%, transparent 38%), radial-gradient(ellipse at 76% 30%, rgba(255, 244, 240, .82) 0 17%, transparent 42%), radial-gradient(circle at 62% 78%, rgba(209, 106, 142, .18) 0 12%, transparent 34%);
+  filter: blur(16px);
+  animation: sakura-haze 21s ease-in-out infinite;
+}
+
+.bg-atmosphere-blush::after {
+  inset: -80px;
+  background-image: radial-gradient(ellipse at 28% 32%, rgba(190, 78, 119, .42) 0 1.4px, transparent 2.4px), radial-gradient(ellipse at 72% 68%, rgba(255, 255, 255, .82) 0 1.6px, transparent 2.8px), radial-gradient(ellipse at 56% 18%, rgba(215, 111, 145, .3) 0 1.2px, transparent 2.2px);
+  background-size: 68px 82px, 91px 72px, 77px 96px;
+  opacity: .68;
+  animation: sakura-drift 20s linear infinite alternate;
 }
 
 .bg-atmosphere-golden {
-  background: linear-gradient(135deg, #fde68a 0%, #fef9c3 50%, #ffffff 100%);
-  background-size: 400% 400%;
-  animation: atmosphere-wander 30s ease-in-out infinite;
+  background: linear-gradient(145deg, #fffaf0 0%, #f5e7c5 50%, #deb97d 100%);
+}
+
+.bg-atmosphere-golden::before {
+  inset: -12%;
+  background-image: linear-gradient(rgba(117, 83, 38, .18) 1.5px, transparent 1.5px), linear-gradient(90deg, rgba(117, 83, 38, .16) 1.5px, transparent 1.5px);
+  background-size: 132px 132px;
+  transform: rotate(-7deg) scale(1.08);
+  opacity: .5;
+}
+
+.bg-atmosphere-golden::after {
+  background: linear-gradient(111deg, transparent 25%, rgba(255, 255, 255, .82) 38%, rgba(255, 229, 169, .64) 52%, transparent 68%), radial-gradient(circle at 72% 32%, rgba(255, 246, 209, .78) 0 9%, transparent 34%);
+  filter: blur(8px);
+  animation: sunroom-glow 28s ease-in-out infinite;
 }
 
 .bg-atmosphere-platinum {
-  background: linear-gradient(135deg, #e2e8f0 0%, #dbeafe 50%, #ffffff 100%);
-  background-size: 400% 400%;
-  animation: atmosphere-wander 30s ease-in-out infinite;
+  background: linear-gradient(145deg, #f3f7fb 0%, #d8e5f1 48%, #adc4da 100%);
+  background-size: 165% 165%;
+  animation: snowfall-sky 44s ease-in-out infinite;
+}
+
+.bg-atmosphere-platinum::before {
+  background: radial-gradient(ellipse at 18% 62%, rgba(255, 255, 255, .88) 0 14%, transparent 38%), radial-gradient(ellipse at 76% 28%, rgba(238, 248, 255, .8) 0 16%, transparent 42%), radial-gradient(circle at 68% 74%, rgba(112, 151, 186, .18) 0 12%, transparent 38%);
+  filter: blur(16px);
+  animation: snowfall-haze 24s ease-in-out infinite;
+}
+
+.bg-atmosphere-platinum::after {
+  inset: -72px;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, .98) 0 1.4px, rgba(255, 255, 255, .42) 2.5px, transparent 4.2px), radial-gradient(circle, rgba(255, 255, 255, .9) 0 1px, rgba(231, 246, 255, .36) 2.1px, transparent 3.8px), radial-gradient(circle, rgba(255, 255, 255, .96) 0 1.8px, rgba(239, 249, 255, .28) 3px, transparent 5px);
+  background-size: 104px 128px, 149px 112px, 173px 157px;
+  background-position: 8px 14px, 56px 37px, 82px 69px;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, .5));
+  animation: snowfall-drift 24s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-atmosphere-aurora::before,
+  .bg-atmosphere-aurora::after,
+  .bg-atmosphere-meadow::before,
+  .bg-atmosphere-meadow::after,
+  .bg-atmosphere-blush::before,
+  .bg-atmosphere-blush::after,
+  .bg-atmosphere-golden::before,
+  .bg-atmosphere-golden::after,
+  .bg-atmosphere-platinum::before,
+  .bg-atmosphere-platinum::after {
+    animation: none;
+  }
+
+  .bg-atmosphere-platinum {
+    animation: none;
+  }
 }
 
 .bg-pack-flow {
@@ -500,5 +640,3 @@ html, body {
   animation: board-complete-glow 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   pointer-events: none;
 }
-
-

@@ -624,6 +624,29 @@ class SoundController {
         };
     }
 
+    playDifficultyProgressHaptics(targetCount: number, duration: number = 1.5): () => void {
+        const stepCount = Math.max(0, Math.min(100, Math.floor(targetCount)));
+        if (stepCount === 0) return () => {};
+
+        const hapticTimers: number[] = [];
+
+        if (this.vibrationEnabled) {
+            const pulseCount = Math.min(12, stepCount);
+            for (let pulse = 1; pulse <= pulseCount; pulse++) {
+                const timer = window.setTimeout(() => {
+                    Haptics.impact({
+                        style: pulse === pulseCount ? ImpactStyle.Medium : ImpactStyle.Light
+                    }).catch(() => {});
+                }, Math.round((pulse / pulseCount) * duration * 1000));
+                hapticTimers.push(timer);
+            }
+        }
+
+        return () => {
+            hapticTimers.forEach(timer => window.clearTimeout(timer));
+        };
+    }
+
     playUnlockReady() {
         if (!this.soundEnabled) return;
         const ctx = this.getCtx();

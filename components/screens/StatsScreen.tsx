@@ -238,7 +238,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                                     }
                                 }
                             }}
-                            className="w-full p-1 bg-stone-200/50 dark:bg-white/5 rounded-xl flex items-stretch relative min-h-[44px]"
+                            className="w-full p-1 bg-white/45 dark:bg-white/5 border border-white/40 dark:border-white/5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] backdrop-blur-md rounded-xl flex items-stretch relative min-h-[44px]"
                         >
                             {Object.values(Difficulty).map((diff) => {
                                 const isActive = selectedDiff === diff;
@@ -262,7 +262,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                                         {isActive && (
                                             <motion.div 
                                                 layoutId="activeDiffPill"
-                                                className="absolute inset-0 bg-white dark:bg-stone-800 rounded-lg shadow-sm z-10"
+                                                className="absolute inset-0 bg-white/90 dark:bg-stone-800 rounded-lg shadow-sm ring-1 ring-black/[0.03] dark:ring-white/5 z-10"
                                                 transition={{ type: "spring", stiffness: 350, damping: 30 }}
                                             />
                                         )}
