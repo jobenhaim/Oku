@@ -122,37 +122,41 @@ const DifficultyCard: React.FC<{
     const paddingClass = contentScale === 'large' ? 'p-6' : (contentScale === 'medium' ? 'p-5' : 'p-3.5');
 
     return (
-        <button 
-            onClick={() => onSelect(diff)} 
+        <div 
             style={finalStyle}
-            className={`bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border border-white/40 dark:border-white/10 ${paddingClass} rounded-2xl shadow-sm flex flex-col justify-between transition-all active:scale-95 text-left relative group overflow-visible opacity-0 animate-slide-in-down`}
+            className="opacity-0 animate-slide-in-down"
         >
-            <div className="w-full flex justify-between items-center mb-1">
-                <span className={`font-bold text-stone-800 dark:text-white leading-none tracking-tight truncate mr-1 ${titleClass}`}>{diff}</span>
-                <div className="flex items-center gap-0.5 shrink-0">
-                    <span className={`${pointsTextClass} font-bold text-stone-900 dark:text-stone-100 leading-none`}>+{diffPoints}</span>
-                    <Icons.Diamond className={`${iconSizeClass} text-blue-500 fill-current`} />
+            <button 
+                onClick={() => { sounds.playClick(); onSelect(diff); }} 
+                className={`w-full h-full bg-white dark:bg-stone-900 border border-white/40 dark:border-white/10 ${paddingClass} rounded-2xl shadow-sm flex flex-col justify-between transition-all active:scale-95 text-left relative group overflow-visible`}
+            >
+                <div className="w-full flex justify-between items-center mb-1">
+                    <span className={`font-bold text-stone-800 dark:text-white leading-none tracking-tight truncate mr-1 ${titleClass}`}>{diff}</span>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                        <span className={`${pointsTextClass} font-bold text-stone-900 dark:text-stone-100 leading-none`}>+{diffPoints}</span>
+                        <Icons.Diamond className={`${iconSizeClass} text-blue-500 fill-current`} />
+                    </div>
                 </div>
-            </div>
-            
-            <div className="w-full flex justify-between items-end mb-1 mt-auto">
-                <div className="relative z-50"></div>
                 
-                <span className={`${progressTextClass} text-stone-800 dark:text-stone-200 font-bold tracking-wide font-sans leading-none`}>
-                    {animatedCompleted} / {maxLevels}
-                </span>
-            </div>
-            
-            <div className={`w-full bg-stone-900/10 dark:bg-white/10 rounded-full overflow-hidden ${progressBarHeight}`}>
-                <div 
-                    className="h-full bg-loading-blue" 
-                    style={{ 
-                        width: `${progressPercent}%`,
-                        transition: 'none' 
-                    }}
-                ></div>
-            </div>
-        </button>
+                <div className="w-full flex justify-between items-end mb-1 mt-auto">
+                    <div className="relative z-50"></div>
+                    
+                    <span className={`${progressTextClass} text-stone-800 dark:text-stone-200 font-bold tracking-wide font-sans leading-none`}>
+                        {animatedCompleted} / {maxLevels}
+                    </span>
+                </div>
+                
+                <div className={`w-full bg-stone-900/10 dark:bg-white/10 rounded-full overflow-hidden ${progressBarHeight}`}>
+                    <div 
+                        className="h-full bg-loading-blue" 
+                        style={{ 
+                            width: `${progressPercent}%`,
+                            transition: 'none' 
+                        }}
+                    ></div>
+                </div>
+            </button>
+        </div>
     );
 };
 
@@ -225,7 +229,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                       <p className="text-xs font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-[0.2em]">{subtitle}</p>
                   </div>
 
-                  <div className={`w-full max-w-md flex flex-wrap justify-center gap-3 shrink-0 ${lastPlayedGame ? 'mb-4' : 'mb-8'}`}>
+                  <div className={`w-full max-w-md aspect-[1.15/1] flex flex-wrap content-center justify-center gap-3 shrink-0 ${lastPlayedGame ? 'mb-1' : 'mb-8'}`}>
                       {visibleDifficulties.map((diff, index) => {
                           const isPyramidTop = isOddCount && index === 0 && !isOneVisible;
                           
@@ -273,7 +277,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                   {/* Continue Button */}
                   {lastPlayedGame && (
                   <div 
-                    className="w-full max-w-md flex justify-center mb-4 opacity-0 animate-slide-in-down shrink-0" 
+                    className="w-full max-w-md flex justify-center mb-7 opacity-0 animate-slide-in-down shrink-0" 
                     style={{ animationDelay: '200ms' }}
                   >
                       <button 

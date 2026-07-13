@@ -69,6 +69,26 @@ const useStatCounter = (target: number, dependency: any) => {
     return count;
 };
 
+const cardVariants = {
+    enter: { opacity: 0, y: -20 },
+    center: { 
+        opacity: 1, 
+        y: 0,
+        transition: {
+            type: "spring",
+            stiffness: 120,
+            damping: 15
+        }
+    },
+    exit: { 
+        opacity: 0, 
+        y: 15,
+        transition: {
+            duration: 0.15
+        }
+    }
+};
+
 export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, points }) => {
     // Stats State
     const [selectedDiff, setSelectedDiff] = useState<Difficulty>(Difficulty.Normal);
@@ -76,7 +96,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
 
     // Load Data
     const [storedData, setStoredData] = useState(Storage.getStoredData());
-    
+
     // Derived Stats
     const stats = useMemo(() => {
         const allProgress = storedData.progress;
@@ -161,26 +181,6 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                 scale: { duration: 0.2 }
             }
         }),
-    };
-
-    const cardVariants = {
-        enter: { opacity: 0, y: -20 },
-        center: { 
-            opacity: 1, 
-            y: 0,
-            transition: {
-                type: "spring",
-                stiffness: 120,
-                damping: 15
-            }
-        },
-        exit: { 
-            opacity: 0, 
-            y: 15,
-            transition: {
-                duration: 0.15
-            }
-        }
     };
 
     return (

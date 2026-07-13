@@ -70,7 +70,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       0
   );
 
-  const saveProgress = (currentBoard: Board, scanUsesVal?: number, revealUsesVal?: number, moveLog?: MoveLogEntry[], isPerfect: boolean = false) => {
+  const saveProgress = (currentBoard: Board, scanUsesVal?: number, revealUsesVal?: number, moveLog?: MoveLogEntry[], isPerfect: boolean = false, autoUsesVal?: number) => {
       if (isCompleted || isEnding) return;
       Storage.saveLevelProgress({
           levelId,
@@ -82,6 +82,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           lastPlayed: Date.now(),
           scanUses: scanUsesVal !== undefined ? scanUsesVal : scanUses,
           revealUses: revealUsesVal !== undefined ? revealUsesVal : revealUses,
+          autoUses: autoUsesVal !== undefined ? autoUsesVal : autoUses,
       }, isPerfect);
   };
 
@@ -140,6 +141,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           lastPlayed: Date.now(),
           scanUses,
           revealUses,
+          autoUses,
       }, isPerfect);
       
       // Grant Pepino Gift on Win
@@ -201,6 +203,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       animatingCell,
       setAnimatingCell,
       isAutoAvailable,
+      autoUses,
+      setAutoUses,
       handleAutoFill,
       handleScan,
       handleReveal,
@@ -216,7 +220,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       difficulty,
       removeNotesFromPeers,
       checkCompletion,
-      onSaveProgress: (b, s, r, ml) => saveProgress(b, s, r, ml),
+      onSaveProgress: (b, s, r, ml, au) => saveProgress(b, s, r, ml, false, au),
       onSectionComplete: handleSectionComplete,
       timer
   });
@@ -233,6 +237,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
           if (progress.revealUses !== undefined) setRevealUses(progress.revealUses);
           else setRevealUses(1);
+
+          if (progress.autoUses !== undefined) setAutoUses(progress.autoUses);
+          else setAutoUses(5);
       } else {
           initializeBoard();
           setTimer(0);
@@ -240,6 +247,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           // Reset skills
           setScanUses(3);
           setRevealUses(1);
+          setAutoUses(5);
       }
       setIsCompleted(false);
       setIsEnding(false);
@@ -254,7 +262,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       return () => {
           clearTimeout(hintTimer);
       };
-  }, [difficulty, levelId, initializeBoard, setTimer, setScanUses, setRevealUses]);
+  }, [difficulty, levelId, initializeBoard, setTimer, setScanUses, setRevealUses, setAutoUses]);
 
   // Handle the automatic fade-in/fade-out warning for Hard, Intense, and Impossible levels
   useEffect(() => {
@@ -389,6 +397,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setTimer(0); 
       setScanUses(3); 
       setRevealUses(1); 
+      setAutoUses(5);
       setShowRestartConfirm(false); 
       setIsPaused(false);
       setAnimatingSections(new Set());
@@ -577,6 +586,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                  onAutoFill={() => handleAutoFill(purchasedSkills)}
                  onScan={() => handleScan(isPaused, isCompleted)}
                  onReveal={() => handleReveal(isPaused, isCompleted)}
+                 autoUses={autoUses}
                  timer={timer}
                  onDevSolve={settings.devAutoSolve ? handleDevSolve : undefined}
              />

@@ -15,7 +15,7 @@ interface UseGameSkillsProps {
     difficulty: Difficulty;
     removeNotesFromPeers: (board: Board, r: number, c: number, val: number) => void;
     checkCompletion: (board: Board) => void;
-    onSaveProgress: (board: Board, scanUses?: number, revealUses?: number, moveLog?: MoveLogEntry[]) => void;
+    onSaveProgress: (board: Board, scanUses?: number, revealUses?: number, moveLog?: MoveLogEntry[], autoUses?: number) => void;
     onSectionComplete?: (sections: string[]) => void;
     timer: number;
 }
@@ -66,6 +66,7 @@ export const useGameSkills = ({
     const [isScanSuccess, setIsScanSuccess] = useState(false);
     
     const [revealUses, setRevealUses] = useState(1);
+    const [autoUses, setAutoUses] = useState(5);
     const [revealingCell, setRevealingCell] = useState<{r: number, c: number} | null>(null);
     
     const [animatingCell, setAnimatingCell] = useState<{r: number, c: number, value: number} | null>(null);
@@ -86,6 +87,7 @@ export const useGameSkills = ({
     }, [solvedBoard]);
 
     const isAutoAvailable = useMemo(() => {
+        if (autoUses <= 0) return false;
         if (!selectedCell || board.length === 0) return false;
         let r = selectedCell[0];
         let c = selectedCell[1];
@@ -109,10 +111,10 @@ export const useGameSkills = ({
         if (boxCount === 8) return true;
 
         return false;
-    }, [board, selectedCell]);
+    }, [board, selectedCell, autoUses]);
 
     const handleAutoFill = (purchasedSkills: string[]) => {
-        if (!purchasedSkills.includes('skill-auto') || !isAutoAvailable || !selectedCell || isScanning || revealingCell) return;
+        if (!purchasedSkills.includes('skill-auto') || !isAutoAvailable || autoUses <= 0 || !selectedCell || isScanning || revealingCell) return;
         sounds.playZap(); 
         const [r, c] = selectedCell;
         
@@ -168,7 +170,12 @@ export const useGameSkills = ({
         }
         
         setBoard(newBoard);
-        onSaveProgress(newBoard, undefined, undefined, moveLog.current);
+        
+        setAutoUses(prev => {
+            const next = prev - 1;
+            onSaveProgress(newBoard, undefined, undefined, moveLog.current, next);
+            return next;
+        });
         
         const isFinishingMove = isBoardComplete(newBoard);
         if (!newBoard[r][c].isError && !isFinishingMove) {
@@ -211,7 +218,7 @@ export const useGameSkills = ({
             setIsScanning(false);
             setScanUses(prev => {
                 const next = prev - 1;
-                onSaveProgress(newBoard, next, undefined, moveLog.current);
+                onSaveProgress(newBoard, next, undefined, moveLog.current, autoUses);
                 return next;
             });
             setScanCooldown(false);
@@ -279,7 +286,7 @@ export const useGameSkills = ({
             setBoard(newBoard);
             setRevealUses(prev => {
                 const next = prev - 1;
-                onSaveProgress(newBoard, undefined, next, moveLog.current);
+                onSaveProgress(newBoard, undefined, next, moveLog.current, autoUses);
                 return next;
             });
 
@@ -304,6 +311,8 @@ export const useGameSkills = ({
         scanCooldown,
         revealUses,
         setRevealUses,
+        autoUses,
+        setAutoUses,
         revealingCell,
         setRevealingCell,
         animatingCell,

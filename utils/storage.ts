@@ -478,6 +478,7 @@ export const Storage = {
                bestTime: bestTime,
                scanUses: 3,
                revealUses: 1,
+               autoUses: 5,
            };
            saveData(data);
       }
@@ -568,7 +569,8 @@ export const Storage = {
                   timeElapsed: 60,
                   bestTime: existing?.bestTime !== undefined ? Math.min(existing.bestTime, 60) : 60,
                   scanUses: 3,
-                  revealUses: 1
+                  revealUses: 1,
+                  autoUses: 5,
               };
               data.stats.totalGamesWon += 1;
           }

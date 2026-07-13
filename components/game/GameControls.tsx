@@ -13,6 +13,7 @@ interface GameControlsProps {
     purchasedSkills: string[];
     // Skill specific props
     isAutoAvailable: boolean;
+    autoUses: number;
     scanUses: number;
     isScanning: boolean;
     scanCooldown: boolean;
@@ -34,6 +35,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
     onTogglePencil,
     purchasedSkills,
     isAutoAvailable,
+    autoUses,
     scanUses,
     isScanning,
     scanCooldown,
@@ -113,16 +115,21 @@ export const GameControls: React.FC<GameControlsProps> = ({
                 {purchasedSkills.includes('skill-auto') && (
                     <button 
                         onClick={(e) => { e.stopPropagation(); onAutoFill(e); }} 
-                        className={`flex flex-col items-center gap-1 transition relative active:scale-95 ${isAutoAvailable ? 'cursor-pointer text-amber-700 dark:text-amber-400' : 'cursor-not-allowed text-stone-300 dark:text-stone-600'}`}
-                        disabled={!isAutoAvailable}
+                        className={`flex flex-col items-center gap-1 transition relative active:scale-95 ${isAutoAvailable && autoUses > 0 ? 'cursor-pointer text-amber-700 dark:text-amber-400' : 'cursor-not-allowed text-stone-300 dark:text-stone-600'}`}
+                        disabled={!isAutoAvailable || autoUses <= 0}
                     >
                         {/* Removed borders and rings */}
-                        <div className={`p-3 rounded-full shadow-sm transition-all duration-300 ${
-                            isAutoAvailable 
+                        <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative ${
+                            isAutoAvailable && autoUses > 0 
                             ? 'bg-amber-100 dark:bg-amber-900/30' 
                             : 'bg-t-surface-sec dark:bg-stone-800/50'
                         }`}>
-                            <Icons.Auto className={`w-5 h-5 ${isAutoAvailable ? 'text-amber-600 dark:text-amber-400 animate-pulse' : 'text-stone-300 dark:text-stone-600'}`} />
+                            <Icons.Auto className={`w-5 h-5 ${isAutoAvailable && autoUses > 0 ? 'text-amber-600 dark:text-amber-400 animate-pulse' : 'text-stone-300 dark:text-stone-600'}`} />
+                            {autoUses > 0 && (
+                                <div className="absolute -top-4 -right-4 w-7 h-7 rounded-full flex items-center justify-center text-base font-bold leading-none shadow-sm z-10 bg-blue-600 text-white">
+                                    {autoUses}
+                                </div>
+                            )}
                         </div>
                         <span className="text-sm font-medium">Auto</span>
                     </button>

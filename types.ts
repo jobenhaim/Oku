@@ -41,6 +41,7 @@ export interface LevelProgress {
   bestTime?: number; // Personal best time in seconds
   scanUses?: number; // Remaining scan uses
   revealUses?: number; // Remaining reveal uses
+  autoUses?: number; // Remaining auto uses
 }
 
 export interface AppSettings {

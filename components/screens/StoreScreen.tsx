@@ -411,33 +411,99 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
              >
                   <div className="w-full max-w-md pt-6">
                       <AnimatePresence initial={false} custom={direction} mode="popLayout">
-                          <motion.div
-                              key={activeTab}
-                              custom={direction}
-                              variants={variants}
-                              initial="enter"
-                              animate="center"
-                              exit="exit"
-                              transition={{
-                                  x: { type: "spring", stiffness: 200, damping: 25 },
-                                  opacity: { duration: 0.2 },
-                                  scale: { duration: 0.2 }
-                              }}
-                              className="w-full"
-                          >
-                              {activeTab === 'all' && (
-                                  <>
-                                      {renderSkills()}
-                                      {renderBackgrounds()}
-                                      {renderSoundPacks()}
-                                      {renderNumbers()}
-                                  </>
-                              )}
-                              {activeTab === 'skills' && renderSkills()}
-                              {activeTab === 'bg' && renderBackgrounds()}
-                              {activeTab === 'sound' && renderSoundPacks()}
-                              {activeTab === 'num' && renderNumbers()}
-                          </motion.div>
+                          {activeTab === 'all' && (
+                              <motion.div
+                                  key="all"
+                                  custom={direction}
+                                  variants={variants}
+                                  initial="enter"
+                                  animate="center"
+                                  exit="exit"
+                                  transition={{
+                                      x: { type: "spring", stiffness: 200, damping: 25 },
+                                      opacity: { duration: 0.2 },
+                                      scale: { duration: 0.2 }
+                                  }}
+                                  className="w-full"
+                              >
+                                  {renderSkills()}
+                                  {renderBackgrounds()}
+                                  {renderSoundPacks()}
+                                  {renderNumbers()}
+                              </motion.div>
+                          )}
+                          {activeTab === 'skills' && (
+                              <motion.div
+                                  key="skills"
+                                  custom={direction}
+                                  variants={variants}
+                                  initial="enter"
+                                  animate="center"
+                                  exit="exit"
+                                  transition={{
+                                      x: { type: "spring", stiffness: 200, damping: 25 },
+                                      opacity: { duration: 0.2 },
+                                      scale: { duration: 0.2 }
+                                  }}
+                                  className="w-full"
+                              >
+                                  {renderSkills()}
+                              </motion.div>
+                          )}
+                          {activeTab === 'bg' && (
+                              <motion.div
+                                  key="bg"
+                                  custom={direction}
+                                  variants={variants}
+                                  initial="enter"
+                                  animate="center"
+                                  exit="exit"
+                                  transition={{
+                                      x: { type: "spring", stiffness: 200, damping: 25 },
+                                      opacity: { duration: 0.2 },
+                                      scale: { duration: 0.2 }
+                                  }}
+                                  className="w-full"
+                              >
+                                  {renderBackgrounds()}
+                              </motion.div>
+                          )}
+                          {activeTab === 'sound' && (
+                              <motion.div
+                                  key="sound"
+                                  custom={direction}
+                                  variants={variants}
+                                  initial="enter"
+                                  animate="center"
+                                  exit="exit"
+                                  transition={{
+                                      x: { type: "spring", stiffness: 200, damping: 25 },
+                                      opacity: { duration: 0.2 },
+                                      scale: { duration: 0.2 }
+                                  }}
+                                  className="w-full"
+                              >
+                                  {renderSoundPacks()}
+                              </motion.div>
+                          )}
+                          {activeTab === 'num' && (
+                              <motion.div
+                                  key="num"
+                                  custom={direction}
+                                  variants={variants}
+                                  initial="enter"
+                                  animate="center"
+                                  exit="exit"
+                                  transition={{
+                                      x: { type: "spring", stiffness: 200, damping: 25 },
+                                      opacity: { duration: 0.2 },
+                                      scale: { duration: 0.2 }
+                                  }}
+                                  className="w-full"
+                              >
+                                  {renderNumbers()}
+                              </motion.div>
+                          )}
                       </AnimatePresence>
                   </div>
                   <div className="h-safe-bottom w-full shrink-0" />

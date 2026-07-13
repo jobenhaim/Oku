@@ -665,7 +665,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                                     <button 
                                                         key={diff}
                                                         onClick={() => onToggleDifficulty(diff)}
-                                                        className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-300"
+                                                        className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors duration-300"
                                                     >
                                                         <span className={`text-sm font-bold transition-colors duration-300 ${isHidden ? 'text-t-secondary' : 'text-t-primary'}`}>{diff}</span>
                                                         <Icons.Eye className={`w-5 h-5 transition-colors duration-300 ${isHidden ? 'text-t-secondary opacity-50' : 'text-stone-700 dark:text-stone-300'}`} />

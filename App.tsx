@@ -33,6 +33,7 @@ const DiamondBackground = () => (
 // Inner Application Component that contains all state and logic
 const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset }) => {
   const [screen, setScreen] = useState<Screen>('difficulty');
+  const [prevScreen, setPrevScreen] = useState<Screen | null>(null);
   const [direction, setDirection] = useState<number>(0);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
@@ -205,6 +206,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
   const navigate = (nextScreen: Screen, dir: 'forward' | 'back' | 'none' = 'forward') => {
       setDirection(dir === 'forward' ? 1 : dir === 'back' ? -1 : 0);
+      setPrevScreen(screen);
       setScreen(nextScreen);
       setPoints(Storage.getPoints());
   };
@@ -523,6 +525,12 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       overlayOpacityValue = baseOverlayOpacity * 0.6;
   }
 
+  const isSlowerTransition = 
+    (screen === 'difficulty' && prevScreen === 'levels') || 
+    (screen === 'levels' && prevScreen === 'difficulty') ||
+    (screen === 'game' && prevScreen === 'levels') ||
+    (screen === 'levels' && prevScreen === 'game');
+
   const variants: Variants = {
     initial: {
       opacity: 0,
@@ -534,7 +542,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       scale: 1,
       pointerEvents: 'auto' as any,
       transition: { 
-          duration: 0.25,
+          duration: isSlowerTransition ? 0.4 : 0.25,
           ease: [0.16, 1, 0.3, 1]
       }
     },
@@ -543,7 +551,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       scale: 1.03,
       pointerEvents: 'none' as any,
       transition: { 
-          duration: 0.2,
+          duration: isSlowerTransition ? 0.4 : 0.2,
           ease: [0.16, 1, 0.3, 1],
           pointerEvents: { duration: 0 }
       }
@@ -577,21 +585,36 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
               >
                 <div className="flex-1 relative w-full h-full overflow-hidden">
                     <AnimatePresence custom={direction} initial={false}>
-                        <motion.div
-                            key={screen}
-                            custom={direction}
-                            variants={variants}
-                            initial="initial"
-                            animate="animate"
-                            exit="exit"
-                            className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
-                            style={{ 
-                                willChange: 'transform, opacity' // GPU promotion for smoother transitions
-                            }}
-                        >
-                            {screen === 'splash' && <SplashScreen />}
+                        {screen === 'splash' && (
+                            <motion.div
+                                key="splash"
+                                custom={direction}
+                                variants={variants}
+                                initial="initial"
+                                animate="animate"
+                                exit="exit"
+                                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
+                                style={{ 
+                                    willChange: 'transform, opacity'
+                                }}
+                            >
+                                <SplashScreen />
+                            </motion.div>
+                        )}
 
-                            {screen === 'difficulty' && (
+                        {screen === 'difficulty' && (
+                            <motion.div
+                                key="difficulty"
+                                custom={direction}
+                                variants={variants}
+                                initial="initial"
+                                animate="animate"
+                                exit="exit"
+                                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
+                                style={{ 
+                                    willChange: 'transform, opacity'
+                                }}
+                            >
                                 <DifficultyScreen 
                                     points={points}
                                     onDifficultySelect={handleDifficultySelect}
@@ -611,9 +634,22 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                         navigate('game', 'forward');
                                     }}
                                 />
-                            )}
+                            </motion.div>
+                        )}
 
-                            {screen === 'diamondShop' && (
+                        {screen === 'diamondShop' && (
+                            <motion.div
+                                key="diamondShop"
+                                custom={direction}
+                                variants={variants}
+                                initial="initial"
+                                animate="animate"
+                                exit="exit"
+                                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
+                                style={{ 
+                                    willChange: 'transform, opacity'
+                                }}
+                            >
                                 <DiamondShopScreen 
                                     points={points}
                                     onBack={handleDiamondShopBack}
@@ -621,17 +657,43 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     onEarnPoints={handleEarnPoints}
                                     starterPackPurchased={starterPackPurchased}
                                 />
-                            )}
-                            
-                            {screen === 'stats' && (
+                            </motion.div>
+                        )}
+                        
+                        {screen === 'stats' && (
+                            <motion.div
+                                key="stats"
+                                custom={direction}
+                                variants={variants}
+                                initial="initial"
+                                animate="animate"
+                                exit="exit"
+                                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
+                                style={{ 
+                                    willChange: 'transform, opacity'
+                                }}
+                            >
                                 <StatsScreen 
                                     onBack={handleStatsBack}
                                     onEarnPoints={handleEarnPoints}
                                     points={points}
                                 />
-                            )}
-                            
-                            {screen === 'levels' && selectedDifficulty && (
+                            </motion.div>
+                        )}
+                        
+                        {screen === 'levels' && selectedDifficulty && (
+                            <motion.div
+                                key="levels"
+                                custom={direction}
+                                variants={variants}
+                                initial="initial"
+                                animate="animate"
+                                exit="exit"
+                                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
+                                style={{ 
+                                    willChange: 'transform, opacity'
+                                }}
+                            >
                                 <LevelsScreen 
                                     difficulty={selectedDifficulty}
                                     points={points}
@@ -643,9 +705,22 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     onUnlockPack2={handleUnlockPack2}
                                     onUnlockPack3={handleUnlockPack3}
                                 />
-                            )}
+                            </motion.div>
+                        )}
 
-                            {screen === 'store' && (
+                        {screen === 'store' && (
+                            <motion.div
+                                key="store"
+                                custom={direction}
+                                variants={variants}
+                                initial="initial"
+                                animate="animate"
+                                exit="exit"
+                                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
+                                style={{ 
+                                    willChange: 'transform, opacity'
+                                }}
+                            >
                                 <StoreScreen 
                                     points={points}
                                     onBack={handleStoreBack}
@@ -663,9 +738,22 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     onSelectSoundPack={handleSelectSoundPack}
                                     onToggleSkill={handleToggleSkill}
                                 />
-                            )}
-                            
-                            {screen === 'game' && selectedDifficulty && selectedLevel && (
+                            </motion.div>
+                        )}
+                        
+                        {screen === 'game' && selectedDifficulty && selectedLevel && (
+                            <motion.div
+                                key="game"
+                                custom={direction}
+                                variants={variants}
+                                initial="initial"
+                                animate="animate"
+                                exit="exit"
+                                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
+                                style={{ 
+                                    willChange: 'transform, opacity'
+                                }}
+                            >
                                 <SudokuGame
                                     difficulty={selectedDifficulty}
                                     levelId={selectedLevel}
@@ -684,8 +772,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     numberColor={numberColorClass}
                                     purchasedSkills={enabledSkills}
                                 />
-                            )}
-                        </motion.div>
+                            </motion.div>
+                        )}
                     </AnimatePresence>
                 </div>
 
