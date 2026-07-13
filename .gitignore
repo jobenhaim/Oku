@@ -1,0 +1,16 @@
+node_modules/
+dist/
+
+.env
+.env.*
+!.env.example
+
+.DS_Store
+*.log
+
+# Local Xcode user state and generated dependencies.
+ios/DerivedData/
+ios/App/Pods/
+ios/**/xcuserdata/
+ios/**/*.xcuserstate
+
