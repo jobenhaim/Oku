@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Difficulty, AppSettings, DiamondOffer, PepinoState } from './types';
 import { SudokuGame } from './components/SudokuGame';
 import { Storage } from './utils/storage';
@@ -30,6 +30,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const [screen, setScreen] = useState<Screen>('difficulty');
   const [prevScreen, setPrevScreen] = useState<Screen | null>(null);
   const [direction, setDirection] = useState<number>(0);
+  const [isScreenTransitioning, setIsScreenTransitioning] = useState(false);
+  const screenTransitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
   const [settings, setSettings] = useState<AppSettings>(Storage.getSettings());
@@ -199,7 +201,17 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
      // We don't refresh redeemedCoupons here because it's updated via onRedeemCode
   }, [screen]);
 
+  useEffect(() => () => {
+      if (screenTransitionTimer.current) clearTimeout(screenTransitionTimer.current);
+  }, []);
+
   const navigate = (nextScreen: Screen, dir: 'forward' | 'back' | 'none' = 'forward') => {
+      if (screenTransitionTimer.current) clearTimeout(screenTransitionTimer.current);
+      setIsScreenTransitioning(true);
+      screenTransitionTimer.current = setTimeout(() => {
+          setIsScreenTransitioning(false);
+          screenTransitionTimer.current = null;
+      }, 450);
       setDirection(dir === 'forward' ? 1 : dir === 'back' ? -1 : 0);
       setPrevScreen(screen);
       setScreen(nextScreen);
@@ -539,12 +551,10 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const variants: Variants = {
     initial: {
       opacity: 0,
-      scale: 0.97,
       pointerEvents: 'none' as any
     },
     animate: {
       opacity: 1,
-      scale: 1,
       pointerEvents: 'auto' as any,
       transition: { 
           duration: isSlowerTransition ? 0.4 : 0.25,
@@ -553,7 +563,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
     },
     exit: {
       opacity: 0,
-      scale: 1.03,
       pointerEvents: 'none' as any,
       transition: { 
           duration: isSlowerTransition ? 0.4 : 0.2,
@@ -573,7 +582,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
               {/* Background Layer (Persistent) */}
               <div 
-                className={`absolute inset-0 z-0 transition-all ease-in-out duration-500 ${activeBackgroundClass}`} 
+                className={`absolute inset-0 z-0 transition-opacity ease-in-out duration-500 ${isScreenTransitioning ? 'atmosphere-paused' : ''} ${activeBackgroundClass}`}
                 style={{ width: '100%', height: '100%' }}
               />
               <div 
