@@ -251,14 +251,17 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
         >
              <div className="flex-1 w-full overflow-hidden px-6 pb-6 pt-4 flex flex-col items-center min-h-0">
                   
-                  <div className="flex flex-col items-center mb-8 shrink-0 pt-4">
+                  <div
+                    className="flex flex-col items-center mb-8 shrink-0 pt-4 opacity-0 animate-fade-in-long"
+                    style={{ animationDelay: `${cascadeDelayMs}ms` }}
+                  >
                       <h1 className="text-6xl font-bold text-stone-800 dark:text-stone-100 tracking-tight leading-none mb-1">Oku</h1>
                       <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.4em] ml-1">Sudoku</span>
                   </div>
 
                   <div 
-                    className="w-full max-w-md flex justify-center mb-2 opacity-0 animate-slide-in-down shrink-0" 
-                    style={{ animationDelay: `${50 + cascadeDelayMs}ms` }}
+                    className="w-full max-w-md flex justify-center mb-2 opacity-0 animate-fade-in-long shrink-0"
+                    style={{ animationDelay: `${cascadeDelayMs}ms` }}
                   >
                       <p className="text-xs font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-[0.2em]">{subtitle}</p>
                   </div>

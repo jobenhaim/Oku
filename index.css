@@ -37,36 +37,19 @@
   --grid-thick: #a8a29e; /* Stone 400 */
 }
 
-/* High-performance simulated glass: keeps the highlights without live backdrop sampling. */
+/* Quiet locked-pack surface for the complete start menu. */
 .oku-difficulty-glass,
 .oku-main-glass {
-  background:
-    radial-gradient(ellipse 85% 55% at 16% 0%, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0) 68%),
-    radial-gradient(ellipse 65% 75% at 105% 105%, rgba(188, 220, 255, 0.30) 0%, rgba(255, 255, 255, 0) 72%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.68) 0%, rgba(255, 255, 255, 0.48) 52%, rgba(237, 246, 255, 0.58) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.88);
-  box-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 1),
-    inset 1px 0 0 rgba(255, 255, 255, 0.58),
-    inset 0 -1.5px 0 rgba(86, 116, 150, 0.20),
-    inset -1px 0 0 rgba(86, 116, 150, 0.10),
-    0 12px 28px rgba(41, 58, 78, 0.16),
-    0 3px 8px rgba(41, 58, 78, 0.10);
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.46);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 }
 
 .dark .oku-difficulty-glass,
 .dark .oku-main-glass {
-  background:
-    radial-gradient(ellipse 85% 55% at 16% 0%, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0) 68%),
-    radial-gradient(ellipse 65% 75% at 105% 105%, rgba(90, 150, 230, 0.16) 0%, rgba(255, 255, 255, 0) 72%),
-    linear-gradient(145deg, rgba(42, 45, 52, 0.78) 0%, rgba(20, 22, 27, 0.68) 55%, rgba(18, 28, 42, 0.74) 100%);
-  border-color: rgba(255, 255, 255, 0.30);
-  box-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.34),
-    inset 1px 0 0 rgba(255, 255, 255, 0.16),
-    inset 0 -1.5px 0 rgba(0, 0, 0, 0.42),
-    0 12px 30px rgba(0, 0, 0, 0.38),
-    0 3px 8px rgba(0, 0, 0, 0.24);
+  background: rgba(41, 37, 36, 0.82);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
 }
 
 .oku-main-glass.oku-store-selected {
@@ -113,6 +96,77 @@
 .dark .oku-segmented-control {
   background: rgba(38, 38, 38, 0.94);
   border-color: rgba(87, 83, 78, 0.75);
+}
+
+/* Diamond Shop copy needs stronger contrast over the pale store surfaces. */
+.diamond-shop-screen .text-t-secondary,
+.diamond-shop-screen .text-stone-500 {
+  color: #57534e;
+}
+
+.diamond-shop-screen .text-stone-600 {
+  color: #44403c;
+}
+
+.dark .diamond-shop-screen .text-t-secondary,
+.dark .diamond-shop-screen .text-stone-500,
+.dark .diamond-shop-screen .text-stone-600 {
+  color: #d6d3d1;
+}
+
+/* Level tiles share the quiet locked-pack surface across every pack. */
+.oku-level-surface {
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: #292524;
+}
+
+.oku-level-surface-solved {
+  background: rgba(220, 248, 233, 0.42);
+  border-color: rgba(76, 175, 125, 0.38);
+  color: #57534e;
+}
+
+.oku-level-surface-progress {
+  border: 2px solid #60a5fa;
+  color: #292524;
+}
+
+.oku-level-surface-solved .text-t-secondary {
+  color: #57534e;
+}
+
+.oku-level-surface-solved .text-amber-500 {
+  color: #b27d1f;
+  opacity: 1;
+}
+
+.dark .oku-level-surface {
+  background: rgba(41, 37, 36, 0.8);
+  border-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  color: #f5f5f4;
+}
+
+.dark .oku-level-surface-solved {
+  background: rgba(94, 170, 125, 0.2);
+  border-color: rgba(110, 220, 170, 0.35);
+  color: #f5f5f4;
+}
+
+.dark .oku-level-surface-progress {
+  color: #f5f5f4;
+}
+
+.dark .oku-level-surface-solved .text-t-secondary {
+  color: #e7e5e4;
+}
+
+.dark .oku-level-surface-solved .text-amber-500 {
+  color: #c49a3b;
 }
 
 .oku-segmented-pill {
@@ -438,36 +492,9 @@ html, body {
   50% { transform: translate3d(9%, 2%, 0) rotate(3deg); opacity: .82; }
 }
 
-@keyframes sakura-drift {
-  from { transform: translate3d(-32px, -72px, 0) rotate(-5deg); }
-  to { transform: translate3d(40px, 72px, 0) rotate(5deg); }
-}
-
-@keyframes sakura-haze {
-  0%, 100% { transform: translate3d(-6%, 2%, 0) scale(1); opacity: .62; }
-  50% { transform: translate3d(7%, -4%, 0) scale(1.12); opacity: .88; }
-}
-
-@keyframes sunroom-glow {
-  0%, 100% { transform: translate3d(-2%, 1%, 0) scale(1); opacity: .58; }
-  50% { transform: translate3d(2%, -1%, 0) scale(1.05); opacity: .76; }
-}
-
-@keyframes snowfall-haze {
-  0%, 100% { transform: translate3d(-4%, 2%, 0) scale(1); opacity: .58; }
-  50% { transform: translate3d(5%, -3%, 0) scale(1.09); opacity: .78; }
-}
-
-@keyframes snowfall-drift {
-  0% { transform: translate3d(-20px, -72px, 0) rotate(-2deg); opacity: 0; }
-  12% { opacity: .62; }
-  82% { opacity: .58; }
-  100% { transform: translate3d(26px, 76px, 0) rotate(2deg); opacity: 0; }
-}
-
-@keyframes snowfall-sky {
-  0%, 100% { background-position: 12% 16%; }
-  50% { background-position: 88% 84%; }
+@keyframes oku-light-drift {
+  0%, 100% { transform: translate3d(-6%, 1%, 0) scale(1.04); opacity: .52; }
+  50% { transform: translate3d(6%, -2%, 0) scale(1.1); opacity: .78; }
 }
 
 /* Atmospheres use calm, layered motion so they remain readable behind the board. */
@@ -530,60 +557,80 @@ html, body {
 }
 
 .bg-atmosphere-blush {
-  background: linear-gradient(155deg, #fff8f2 0%, #f9ddd8 48%, #e9bed1 100%);
+  background: linear-gradient(145deg, #fff7f5 0%, #ddb7cb 48%, #a98bb8 100%);
 }
 
 .bg-atmosphere-blush::before {
-  background: radial-gradient(ellipse at 15% 62%, rgba(255, 255, 255, .86) 0 15%, transparent 38%), radial-gradient(ellipse at 76% 30%, rgba(255, 244, 240, .82) 0 17%, transparent 42%), radial-gradient(circle at 62% 78%, rgba(209, 106, 142, .18) 0 12%, transparent 34%);
-  filter: blur(16px);
-  animation: sakura-haze 21s ease-in-out infinite;
+  background: linear-gradient(112deg, transparent 27%, rgba(255, 255, 255, .7) 43%, rgba(247, 220, 227, .34) 53%, transparent 69%);
+  filter: blur(12px);
+  animation: oku-light-drift 32s ease-in-out infinite;
 }
 
 .bg-atmosphere-blush::after {
-  inset: -80px;
-  background-image: radial-gradient(ellipse at 28% 32%, rgba(190, 78, 119, .42) 0 1.4px, transparent 2.4px), radial-gradient(ellipse at 72% 68%, rgba(255, 255, 255, .82) 0 1.6px, transparent 2.8px), radial-gradient(ellipse at 56% 18%, rgba(215, 111, 145, .3) 0 1.2px, transparent 2.2px);
-  background-size: 68px 82px, 91px 72px, 77px 96px;
-  opacity: .68;
-  animation: sakura-drift 20s linear infinite alternate;
+  background: radial-gradient(ellipse at 18% 72%, rgba(117, 78, 133, .2) 0 15%, transparent 43%), radial-gradient(ellipse at 80% 22%, rgba(255, 245, 239, .7) 0 18%, transparent 46%);
+  filter: blur(10px);
+  opacity: .66;
 }
 
 .bg-atmosphere-golden {
-  background: linear-gradient(145deg, #fffaf0 0%, #f5e7c5 50%, #deb97d 100%);
+  background: linear-gradient(145deg, #fffdf8 0%, #dce8ea 48%, #afc7d2 100%);
 }
 
 .bg-atmosphere-golden::before {
-  inset: -12%;
-  background-image: linear-gradient(rgba(117, 83, 38, .18) 1.5px, transparent 1.5px), linear-gradient(90deg, rgba(117, 83, 38, .16) 1.5px, transparent 1.5px);
-  background-size: 132px 132px;
-  transform: rotate(-7deg) scale(1.08);
-  opacity: .5;
+  background: linear-gradient(114deg, transparent 27%, rgba(255, 255, 255, .86) 43%, rgba(128, 165, 184, .3) 54%, transparent 71%);
+  filter: blur(10px);
+  animation: oku-light-drift 36s ease-in-out infinite;
 }
 
 .bg-atmosphere-golden::after {
-  background: linear-gradient(111deg, transparent 25%, rgba(255, 255, 255, .82) 38%, rgba(255, 229, 169, .64) 52%, transparent 68%), radial-gradient(circle at 72% 32%, rgba(255, 246, 209, .78) 0 9%, transparent 34%);
-  filter: blur(8px);
-  animation: sunroom-glow 28s ease-in-out infinite;
+  background: radial-gradient(ellipse at 14% 76%, rgba(48, 91, 119, .2) 0 15%, transparent 43%), radial-gradient(ellipse at 82% 18%, rgba(255, 250, 231, .78) 0 18%, transparent 46%);
+  filter: blur(9px);
+  opacity: .7;
 }
 
 .bg-atmosphere-platinum {
-  background: linear-gradient(145deg, #6f93b5 0%, #8eafc8 48%, #b5cbd9 100%);
-  background-size: 165% 165%;
-  animation: snowfall-sky 44s ease-in-out infinite;
+  background: linear-gradient(145deg, #fff4df 0%, #edc1a6 50%, #d99a8d 100%);
 }
 
 .bg-atmosphere-platinum::before {
-  background: radial-gradient(ellipse at 18% 62%, rgba(42, 91, 139, .28) 0 14%, transparent 38%), radial-gradient(ellipse at 76% 28%, rgba(36, 106, 158, .22) 0 16%, transparent 42%), radial-gradient(circle at 68% 74%, rgba(25, 67, 107, .16) 0 12%, transparent 38%);
-  filter: blur(16px);
-  animation: snowfall-haze 24s ease-in-out infinite;
+  background: linear-gradient(116deg, transparent 26%, rgba(255, 248, 224, .7) 43%, rgba(255, 218, 180, .28) 54%, transparent 70%);
+  filter: blur(11px);
+  animation: oku-light-drift 34s ease-in-out infinite reverse;
 }
 
 .bg-atmosphere-platinum::after {
-  inset: -72px;
-  background-image: radial-gradient(circle, rgba(255, 248, 202, .98) 0 1.4px, rgba(255, 235, 154, .48) 2.5px, transparent 4.2px), radial-gradient(circle, rgba(255, 252, 222, .94) 0 1px, rgba(255, 230, 141, .38) 2.1px, transparent 3.8px), radial-gradient(circle, rgba(255, 245, 184, .98) 0 1.8px, rgba(255, 222, 117, .30) 3px, transparent 5px);
-  background-size: 104px 128px, 149px 112px, 173px 157px;
-  background-position: 8px 14px, 56px 37px, 82px 69px;
-  filter: drop-shadow(0 0 3px rgba(255, 226, 132, .55));
-  animation: snowfall-drift 24s linear infinite;
+  background: radial-gradient(ellipse at 20% 74%, rgba(158, 76, 69, .16) 0 15%, transparent 43%), radial-gradient(ellipse at 80% 20%, rgba(255, 247, 215, .72) 0 18%, transparent 46%);
+  filter: blur(9px);
+  opacity: .62;
+}
+
+/* Store thumbnails need a clearer, denser preview than the full-screen scenes. */
+.store-atmosphere-preview.bg-atmosphere-blush {
+  background: linear-gradient(145deg, #fff7f5 0%, #ddb7cb 48%, #a98bb8 100%);
+}
+
+.store-atmosphere-preview.bg-atmosphere-golden {
+  background: linear-gradient(145deg, #fffdf8 0%, #dce8ea 48%, #afc7d2 100%);
+}
+
+.store-atmosphere-preview.bg-atmosphere-golden::before {
+  filter: none;
+  opacity: .5;
+}
+
+.store-atmosphere-preview.bg-atmosphere-golden::after {
+  filter: none;
+  opacity: .64;
+}
+
+.store-atmosphere-preview.bg-atmosphere-platinum {
+  background: linear-gradient(145deg, #fff4df 0%, #edc1a6 50%, #d99a8d 100%);
+}
+
+.store-atmosphere-preview.bg-atmosphere-platinum::before,
+.store-atmosphere-preview.bg-atmosphere-platinum::after,
+.store-atmosphere-preview.bg-atmosphere-blush::before {
+  filter: none;
 }
 
 /* Navigation should not make iOS composite moving atmospheres underneath fading UI. */
@@ -612,8 +659,7 @@ html, body {
   }
 }
 
-/* Touch devices get a static atmosphere profile. This avoids recompositing
-   oversized animated layers while two screens are fading during navigation. */
+/* Touch devices get one lightweight moving layer per atmosphere. */
 @media (hover: none) and (pointer: coarse) {
   .bg-atmosphere-aurora,
   .bg-atmosphere-meadow,
@@ -651,17 +697,17 @@ html, body {
   }
 
   .bg-atmosphere-blush::before {
-    animation: sakura-haze 27s ease-in-out infinite !important;
+    animation: oku-light-drift 34s ease-in-out infinite !important;
     will-change: transform, opacity !important;
   }
 
-  .bg-atmosphere-golden::after {
-    animation: sunroom-glow 34s ease-in-out infinite !important;
+  .bg-atmosphere-golden::before {
+    animation: oku-light-drift 38s ease-in-out infinite !important;
     will-change: transform, opacity !important;
   }
 
   .bg-atmosphere-platinum::before {
-    animation: snowfall-haze 30s ease-in-out infinite !important;
+    animation: oku-light-drift 36s ease-in-out infinite reverse !important;
     will-change: transform, opacity !important;
   }
 

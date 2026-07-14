@@ -239,7 +239,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                     className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 bg-gradient-to-t from-stone-200 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 z-10' : 'border-transparent'}`}
                                 >
                                     <div 
-                                    className={`flex-1 relative overflow-hidden ${bg.class}`} 
+                                    className={`store-atmosphere-preview flex-1 relative overflow-hidden ${bg.class}`}
                                     style={{ backgroundSize: '300% 300%' }}
                                     >
                                             <div className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-500" style={{ opacity: 'calc(var(--overlay-opacity) * 1.6)' }} />
