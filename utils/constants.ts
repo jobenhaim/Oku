@@ -140,15 +140,7 @@ export const STATIC_BACKGROUNDS = [
     { id: 'bg-glacier', name: 'Glacier', cost: 100, class: 'bg-gradient-to-br from-cyan-50 to-sky-100' },
 ];
 
-export const DYNAMIC_BACKGROUNDS = [
-    { id: 'bg-prism', name: 'Aurora', cost: 300, class: 'bg-atmosphere-aurora' },
-    { id: 'bg-horizon', name: 'Canopy', cost: 300, class: 'bg-atmosphere-meadow' },
-    { id: 'bg-orbit', name: 'Porcelain', cost: 300, class: 'bg-atmosphere-golden' },
-    { id: 'bg-flux', name: 'Afterglow', cost: 300, class: 'bg-atmosphere-platinum' },
-    { id: 'bg-coral', name: 'Plum Silk', cost: 300, class: 'bg-atmosphere-blush' },
-];
-
-export const ALL_BACKGROUNDS = [...STATIC_BACKGROUNDS, ...DYNAMIC_BACKGROUNDS];
+export const ALL_BACKGROUNDS = STATIC_BACKGROUNDS;
 
 export const NUMBER_COLORS = [
     { id: 'num-default', name: 'Default', cost: 0, class: 'text-blue-600 dark:text-blue-400', uiClass: 'text-blue-600 dark:text-blue-400', bgClass: 'bg-blue-50/50 dark:bg-blue-900/10' },
@@ -169,7 +161,7 @@ export const SOUND_PACKS = [
         id: 'snd-zen', 
         name: 'Zen', 
         cost: 0, 
-        icon: Icons.Wind, 
+        icon: Icons.Wind,
         description: 'Our default theme. Crisp, clean clicks for pure focus.',
         colorClass: 'from-sky-200 to-teal-200 dark:from-sky-800 dark:to-teal-800',
         iconColor: 'text-sky-700 dark:text-sky-300'
@@ -187,7 +179,7 @@ export const SOUND_PACKS = [
         id: 'snd-stone',
         name: 'Stone',
         cost: 200,
-        icon: Icons.Stone,
+        icon: Icons.Mountain,
         description: 'Deep, resonant thuds. Solid and grounding.',
         colorClass: 'from-stone-400 to-stone-600 dark:from-stone-600 dark:to-stone-800',
         iconColor: 'text-stone-800 dark:text-stone-200'
@@ -214,7 +206,7 @@ export const SOUND_PACKS = [
         id: 'snd-retro',
         name: '8-Bit',
         cost: 400,
-        icon: Icons.Gamepad,
+        icon: Icons.PixelEight,
         description: 'Classic arcade bleeps. Nostalgic and digital.',
         colorClass: 'from-green-300 to-purple-300 dark:from-green-800 dark:to-purple-800',
         iconColor: 'text-purple-600 dark:text-purple-400'
@@ -223,7 +215,7 @@ export const SOUND_PACKS = [
         id: 'snd-crystal',
         name: 'Crystal',
         cost: 400,
-        icon: Icons.Crystal,
+        icon: Icons.Gem,
         description: 'Pure, resonant chimes. Sharp, clear, and bright.',
         colorClass: 'from-cyan-100 to-blue-100 dark:from-cyan-900 dark:to-blue-900',
         iconColor: 'text-cyan-600 dark:text-cyan-300'
@@ -241,7 +233,7 @@ export const SOUND_PACKS = [
         id: 'snd-piano', 
         name: 'Piano', 
         cost: 700, 
-        icon: Icons.Music, 
+        icon: Icons.Piano,
         description: 'Rich, melodic piano notes. Create harmony while you play.',
         colorClass: 'from-indigo-200 to-violet-200 dark:from-indigo-800 dark:to-violet-800',
         iconColor: 'text-indigo-700 dark:text-indigo-300'
@@ -250,7 +242,7 @@ export const SOUND_PACKS = [
         id: 'snd-koto',
         name: 'Koto',
         cost: 700,
-        icon: Icons.Flower,
+        icon: Icons.Koto,
         description: 'Traditional Japanese strings. Sharp, resonant, and Zen.',
         colorClass: 'from-emerald-200 to-teal-200 dark:from-emerald-900 dark:to-teal-900',
         iconColor: 'text-emerald-700 dark:text-emerald-300'

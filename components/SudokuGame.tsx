@@ -599,7 +599,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
              transition={{ duration: 1, delay: 0.3 }}
              className="mt-8 mb-4 pointer-events-none"
          >
-             <span className="text-xs font-light text-stone-400 dark:text-stone-500 tracking-wide">Tap here to deselect</span>
+             <span className="text-xs font-light text-stone-500 dark:text-stone-400 tracking-wide">Tap here to deselect</span>
          </motion.div>
       </div>
 

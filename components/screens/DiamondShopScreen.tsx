@@ -128,7 +128,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     </div>
                                 </div>
 
-                                <div className="px-4 py-3 border-t border-stone-200/80 dark:border-stone-800 flex items-center justify-between bg-stone-50/70 dark:bg-white/[0.02]">
+                                <div className="px-4 py-3 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between bg-stone-50 dark:bg-stone-900">
                                     <div className="flex items-center gap-1.5">
                                         <span className="text-sm font-bold text-t-primary">Unlock Pepino</span>
                                         <Icons.Next className="w-4 h-4 text-t-secondary" />
@@ -148,7 +148,6 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                 disabled={starterPackPurchased}
                                 className={`w-full bg-t-surface rounded-3xl shadow-sm border border-stone-200/80 dark:border-stone-800 text-left transition-all overflow-hidden relative ${starterPackPurchased ? 'opacity-60 cursor-default' : 'active:scale-[0.99]'}`}
                             >
-                                <div className="absolute -right-10 -top-10 w-32 h-32 bg-amber-100/40 dark:bg-amber-950/20 rounded-full blur-2xl pointer-events-none" />
 
                                 <div className="p-4 pb-3">
                                     <div className="relative flex items-center justify-between gap-3 mb-4">
@@ -189,7 +188,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     </div>
                                 </div>
 
-                                <div className="relative px-4 py-3 border-t border-stone-200/80 dark:border-stone-800 flex items-center justify-between bg-stone-50/70 dark:bg-white/[0.02]">
+                                <div className="relative px-4 py-3 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between bg-stone-50 dark:bg-stone-900">
                                     <div className="flex items-center gap-1.5">
                                         <span className="text-sm font-bold text-t-primary">{starterPackPurchased ? 'Starter Pack' : 'Unlock Starter Pack'}</span>
                                         {!starterPackPurchased && <Icons.Next className="w-4 h-4 text-t-secondary" />}
@@ -217,7 +216,6 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         onClick={() => onBuyOffer(offer)}
                                         className={`relative overflow-hidden bg-t-surface rounded-3xl p-3.5 min-h-[148px] flex flex-col items-center justify-between text-center shadow-sm border active:scale-[0.98] transition-transform ${isBestValue ? 'border-blue-300 dark:border-blue-800' : 'border-stone-200/80 dark:border-stone-800'}`}
                                     >
-                                        <div className={`absolute w-24 h-24 rounded-full blur-2xl pointer-events-none ${isBestValue ? 'bg-blue-200/40 dark:bg-blue-900/20 -top-10 -right-8' : 'bg-blue-100/30 dark:bg-blue-950/20 -top-12 -left-8'}`} />
                                         {isBestValue && (
                                             <span className="absolute top-3 right-3 text-[8px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 px-2 py-1 rounded-full">Best value</span>
                                         )}

@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icons } from '../ui/Icons';
 import { sounds } from '../../utils/sound';
-import { STATIC_BACKGROUNDS, DYNAMIC_BACKGROUNDS, NUMBER_COLORS, SKILLS, SOUND_PACKS } from '../../utils/constants';
+import { STATIC_BACKGROUNDS, NUMBER_COLORS, SKILLS, SOUND_PACKS } from '../../utils/constants';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -178,15 +178,15 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                     <p className="text-[10px] font-semibold text-stone-600 dark:text-stone-300 leading-[1.15] line-clamp-2">{skill.description}</p>
                                 </div>
 
-                                <div className="shrink-0 w-[68px] flex justify-end">
+                                <div className={`shrink-0 flex justify-end ${skill.cost >= 1000 ? 'w-[84px]' : 'w-[68px]'}`}>
                                     {isPurchased ? (
                                             <div className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ease-out ${isEnabled ? 'bg-stone-600 dark:bg-stone-400' : 'bg-stone-300 dark:bg-stone-700'}`}>
                                                 <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-transform duration-300 ease-out ${isEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
                                             </div>
                                     ) : (
-                                            <div className="flex items-center justify-center bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 h-9 px-3.5 rounded-full min-w-[72px] gap-1.5 shadow-sm">
+                                            <div className={`flex items-center justify-center bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 h-9 rounded-full gap-1.5 shadow-sm ${skill.cost >= 1000 ? 'min-w-[84px] px-3' : 'min-w-[72px] px-3.5'}`}>
                                                 <span className="text-[13px] font-bold text-t-primary leading-none pt-0.5">{skill.cost}</span>
-                                                <Icons.Diamond className="w-3.5 h-3.5 text-blue-500 fill-current" />
+                                                <Icons.Diamond className="w-3 h-3 shrink-0 text-blue-500 fill-current" />
                                             </div>
                                     )}
                                 </div>
@@ -212,37 +212,10 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                             <div className="flex flex-col items-center gap-1.5">
                                 <button 
                                     onClick={() => isPurchased ? onSelectBackground(bg.id) : onPurchase(bg, 'bg')} 
-                                    className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 bg-gradient-to-t from-stone-200 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 z-10' : 'border-transparent'}`}
+                                    className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 bg-gradient-to-t from-stone-100 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 z-10' : 'border-transparent'}`}
                                 >
                                     <div className={`flex-1 relative overflow-hidden ${bg.class}`}>
                                             <div className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-500" style={{ opacity: bg.id === 'bg-default' ? 'calc(var(--overlay-opacity) * 0.6)' : 'calc(var(--overlay-opacity) * 1.6)' }} />
-                                    </div>
-                                    <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={bg.cost} />
-                                </button>
-                                <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{bg.name}</span>
-                            </div>
-                        </StoreItemWrapper>
-                    );
-                })}</div>
-            </div>
-            <div className="mb-2">
-                <h3 className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-widest mb-3 ml-1">Atmosphere</h3>
-                <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{DYNAMIC_BACKGROUNDS.map((bg, idx) => {
-                    const isPurchased = purchasedBackgrounds.includes(bg.id);
-                    const isSelected = selectedBackgroundId === bg.id;
-                    const delay = activeTab === 'all' ? (3 + STATIC_BACKGROUNDS.length + idx) * 5 : (STATIC_BACKGROUNDS.length + idx) * 5;
-                    return (
-                        <StoreItemWrapper delay={delay} key={bg.id}>
-                            <div className="flex flex-col items-center gap-1.5">
-                                <button 
-                                    onClick={() => isPurchased ? onSelectBackground(bg.id) : onPurchase(bg, 'bg')} 
-                                    className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 bg-gradient-to-t from-stone-200 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 z-10' : 'border-transparent'}`}
-                                >
-                                    <div 
-                                    className={`store-atmosphere-preview flex-1 relative overflow-hidden ${bg.class}`}
-                                    style={{ backgroundSize: '300% 300%' }}
-                                    >
-                                            <div className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-500" style={{ opacity: 'calc(var(--overlay-opacity) * 1.6)' }} />
                                     </div>
                                     <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={bg.cost} />
                                 </button>
@@ -265,7 +238,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                 const PackIcon = pack.icon;
                 
                 const delay = activeTab === 'all' 
-                    ? (3 + STATIC_BACKGROUNDS.length + DYNAMIC_BACKGROUNDS.length + idx) * 5 
+                    ? (3 + STATIC_BACKGROUNDS.length + idx) * 5
                     : idx * 5;
                 
                 return (
@@ -286,8 +259,8 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 onClick={(e) => handleSoundPackClick(e, pack)} 
                                 className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all bg-gradient-to-t from-stone-100 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 shadow-md' : 'border-transparent active:scale-95'}`}
                             >
-                                <div className={`flex-1 flex items-center justify-center relative z-10 overflow-hidden`}>
-                                    <PackIcon className={`w-8 h-8 ${pack.iconColor} relative z-20`} />
+                                <div className="flex-1 flex items-center justify-center relative z-10 overflow-hidden">
+                                    <PackIcon className={`w-8 h-8 ${pack.iconColor} stroke-[2.25]`} />
                                 </div>
                                 <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={pack.cost} />
                             </button>
@@ -308,7 +281,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                 const isSelected = selectedNumberColorId === num.id;
                 
                 const delay = activeTab === 'all'
-                    ? (3 + STATIC_BACKGROUNDS.length + DYNAMIC_BACKGROUNDS.length + SOUND_PACKS.length + idx) * 5
+                    ? (3 + STATIC_BACKGROUNDS.length + SOUND_PACKS.length + idx) * 5
                     : idx * 5;
                 
                 return (

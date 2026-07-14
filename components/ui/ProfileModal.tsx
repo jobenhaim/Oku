@@ -60,7 +60,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
     return (
         <div className={`fixed inset-0 z-[999] bg-stone-900/35 flex items-end sm:items-center justify-center ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={handleClose}>
             <div className={`bg-stone-50 dark:bg-stone-900 border border-white/80 dark:border-stone-700 w-full max-w-sm rounded-t-[2.25rem] sm:rounded-[2.25rem] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden pb-safe relative ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} onClick={e => e.stopPropagation()}>
-                <div className="absolute -top-16 -right-12 w-52 h-52 rounded-full bg-sky-200/25 blur-3xl pointer-events-none" />
                 
                 {/* Header */}
                 <div className="flex justify-center items-center px-6 pt-6 pb-2 shrink-0 z-10 relative">
@@ -153,7 +152,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
                             className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-sm w-full p-3.5 rounded-2xl flex items-center justify-between transition-all duration-300 active:scale-[0.98]"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-white/75 dark:bg-white/10 shadow-sm flex items-center justify-center">
+                                <div className="p-2 rounded-xl bg-stone-100 dark:bg-stone-700 shadow-sm flex items-center justify-center">
                                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                                         <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/>
                                         <path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 0 1-6.723-4.823l-4.04 3.067A11.965 11.965 0 0 0 12 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/>
@@ -169,7 +168,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
                             {showCloudToast ? (
                                 <span className="text-[10px] font-bold text-blue-500 bg-blue-500/10 px-2 py-1 rounded-md animate-fade-in">Coming Soon</span>
                             ) : (
-                                <div className="bg-white/55 dark:bg-white/10 p-1.5 rounded-full text-t-icon">
+                                <div className="bg-stone-100 dark:bg-stone-700 p-1.5 rounded-full text-t-icon">
                                     <Icons.Next className="w-3 h-3" />
                                 </div>
                             )}
