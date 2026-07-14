@@ -224,7 +224,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     const isOneVisible = visibleDifficulties.length === 1;
 
     // Common style without hover/active scales
-    const BTN_BG_DEFAULT = "oku-main-glass";
+    const BTN_BG_DEFAULT = "oku-difficulty-glass";
     const BTN_TEXT_DEFAULT = "text-stone-900 dark:text-white";
     const COMMON_BTN_STYLE = `h-14 px-3 rounded-2xl flex items-center justify-center gap-2 transition group whitespace-nowrap`;
 
@@ -310,7 +310,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                             sounds.playClick(); 
                             if (onContinue) onContinue(lastPlayedGame.difficulty, lastPlayedGame.levelId);
                         }}
-                        className="oku-main-glass relative flex items-center justify-center gap-3 w-[55%] py-3 px-5 rounded-2xl text-blue-600 dark:text-blue-400 active:scale-95"
+                        className="oku-difficulty-glass relative flex items-center justify-center gap-3 w-[55%] py-3 px-5 rounded-2xl text-blue-600 dark:text-blue-400 active:scale-95"
                       >
                           <div className="flex flex-col items-center text-center">
                               <span className="text-sm font-bold leading-none">Continue Game</span>
@@ -368,7 +368,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                               style={{ width: '47.5%' }}
                               className={`${COMMON_BTN_STYLE} ${
                                   !!timeLeft 
-                                  ? 'oku-main-glass text-stone-500 dark:text-stone-400 cursor-not-allowed opacity-60'
+                                  ? 'oku-difficulty-glass text-stone-500 dark:text-stone-400 cursor-not-allowed opacity-60'
                                   : `${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} active:scale-95 hover:brightness-105`
                               }`}
                           >
