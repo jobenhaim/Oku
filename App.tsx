@@ -593,7 +593,14 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                  className={`relative z-10 w-full h-full flex flex-col transition-all duration-500 ${showWelcomeGift ? 'blur-sm pointer-events-none' : ''}`}
               >
                 <div className="flex-1 relative w-full h-full overflow-hidden">
-                    <AnimatePresence custom={direction} initial={false} mode="sync">
+                    {/*
+                      Keep full-screen views from cross-fading over one another.
+                      iOS WebKit has to composite both complete screens during a
+                      synchronous fade, which causes visible dropped frames on
+                      physical devices. "wait" gives us the intended 0.3s out +
+                      0.3s in transition without that expensive overlap.
+                    */}
+                    <AnimatePresence custom={direction} initial={false} mode="wait">
                         {screen === 'splash' && (
                             <motion.div
                                 key="splash"
