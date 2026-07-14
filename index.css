@@ -107,6 +107,27 @@
   border-color: rgba(255, 255, 255, 0.14);
 }
 
+/* Shared lightweight segmented control for Market and Stats. No backdrop blur. */
+.oku-segmented-control {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(231, 229, 228, 0.9);
+  box-shadow: 0 2px 8px rgba(41, 37, 36, 0.06);
+}
+
+.dark .oku-segmented-control {
+  background: rgba(38, 38, 38, 0.94);
+  border-color: rgba(87, 83, 78, 0.75);
+}
+
+.oku-segmented-pill {
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(41, 37, 36, 0.10);
+}
+
+.dark .oku-segmented-pill {
+  background: #57534e;
+}
+
 /* SAFE HIGH-PERFORMANCE THEME TRANSITIONS
    Only transition specific classes that are bound to the theme variables, avoiding any interference with Framer Motion, animations, or layout. */
 html, body, #root,

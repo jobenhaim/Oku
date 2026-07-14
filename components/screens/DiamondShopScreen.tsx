@@ -69,7 +69,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     return (
         <div className="flex-1 w-full flex flex-col items-center overflow-hidden relative animate-fade-in-fast">
             <div className="w-full max-w-md flex items-center justify-between px-6 pt-4 pb-4 relative shrink-0 z-20 mx-auto">
-                <button onClick={onBack} aria-label="Back" className="oku-main-glass p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-90 transition-transform">
+                <button onClick={onBack} aria-label="Back" className="p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-90 transition-transform">
                     <Icons.Back className="w-6 h-6 text-t-icon" />
                 </button>
 
@@ -78,7 +78,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                     <p className="text-t-secondary text-[10px] font-bold tracking-widest uppercase mt-1">Shop</p>
                 </div>
 
-                <div className="oku-main-glass flex items-center gap-1.5 px-3 py-2 rounded-full relative z-30">
+                <div className="flex items-center gap-1.5 bg-t-surface px-3 py-2 rounded-full shadow-sm relative z-30 border border-stone-200/60 dark:border-stone-800">
                     <AnimatedNumber value={points} className="text-sm font-bold text-t-primary tabular-nums" />
                     <Icons.Diamond className="w-3 h-3 text-blue-500 fill-current" />
                 </div>

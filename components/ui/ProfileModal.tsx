@@ -58,8 +58,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
     const ActiveIcon = activeOption.icon;
 
     return (
-        <div className={`fixed inset-0 z-[999] bg-stone-900/15 backdrop-blur-md flex items-end sm:items-center justify-center ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={handleClose}>
-            <div className={`oku-profile-sheet w-full max-w-sm rounded-t-[2.25rem] sm:rounded-[2.25rem] flex flex-col max-h-[90vh] overflow-hidden pb-safe relative ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} onClick={e => e.stopPropagation()}>
+        <div className={`fixed inset-0 z-[999] bg-stone-900/35 flex items-end sm:items-center justify-center ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={handleClose}>
+            <div className={`bg-stone-50 dark:bg-stone-900 border border-white/80 dark:border-stone-700 w-full max-w-sm rounded-t-[2.25rem] sm:rounded-[2.25rem] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden pb-safe relative ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} onClick={e => e.stopPropagation()}>
                 <div className="absolute -top-16 -right-12 w-52 h-52 rounded-full bg-sky-200/25 blur-3xl pointer-events-none" />
                 
                 {/* Header */}
@@ -68,7 +68,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
                         <p className="text-[9px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-[0.32em] mb-1.5">Oku</p>
                         <h3 className="text-xl font-bold text-t-primary leading-none">My Profile</h3>
                     </div>
-                    <button onClick={handleClose} aria-label="Close profile" className="oku-profile-panel absolute right-5 top-5 p-2 rounded-full text-t-primary active:scale-95 transition">
+                    <button onClick={handleClose} aria-label="Close profile" className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-sm absolute right-5 top-5 p-2 rounded-full text-t-primary active:scale-95 transition">
                         <Icons.Close className="w-5 h-5" />
                     </button>
                 </div>
@@ -86,7 +86,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
                         </div>
 
                         {isSelectingAvatar && (
-                            <div className="oku-profile-panel flex flex-wrap justify-center gap-3 animate-fade-in p-4 rounded-2xl w-full">
+                            <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex flex-wrap justify-center gap-3 animate-fade-in p-4 rounded-2xl w-full">
                                 {AVATAR_OPTIONS.map((opt, idx) => {
                                     const Icon = opt.icon;
                                     return (
@@ -129,7 +129,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
                     </div>
 
                     {/* Stats Overview */}
-                    <div className="oku-profile-panel rounded-[1.75rem] grid grid-cols-2 px-2 py-5">
+                    <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-sm rounded-[1.75rem] grid grid-cols-2 px-2 py-5">
                         <div className="flex flex-col items-center text-center px-3 border-r border-stone-200/70 dark:border-white/10">
                             <div className="w-9 h-9 bg-amber-100 dark:bg-amber-400/15 rounded-full flex items-center justify-center mb-2.5">
                                 <Icons.Trophy className="w-4 h-4 text-amber-500" />
@@ -150,7 +150,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
                     <div>
                         <button 
                             onClick={handleCloudClick}
-                            className="oku-profile-panel w-full p-3.5 rounded-2xl flex items-center justify-between transition-all duration-300 active:scale-[0.98]"
+                            className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-sm w-full p-3.5 rounded-2xl flex items-center justify-between transition-all duration-300 active:scale-[0.98]"
                         >
                             <div className="flex items-center gap-3">
                                 <div className="p-2 rounded-xl bg-white/75 dark:bg-white/10 shadow-sm flex items-center justify-center">

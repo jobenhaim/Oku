@@ -143,7 +143,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
         // If not purchased, always show price
         if (!isPurchased) {
             return (
-                <div className="h-6 bg-white/45 dark:bg-black/25 border-t border-white/70 dark:border-white/10 backdrop-blur-xl flex items-center justify-center gap-0.5 shrink-0 relative z-10">
+                <div className="h-6 bg-white dark:bg-stone-800 border-t border-stone-200 dark:border-stone-700 flex items-center justify-center gap-0.5 shrink-0 relative z-10">
                     <span className="text-[13px] font-bold text-stone-900 dark:text-white leading-none pt-0.5">{cost}</span>
                     <Icons.Diamond className="w-3 h-3 text-blue-500 fill-current" />
                 </div>
@@ -167,9 +167,9 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                         <StoreItemWrapper delay={delay} key={skill.id}>
                             <button 
                                 onClick={(e) => handleSkillInteraction(e, skill)}
-                                className="oku-main-glass w-full h-[74px] px-3 py-2 rounded-[1.25rem] flex items-center gap-3 text-left active:scale-[0.98] transition-all relative overflow-hidden group"
+                                className="w-full h-[74px] px-3 py-2 rounded-[1.25rem] shadow-sm flex items-center gap-3 text-left active:scale-[0.98] transition-all bg-t-surface relative overflow-hidden group"
                             >
-                                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-white/75 dark:bg-white/10 border border-white/90 dark:border-white/15 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,1),0_3px_10px_rgba(68,64,60,0.07)] transition-transform group-active:scale-95">
+                                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 shadow-sm transition-transform group-active:scale-95">
                                     <SkillIcon className={`w-6 h-6 ${skill.class}`} />
                                 </div>
 
@@ -184,7 +184,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                                 <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-transform duration-300 ease-out ${isEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
                                             </div>
                                     ) : (
-                                            <div className="flex items-center justify-center bg-white/72 dark:bg-white/10 border border-white/95 dark:border-white/15 backdrop-blur-xl h-9 px-3.5 rounded-full min-w-[72px] gap-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_3px_10px_rgba(68,64,60,0.08)]">
+                                            <div className="flex items-center justify-center bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 h-9 px-3.5 rounded-full min-w-[72px] gap-1.5 shadow-sm">
                                                 <span className="text-[13px] font-bold text-t-primary leading-none pt-0.5">{skill.cost}</span>
                                                 <Icons.Diamond className="w-3.5 h-3.5 text-blue-500 fill-current" />
                                             </div>
@@ -212,7 +212,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                             <div className="flex flex-col items-center gap-1.5">
                                 <button 
                                     onClick={() => isPurchased ? onSelectBackground(bg.id) : onPurchase(bg, 'bg')} 
-                                    className={`oku-main-glass w-full aspect-square rounded-2xl flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 ${isSelected ? 'oku-store-selected scale-105 z-10' : ''}`}
+                                    className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 bg-gradient-to-t from-stone-200 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 z-10' : 'border-transparent'}`}
                                 >
                                     <div className={`flex-1 relative overflow-hidden ${bg.class}`}>
                                             <div className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-500" style={{ opacity: bg.id === 'bg-default' ? 'calc(var(--overlay-opacity) * 0.6)' : 'calc(var(--overlay-opacity) * 1.6)' }} />
@@ -236,7 +236,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                             <div className="flex flex-col items-center gap-1.5">
                                 <button 
                                     onClick={() => isPurchased ? onSelectBackground(bg.id) : onPurchase(bg, 'bg')} 
-                                    className={`oku-main-glass w-full aspect-square rounded-2xl flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 ${isSelected ? 'oku-store-selected scale-105 z-10' : ''}`}
+                                    className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 bg-gradient-to-t from-stone-200 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 z-10' : 'border-transparent'}`}
                                 >
                                     <div 
                                     className={`flex-1 relative overflow-hidden ${bg.class}`} 
@@ -284,7 +284,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
 
                             <button 
                                 onClick={(e) => handleSoundPackClick(e, pack)} 
-                                className={`oku-main-glass w-full aspect-square rounded-2xl flex flex-col items-stretch relative overflow-hidden transition-all ${isSelected ? 'oku-store-selected scale-105' : 'active:scale-95'}`}
+                                className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all bg-gradient-to-t from-stone-100 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 shadow-md' : 'border-transparent active:scale-95'}`}
                             >
                                 <div className={`flex-1 flex items-center justify-center relative z-10 overflow-hidden`}>
                                     <PackIcon className={`w-8 h-8 ${pack.iconColor} relative z-20`} />
@@ -316,7 +316,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                         <div className="flex flex-col items-center gap-1.5">
                             <button 
                                 onClick={() => isPurchased ? onSelectNumberColor(num.id) : onPurchase(num, 'num')} 
-                                className={`oku-main-glass w-full aspect-square rounded-2xl flex flex-col items-stretch relative overflow-hidden transition-all ${isSelected ? 'oku-store-selected scale-105 z-10' : 'active:scale-95'}`}
+                                className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all bg-gradient-to-t from-stone-100 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 z-10' : 'border-transparent active:scale-95'}`}
                             >
                                 <div className={`flex-1 flex items-center justify-center w-full`}>
                                     <span className={`text-3xl font-bold ${num.uiClass}`}>5</span>
@@ -360,7 +360,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
              {/* Header */}
              <div className="w-full max-w-md flex flex-col px-6 pt-4 pb-2 relative shrink-0 z-20 gap-4">
                 <div className="flex items-center justify-between w-full mb-2">
-                    <button onClick={onBack} className="oku-main-glass p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
+                    <button onClick={onBack} aria-label="Back to menu" className="p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
                         <Icons.Back className="w-6 h-6 text-t-icon" />
                     </button>
                     
@@ -369,14 +369,14 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                         <p className="text-t-secondary text-[10px] font-bold tracking-widest uppercase mt-1">Personalize</p>
                     </div>
 
-                    <div className="oku-main-glass flex items-center gap-1 px-3 py-2 rounded-full relative z-30">
+                    <div className="flex items-center gap-1 bg-t-surface px-3 py-2 rounded-full shadow-sm relative z-30">
                           <AnimatedNumber value={points} className="text-sm font-bold text-t-primary tabular-nums" />
                           <div className="text-blue-500"><Icons.Diamond className="w-3 h-3 fill-current" /></div>
                     </div>
                 </div>
 
                 {/* Cleaner Category Tabs (Segmented Control Style) */}
-                <div className="oku-main-glass w-full p-1 rounded-xl flex items-center mt-2 relative">
+                <div className="oku-segmented-control w-full p-1 rounded-xl flex items-center mt-2 relative">
                     {TABS.map((tab) => {
                         const isActive = activeTab === tab.id;
                         return (
@@ -395,7 +395,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 {isActive && (
                                     <motion.div 
                                         layoutId="activeTabPill"
-                                        className="absolute inset-0 bg-white/70 dark:bg-white/10 backdrop-blur-xl rounded-lg shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_8px_rgba(45,55,72,0.12)] ring-1 ring-white/80 dark:ring-white/15 z-10"
+                                        className="oku-segmented-pill absolute inset-0 rounded-lg z-10"
                                         transition={{ type: "spring", stiffness: 350, damping: 30 }}
                                     />
                                 )}

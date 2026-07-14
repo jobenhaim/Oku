@@ -263,7 +263,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                 
                 {/* Header Row */}
                 <div className="w-full flex items-center justify-between relative">
-                    <button onClick={onBack} aria-label="Back to difficulties" className="oku-main-glass p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
+                    <button onClick={onBack} aria-label="Back to difficulties" className="p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
                         <Icons.Back className="w-6 h-6 text-t-icon" />
                     </button>
                     
@@ -277,7 +277,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                         )}
                     </div>
 
-                    <div className="oku-main-glass flex items-center gap-1.5 px-3 py-1.5 rounded-full relative z-30">
+                    <div className="flex items-center gap-1.5 bg-t-surface px-3 py-1.5 rounded-full shadow-sm relative z-30">
                         <AnimatedNumber value={points} className="text-sm font-semibold text-t-primary tabular-nums leading-none pt-0.5" />
                         <div className="text-blue-500"><Icons.Diamond className="w-3.5 h-3.5 fill-current" /></div>
                     </div>

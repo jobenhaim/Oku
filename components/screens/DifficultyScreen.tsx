@@ -241,13 +241,6 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
         <div 
             className="flex-1 w-full flex flex-col items-center overflow-hidden" 
         >
-             <style>{`
-                @keyframes diamond-scroll {
-                    from { background-position: 0 0; }
-                    to { background-position: 0 20px; }
-                }
-             `}</style>
-
              <div className="flex-1 w-full overflow-hidden px-6 pb-6 pt-4 flex flex-col items-center min-h-0">
                   
                   <div className="flex flex-col items-center mb-8 shrink-0 pt-4">
@@ -352,7 +345,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                           <button 
                             onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenDiamondShop(); }} 
                             style={{ width: '47.5%' }}
-                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} relative overflow-visible shadow-sm active:scale-95`}
+                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} relative overflow-visible active:scale-95`}
                           >
                               {hasPendingPepinoGift && (
                                 <div className="absolute -top-1.5 -right-1.5 z-50 animate-pop">
@@ -362,15 +355,6 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                 </div>
                               )}
 
-                              <div 
-                                className="absolute inset-0 opacity-[0.05] pointer-events-none overflow-hidden rounded-2xl"
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 2 L18 10 L10 18 L2 10 Z' fill='none' stroke='%23000000' stroke-width='1.5'/%3E%3C/svg%3E")`,
-                                    backgroundSize: '20px 20px',
-                                    animation: 'diamond-scroll 4s linear infinite'
-                                }}
-                              />
-                              
                               <div className="relative z-10 flex items-center gap-2">
                                   <Icons.Diamond className="w-5 h-5" />
                                   <span className="font-bold tracking-wide">Diamonds</span> 

@@ -458,7 +458,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       >
           <div className="w-full max-w-md flex items-center justify-between relative">
               {/* Left Column: Back Button */}
-              <button onClick={onBack} aria-label="Back to levels" className="oku-main-glass p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
+              <button onClick={onBack} aria-label="Back to levels" className="p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
                   <Icons.Back className="w-6 h-6" />
               </button>
 
@@ -485,10 +485,10 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                           <Icons.Dev className="w-6 h-6" />
                       </button>
                   )}
-                  <button onClick={() => { sounds.playClick(); setIsPaused(true); }} aria-label="Pause game" className="oku-main-glass p-2 rounded-full transition text-t-icon active:scale-95">
+                  <button onClick={() => { sounds.playClick(); setIsPaused(true); }} aria-label="Pause game" className="p-2 rounded-full transition text-t-icon active:scale-95">
                       <Icons.Pause className="w-6 h-6" />
                   </button>
-                  <button onClick={onSettingsOpen} aria-label="Game settings" className="oku-main-glass p-2 rounded-full transition text-t-icon active:scale-95">
+                  <button onClick={onSettingsOpen} aria-label="Game settings" className="p-2 rounded-full transition text-t-icon active:scale-95">
                       <Icons.Settings className="w-6 h-6" />
                   </button>
               </div>
@@ -510,7 +510,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                      transition={{ duration: 1.0, ease: "easeInOut" }}
                      className="pointer-events-none text-center px-4"
                  >
-                     <span className="text-[11px] md:text-xs font-semibold text-stone-600 dark:text-stone-700 bg-stone-50 dark:bg-stone-100 border border-stone-200/80 px-4 py-1.5 rounded-full backdrop-blur-md inline-flex items-center gap-1.5 leading-none shadow-md">
+                     <span className="text-[11px] md:text-xs font-semibold text-stone-600 dark:text-stone-700 bg-stone-50 dark:bg-stone-100 border border-stone-200/80 px-4 py-1.5 rounded-full inline-flex items-center gap-1.5 leading-none shadow-md">
                          Errors won't be revealed automatically,
                          <span className="inline-flex items-center gap-1 text-red-500 font-bold">
                              <Icons.Scan className="w-3.5 h-3.5 shrink-0 text-red-500" />
@@ -610,7 +610,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-white/85 dark:bg-stone-950/85 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-white/95 dark:bg-stone-950/95"
           >
               <div className="w-full max-w-[240px] flex flex-col items-center text-center relative z-10">
                   <AnimatePresence mode="wait">
@@ -621,7 +621,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className="oku-main-glass w-[240px] flex flex-col items-center rounded-[2rem] px-5 py-6"
+                            className="w-[240px] flex flex-col items-center rounded-[2rem] px-5 py-6 bg-white dark:bg-stone-900 shadow-xl"
                           >
                             {/* Smaller, cleaner title */}
                             <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-6 tracking-tight">Paused</h2>
@@ -633,7 +633,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                                 </button>
                                 
                                 {/* Restart - Secondary (Subtle) */}
-                                <button onClick={() => { sounds.playClick(); setShowRestartConfirm(true); }} className="oku-main-glass w-full h-14 text-stone-700 dark:text-stone-200 rounded-2xl font-bold text-base active:scale-95 transition-all flex items-center justify-center gap-2.5">
+                                <button onClick={() => { sounds.playClick(); setShowRestartConfirm(true); }} className="w-full h-14 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 rounded-2xl font-bold text-base active:scale-95 transition-all flex items-center justify-center gap-2.5">
                                     <Icons.Reset className="w-5 h-5" /> Restart
                                 </button>
                             </div>
@@ -645,7 +645,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className="oku-main-glass w-[240px] flex flex-col items-center rounded-[2rem] px-5 py-6"
+                            className="w-[240px] flex flex-col items-center rounded-[2rem] px-5 py-6 bg-white dark:bg-stone-900 shadow-xl"
                           >
                              <div className="space-y-1 mb-5 w-full">
                                 <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 leading-tight">Restart Level?</h3>
@@ -658,7 +658,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                                     Restart
                                  </button>
                                  {/* Cancel */}
-                                 <button onClick={() => { sounds.playClick(); setShowRestartConfirm(false); }} className="oku-main-glass w-full h-14 text-stone-700 dark:text-stone-200 rounded-2xl font-bold text-base active:scale-95 transition-all flex items-center justify-center">
+                                 <button onClick={() => { sounds.playClick(); setShowRestartConfirm(false); }} className="w-full h-14 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 rounded-2xl font-bold text-base active:scale-95 transition-all flex items-center justify-center">
                                     Cancel
                                  </button>
                              </div>
