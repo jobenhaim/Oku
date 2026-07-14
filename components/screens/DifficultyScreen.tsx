@@ -115,23 +115,6 @@ const DifficultyCard: React.FC<{
     const animatedCompleted = useAnimatedCounter(completed, 1500, 200, celebrateProgress);
     const progressPercent = Math.min((animatedCompleted / maxLevels) * 100, 100);
 
-    useEffect(() => {
-        if (!celebrateProgress || completed <= 0) return;
-
-        let stopEffect: (() => void) | undefined;
-        const startTimer = window.setTimeout(() => {
-            stopEffect = sounds.playDifficultyProgressHaptics(
-                Math.min(completed, maxLevels),
-                1.5
-            );
-        }, 200);
-
-        return () => {
-            window.clearTimeout(startTimer);
-            stopEffect?.();
-        };
-    }, [celebrateProgress, completed, maxLevels]);
-
     const defaultStyle: React.CSSProperties = {
         width: '47.5%',
         aspectRatio: '1.91/1', 

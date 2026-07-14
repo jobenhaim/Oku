@@ -44,7 +44,6 @@ const LevelButton = React.memo(({ levelId, index, status, bestTime, isGlobalBest
             className={buttonClass}
         >
             <div className="absolute inset-0 flex items-center justify-center"><span className="font-bold text-2xl leading-none">{levelId}</span></div>
-            {isSolved ? <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/85 text-[10px] font-black leading-none text-white shadow-sm">✓</span> : null}
             {isSolved ? (
                 isGlobalBest ? (
                     <>
@@ -56,8 +55,7 @@ const LevelButton = React.memo(({ levelId, index, status, bestTime, isGlobalBest
                         </div>
                     </>
                 ) : (
-                    <div className="absolute inset-x-0 bottom-1.5 flex flex-col items-center gap-0.5">
-                        <span className="text-[8px] font-bold tracking-widest text-emerald-600 dark:text-emerald-300">WON</span>
+                    <div className="absolute inset-x-0 bottom-1.5 text-center">
                         {bestTime ? <span className="text-[10px] font-bold tracking-tight block text-t-secondary">{formatTimeShort(bestTime)}</span> : null}
                     </div>
                 )

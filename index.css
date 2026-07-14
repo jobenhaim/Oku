@@ -116,8 +116,8 @@
 
 /* Level tiles share the quiet locked-pack surface across every pack. */
 .oku-level-surface {
-  background: rgba(255, 255, 255, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.56);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
@@ -125,9 +125,9 @@
 }
 
 .oku-level-surface-solved {
-  background: rgba(220, 248, 233, 0.42);
-  border-color: rgba(76, 175, 125, 0.38);
-  color: #57534e;
+  background: rgba(245, 244, 242, 0.72);
+  border-color: rgba(168, 162, 158, 0.3);
+  color: #a8a29e;
 }
 
 .oku-level-surface-progress {
@@ -136,7 +136,7 @@
 }
 
 .oku-level-surface-solved .text-t-secondary {
-  color: #57534e;
+  color: #a8a29e;
 }
 
 .oku-level-surface-solved .text-amber-500 {
@@ -152,9 +152,9 @@
 }
 
 .dark .oku-level-surface-solved {
-  background: rgba(94, 170, 125, 0.2);
-  border-color: rgba(110, 220, 170, 0.35);
-  color: #f5f5f4;
+  background: rgba(168, 162, 158, 0.24);
+  border-color: rgba(168, 162, 158, 0.22);
+  color: #d6d3d1;
 }
 
 .dark .oku-level-surface-progress {
