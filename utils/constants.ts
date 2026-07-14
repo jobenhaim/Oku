@@ -145,7 +145,7 @@ export const DYNAMIC_BACKGROUNDS = [
     { id: 'bg-horizon', name: 'Canopy', cost: 300, class: 'bg-atmosphere-meadow' },
     { id: 'bg-coral', name: 'Sakura', cost: 300, class: 'bg-atmosphere-blush' },
     { id: 'bg-orbit', name: 'Sunroom', cost: 300, class: 'bg-atmosphere-golden' },
-    { id: 'bg-flux', name: 'Snowfall', cost: 300, class: 'bg-atmosphere-platinum' },
+    { id: 'bg-flux', name: 'Fireflies', cost: 300, class: 'bg-atmosphere-platinum' },
 ];
 
 export const ALL_BACKGROUNDS = [...STATIC_BACKGROUNDS, ...DYNAMIC_BACKGROUNDS];

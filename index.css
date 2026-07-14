@@ -566,23 +566,23 @@ html, body {
 }
 
 .bg-atmosphere-platinum {
-  background: linear-gradient(145deg, #f3f7fb 0%, #d8e5f1 48%, #adc4da 100%);
+  background: linear-gradient(145deg, #6f93b5 0%, #8eafc8 48%, #b5cbd9 100%);
   background-size: 165% 165%;
   animation: snowfall-sky 44s ease-in-out infinite;
 }
 
 .bg-atmosphere-platinum::before {
-  background: radial-gradient(ellipse at 18% 62%, rgba(255, 255, 255, .88) 0 14%, transparent 38%), radial-gradient(ellipse at 76% 28%, rgba(238, 248, 255, .8) 0 16%, transparent 42%), radial-gradient(circle at 68% 74%, rgba(112, 151, 186, .18) 0 12%, transparent 38%);
+  background: radial-gradient(ellipse at 18% 62%, rgba(42, 91, 139, .28) 0 14%, transparent 38%), radial-gradient(ellipse at 76% 28%, rgba(36, 106, 158, .22) 0 16%, transparent 42%), radial-gradient(circle at 68% 74%, rgba(25, 67, 107, .16) 0 12%, transparent 38%);
   filter: blur(16px);
   animation: snowfall-haze 24s ease-in-out infinite;
 }
 
 .bg-atmosphere-platinum::after {
   inset: -72px;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, .98) 0 1.4px, rgba(255, 255, 255, .42) 2.5px, transparent 4.2px), radial-gradient(circle, rgba(255, 255, 255, .9) 0 1px, rgba(231, 246, 255, .36) 2.1px, transparent 3.8px), radial-gradient(circle, rgba(255, 255, 255, .96) 0 1.8px, rgba(239, 249, 255, .28) 3px, transparent 5px);
+  background-image: radial-gradient(circle, rgba(255, 248, 202, .98) 0 1.4px, rgba(255, 235, 154, .48) 2.5px, transparent 4.2px), radial-gradient(circle, rgba(255, 252, 222, .94) 0 1px, rgba(255, 230, 141, .38) 2.1px, transparent 3.8px), radial-gradient(circle, rgba(255, 245, 184, .98) 0 1.8px, rgba(255, 222, 117, .30) 3px, transparent 5px);
   background-size: 104px 128px, 149px 112px, 173px 157px;
   background-position: 8px 14px, 56px 37px, 82px 69px;
-  filter: drop-shadow(0 0 3px rgba(255, 255, 255, .5));
+  filter: drop-shadow(0 0 3px rgba(255, 226, 132, .55));
   animation: snowfall-drift 24s linear infinite;
 }
 
@@ -609,6 +609,60 @@ html, body {
 
   .bg-atmosphere-platinum {
     animation: none;
+  }
+}
+
+/* Touch devices get a static atmosphere profile. This avoids recompositing
+   oversized animated layers while two screens are fading during navigation. */
+@media (hover: none) and (pointer: coarse) {
+  .bg-atmosphere-aurora,
+  .bg-atmosphere-meadow,
+  .bg-atmosphere-blush,
+  .bg-atmosphere-golden,
+  .bg-atmosphere-platinum,
+  .bg-atmosphere-aurora::before,
+  .bg-atmosphere-aurora::after,
+  .bg-atmosphere-meadow::before,
+  .bg-atmosphere-meadow::after,
+  .bg-atmosphere-blush::before,
+  .bg-atmosphere-blush::after,
+  .bg-atmosphere-golden::before,
+  .bg-atmosphere-golden::after,
+  .bg-atmosphere-platinum::before,
+  .bg-atmosphere-platinum::after {
+    animation: none !important;
+    filter: none !important;
+    will-change: auto !important;
+  }
+
+  .bg-atmosphere-platinum {
+    background-size: 100% 100%;
+  }
+
+  /* Keep one calm transform animation per atmosphere on phones. */
+  .bg-atmosphere-aurora::before {
+    animation: aurora-ribbon 24s ease-in-out infinite !important;
+    will-change: transform !important;
+  }
+
+  .bg-atmosphere-meadow::before {
+    animation: canopy-breathe 28s ease-in-out infinite !important;
+    will-change: transform !important;
+  }
+
+  .bg-atmosphere-blush::before {
+    animation: sakura-haze 27s ease-in-out infinite !important;
+    will-change: transform, opacity !important;
+  }
+
+  .bg-atmosphere-golden::after {
+    animation: sunroom-glow 34s ease-in-out infinite !important;
+    will-change: transform, opacity !important;
+  }
+
+  .bg-atmosphere-platinum::before {
+    animation: snowfall-haze 30s ease-in-out infinite !important;
+    will-change: transform, opacity !important;
   }
 }
 
