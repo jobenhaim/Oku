@@ -563,7 +563,10 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       opacity: 0,
       pointerEvents: 'none' as any,
       transition: { 
-          duration: 0.3,
+          // Keep only a tiny overlap with the entering screen. A long
+          // full-screen crossfade is expensive in the iOS WebView, but a
+          // zero-duration exit can look abrupt.
+          duration: 0.08,
           ease: [0.16, 1, 0.3, 1],
           pointerEvents: { duration: 0 }
       }
@@ -594,13 +597,12 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
               >
                 <div className="flex-1 relative w-full h-full overflow-hidden">
                     {/*
-                      Keep full-screen views from cross-fading over one another.
-                      iOS WebKit has to composite both complete screens during a
-                      synchronous fade, which causes visible dropped frames on
-                      physical devices. "wait" gives us the intended 0.3s out +
-                      0.3s in transition without that expensive overlap.
+                      Let the next view mount immediately so a nested filter
+                      animation can never block navigation. The outgoing view
+                      fades for just 80ms, leaving the 300ms entering fade as
+                      the visible transition and keeping iOS compositing light.
                     */}
-                    <AnimatePresence custom={direction} initial={false} mode="wait">
+                    <AnimatePresence custom={direction} initial={false} mode="sync">
                         {screen === 'splash' && (
                             <motion.div
                                 key="splash"

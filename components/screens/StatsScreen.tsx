@@ -6,7 +6,7 @@ import { Icons } from '../ui/Icons';
 import { formatTimeShort, getDifficultyPoints } from '../../utils/constants';
 import { sounds } from '../../utils/sound';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface StatsScreenProps {
     onBack: () => void;
@@ -289,16 +289,20 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                             }}
                             className="w-full"
                         >
-                            <AnimatePresence initial={false} custom={direction} mode="popLayout">
-                                <motion.div
-                                    key={selectedDiff}
-                                    custom={direction}
-                                    variants={tabContentVariants}
-                                    initial="enter"
-                                    animate="center"
-                                    exit="exit"
-                                    className="w-full space-y-4"
-                                >
+                            {/*
+                              Keep the selected tab's entrance, but do not run a
+                              nested exit animation. The app-level navigation has
+                              its own sequential exit; overlapping the two could
+                              leave iOS waiting on an invisible filtered panel.
+                            */}
+                            <motion.div
+                                key={selectedDiff}
+                                custom={direction}
+                                variants={tabContentVariants}
+                                initial="enter"
+                                animate="center"
+                                className="w-full space-y-4"
+                            >
                                     {/* Big Stats Grid */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <motion.div variants={cardVariants} className="bg-t-surface p-6 rounded-3xl shadow-sm flex flex-col items-center text-center">
@@ -366,8 +370,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                                             </div>
                                         </div>
                                     </motion.div>
-                                </motion.div>
-                            </AnimatePresence>
+                            </motion.div>
                         </motion.div>
                     </motion.div>
 
