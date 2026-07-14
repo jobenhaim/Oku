@@ -327,7 +327,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
 
     return (
         <div 
-            className="flex-1 w-full flex flex-col items-center overflow-hidden animate-fade-in-fast"
+            className="flex-1 w-full flex flex-col items-center overflow-hidden"
             onClick={handleCloseInfo}
         >
              {/* Header */}

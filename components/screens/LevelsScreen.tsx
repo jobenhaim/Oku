@@ -258,7 +258,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
     };
 
     return (
-        <div className="flex-1 w-full flex flex-col items-center overflow-hidden relative animate-fade-in-fast">
+        <div className="flex-1 w-full flex flex-col items-center overflow-hidden relative">
             <div className="w-full max-w-md flex flex-col items-center px-6 pt-4 shrink-0 z-20 gap-4">
                 
                 {/* Header Row */}

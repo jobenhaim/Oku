@@ -5,7 +5,7 @@ import { SudokuGame } from './components/SudokuGame';
 import { Storage } from './utils/storage';
 import { sounds } from './utils/sound';
 import { getPackCost, NUMBER_COLORS, ALL_BACKGROUNDS } from './utils/constants';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { IAP } from './utils/iap'; // Import IAP Service
 
@@ -25,6 +25,8 @@ import { StatsScreen } from './components/screens/StatsScreen';
 
 type Screen = 'splash' | 'difficulty' | 'levels' | 'game' | 'settings' | 'store' | 'diamondShop' | 'stats';
 
+const SCREEN_SETTLE_MS = 180;
+
 // Inner Application Component that contains all state and logic
 const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset }) => {
   const [screen, setScreen] = useState<Screen>('difficulty');
@@ -32,6 +34,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const [direction, setDirection] = useState<number>(0);
   const [difficultyAnimationKey, setDifficultyAnimationKey] = useState(0);
   const [isScreenTransitioning, setIsScreenTransitioning] = useState(false);
+  const isNavigatingRef = useRef(false);
   const screenTransitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
@@ -207,12 +210,10 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   }, []);
 
   const navigate = (nextScreen: Screen, dir: 'forward' | 'back' | 'none' = 'forward') => {
-      if (screenTransitionTimer.current) clearTimeout(screenTransitionTimer.current);
+      if (nextScreen === screen || isNavigatingRef.current) return;
+
+      isNavigatingRef.current = true;
       setIsScreenTransitioning(true);
-      screenTransitionTimer.current = setTimeout(() => {
-          setIsScreenTransitioning(false);
-          screenTransitionTimer.current = null;
-      }, 650);
       setDirection(dir === 'forward' ? 1 : dir === 'back' ? -1 : 0);
       setPrevScreen(screen);
       if (nextScreen === 'difficulty') {
@@ -220,6 +221,12 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       }
       setScreen(nextScreen);
       setPoints(Storage.getPoints());
+
+      screenTransitionTimer.current = setTimeout(() => {
+          setIsScreenTransitioning(false);
+          isNavigatingRef.current = false;
+          screenTransitionTimer.current = null;
+      }, SCREEN_SETTLE_MS);
   };
 
   const handleDifficultySelect = (diff: Difficulty) => {
@@ -548,28 +555,24 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
   const variants: Variants = {
     initial: {
-      opacity: 0,
+      opacity: 1,
+      y: 6,
       pointerEvents: 'none' as any
     },
     animate: {
       opacity: 1,
+      y: 0,
       pointerEvents: 'auto' as any,
-      transition: { 
-          duration: 0.3,
-          ease: [0.16, 1, 0.3, 1]
+      transition: {
+          y: { duration: SCREEN_SETTLE_MS / 1000, ease: [0.16, 1, 0.3, 1] },
+          pointerEvents: { duration: 0 }
       }
     },
     exit: {
-      opacity: 0,
+      opacity: 1,
+      y: 0,
       pointerEvents: 'none' as any,
-      transition: { 
-          // Keep only a tiny overlap with the entering screen. A long
-          // full-screen crossfade is expensive in the iOS WebView, but a
-          // zero-duration exit can look abrupt.
-          duration: 0.08,
-          ease: [0.16, 1, 0.3, 1],
-          pointerEvents: { duration: 0 }
-      }
+      transition: { duration: 0, pointerEvents: { duration: 0 } }
     }
   };
 
@@ -596,13 +599,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                  className={`relative z-10 w-full h-full flex flex-col transition-all duration-500 ${showWelcomeGift ? 'blur-sm pointer-events-none' : ''}`}
               >
                 <div className="flex-1 relative w-full h-full overflow-hidden">
-                    {/*
-                      Let the next view mount immediately so a nested filter
-                      animation can never block navigation. The outgoing view
-                      fades for just 80ms, leaving the 300ms entering fade as
-                      the visible transition and keeping iOS compositing light.
-                    */}
-                    <AnimatePresence custom={direction} initial={false} mode="sync">
+                    {/* Old screens unmount immediately; the new screen settles in by 6px. */}
+                    <>
                         {screen === 'splash' && (
                             <motion.div
                                 key="splash"
@@ -612,9 +610,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 animate="animate"
                                 exit="exit"
                                 className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
-                                style={{ 
-                                    willChange: 'opacity'
-                                }}
                             >
                                 <SplashScreen />
                             </motion.div>
@@ -629,9 +624,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 animate="animate"
                                 exit="exit"
                                 className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
-                                style={{ 
-                                    willChange: 'opacity'
-                                }}
                             >
                                 <DifficultyScreen 
                                     points={points}
@@ -642,7 +634,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     onOpenDiamondShop={() => navigate('diamondShop', 'forward')}
                                     onClaimBonus={handleClaimBonus}
                                     onOpenStats={() => navigate('stats', 'forward')}
-                                    cascadeDelayMs={prevScreen !== null ? 180 : 0}
+                                    cascadeDelayMs={prevScreen !== null ? 50 : 0}
                                     nextBonusClaimTime={nextBonusClaimTime}
                                     hiddenDifficulties={settings.hiddenDifficulties}
                                     hasPendingPepinoGift={pepinoState.hasPendingGift}
@@ -665,9 +657,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 animate="animate"
                                 exit="exit"
                                 className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
-                                style={{ 
-                                    willChange: 'opacity'
-                                }}
                             >
                                 <DiamondShopScreen 
                                     points={points}
@@ -688,9 +677,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 animate="animate"
                                 exit="exit"
                                 className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
-                                style={{ 
-                                    willChange: 'opacity'
-                                }}
                             >
                                 <LevelsScreen 
                                     difficulty={selectedDifficulty}
@@ -715,9 +701,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 animate="animate"
                                 exit="exit"
                                 className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
-                                style={{ 
-                                    willChange: 'opacity'
-                                }}
                             >
                                 <StoreScreen 
                                     points={points}
@@ -748,9 +731,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 animate="animate"
                                 exit="exit"
                                 className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
-                                style={{ 
-                                    willChange: 'opacity'
-                                }}
                             >
                                 <SudokuGame
                                     difficulty={selectedDifficulty}
@@ -782,9 +762,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 animate="animate"
                                 exit="exit"
                                 className="absolute inset-0 z-20 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
-                                style={{
-                                    willChange: 'opacity'
-                                }}
                             >
                                 <StatsScreen
                                     onBack={handleStatsBack}
@@ -793,7 +770,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 />
                             </motion.div>
                         )}
-                    </AnimatePresence>
+                    </>
                 </div>
 
                 {/* Modals & Overlays */}

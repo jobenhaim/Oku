@@ -67,7 +67,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     };
 
     return (
-        <div className="diamond-shop-screen flex-1 w-full flex flex-col items-center overflow-hidden relative animate-fade-in-fast">
+        <div className="diamond-shop-screen flex-1 w-full flex flex-col items-center overflow-hidden relative">
             <div className="w-full max-w-md flex items-center justify-between px-6 pt-4 pb-4 relative shrink-0 z-20 mx-auto">
                 <button onClick={onBack} aria-label="Back" className="p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-90 transition-transform">
                     <Icons.Back className="w-6 h-6 text-t-icon" />
