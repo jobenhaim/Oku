@@ -175,14 +175,26 @@ function getStoredData(): StoredData {
   }
 }
 
-async function saveData(data: StoredData) {
+// Native Preferences writes are asynchronous. A win triggers several saves in
+// quick succession (diamonds, level progress, and Pepino), so allowing those
+// writes to race can leave an older snapshot as the final native value.
+// Keep them ordered while localStorage remains immediately available to the UI.
+let nativeSaveQueue: Promise<void> = Promise.resolve();
+
+function saveData(data: StoredData) {
   try {
     const stringified = JSON.stringify(data);
     localStorage.setItem(STORAGE_KEY, stringified);
-    await Preferences.set({
-        key: STORAGE_KEY,
-        value: stringified
-    }).catch((err: any) => console.error("Native save failed", err));
+
+    nativeSaveQueue = nativeSaveQueue
+      .catch(() => undefined)
+      .then(async () => {
+          await Preferences.set({
+              key: STORAGE_KEY,
+              value: stringified
+          });
+      })
+      .catch((err: any) => console.error("Native save failed", err));
   } catch (e) {
     console.error("Failed to save data", e);
   }

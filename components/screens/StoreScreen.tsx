@@ -143,7 +143,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
         // If not purchased, always show price
         if (!isPurchased) {
             return (
-                <div className="h-6 bg-white dark:bg-stone-800 border-t border-stone-200 dark:border-stone-700 flex items-center justify-center gap-0.5 shrink-0 relative z-10">
+                <div className="h-6 bg-white/45 dark:bg-black/25 border-t border-white/70 dark:border-white/10 backdrop-blur-xl flex items-center justify-center gap-0.5 shrink-0 relative z-10">
                     <span className="text-[13px] font-bold text-stone-900 dark:text-white leading-none pt-0.5">{cost}</span>
                     <Icons.Diamond className="w-3 h-3 text-blue-500 fill-current" />
                 </div>
@@ -167,15 +167,15 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                         <StoreItemWrapper delay={delay} key={skill.id}>
                             <button 
                                 onClick={(e) => handleSkillInteraction(e, skill)}
-                                className={`w-full h-[74px] px-3 py-2 rounded-[1.25rem] shadow-sm flex items-center gap-3 text-left active:scale-[0.98] transition-all bg-t-surface relative overflow-hidden group`}
+                                className="oku-main-glass w-full h-[74px] px-3 py-2 rounded-[1.25rem] flex items-center gap-3 text-left active:scale-[0.98] transition-all relative overflow-hidden group"
                             >
-                                <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${skill.bgClass} transition-transform group-active:scale-95`}>
+                                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-white/75 dark:bg-white/10 border border-white/90 dark:border-white/15 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,1),0_3px_10px_rgba(68,64,60,0.07)] transition-transform group-active:scale-95">
                                     <SkillIcon className={`w-6 h-6 ${skill.class}`} />
                                 </div>
 
                                 <div className="flex-1 min-w-0 py-0.5">
                                     <h3 className="text-[15px] font-bold text-t-primary leading-tight mb-0.5">{skill.name}</h3>
-                                    <p className="text-[10px] font-medium text-t-secondary leading-[1.15] line-clamp-2">{skill.description}</p>
+                                    <p className="text-[10px] font-semibold text-stone-600 dark:text-stone-300 leading-[1.15] line-clamp-2">{skill.description}</p>
                                 </div>
 
                                 <div className="shrink-0 w-[68px] flex justify-end">
@@ -184,9 +184,9 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                                 <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-transform duration-300 ease-out ${isEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
                                             </div>
                                     ) : (
-                                            <div className="flex items-center justify-center bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 h-8 px-2.5 rounded-full min-w-[60px] gap-1">
-                                                <span className="text-xs font-bold text-t-primary leading-none pt-0.5">{skill.cost}</span>
-                                                <Icons.Diamond className="w-3 h-3 text-blue-500 fill-current" />
+                                            <div className="flex items-center justify-center bg-white/72 dark:bg-white/10 border border-white/95 dark:border-white/15 backdrop-blur-xl h-9 px-3.5 rounded-full min-w-[72px] gap-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_3px_10px_rgba(68,64,60,0.08)]">
+                                                <span className="text-[13px] font-bold text-t-primary leading-none pt-0.5">{skill.cost}</span>
+                                                <Icons.Diamond className="w-3.5 h-3.5 text-blue-500 fill-current" />
                                             </div>
                                     )}
                                 </div>
@@ -202,7 +202,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
         <div className="mb-8">
             <h2 className="text-lg font-bold text-t-primary mb-3 ml-1">Backgrounds</h2>
             <div className="mb-6">
-                <h3 className="text-xs font-bold text-t-secondary uppercase tracking-widest mb-3 ml-1">Static</h3>
+                <h3 className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-widest mb-3 ml-1">Static</h3>
                 <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{STATIC_BACKGROUNDS.map((bg, idx) => {
                     const isPurchased = purchasedBackgrounds.includes(bg.id);
                     const isSelected = selectedBackgroundId === bg.id;
@@ -212,21 +212,21 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                             <div className="flex flex-col items-center gap-1.5">
                                 <button 
                                     onClick={() => isPurchased ? onSelectBackground(bg.id) : onPurchase(bg, 'bg')} 
-                                    className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 bg-gradient-to-t from-stone-200 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 z-10' : 'border-transparent'}`}
+                                    className={`oku-main-glass w-full aspect-square rounded-2xl flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 ${isSelected ? 'oku-store-selected scale-105 z-10' : ''}`}
                                 >
                                     <div className={`flex-1 relative overflow-hidden ${bg.class}`}>
                                             <div className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-500" style={{ opacity: bg.id === 'bg-default' ? 'calc(var(--overlay-opacity) * 0.6)' : 'calc(var(--overlay-opacity) * 1.6)' }} />
                                     </div>
                                     <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={bg.cost} />
                                 </button>
-                                <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-800 dark:text-stone-200' : 'text-t-secondary'}`}>{bg.name}</span>
+                                <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{bg.name}</span>
                             </div>
                         </StoreItemWrapper>
                     );
                 })}</div>
             </div>
             <div className="mb-2">
-                <h3 className="text-xs font-bold text-t-secondary uppercase tracking-widest mb-3 ml-1">Atmosphere</h3>
+                <h3 className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-widest mb-3 ml-1">Atmosphere</h3>
                 <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{DYNAMIC_BACKGROUNDS.map((bg, idx) => {
                     const isPurchased = purchasedBackgrounds.includes(bg.id);
                     const isSelected = selectedBackgroundId === bg.id;
@@ -236,7 +236,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                             <div className="flex flex-col items-center gap-1.5">
                                 <button 
                                     onClick={() => isPurchased ? onSelectBackground(bg.id) : onPurchase(bg, 'bg')} 
-                                    className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 bg-gradient-to-t from-stone-200 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 z-10' : 'border-transparent'}`}
+                                    className={`oku-main-glass w-full aspect-square rounded-2xl flex flex-col items-stretch relative overflow-hidden transition-all active:scale-95 ${isSelected ? 'oku-store-selected scale-105 z-10' : ''}`}
                                 >
                                     <div 
                                     className={`flex-1 relative overflow-hidden ${bg.class}`} 
@@ -246,7 +246,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                     </div>
                                     <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={bg.cost} />
                                 </button>
-                                <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-800 dark:text-stone-200' : 'text-t-secondary'}`}>{bg.name}</span>
+                                <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{bg.name}</span>
                             </div>
                         </StoreItemWrapper>
                     );
@@ -284,7 +284,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
 
                             <button 
                                 onClick={(e) => handleSoundPackClick(e, pack)} 
-                                className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all bg-gradient-to-t from-stone-100 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 shadow-md' : 'border-transparent active:scale-95'}`}
+                                className={`oku-main-glass w-full aspect-square rounded-2xl flex flex-col items-stretch relative overflow-hidden transition-all ${isSelected ? 'oku-store-selected scale-105' : 'active:scale-95'}`}
                             >
                                 <div className={`flex-1 flex items-center justify-center relative z-10 overflow-hidden`}>
                                     <PackIcon className={`w-8 h-8 ${pack.iconColor} relative z-20`} />
@@ -292,7 +292,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={pack.cost} />
                             </button>
                             
-                            <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-800 dark:text-stone-200' : 'text-t-secondary'}`}>{pack.name}</span>
+                            <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{pack.name}</span>
                         </div>
                     </StoreItemWrapper>
                 );
@@ -316,14 +316,14 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                         <div className="flex flex-col items-center gap-1.5">
                             <button 
                                 onClick={() => isPurchased ? onSelectNumberColor(num.id) : onPurchase(num, 'num')} 
-                                className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all bg-gradient-to-t from-stone-100 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 z-10' : 'border-transparent active:scale-95'}`}
+                                className={`oku-main-glass w-full aspect-square rounded-2xl flex flex-col items-stretch relative overflow-hidden transition-all ${isSelected ? 'oku-store-selected scale-105 z-10' : 'active:scale-95'}`}
                             >
                                 <div className={`flex-1 flex items-center justify-center w-full`}>
                                     <span className={`text-3xl font-bold ${num.uiClass}`}>5</span>
                                 </div>
                                 <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={num.cost} />
                             </button>
-                            <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-800 dark:text-stone-200' : 'text-t-secondary'}`}>{num.name}</span>
+                            <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{num.name}</span>
                         </div>
                     </StoreItemWrapper>
                 );
@@ -360,7 +360,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
              {/* Header */}
              <div className="w-full max-w-md flex flex-col px-6 pt-4 pb-2 relative shrink-0 z-20 gap-4">
                 <div className="flex items-center justify-between w-full mb-2">
-                    <button onClick={onBack} className="p-2 rounded-full -ml-2 text-t-icon relative z-30">
+                    <button onClick={onBack} className="oku-main-glass p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
                         <Icons.Back className="w-6 h-6 text-t-icon" />
                     </button>
                     
@@ -369,14 +369,14 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                         <p className="text-t-secondary text-[10px] font-bold tracking-widest uppercase mt-1">Personalize</p>
                     </div>
 
-                    <div className="flex items-center gap-1 bg-t-surface px-3 py-2 rounded-full shadow-sm relative z-30">
+                    <div className="oku-main-glass flex items-center gap-1 px-3 py-2 rounded-full relative z-30">
                           <AnimatedNumber value={points} className="text-sm font-bold text-t-primary tabular-nums" />
                           <div className="text-blue-500"><Icons.Diamond className="w-3 h-3 fill-current" /></div>
                     </div>
                 </div>
 
                 {/* Cleaner Category Tabs (Segmented Control Style) */}
-                <div className="w-full p-1 bg-white/45 dark:bg-white/5 border border-white/40 dark:border-white/5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] backdrop-blur-md rounded-xl flex items-center mt-2 relative">
+                <div className="oku-main-glass w-full p-1 rounded-xl flex items-center mt-2 relative">
                     {TABS.map((tab) => {
                         const isActive = activeTab === tab.id;
                         return (
@@ -395,7 +395,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 {isActive && (
                                     <motion.div 
                                         layoutId="activeTabPill"
-                                        className="absolute inset-0 bg-white/90 dark:bg-stone-800 rounded-lg shadow-sm ring-1 ring-black/[0.03] dark:ring-white/5 z-10"
+                                        className="absolute inset-0 bg-white/70 dark:bg-white/10 backdrop-blur-xl rounded-lg shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_8px_rgba(45,55,72,0.12)] ring-1 ring-white/80 dark:ring-white/15 z-10"
                                         transition={{ type: "spring", stiffness: 350, damping: 30 }}
                                     />
                                 )}

@@ -190,7 +190,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
         <div className="flex-1 w-full flex flex-col items-center overflow-hidden animate-fade-in-fast">
             {/* Header */}
             <div className="w-full max-w-md flex items-center justify-between px-6 pt-4 pb-4 relative shrink-0 z-20">
-                <button onClick={onBack} aria-label="Back to menu" className="p-2 rounded-full -ml-2 text-t-icon relative z-30">
+                <button onClick={onBack} aria-label="Back to menu" className="oku-main-glass p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
                     <Icons.Back className="w-6 h-6 text-t-icon" />
                 </button>
                 
@@ -199,7 +199,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                     <p className="text-t-secondary text-[10px] font-bold tracking-widest uppercase mt-1">My Journey</p>
                 </div>
                 
-                <div className="flex items-center gap-1 bg-t-surface px-3 py-2 rounded-full shadow-sm relative z-30">
+                <div className="oku-main-glass flex items-center gap-1 px-3 py-2 rounded-full relative z-30">
                       <div className="contents">
                         <AnimatedNumber value={points} className="text-sm font-bold text-t-primary tabular-nums" />
                         <div className="text-blue-500"><Icons.Diamond className="w-3 h-3 fill-current" /></div>
@@ -241,7 +241,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                                     }
                                 }
                             }}
-                            className="w-full p-1 bg-white/45 dark:bg-white/5 border border-white/40 dark:border-white/5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] backdrop-blur-md rounded-xl flex items-stretch relative min-h-[44px]"
+                            className="oku-main-glass w-full p-1 rounded-xl flex items-stretch relative min-h-[44px]"
                         >
                             {Object.values(Difficulty).map((diff) => {
                                 const isActive = selectedDiff === diff;
@@ -265,7 +265,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                                         {isActive && (
                                             <motion.div 
                                                 layoutId="activeDiffPill"
-                                                className="absolute inset-0 bg-white/90 dark:bg-stone-800 rounded-lg shadow-sm ring-1 ring-black/[0.03] dark:ring-white/5 z-10"
+                                                className="absolute inset-0 bg-white/70 dark:bg-white/10 backdrop-blur-xl rounded-lg shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_8px_rgba(45,55,72,0.12)] ring-1 ring-white/80 dark:ring-white/15 z-10"
                                                 transition={{ type: "spring", stiffness: 350, damping: 30 }}
                                             />
                                         )}
@@ -301,7 +301,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                                 >
                                     {/* Big Stats Grid */}
                                     <div className="grid grid-cols-2 gap-4">
-                                        <motion.div variants={cardVariants} className="bg-t-surface p-6 rounded-3xl shadow-sm flex flex-col items-center text-center">
+                                        <motion.div variants={cardVariants} className="oku-main-glass p-6 rounded-3xl flex flex-col items-center text-center">
                                             <div className="w-12 h-12 bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-full flex items-center justify-center mb-3">
                                                 <Icons.Check className="w-6 h-6 stroke-[3]" />
                                             </div>
@@ -311,7 +311,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                                             <span className="text-xs font-bold text-t-secondary uppercase tracking-wider">Solved</span>
                                         </motion.div>
 
-                                        <motion.div variants={cardVariants} className="bg-t-surface p-6 rounded-3xl shadow-sm flex flex-col items-center text-center">
+                                        <motion.div variants={cardVariants} className="oku-main-glass p-6 rounded-3xl flex flex-col items-center text-center">
                                             <div className="w-12 h-12 bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 rounded-full flex items-center justify-center mb-3">
                                                 <Icons.Sparkles className="w-6 h-6" />
                                             </div>
@@ -323,7 +323,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                                     </div>
 
                                     {/* Detailed List */}
-                                    <motion.div variants={cardVariants} className="bg-t-surface rounded-3xl shadow-sm overflow-hidden">
+                                    <motion.div variants={cardVariants} className="oku-main-glass rounded-3xl overflow-hidden">
                                         <div className="p-5 border-b border-stone-200 dark:border-stone-700 flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-full flex items-center justify-center">

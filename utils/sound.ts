@@ -631,12 +631,14 @@ class SoundController {
         const hapticTimers: number[] = [];
 
         if (this.vibrationEnabled) {
-            const pulseCount = Math.min(12, stepCount);
+            const pulseCount = Math.min(8, stepCount);
             for (let pulse = 1; pulse <= pulseCount; pulse++) {
                 const timer = window.setTimeout(() => {
-                    Haptics.impact({
-                        style: pulse === pulseCount ? ImpactStyle.Medium : ImpactStyle.Light
-                    }).catch(() => {});
+                    if (pulse === pulseCount) {
+                        Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+                    } else {
+                        Haptics.selectionChanged().catch(() => {});
+                    }
                 }, Math.round((pulse / pulseCount) * duration * 1000));
                 hapticTimers.push(timer);
             }
@@ -773,6 +775,17 @@ class SoundController {
     }
 
     playLevelEnter() {
+        if (this.vibrationEnabled) {
+            // A compact two-step signature distinguishes entering a puzzle
+            // from an ordinary UI tap without feeling heavy.
+            Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+            window.setTimeout(() => {
+                if (this.vibrationEnabled) {
+                    Haptics.selectionChanged().catch(() => {});
+                }
+            }, 90);
+        }
+
         if (!this.soundEnabled) return;
 
         const pid = this.activeProfile.id;

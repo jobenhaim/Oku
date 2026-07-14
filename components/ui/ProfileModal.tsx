@@ -58,31 +58,35 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
     const ActiveIcon = activeOption.icon;
 
     return (
-        <div className={`fixed inset-0 z-[999] bg-black/40 backdrop-blur-md flex items-end sm:items-center justify-center ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={handleClose}>
-            <div className={`bg-t-surface w-full max-w-sm rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transition-colors duration-300 pb-safe ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} onClick={e => e.stopPropagation()}>
+        <div className={`fixed inset-0 z-[999] bg-stone-900/15 backdrop-blur-md flex items-end sm:items-center justify-center ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={handleClose}>
+            <div className={`oku-profile-sheet w-full max-w-sm rounded-t-[2.25rem] sm:rounded-[2.25rem] flex flex-col max-h-[90vh] overflow-hidden pb-safe relative ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} onClick={e => e.stopPropagation()}>
+                <div className="absolute -top-16 -right-12 w-52 h-52 rounded-full bg-sky-200/25 blur-3xl pointer-events-none" />
                 
                 {/* Header */}
-                <div className="flex justify-between items-center p-6 pb-4 shrink-0 bg-t-surface z-10 transition-colors duration-300">
-                    <h3 className="text-xl font-bold text-t-primary transition-colors duration-300">Profile</h3>
-                    <button onClick={handleClose} className="p-2 bg-t-surface-sec rounded-full hover:opacity-80 text-t-primary transition-all duration-300">
+                <div className="flex justify-center items-center px-6 pt-6 pb-2 shrink-0 z-10 relative">
+                    <div className="text-center">
+                        <p className="text-[9px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-[0.32em] mb-1.5">Oku</p>
+                        <h3 className="text-xl font-bold text-t-primary leading-none">My Profile</h3>
+                    </div>
+                    <button onClick={handleClose} aria-label="Close profile" className="oku-profile-panel absolute right-5 top-5 p-2 rounded-full text-t-primary active:scale-95 transition">
                         <Icons.Close className="w-5 h-5" />
                     </button>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar min-h-0 space-y-6">
+                <div className="flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar min-h-0 space-y-5 relative z-10">
                     
                     {/* User Card */}
-                    <div className={`flex flex-col items-center gap-5 p-6 rounded-3xl transition-colors duration-300 ${activeOption.cardBg}`}>
+                    <div className="flex flex-col items-center gap-3 px-4 pt-4 pb-2">
                         <div 
-                            className={`w-20 h-20 rounded-full ${activeOption.bg} ${activeOption.text} flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform shadow-inner`}
+                            className={`w-24 h-24 rounded-full ${activeOption.bg} ${activeOption.text} flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform shadow-lg ring-[6px] ring-white dark:ring-stone-700`}
                             onClick={() => { sounds.playClick(); setIsSelectingAvatar(!isSelectingAvatar); }}
                             title="Tap to change avatar"
                         >
-                            <ActiveIcon className="w-10 h-10" />
+                            <ActiveIcon className="w-11 h-11" />
                         </div>
 
                         {isSelectingAvatar && (
-                            <div className="flex flex-wrap justify-center gap-3 animate-fade-in bg-t-surface p-4 rounded-2xl w-full">
+                            <div className="oku-profile-panel flex flex-wrap justify-center gap-3 animate-fade-in p-4 rounded-2xl w-full">
                                 {AVATAR_OPTIONS.map((opt, idx) => {
                                     const Icon = opt.icon;
                                     return (
@@ -115,7 +119,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
                                 />
                             ) : (
                                 <div className="flex items-center gap-2 cursor-pointer group" onClick={() => { sounds.playClick(); setIsEditingName(true); }}>
-                                    <span className="text-xl font-bold text-t-primary leading-none transition-colors duration-300 truncate">{profile.username || "Anonymous"}</span>
+                                    <span className="text-2xl font-bold text-t-primary leading-none truncate">{profile.username || "Anonymous"}</span>
                                     <div className="text-t-secondary group-hover:text-t-primary transition-colors">
                                         <Icons.Pencil className="w-4 h-4" />
                                     </div>
@@ -125,42 +129,31 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
                     </div>
 
                     {/* Stats Overview */}
-                    <div>
-                        <label className="block text-xs font-bold text-t-secondary uppercase tracking-widest mb-3 ml-1 transition-colors duration-300">Progress</label>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="group bg-gradient-to-br from-amber-50 to-amber-100/30 dark:from-stone-800/80 dark:to-stone-900 p-5 rounded-3xl flex flex-col items-start relative overflow-hidden transition-all duration-300 border border-amber-200/50 dark:border-stone-700/50 shadow-sm">
-                                <div className="absolute -right-3 -bottom-3 opacity-[0.08] dark:opacity-[0.03] pointer-events-none transition-transform duration-500">
-                                    <Icons.Trophy className="w-24 h-24 text-amber-600 dark:text-amber-400" />
-                                </div>
-                                <div className="bg-white/80 dark:bg-stone-800/80 p-2.5 rounded-2xl mb-6 backdrop-blur-sm shadow-sm border border-amber-100/50 dark:border-stone-700/50 relative z-10 transition-transform">
-                                    <Icons.Trophy className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-                                </div>
-                                <AnimatedNumber value={stats.totalGamesWon} startFromZero={true} className="text-3xl font-black text-stone-800 dark:text-white tabular-nums leading-none mb-1.5 relative z-10" />
-                                <span className="text-[10px] font-bold text-amber-700/70 dark:text-amber-400/50 uppercase tracking-wider leading-tight relative z-10">Total Games<br/>Won</span>
+                    <div className="oku-profile-panel rounded-[1.75rem] grid grid-cols-2 px-2 py-5">
+                        <div className="flex flex-col items-center text-center px-3 border-r border-stone-200/70 dark:border-white/10">
+                            <div className="w-9 h-9 bg-amber-100 dark:bg-amber-400/15 rounded-full flex items-center justify-center mb-2.5">
+                                <Icons.Trophy className="w-4 h-4 text-amber-500" />
                             </div>
-                            
-                            <div className="group bg-gradient-to-br from-cyan-50 to-cyan-100/30 dark:from-stone-800/80 dark:to-stone-900 p-5 rounded-3xl flex flex-col items-start relative overflow-hidden transition-all duration-300 border border-cyan-200/50 dark:border-stone-700/50 shadow-sm">
-                                <div className="absolute -right-3 -bottom-3 opacity-[0.08] dark:opacity-[0.03] pointer-events-none transition-transform duration-500">
-                                    <Icons.Diamond className="w-24 h-24 text-cyan-600 dark:text-cyan-400" />
-                                </div>
-                                <div className="bg-white/80 dark:bg-stone-800/80 p-2.5 rounded-2xl mb-6 backdrop-blur-sm shadow-sm border border-cyan-100/50 dark:border-stone-700/50 relative z-10 transition-transform">
-                                    <Icons.Diamond className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
-                                </div>
-                                <AnimatedNumber value={stats.totalDiamondsEarned || 0} startFromZero={true} className="text-3xl font-black text-stone-800 dark:text-white tabular-nums leading-none mb-1.5 relative z-10" />
-                                <span className="text-[10px] font-bold text-cyan-700/70 dark:text-cyan-400/50 uppercase tracking-wider leading-tight relative z-10">Total Diamonds<br/>Earned</span>
+                            <AnimatedNumber value={stats.totalGamesWon} startFromZero={true} className="text-3xl font-black text-stone-800 dark:text-white tabular-nums leading-none mb-1.5" />
+                            <span className="text-[9px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider leading-tight">Games Won</span>
+                        </div>
+                        <div className="flex flex-col items-center text-center px-3">
+                            <div className="w-9 h-9 bg-sky-100 dark:bg-sky-400/15 rounded-full flex items-center justify-center mb-2.5">
+                                <Icons.Diamond className="w-4 h-4 text-blue-500 fill-current" />
                             </div>
+                            <AnimatedNumber value={stats.totalDiamondsEarned || 0} startFromZero={true} className="text-3xl font-black text-stone-800 dark:text-white tabular-nums leading-none mb-1.5" />
+                            <span className="text-[9px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider leading-tight">Diamonds Earned</span>
                         </div>
                     </div>
 
                     {/* Cloud Sync */}
                     <div>
-                        <label className="block text-xs font-bold text-t-secondary uppercase tracking-widest mb-2 ml-1 transition-colors duration-300">Cloud Backup</label>
                         <button 
                             onClick={handleCloudClick}
-                            className="w-full bg-t-surface-sec p-3 rounded-2xl flex items-center justify-between hover:bg-stone-200 dark:hover:bg-stone-800 transition-all duration-300 active:scale-[0.98]"
+                            className="oku-profile-panel w-full p-3.5 rounded-2xl flex items-center justify-between transition-all duration-300 active:scale-[0.98]"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-white dark:bg-stone-800 shadow-sm flex items-center justify-center">
+                                <div className="p-2 rounded-xl bg-white/75 dark:bg-white/10 shadow-sm flex items-center justify-center">
                                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                                         <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/>
                                         <path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 0 1-6.723-4.823l-4.04 3.067A11.965 11.965 0 0 0 12 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/>
@@ -170,13 +163,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
                                 </div>
                                 <div className="flex flex-col text-left gap-0.5">
                                     <span className="text-sm font-bold text-t-primary leading-tight transition-colors duration-300">Sign in with Google</span>
-                                    <span className="text-[10px] font-medium text-t-secondary leading-tight transition-colors duration-300">Save progress to cloud</span>
+                                    <span className="text-[10px] font-semibold text-stone-500 dark:text-stone-400 leading-tight">Cloud backup coming soon</span>
                                 </div>
                             </div>
                             {showCloudToast ? (
                                 <span className="text-[10px] font-bold text-blue-500 bg-blue-500/10 px-2 py-1 rounded-md animate-fade-in">Coming Soon</span>
                             ) : (
-                                <div className="bg-t-surface p-1.5 rounded-full text-t-icon">
+                                <div className="bg-white/55 dark:bg-white/10 p-1.5 rounded-full text-t-icon">
                                     <Icons.Next className="w-3 h-3" />
                                 </div>
                             )}

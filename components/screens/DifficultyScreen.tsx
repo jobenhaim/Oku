@@ -146,7 +146,7 @@ const DifficultyCard: React.FC<{
         >
             <button 
                 onClick={() => { sounds.playClick(); onSelect(diff); }} 
-                className={`w-full h-full bg-white dark:bg-stone-900 border border-white/40 dark:border-white/10 ${paddingClass} rounded-2xl shadow-sm flex flex-col justify-between transition-all active:scale-95 text-left relative group overflow-visible`}
+                className={`oku-difficulty-glass w-full h-full ${paddingClass} rounded-2xl flex flex-col justify-between transition-all active:scale-95 text-left relative group overflow-visible`}
             >
                 <div className="w-full flex justify-between items-center mb-1">
                     <span className={`font-bold text-stone-800 dark:text-white leading-none tracking-tight truncate mr-1 ${titleClass}`}>{diff}</span>
@@ -233,9 +233,9 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     const isOneVisible = visibleDifficulties.length === 1;
 
     // Common style without hover/active scales
-    const BTN_BG_DEFAULT = "bg-white/90 dark:bg-stone-900/90 backdrop-blur-md";
+    const BTN_BG_DEFAULT = "oku-main-glass";
     const BTN_TEXT_DEFAULT = "text-stone-900 dark:text-white";
-    const COMMON_BTN_STYLE = `h-14 px-3 rounded-2xl shadow-sm flex items-center justify-center gap-2 transition group border border-white/40 dark:border-white/10 whitespace-nowrap`;
+    const COMMON_BTN_STYLE = `h-14 px-3 rounded-2xl flex items-center justify-center gap-2 transition group whitespace-nowrap`;
 
     return (
         <div 
@@ -321,7 +321,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                             sounds.playClick(); 
                             if (onContinue) onContinue(lastPlayedGame.difficulty, lastPlayedGame.levelId);
                         }}
-                        className="relative flex items-center justify-center gap-3 w-[55%] py-3 px-5 bg-white dark:bg-stone-900 border border-blue-200 dark:border-blue-900/60 rounded-2xl text-blue-600 dark:text-blue-400 active:scale-95 shadow-md"
+                        className="oku-main-glass relative flex items-center justify-center gap-3 w-[55%] py-3 px-5 rounded-2xl text-blue-600 dark:text-blue-400 active:scale-95"
                       >
                           <div className="flex flex-col items-center text-center">
                               <span className="text-sm font-bold leading-none">Continue Game</span>
@@ -352,7 +352,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                           <button 
                             onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenDiamondShop(); }} 
                             style={{ width: '47.5%' }}
-                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} relative overflow-visible shadow-sm active:scale-95 hover:brightness-105`}
+                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} relative overflow-visible shadow-sm active:scale-95`}
                           >
                               {hasPendingPepinoGift && (
                                 <div className="absolute -top-1.5 -right-1.5 z-50 animate-pop">
@@ -388,7 +388,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                               style={{ width: '47.5%' }}
                               className={`${COMMON_BTN_STYLE} ${
                                   !!timeLeft 
-                                  ? 'bg-white/30 dark:bg-stone-800/30 backdrop-blur-sm text-stone-500 dark:text-stone-400 cursor-not-allowed shadow-none border border-white/20 dark:border-white/5' 
+                                  ? 'oku-main-glass text-stone-500 dark:text-stone-400 cursor-not-allowed opacity-60'
                                   : `${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} active:scale-95 hover:brightness-105`
                               }`}
                           >
@@ -423,18 +423,18 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                     className="w-full max-w-md flex items-center justify-center gap-3 mt-6 mb-2 opacity-0 animate-slide-in-down shrink-0" 
                     style={{ animationDelay: '350ms' }}
                   >
-                      <button onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenProfile(); }} className="p-1.5 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-full shadow-sm hover:bg-white/80 dark:hover:bg-stone-800 transition active:scale-95 text-t-icon">
+                      <button onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenProfile(); }} className="oku-main-glass p-1.5 rounded-full transition active:scale-95 text-t-icon">
                           <Icons.User className="w-5 h-5" />
                       </button>
 
                       <div 
-                        className="flex items-center gap-1.5 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border border-white/40 dark:border-white/10 px-3 py-1.5 rounded-full shadow-sm"
+                        className="oku-main-glass flex items-center gap-1.5 px-3 py-1.5 rounded-full"
                       >
                           <AnimatedNumber value={points} className="text-sm font-semibold text-t-primary tabular-nums leading-none pt-0.5" />
                           <div className="text-blue-500"><Icons.Diamond className="w-3.5 h-3.5 fill-current" /></div>
                       </div>
                       
-                      <button onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenSettings(); }} className="p-1.5 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-full shadow-sm hover:bg-white/80 dark:hover:bg-stone-800 transition active:scale-95 text-t-icon">
+                      <button onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenSettings(); }} className="oku-main-glass p-1.5 rounded-full transition active:scale-95 text-t-icon">
                           <Icons.Settings className="w-5 h-5" />
                       </button>
                   </div>
