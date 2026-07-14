@@ -633,6 +633,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     onOpenDiamondShop={() => navigate('diamondShop', 'forward')}
                                     onClaimBonus={handleClaimBonus}
                                     onOpenStats={() => navigate('stats', 'forward')}
+                                    cascadeDelayMs={prevScreen !== null ? 180 : 0}
                                     nextBonusClaimTime={nextBonusClaimTime}
                                     hiddenDifficulties={settings.hiddenDifficulties}
                                     hasPendingPepinoGift={pepinoState.hasPendingGift}

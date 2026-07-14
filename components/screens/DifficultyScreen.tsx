@@ -20,6 +20,7 @@ interface DifficultyScreenProps {
     hiddenDifficulties?: Difficulty[]; 
     hasPendingPepinoGift?: boolean;
     onContinue?: (diff: Difficulty, levelId: number) => void;
+    cascadeDelayMs?: number;
 }
 
 const SUBTITLES = [
@@ -37,13 +38,18 @@ const SUBTITLES = [
 ];
 
 // Internal Hook for Counting Animation (Progress Bars)
-const useAnimatedCounter = (target: number, duration: number = 500, delay: number = 200) => {
-    const [count, setCount] = useState(0);
+const useAnimatedCounter = (target: number, duration: number = 500, delay: number = 200, enabled = true) => {
+    const [count, setCount] = useState(enabled ? 0 : target);
 
     useEffect(() => {
         let startTime: number | null = null;
         let animationFrameId: number;
         let timeoutId: any;
+
+        if (!enabled) {
+            setCount(target);
+            return;
+        }
 
         setCount(0);
 
@@ -74,7 +80,7 @@ const useAnimatedCounter = (target: number, duration: number = 500, delay: numbe
             if (timeoutId) clearTimeout(timeoutId);
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
         };
-    }, [target, duration, delay]);
+    }, [target, duration, delay, enabled]);
 
     return count;
 };
@@ -88,7 +94,8 @@ const DifficultyCard: React.FC<{
     contentScale?: 'normal' | 'medium' | 'large';
     layoutStyle?: React.CSSProperties;
     celebrateProgress?: boolean;
-}> = ({ diff, index, onSelect, isPyramidTop, contentScale = 'normal', layoutStyle, celebrateProgress = false }) => {
+    cascadeDelayMs?: number;
+}> = ({ diff, index, onSelect, isPyramidTop, contentScale = 'normal', layoutStyle, celebrateProgress = false, cascadeDelayMs = 0 }) => {
     
     const completed = Storage.getCompletedCount(diff, 300);
     const isPack2Unlocked = Storage.isPack2Unlocked(diff);
@@ -105,7 +112,7 @@ const DifficultyCard: React.FC<{
     const baseZIndex = 30 - index;
     const finalZIndex = baseZIndex;
 
-    const animatedCompleted = useAnimatedCounter(completed, 1500);
+    const animatedCompleted = useAnimatedCounter(completed, 1500, 200, celebrateProgress);
     const progressPercent = Math.min((animatedCompleted / maxLevels) * 100, 100);
 
     useEffect(() => {
@@ -130,7 +137,7 @@ const DifficultyCard: React.FC<{
         aspectRatio: '1.91/1', 
     };
 
-    const finalStyle = { ...defaultStyle, ...layoutStyle, zIndex: finalZIndex, animationDelay: `${delay}ms` };
+    const finalStyle = { ...defaultStyle, ...layoutStyle, zIndex: finalZIndex, animationDelay: `${delay + cascadeDelayMs}ms` };
 
     const titleClass = contentScale === 'large' ? 'text-3xl' : (contentScale === 'medium' ? 'text-2xl' : 'text-lg');
     const iconSizeClass = contentScale === 'large' ? 'w-5 h-5' : (contentScale === 'medium' ? 'w-4 h-4' : 'w-3 h-3');
@@ -190,7 +197,8 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     nextBonusClaimTime,
     hiddenDifficulties = [],
     hasPendingPepinoGift = false,
-    onContinue
+    onContinue,
+    cascadeDelayMs = 0
 }) => {
     const [timeLeft, setTimeLeft] = useState<string>("");
     const [subtitle] = useState(() => SUBTITLES[Math.floor(Math.random() * SUBTITLES.length)]);
@@ -250,7 +258,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
 
                   <div 
                     className="w-full max-w-md flex justify-center mb-2 opacity-0 animate-slide-in-down shrink-0" 
-                    style={{ animationDelay: '50ms' }}
+                    style={{ animationDelay: `${50 + cascadeDelayMs}ms` }}
                   >
                       <p className="text-xs font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-[0.2em]">{subtitle}</p>
                   </div>
@@ -283,6 +291,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                           contentScale={contentScale}
                                           layoutStyle={layoutStyle}
                                           celebrateProgress={diff === progressLeader}
+                                          cascadeDelayMs={cascadeDelayMs}
                                       />
                                   </div>
                               );
@@ -297,6 +306,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                   contentScale={contentScale}
                                   layoutStyle={layoutStyle}
                                   celebrateProgress={diff === progressLeader}
+                                  cascadeDelayMs={cascadeDelayMs}
                               />
                           );
                       })}
@@ -306,7 +316,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                   {lastPlayedGame && (
                   <div 
                     className="w-full max-w-md flex justify-center mb-7 opacity-0 animate-slide-in-down shrink-0" 
-                    style={{ animationDelay: '200ms' }}
+                    style={{ animationDelay: `${200 + cascadeDelayMs}ms` }}
                   >
                       <button 
                         onClick={(e) => { 
@@ -331,7 +341,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                   <div className="w-full max-w-md flex flex-col gap-3 shrink-0">
                       <div 
                         className="flex justify-center gap-3 opacity-0 animate-slide-in-down w-full" 
-                        style={{ animationDelay: '250ms' }}
+                        style={{ animationDelay: `${250 + cascadeDelayMs}ms` }}
                       >
                           <button 
                             onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenStore(); }} 
@@ -364,7 +374,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                       
                       <div 
                         className="flex justify-center gap-3 opacity-0 animate-slide-in-down w-full"
-                        style={{ animationDelay: '300ms' }}
+                        style={{ animationDelay: `${300 + cascadeDelayMs}ms` }}
                       >
                           <button 
                               onClick={onClaimBonus}
@@ -405,7 +415,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
 
                   <div 
                     className="w-full max-w-md flex items-center justify-center gap-3 mt-6 mb-2 opacity-0 animate-slide-in-down shrink-0" 
-                    style={{ animationDelay: '350ms' }}
+                    style={{ animationDelay: `${350 + cascadeDelayMs}ms` }}
                   >
                       <button onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenProfile(); }} className="oku-main-glass p-1.5 rounded-full transition active:scale-95 text-t-icon">
                           <Icons.User className="w-5 h-5" />
