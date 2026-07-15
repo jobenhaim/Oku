@@ -143,14 +143,14 @@ const DifficultyCard: React.FC<{
                 </div>
                 
                 <div className="w-full flex justify-between items-end mb-1 mt-auto">
+                    <span className={`${progressTextClass} text-stone-800 dark:text-stone-200 font-bold tracking-wide font-sans leading-none`}>
+                        {animatedCompleted} / {maxLevels}
+                    </span>
+
                     <div className="flex items-center gap-0.5 shrink-0 relative z-50">
                         <span className={`${pointsTextClass} font-bold text-stone-900 dark:text-stone-100 leading-none`}>+{diffPoints}</span>
                         <Icons.Diamond className={`${iconSizeClass} text-blue-500 fill-current`} />
                     </div>
-                    
-                    <span className={`${progressTextClass} text-stone-800 dark:text-stone-200 font-bold tracking-wide font-sans leading-none`}>
-                        {animatedCompleted} / {maxLevels}
-                    </span>
                 </div>
                 
                 <div className={`w-full bg-stone-900/10 dark:bg-white/10 rounded-full overflow-hidden ${progressBarHeight}`}>
