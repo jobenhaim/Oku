@@ -123,7 +123,7 @@ const DifficultyCard: React.FC<{
     const finalStyle = { ...defaultStyle, ...layoutStyle, zIndex: finalZIndex, animationDelay: `${delay + cascadeDelayMs}ms` };
 
     const titleClass = contentScale === 'large' ? 'text-3xl' : (contentScale === 'medium' ? 'text-2xl' : 'text-lg');
-    const iconSizeClass = contentScale === 'large' ? 'w-[14px] h-[14px]' : (contentScale === 'medium' ? 'w-3 h-3' : 'w-[10px] h-[10px]');
+    const iconSizeClass = contentScale === 'large' ? 'w-[13px] h-[13px]' : (contentScale === 'medium' ? 'w-[11px] h-[11px]' : 'w-[9px] h-[9px]');
     const progressTextClass = contentScale === 'large' ? 'text-[13px]' : (contentScale === 'medium' ? 'text-[11px]' : 'text-[9px]');
     const pointsTextClass = progressTextClass;
     const progressBarHeight = contentScale === 'large' ? 'h-3' : (contentScale === 'medium' ? 'h-2.5' : 'h-1.5');
@@ -138,8 +138,8 @@ const DifficultyCard: React.FC<{
                 onClick={() => { sounds.playClick(); onSelect(diff); }} 
                 className={`oku-difficulty-glass w-full h-full ${paddingClass} rounded-2xl flex flex-col justify-between transition-all active:scale-95 text-left relative group overflow-visible`}
             >
-                <div className="w-full flex items-center mb-1">
-                    <span className={`font-bold text-stone-800 dark:text-white leading-none tracking-tight truncate mr-1 ${titleClass}`}>{diff}</span>
+                <div className="w-full flex items-center justify-center mb-1">
+                    <span className={`w-full text-center font-bold text-stone-800 dark:text-white leading-none tracking-tight truncate ${titleClass}`}>{diff}</span>
                 </div>
                 
                 <div className="w-full flex justify-between items-end mb-1 mt-auto">
