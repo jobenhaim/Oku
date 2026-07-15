@@ -263,7 +263,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                 
                 {/* Header Row */}
                 <div className="w-full flex items-center justify-between relative">
-                    <button onClick={onBack} aria-label="Back to difficulties" className="p-2 rounded-full -ml-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-sm text-t-icon relative z-30 active:scale-95 transition">
+                    <button onClick={onBack} aria-label="Back to difficulties" className="p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
                         <Icons.Back className="w-6 h-6 text-t-icon" />
                     </button>
                     
