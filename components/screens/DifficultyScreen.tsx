@@ -403,18 +403,18 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                     className="w-full max-w-md flex items-center justify-center gap-3 mt-6 mb-2 opacity-0 animate-slide-in-down shrink-0" 
                     style={{ animationDelay: `${350 + cascadeDelayMs}ms` }}
                   >
-                      <button onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenProfile(); }} className="oku-main-glass p-1.5 rounded-full transition active:scale-95 text-t-icon">
+                      <button onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenProfile(); }} className="oku-difficulty-glass p-1.5 rounded-full transition active:scale-95 text-t-icon">
                           <Icons.User className="w-5 h-5" />
                       </button>
 
                       <div 
-                        className="oku-main-glass flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                        className="oku-difficulty-glass flex items-center gap-1.5 px-3 py-1.5 rounded-full"
                       >
                           <AnimatedNumber value={points} className="text-sm font-semibold text-t-primary tabular-nums leading-none pt-0.5" />
                           <div className="text-blue-500"><Icons.Diamond className="w-3.5 h-3.5 fill-current" /></div>
                       </div>
                       
-                      <button onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenSettings(); }} className="oku-main-glass p-1.5 rounded-full transition active:scale-95 text-t-icon">
+                      <button onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenSettings(); }} className="oku-difficulty-glass p-1.5 rounded-full transition active:scale-95 text-t-icon">
                           <Icons.Settings className="w-5 h-5" />
                       </button>
                   </div>

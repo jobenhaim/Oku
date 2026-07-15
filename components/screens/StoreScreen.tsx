@@ -235,7 +235,6 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                 const isPurchased = purchasedSoundPacks.includes(pack.id);
                 const isSelected = selectedSoundPackId === pack.id;
                 const isInfoActive = activeInfoId === pack.id;
-                const PackIcon = pack.icon;
                 
                 const delay = activeTab === 'all' 
                     ? (3 + STATIC_BACKGROUNDS.length + idx) * 5
@@ -260,7 +259,15 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all bg-gradient-to-t from-stone-100 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 shadow-md' : 'border-transparent active:scale-95'}`}
                             >
                                 <div className="flex-1 flex items-center justify-center relative z-10 overflow-hidden">
-                                    <PackIcon className={`w-8 h-8 ${pack.iconColor} stroke-[2.25]`} />
+                                    <img
+                                        src={pack.imageSrc}
+                                        alt=""
+                                        aria-hidden="true"
+                                        draggable={false}
+                                        loading="lazy"
+                                        decoding="async"
+                                        className="w-[50px] h-[50px] object-contain select-none pointer-events-none"
+                                    />
                                 </div>
                                 <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={pack.cost} />
                             </button>

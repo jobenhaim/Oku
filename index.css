@@ -99,8 +99,8 @@
 
 /* Solid surfaces outside the home screen keep navigation inexpensive on iPhone. */
 .oku-segmented-control {
-  background: #eceae7;
-  border: 1px solid #e1ded9;
+  background: #eeeeee;
+  border: 1px solid #dedede;
   box-shadow: 0 2px 8px rgba(41, 37, 36, 0.06);
 }
 
