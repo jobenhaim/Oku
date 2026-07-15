@@ -123,9 +123,9 @@ const DifficultyCard: React.FC<{
     const finalStyle = { ...defaultStyle, ...layoutStyle, zIndex: finalZIndex, animationDelay: `${delay + cascadeDelayMs}ms` };
 
     const titleClass = contentScale === 'large' ? 'text-3xl' : (contentScale === 'medium' ? 'text-2xl' : 'text-lg');
-    const iconSizeClass = contentScale === 'large' ? 'w-5 h-5' : (contentScale === 'medium' ? 'w-4 h-4' : 'w-3 h-3');
-    const pointsTextClass = contentScale === 'large' ? 'text-[15px]' : (contentScale === 'medium' ? 'text-[13px]' : 'text-[11px]');
+    const iconSizeClass = contentScale === 'large' ? 'w-[14px] h-[14px]' : (contentScale === 'medium' ? 'w-3 h-3' : 'w-[10px] h-[10px]');
     const progressTextClass = contentScale === 'large' ? 'text-[13px]' : (contentScale === 'medium' ? 'text-[11px]' : 'text-[9px]');
+    const pointsTextClass = progressTextClass;
     const progressBarHeight = contentScale === 'large' ? 'h-3' : (contentScale === 'medium' ? 'h-2.5' : 'h-1.5');
     const paddingClass = contentScale === 'large' ? 'p-6' : (contentScale === 'medium' ? 'p-5' : 'p-3.5');
 
@@ -225,7 +225,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     // Common style without hover/active scales
     const BTN_BG_DEFAULT = "oku-difficulty-glass";
     const BTN_TEXT_DEFAULT = "text-stone-900 dark:text-white";
-    const COMMON_BTN_STYLE = `h-14 px-3 rounded-2xl flex items-center justify-center gap-2 transition group whitespace-nowrap`;
+    const COMMON_BTN_STYLE = `h-14 px-3 rounded-2xl flex items-center justify-center gap-2 transition-transform group whitespace-nowrap`;
 
     return (
         <div 
@@ -331,7 +331,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                           <button 
                             onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenStore(); }} 
                             style={{ width: '47.5%' }}
-                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} active:scale-95 hover:brightness-105`}
+                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} active:scale-95`}
                           >
                               <Icons.Store className="w-5 h-5" /> 
                               <span className="font-bold tracking-wide">Market</span>
@@ -390,7 +390,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                           <button 
                             onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenStats(); }} 
                             style={{ width: '47.5%' }}
-                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} active:scale-95 hover:brightness-105`}
+                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} active:scale-95`}
                           >
                               <Icons.BarChart className="w-5 h-5" /> 
                               <span className="font-bold tracking-wide">Stats</span>

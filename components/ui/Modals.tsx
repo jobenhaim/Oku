@@ -597,7 +597,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                 {/* Header */}
                 <div className="flex justify-between items-center p-6 pb-2 shrink-0 bg-t-surface z-10 transition-colors duration-300">
                     <h3 className="text-2xl font-bold text-t-primary transition-colors duration-300">Settings</h3>
-                    <button onClick={handleClose} className="p-2 bg-t-surface-sec rounded-full hover:opacity-80 text-t-primary transition-all duration-300"><Icons.Close className="w-6 h-6" /></button>
+                    <button onClick={handleClose} className="p-2 bg-t-surface-sec rounded-full text-t-primary transition-all duration-300"><Icons.Close className="w-6 h-6" /></button>
                 </div>
                 
                 {/* Content Container - Flex-1 allows it to take space, relative for conditional rendering */}
@@ -621,7 +621,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                                     setTimeout(() => setShowDarkToast(false), 3000);
                                                 }
                                             }}
-                                            className={`flex-1 py-3.5 rounded-xl text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all duration-300 ${settings.appearance === opt ? 'bg-t-surface text-t-primary shadow-sm' : 'text-t-secondary hover:text-t-primary'}`}
+                                            className={`flex-1 py-3.5 rounded-xl text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all duration-300 ${settings.appearance === opt ? 'bg-t-surface text-t-primary shadow-sm' : 'text-t-secondary'}`}
                                         >
                                             {opt === 'system' && <Icons.System className="w-6 h-6" />}
                                             {opt === 'light' && <Icons.Sun className="w-6 h-6" />}
@@ -802,13 +802,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                         <div className="flex gap-2">
                                             <button 
                                                 onClick={handleCouponCancel}
-                                                className="flex-1 py-3 text-sm font-bold text-stone-500 dark:text-stone-400 bg-t-surface rounded-xl hover:bg-stone-200 dark:hover:bg-stone-700 transition active:scale-95"
+                                                className="flex-1 py-3 text-sm font-bold text-stone-500 dark:text-stone-400 bg-t-surface rounded-xl transition active:scale-95"
                                             >
                                                 Cancel
                                             </button>
                                             <button 
                                                 onClick={handleRedeemSubmit}
-                                                className="flex-1 py-3 text-sm font-bold text-white bg-blue-500 rounded-xl hover:bg-blue-600 transition active:scale-95 shadow-lg shadow-blue-500/20"
+                                                className="flex-1 py-3 text-sm font-bold text-white bg-blue-500 rounded-xl transition active:scale-95 shadow-lg shadow-blue-500/20"
                                             >
                                                 {redeemStatus === 'success' ? 'Success!' : 'Redeem'}
                                             </button>
@@ -817,7 +817,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                 ) : (
                                     <button 
                                         onClick={handleCouponClick}
-                                        className="w-full flex items-center justify-between px-4 py-4 rounded-2xl bg-t-surface-sec hover:bg-stone-200 dark:hover:bg-stone-800 transition-all duration-300 group active:scale-[0.98]"
+                                        className="w-full flex items-center justify-between px-4 py-4 rounded-2xl bg-t-surface-sec transition-all duration-300 active:scale-[0.98]"
                                     >
                                         <div className="flex items-center gap-4 flex-1 pr-2">
                                             <div className="p-2.5 rounded-xl bg-t-surface shadow-sm transition-colors duration-300 text-pink-500">
@@ -828,7 +828,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                                 <span className="text-xs font-medium text-t-secondary leading-tight transition-colors duration-300">Enter code for rewards</span>
                                             </div>
                                         </div>
-                                        <div className="bg-t-surface p-2 rounded-full text-t-icon group-hover:text-t-primary transition-colors">
+                                        <div className="bg-t-surface p-2 rounded-full text-t-icon transition-colors">
                                             <Icons.Next className="w-5 h-5" />
                                         </div>
                                     </button>
@@ -837,7 +837,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
 
                             {/* Danger Zone */}
                             <div className="pt-4 border-t border-t-border flex flex-col gap-3 transition-colors duration-300">
-                                <button onClick={onReset} className="w-full py-4 flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-2xl transition-all duration-300 font-bold text-base">
+                                <button onClick={onReset} className="w-full py-4 flex items-center justify-center gap-2 text-red-500 rounded-2xl transition-all duration-300 font-bold text-base">
                                     <Icons.Trash className="w-5 h-5" /> Reset All Progress
                                 </button>
                                 <p className="text-[10px] text-center text-t-secondary font-medium mt-1 px-4 leading-relaxed transition-colors duration-300">
@@ -848,9 +848,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                             {/* Legal Links */}
                             <div className="flex flex-col items-center gap-4 py-8">
                                 <div className="flex items-center gap-4 text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest transition-colors duration-300">
-                                    <button onClick={() => { sounds.playClick(); setActiveDoc('privacy'); }} className="hover:text-stone-600 dark:hover:text-stone-300 transition-colors duration-300 px-2 py-1">Privacy Policy</button>
+                                    <button onClick={() => { sounds.playClick(); setActiveDoc('privacy'); }} className="transition-colors duration-300 px-2 py-1">Privacy Policy</button>
                                     <div className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700 transition-colors duration-300" />
-                                    <button onClick={() => { sounds.playClick(); setActiveDoc('terms'); }} className="hover:text-stone-600 dark:hover:text-stone-300 transition-colors duration-300 px-2 py-1">Terms of Service</button>
+                                    <button onClick={() => { sounds.playClick(); setActiveDoc('terms'); }} className="transition-colors duration-300 px-2 py-1">Terms of Service</button>
                                 </div>
                                 <span className="text-[9px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.8.6</span>
                             </div>
