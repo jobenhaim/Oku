@@ -266,7 +266,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                         draggable={false}
                                         loading="lazy"
                                         decoding="async"
-                                        className="w-[50px] h-[50px] object-contain select-none pointer-events-none"
+                                        className={`${isPurchased ? 'w-[42px] h-[42px]' : 'w-[32px] h-[32px]'} max-w-[70%] max-h-[70%] object-contain select-none pointer-events-none`}
                                     />
                                 </div>
                                 <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={pack.cost} />
