@@ -315,7 +315,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
             {/* Scrollable Content Area */}
             <div 
                 ref={scrollContainerRef}
-                className="flex-1 w-full overflow-y-auto px-6 pb-6 hide-scrollbar flex flex-col items-center relative"
+                className="scroll-edge-fade flex-1 w-full overflow-y-auto px-6 pb-6 hide-scrollbar flex flex-col items-center relative"
             >
                 {renderContent()}
                 <div className="h-safe-bottom w-full shrink-0" />

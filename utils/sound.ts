@@ -1,5 +1,6 @@
 
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
+import { App as CapacitorApp } from '@capacitor/app';
 
 interface SoundProfile {
     id: string;
@@ -146,35 +147,165 @@ class SoundController {
     private vibrationEnabled: boolean = true;
     private activeProfile: SoundProfile = PROFILES['snd-zen'];
     private lastTickTime: number = 0;
+    private recoveryPromise: Promise<void> | null = null;
+    private lastObservedContextTime: number = 0;
+    private lastObservedWallTime: number = 0;
 
     constructor() {
         if (typeof window !== 'undefined') {
-            const handleResume = () => {
-                if (this.ctx) {
-                    if ((this.ctx.state as string) === 'interrupted') {
-                        try {
-                            this.ctx.close();
-                        } catch (e) {}
-                        this.ctx = null;
-                    } else if (this.ctx.state === 'suspended') {
-                        this.ctx.resume().catch(() => {});
-                    }
-                }
-            };
+            const handleResume = () => void this.recoverAudio();
             window.addEventListener('focus', handleResume);
+            window.addEventListener('pageshow', handleResume);
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible') {
                     handleResume();
                 }
             });
+
+            void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+                if (isActive) handleResume();
+            }).catch(() => {
+                // The web preview does not need the native lifecycle bridge.
+            });
+
             const unlock = () => {
-                if (this.ctx && this.ctx.state === 'suspended') {
-                    this.ctx.resume().catch(() => {});
+                const context = this.ctx;
+                if (!context) return;
+
+                const state = context.state as string;
+                if (state === 'interrupted' || state === 'suspended') {
+                    void this.recoverAudio();
+                } else if (state === 'running' && this.isContextLikelyFrozen(context)) {
+                    const recoveredContext = this.getCtx();
+                    void recoveredContext.resume().catch(() => {});
                 }
             };
             window.addEventListener('click', unlock, { capture: true, passive: true });
             window.addEventListener('touchstart', unlock, { capture: true, passive: true });
         }
+    }
+
+    private wait(ms: number): Promise<void> {
+        return new Promise(resolve => window.setTimeout(resolve, ms));
+    }
+
+    private async settleAudioOperation(operation: Promise<void>, timeoutMs: number = 350): Promise<void> {
+        await Promise.race([
+            operation.catch(() => {}),
+            this.wait(timeoutMs)
+        ]);
+    }
+
+    private observeContext(context: AudioContext) {
+        this.lastObservedContextTime = context.currentTime;
+        this.lastObservedWallTime = performance.now();
+    }
+
+    private isContextLikelyFrozen(context: AudioContext): boolean {
+        if ((context.state as string) !== 'running' || this.lastObservedWallTime === 0) return false;
+
+        const wallElapsed = performance.now() - this.lastObservedWallTime;
+        const audioElapsed = context.currentTime - this.lastObservedContextTime;
+        return wallElapsed > 500 && audioElapsed < 0.002;
+    }
+
+    private async isContextClockAdvancing(context: AudioContext): Promise<boolean> {
+        if (this.ctx !== context || (context.state as string) !== 'running') return false;
+
+        const startTime = context.currentTime;
+        await this.wait(120);
+        return this.ctx === context
+            && (context.state as string) === 'running'
+            && context.currentTime - startTime > 0.002;
+    }
+
+    private discardContext(context: AudioContext | null = this.ctx) {
+        if (!context || (this.ctx && this.ctx !== context)) return;
+
+        this.ctx = null;
+        this.profileOutput = null;
+        this.profileOutputContext = null;
+        this.lastObservedContextTime = 0;
+        this.lastObservedWallTime = 0;
+
+        if ((context.state as string) !== 'closed') {
+            void context.close().catch(() => {});
+        }
+    }
+
+    private createContext(): AudioContext {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        const context: AudioContext = new AudioContextClass();
+        this.ctx = context;
+        this.observeContext(context);
+
+        context.addEventListener('statechange', () => {
+            if (this.ctx !== context) return;
+
+            if ((context.state as string) === 'interrupted') {
+                // A notification sound can briefly retain the audio session, so
+                // try once promptly and once more after the interruption settles.
+                window.setTimeout(() => void this.recoverAudio(), 180);
+                window.setTimeout(() => void this.recoverAudio(), 900);
+            }
+        });
+
+        return context;
+    }
+
+    private async repairContext(): Promise<void> {
+        const context = this.ctx;
+        if (!context || !this.soundEnabled) return;
+
+        if ((context.state as string) === 'closed') {
+            this.discardContext(context);
+            return;
+        }
+
+        if ((context.state as string) === 'interrupted' || context.state === 'suspended') {
+            await this.settleAudioOperation(context.resume());
+        }
+
+        if (await this.isContextClockAdvancing(context)) {
+            this.observeContext(context);
+            return;
+        }
+
+        // WebKit can report `running` while currentTime is frozen. A controlled
+        // suspend/resume repairs that state on many iOS versions.
+        if (this.ctx === context) {
+            try {
+                if ((context.state as string) === 'running') {
+                    await this.settleAudioOperation(context.suspend());
+                }
+                await this.wait(40);
+                await this.settleAudioOperation(context.resume());
+            } catch (_) {}
+        }
+
+        if (await this.isContextClockAdvancing(context)) {
+            this.observeContext(context);
+            return;
+        }
+
+        // Final fallback: rebuild only the audio engine. Gameplay state and the
+        // selected sound profile live outside the AudioContext and are preserved.
+        if (this.ctx === context) {
+            this.discardContext(context);
+            const replacement = this.createContext();
+            await this.settleAudioOperation(replacement.resume());
+            this.observeContext(replacement);
+        }
+    }
+
+    recoverAudio(): Promise<void> {
+        if (!this.ctx || !this.soundEnabled) return Promise.resolve();
+        if (this.recoveryPromise) return this.recoveryPromise;
+
+        this.recoveryPromise = this.repairContext().finally(() => {
+            this.recoveryPromise = null;
+        });
+        return this.recoveryPromise;
     }
 
     setEnabled(enabled: boolean) {
@@ -200,32 +331,27 @@ class SoundController {
         }
     }
 
-    private getCtx() {
-        if (this.ctx && (this.ctx.state as string) === 'interrupted') {
-            try {
-                this.ctx.close();
-            } catch (e) {}
-            this.ctx = null;
+    private getCtx(): AudioContext {
+        let context = this.ctx;
+
+        if (context && (
+            (context.state as string) === 'interrupted'
+            || (context.state as string) === 'closed'
+            || this.isContextLikelyFrozen(context)
+        )) {
+            this.discardContext(context);
+            context = null;
         }
 
-        if (!this.ctx) {
-            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-            this.ctx = new AudioContext();
-            
-            this.ctx.addEventListener('statechange', () => {
-                if (this.ctx && (this.ctx.state as string) === 'interrupted') {
-                    try {
-                        this.ctx.close();
-                    } catch (e) {}
-                    this.ctx = null;
-                }
-            });
+        if (!context) {
+            context = this.createContext();
         }
 
-        if (this.ctx && this.ctx.state === 'suspended') {
-            this.ctx.resume().catch(() => {});
+        if (context.state === 'suspended') {
+            void context.resume().catch(() => {});
         }
-        return this.ctx;
+        this.observeContext(context);
+        return context;
     }
 
     /**

@@ -605,7 +605,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                     
                     {/* Render MAIN LIST if no doc active */}
                     {!activeDoc && (
-                        <div className="flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar animate-fade-in min-h-0">
+                        <div className="scroll-edge-fade flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar animate-fade-in min-h-0">
                             {/* Appearance */}
                             <div className="mb-6">
                                 <label className="block text-sm font-bold text-t-secondary uppercase tracking-widest mb-3 ml-1 transition-colors duration-300">Theme</label>
@@ -852,7 +852,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     <div className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700 transition-colors duration-300" />
                                     <button onClick={() => { sounds.playClick(); setActiveDoc('terms'); }} className="transition-colors duration-300 px-2 py-1">Terms of Service</button>
                                 </div>
-                                <span className="text-[9px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.8.6</span>
+                                <span className="text-[9px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.8.18</span>
                             </div>
                         </div>
                     )}
@@ -874,7 +874,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                             </div>
                             
                             {/* Document Text - This is Scrollable */}
-                            <div className="flex-1 overflow-y-auto p-6 min-h-0">
+                            <div className="scroll-edge-fade flex-1 overflow-y-auto p-6 min-h-0">
                                 <div className="text-stone-600 dark:text-stone-300 text-sm leading-relaxed whitespace-pre-wrap font-medium pb-8 transition-colors duration-300">
                                     {activeDoc === 'privacy' ? PRIVACY_POLICY_TEXT : TERMS_OF_SERVICE_TEXT}
                                 </div>

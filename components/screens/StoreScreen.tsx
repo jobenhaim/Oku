@@ -235,6 +235,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                 const isPurchased = purchasedSoundPacks.includes(pack.id);
                 const isSelected = selectedSoundPackId === pack.id;
                 const isInfoActive = activeInfoId === pack.id;
+                const useLargerArtwork = pack.id === 'snd-mech' || pack.id === 'snd-koto';
                 
                 const delay = activeTab === 'all' 
                     ? (3 + STATIC_BACKGROUNDS.length + idx) * 5
@@ -267,6 +268,9 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                         loading="lazy"
                                         decoding="async"
                                         className={`${isPurchased ? 'w-[42px] h-[42px]' : 'w-[32px] h-[32px]'} max-w-[70%] max-h-[70%] object-contain select-none pointer-events-none`}
+                                        style={{
+                                            transform: `scale(${(isPurchased ? 1.15 : 1) * (useLargerArtwork ? 1.1 : 1)})`
+                                        }}
                                     />
                                 </div>
                                 <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={pack.cost} />
@@ -299,7 +303,12 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all bg-gradient-to-t from-stone-100 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 z-10' : 'border-transparent active:scale-95'}`}
                             >
                                 <div className={`flex-1 flex items-center justify-center w-full`}>
-                                    <span className={`text-3xl font-bold ${num.uiClass}`}>5</span>
+                                    <span
+                                        className={`text-3xl font-bold ${num.uiClass}`}
+                                        style={{ transform: `scale(${isPurchased ? 1.15 : 1})` }}
+                                    >
+                                        5
+                                    </span>
                                 </div>
                                 <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={num.cost} />
                             </button>
@@ -387,8 +396,8 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
 
              <div 
                 ref={scrollContainerRef}
-                className="flex-1 w-full overflow-y-auto overflow-x-hidden px-6 pb-6 hide-scrollbar flex flex-col items-center relative"
-             >
+                className="scroll-edge-fade flex-1 w-full overflow-y-auto overflow-x-hidden px-6 pb-6 hide-scrollbar flex flex-col items-center relative"
+            >
                   <div className="w-full max-w-md pt-6">
                       <AnimatePresence initial={false} custom={direction} mode="popLayout">
                           {activeTab === 'all' && (
