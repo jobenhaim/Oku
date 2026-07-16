@@ -5,7 +5,7 @@ import { SudokuGame } from './components/SudokuGame';
 import { Storage } from './utils/storage';
 import { sounds } from './utils/sound';
 import { getPackCost, NUMBER_COLORS, ALL_BACKGROUNDS } from './utils/constants';
-import { motion, Variants } from 'framer-motion';
+import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { IAP } from './utils/iap'; // Import IAP Service
 
@@ -584,11 +584,20 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
               {/* Force Landscape Blocker */}
               <LandscapeBlocker />
 
-              {/* Background Layer (Persistent) */}
-              <div 
-                className={`absolute inset-0 z-0 transition-opacity ease-in-out duration-500 ${isScreenTransitioning ? 'atmosphere-paused' : ''} ${activeBackgroundClass}`}
-                style={{ width: '100%', height: '100%' }}
-              />
+              {/* Background layers crossfade instead of replacing the color in one frame. */}
+              <div className="absolute inset-0 z-0 overflow-hidden">
+                <AnimatePresence initial={false}>
+                  <motion.div
+                    key={isDarkMode ? 'dark-background' : (selectedBackgroundId || 'default-background')}
+                    className={`absolute inset-0 ${isScreenTransitioning ? 'atmosphere-paused' : ''} ${activeBackgroundClass}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.5, ease: 'linear' }}
+                    style={{ width: '100%', height: '100%' }}
+                  />
+                </AnimatePresence>
+              </div>
               <div 
                 className="absolute inset-0 z-[1] bg-black pointer-events-none transition-opacity duration-500" 
                 style={{ opacity: overlayOpacityValue }} 

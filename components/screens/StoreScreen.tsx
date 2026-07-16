@@ -366,7 +366,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 className={`
                                     flex-1 py-2 text-[11px] font-bold transition-all relative z-10
                                     ${isActive 
-                                        ? 'text-stone-900 dark:text-white' 
+                                        ? 'text-stone-900 dark:text-stone-900'
                                         : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'
                                     }
                                 `}

@@ -99,14 +99,14 @@
 
 /* Solid surfaces outside the home screen keep navigation inexpensive on iPhone. */
 .oku-segmented-control {
-  background: #eeeeee;
-  border: 1px solid #dedede;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   box-shadow: 0 2px 8px rgba(41, 37, 36, 0.06);
 }
 
 .dark .oku-segmented-control {
-  background: #262626;
-  border-color: #57534e;
+  background: rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 /* Diamond Shop copy needs stronger contrast over the pale store surfaces. */
@@ -184,7 +184,7 @@
 }
 
 .dark .oku-segmented-pill {
-  background: #57534e;
+  background: #ffffff;
 }
 
 /* SAFE HIGH-PERFORMANCE THEME TRANSITIONS
