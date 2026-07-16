@@ -64,7 +64,6 @@ export default {
         'gradient': 'gradient 8s ease infinite',
         'gradient-slow': 'gradient 32s ease infinite',
         'scan': 'scan 1.2s linear forwards',
-        'reveal-premium': 'revealPremium 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
         'scale-in': 'scaleIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
         'scale-out': 'scaleOut 0.15s ease-in forwards',
         'tooltip-enter': 'tooltipEnter 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
@@ -116,11 +115,6 @@ export default {
         scan: {
           '0%': { top: '-5%' },
           '100%': { top: '105%' },
-        },
-        revealPremium: {
-          '0%': { transform: 'scale(0.8)', opacity: '0', backgroundColor: '#fffbeb' },
-          '40%': { transform: 'scale(1.15)', opacity: '1', backgroundColor: '#fcd34d', boxShadow: '0 0 15px #fbbf24' },
-          '100%': { transform: 'scale(1)', opacity: '1', backgroundColor: '#fef3c7', boxShadow: 'none' },
         },
         scaleIn: {
           '0%': { opacity: '0', transform: 'translate(-50%, 10px) scale(0.8)' },

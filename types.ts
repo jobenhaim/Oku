@@ -61,6 +61,7 @@ export interface AppSettings {
 export interface PepinoState {
   unlocked: boolean;
   hasPendingGift: boolean;
+  pendingGiftCount: number;
   unlockedAt?: number; // Timestamp of when it was unlocked, for intro logic
 }
 

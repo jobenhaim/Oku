@@ -91,7 +91,9 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     }
     
     if (isRevealingCell) {
-        classes += "animate-reveal-premium z-50 relative ";
+        classes += "reveal-cell-active z-50 relative ";
+    } else if (animatingValue !== null) {
+        classes += "auto-cell-active z-40 relative ";
     }
     
     if (cell.isFixed) {
@@ -121,13 +123,28 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
         >
         {/* Cell Background Layer */}
         {!onlyContent && (
-            <div className={`absolute inset-0 ${bgClass} ${cornerClass} sudoku-cell-bg pointer-events-none z-0`} />
+            <>
+                <div className={`absolute inset-0 ${bgClass} ${cornerClass} sudoku-cell-bg pointer-events-none z-0`} />
+                {isRevealingCell && (
+                    <div className="absolute inset-0 overflow-visible pointer-events-none z-10" aria-hidden="true">
+                        <div className="reveal-focus-halo" />
+                        <div className="reveal-focus-ring" />
+                        <div className="reveal-focus-spark" />
+                    </div>
+                )}
+                {animatingValue !== null && !isRevealingCell && (
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none z-10" aria-hidden="true">
+                        <div className="auto-lock-wash" />
+                        <div className="auto-lock-brackets" />
+                    </div>
+                )}
+            </>
         )}
         
         {/* Cell Content Layer */}
         {!onlyBackground && (
             (cell.value || animatingValue !== null) ? (
-                <span className={`leading-none pt-[0.1em] relative z-20 ${!cell.isFixed && !isError && !isConflict && !isMarkedWrong && !isRevealed ? numberColor : ''}`}>
+                <span className={`leading-none pt-[0.1em] relative z-20 ${isRevealingCell ? 'reveal-number-emerge' : animatingValue !== null ? 'auto-number-lock' : ''} ${!cell.isFixed && !isError && !isConflict && !isMarkedWrong && !isRevealed ? numberColor : ''}`}>
                     {animatingValue !== null ? animatingValue : cell.value}
                 </span>
             ) : cell.notes.length > 0 ? (

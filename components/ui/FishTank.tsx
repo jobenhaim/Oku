@@ -334,7 +334,8 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
         }
         
         Storage.claimPepinoGift();
-        setPepinoState(Storage.getPepinoState()); 
+        const updatedPepinoState = Storage.getPepinoState();
+        setPepinoState(updatedPepinoState);
         setIsGiftReady(false);
 
         const r = Math.random();
@@ -355,7 +356,9 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
             // New short, punchy gift claim sound
             sounds.playGiftClaim();
             onRewardClaim(amount);
-            showReward({ amount });
+            showReward({ amount }, () => {
+                setIsGiftReady(updatedPepinoState.hasPendingGift);
+            });
         }
     };
 
@@ -381,7 +384,7 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
         }
     };
 
-    const showReward = (feedback: {amount: number}) => {
+    const showReward = (feedback: {amount: number}, onComplete?: () => void) => {
         setRewardFeedback(feedback);
         setRewardExiting(false);
         
@@ -392,6 +395,7 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
                 setRewardFeedback(null);
                 setRewardExiting(false);
                 setClickCoords(null);
+                onComplete?.();
             }, 300); 
         }, 1700);
     };
@@ -412,7 +416,7 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
         <div 
             ref={containerRef}
             // Size: w-24 h-16 (~20-25% smaller than original w-32 h-24)
-            className="w-full h-56 relative rounded-[1.75rem] overflow-hidden bg-[#e0f7fa] shadow-xl mb-6 select-none animate-pop mx-auto"
+            className="w-full h-56 relative rounded-[1.75rem] overflow-hidden bg-[#e0f7fa] dark:bg-[#173b52] shadow-xl mb-6 select-none animate-pop mx-auto"
         >
             <style>{`
                 @keyframes heart-float {
@@ -422,7 +426,7 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
             `}</style>
 
             {/* Clean Water Gradient */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#e0f7fa] via-[#d1f4fa] to-[#b3e5fc]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#e0f7fa] via-[#d1f4fa] to-[#b3e5fc] dark:from-[#173b52] dark:via-[#1f4d63] dark:to-[#2b6879]" />
 
             {/* --- LAYER 1: BACKGROUND PLANTS (Behind Fish) --- */}
             {/* Z-Index 5: Behind Fish (30) */}
@@ -467,8 +471,8 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
             >
                 <div className="bg-white/90 p-6 rounded-2xl shadow-sm border border-white/40 text-center max-w-[90%]">
                     <p className="text-xl font-bold text-stone-800 mb-3 leading-tight">Meet Pepino.</p>
-                    <p className="text-[11px] font-medium text-stone-600 mb-1 leading-relaxed">He was around when Oku was being built.</p>
-                    <p className="text-[11px] font-medium text-stone-600 leading-relaxed mb-4">Feel free to check on him after every game.</p>
+                    <p className="pepino-copy text-[11px] font-medium mb-1 leading-relaxed">He was around when Oku was being built.</p>
+                    <p className="pepino-copy text-[11px] font-medium leading-relaxed mb-4">Feel free to check on him after every game.</p>
                     <p className="text-xs font-bold text-blue-500 uppercase tracking-widest animate-pulse">Tap to continue</p>
                 </div>
             </div>
@@ -527,7 +531,7 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
                             transition={{ duration: 0.2 }}
                             className="absolute -top-10 left-1/2 whitespace-nowrap z-50 origin-bottom"
                         >
-                            <div className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl shadow-md border border-stone-100 text-[10px] font-bold text-stone-600 relative">
+                            <div className="pepino-copy bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl shadow-md border border-stone-100 text-[10px] font-bold relative">
                                 {speech}
                                 {/* Tiny triangle */}
                                 <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-[5px] border-transparent border-t-white/95"></div>

@@ -57,7 +57,7 @@ function getStoredData(): StoredData {
           starterPackPurchased: false,
           unlockedPack2: [],
           unlockedPack3: [],
-          pepino: { unlocked: false, hasPendingGift: false },
+          pepino: { unlocked: false, hasPendingGift: false, pendingGiftCount: 0 },
           seenStrictModeWarnings: [],
           redeemedCoupons: [],
           welcomeGiftClaimed: false,
@@ -117,7 +117,7 @@ function getStoredData(): StoredData {
     if (!data.unlockedPack3) data.unlockedPack3 = [];
     
     if (!data.pepino) {
-        data.pepino = { unlocked: false, hasPendingGift: false };
+        data.pepino = { unlocked: false, hasPendingGift: false, pendingGiftCount: 0 };
     } else {
         // Migration from Timer based (lastGiftTime) to Event based (hasPendingGift)
         if ((data.pepino as any).nextGiftDelay !== undefined) {
@@ -126,9 +126,17 @@ function getStoredData(): StoredData {
             data.pepino = {
                 unlocked: old.unlocked,
                 hasPendingGift: wasReady,
+                pendingGiftCount: wasReady ? 1 : 0,
                 unlockedAt: old.unlocked ? Date.now() : undefined // Fallback unlock time
             };
         }
+
+        // Migration from the single pending-gift flag to a cumulative gift queue.
+        if (typeof data.pepino.pendingGiftCount !== 'number') {
+            data.pepino.pendingGiftCount = data.pepino.hasPendingGift ? 1 : 0;
+        }
+        data.pepino.pendingGiftCount = Math.max(0, Math.floor(data.pepino.pendingGiftCount));
+        data.pepino.hasPendingGift = data.pepino.pendingGiftCount > 0;
     }
     
     if (!data.stats) {
@@ -166,7 +174,7 @@ function getStoredData(): StoredData {
         starterPackPurchased: false,
         unlockedPack2: [],
         unlockedPack3: [],
-        pepino: { unlocked: false, hasPendingGift: false },
+        pepino: { unlocked: false, hasPendingGift: false, pendingGiftCount: 0 },
         seenStrictModeWarnings: [],
         redeemedCoupons: [],
         welcomeGiftClaimed: false,
@@ -521,7 +529,7 @@ export const Storage = {
   // PEPINO (Fish) Methods
   getPepinoState: (): PepinoState => {
       const data = getStoredData();
-      return data.pepino || { unlocked: false, hasPendingGift: false };
+      return data.pepino || { unlocked: false, hasPendingGift: false, pendingGiftCount: 0 };
   },
 
   unlockPepino: () => {
@@ -529,6 +537,7 @@ export const Storage = {
       data.pepino = { 
           unlocked: true, 
           hasPendingGift: true, // First gift instant
+          pendingGiftCount: 1,
           unlockedAt: Date.now() 
       };
       saveData(data);
@@ -537,6 +546,7 @@ export const Storage = {
   grantPepinoGift: () => {
       const data = getStoredData();
       if (data.pepino && data.pepino.unlocked) {
+          data.pepino.pendingGiftCount = (data.pepino.pendingGiftCount || 0) + 1;
           data.pepino.hasPendingGift = true;
           saveData(data);
       }
@@ -545,7 +555,8 @@ export const Storage = {
   claimPepinoGift: () => {
       const data = getStoredData();
       if (data.pepino) {
-          data.pepino.hasPendingGift = false;
+          data.pepino.pendingGiftCount = Math.max(0, (data.pepino.pendingGiftCount || 0) - 1);
+          data.pepino.hasPendingGift = data.pepino.pendingGiftCount > 0;
           saveData(data);
       }
   },

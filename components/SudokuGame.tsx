@@ -31,6 +31,47 @@ interface SudokuGameProps {
   purchasedSkills: string[];
 }
 
+const SCAN_ERROR_MESSAGES = [
+  "Something looks wrong.",
+  "Better erase those.",
+  "Something's out of place.",
+  "A few numbers need attention."
+];
+
+const SCAN_CLEAN_MESSAGES = [
+  "All good here.",
+  "Very clean!",
+  "Looking spotless.",
+  "Nothing to fix."
+];
+
+const AUTO_MESSAGES = [
+  "Handled.",
+  "Done.",
+  "All set.",
+  "Taken care of."
+];
+
+const REVEAL_MESSAGES = [
+  "Revealed.",
+  "There it is.",
+  "Found one.",
+  "A little help."
+];
+
+const LEVEL_START_MESSAGES = [
+  "Good luck!"
+];
+
+const shuffledCopy = (messages: string[]) => {
+  const shuffled = [...messages];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 export const SudokuGame: React.FC<SudokuGameProps> = ({
   difficulty,
   levelId,
@@ -59,6 +100,17 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const [animatingSections, setAnimatingSections] = useState<Set<string>>(new Set());
   const [showStartHint, setShowStartHint] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
+  const [skillMessage, setSkillMessage] = useState<{ id: number; text: string; type: 'scan-error' | 'scan-clean' | 'auto' | 'reveal' | 'start' } | null>(null);
+  const scanErrorDeckRef = useRef(shuffledCopy(SCAN_ERROR_MESSAGES));
+  const scanCleanDeckRef = useRef(shuffledCopy(SCAN_CLEAN_MESSAGES));
+  const autoDeckRef = useRef(shuffledCopy(AUTO_MESSAGES));
+  const revealDeckRef = useRef(shuffledCopy(REVEAL_MESSAGES));
+  const scanErrorIndexRef = useRef(0);
+  const scanCleanIndexRef = useRef(0);
+  const autoIndexRef = useRef(0);
+  const revealIndexRef = useRef(0);
+  const skillMessageIdRef = useRef(0);
+  const skillMessageTimerRef = useRef<number | null>(null);
   
   // Timer hook
   const { timer, setTimer } = useGameTimer(
@@ -108,6 +160,84 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           }, 2000);
       }
   }, []);
+
+  const handleScanResult = useCallback((hasErrors: boolean) => {
+      const deck = hasErrors ? scanErrorDeckRef.current : scanCleanDeckRef.current;
+      const indexRef = hasErrors ? scanErrorIndexRef : scanCleanIndexRef;
+      const text = deck[indexRef.current % deck.length];
+      indexRef.current = (indexRef.current + 1) % deck.length;
+
+      if (skillMessageTimerRef.current !== null) {
+          window.clearTimeout(skillMessageTimerRef.current);
+      }
+
+      skillMessageIdRef.current += 1;
+      setSkillMessage({ id: skillMessageIdRef.current, text, type: hasErrors ? 'scan-error' : 'scan-clean' });
+      skillMessageTimerRef.current = window.setTimeout(() => {
+          setSkillMessage(null);
+          skillMessageTimerRef.current = null;
+      }, 2900);
+  }, []);
+
+  const handleAutoResult = useCallback(() => {
+      const deck = autoDeckRef.current;
+      const text = deck[autoIndexRef.current % deck.length];
+      autoIndexRef.current = (autoIndexRef.current + 1) % deck.length;
+
+      if (skillMessageTimerRef.current !== null) {
+          window.clearTimeout(skillMessageTimerRef.current);
+      }
+
+      skillMessageIdRef.current += 1;
+      setSkillMessage({ id: skillMessageIdRef.current, text, type: 'auto' });
+      skillMessageTimerRef.current = window.setTimeout(() => {
+          setSkillMessage(null);
+          skillMessageTimerRef.current = null;
+      }, 2900);
+  }, []);
+
+  const handleRevealResult = useCallback(() => {
+      const deck = revealDeckRef.current;
+      const text = deck[revealIndexRef.current % deck.length];
+      revealIndexRef.current = (revealIndexRef.current + 1) % deck.length;
+
+      if (skillMessageTimerRef.current !== null) {
+          window.clearTimeout(skillMessageTimerRef.current);
+      }
+
+      skillMessageIdRef.current += 1;
+      setSkillMessage({ id: skillMessageIdRef.current, text, type: 'reveal' });
+      skillMessageTimerRef.current = window.setTimeout(() => {
+          setSkillMessage(null);
+          skillMessageTimerRef.current = null;
+      }, 2900);
+  }, []);
+
+  useEffect(() => () => {
+      if (skillMessageTimerRef.current !== null) {
+          window.clearTimeout(skillMessageTimerRef.current);
+      }
+  }, []);
+
+  useEffect(() => {
+      if (skillMessageTimerRef.current !== null) {
+          window.clearTimeout(skillMessageTimerRef.current);
+          skillMessageTimerRef.current = null;
+      }
+      setSkillMessage(null);
+
+      const startMessageTimer = window.setTimeout(() => {
+          const text = LEVEL_START_MESSAGES[Math.floor(Math.random() * LEVEL_START_MESSAGES.length)];
+          skillMessageIdRef.current += 1;
+          setSkillMessage({ id: skillMessageIdRef.current, text, type: 'start' });
+          skillMessageTimerRef.current = window.setTimeout(() => {
+              setSkillMessage(null);
+              skillMessageTimerRef.current = null;
+          }, 2600);
+      }, 1000);
+
+      return () => window.clearTimeout(startMessageTimer);
+  }, [difficulty, levelId]);
 
   const handleGameComplete = (completedBoard: Board, completedMoveLog: MoveLogEntry[], isPerfect: boolean) => {
       if (isCompleted || isEnding) return;
@@ -222,6 +352,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       checkCompletion,
       onSaveProgress: (b, s, r, ml, au) => saveProgress(b, s, r, ml, false, au),
       onSectionComplete: handleSectionComplete,
+      onScanResult: handleScanResult,
+      onAutoResult: handleAutoResult,
+      onRevealResult: handleRevealResult,
       timer
   });
 
@@ -275,15 +408,15 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       // Hide immediately on level/difficulty change
       setShowWarning(false);
 
-      // Start a 2-second delay before fading in
+      // Let the level-start message finish before fading in the strict-mode warning.
       const delayTimer = setTimeout(() => {
           setShowWarning(true);
-      }, 2000);
+      }, 4000);
 
-      // Keep it visible for 5s (so 2s delay + 1s fade-in + 5s fully visible = 8s total before starting fade-out)
+      // Keep it fully visible for 5 seconds after its 1-second fade-in.
       const hideTimer = setTimeout(() => {
           setShowWarning(false);
-      }, 8000);
+      }, 10000);
 
       return () => {
           clearTimeout(delayTimer);
@@ -502,7 +635,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
          {/* Non-shifting container for difficulty warnings */}
          <div className="w-full h-8 flex items-center justify-center relative z-20">
              <AnimatePresence>
-             {showWarning && (
+             {showWarning && !skillMessage && (
                  <motion.div
                      initial={{ opacity: 0 }}
                      animate={{ opacity: 1 }}
@@ -526,22 +659,46 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
              initial={{ opacity: 0, scale: 0.96 }}
              animate={{ opacity: 1, scale: 1 }}
              transition={{ duration: 0.5, delay: 0.08, type: "spring", stiffness: 100, damping: 15 }}
-             className="w-full flex justify-center"
+             className="w-full flex justify-center relative overflow-visible"
          >
-            <SudokuGrid 
-                board={board}
-                selectedCell={selectedCell}
-                activeNumber={activeNumber}
-                conflicts={conflicts}
-                revealingCell={revealingCell}
-                animatingCell={animatingCell}
-                isScanning={isScanning}
-                isScanSuccess={isScanSuccess}
-                animatingSections={animatingSections}
-                settings={settings}
-                numberColor={numberColor}
-                onCellClick={onCellClickWrapper}
-            />
+            <AnimatePresence mode="wait">
+                {skillMessage && (
+                    <motion.div
+                        key={skillMessage.id}
+                        initial={{ x: '-50%', y: 52, opacity: 0 }}
+                        animate={{ x: '-50%', y: 0, opacity: 1 }}
+                        exit={{ x: '-50%', y: 52, opacity: 0 }}
+                        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                        className="absolute left-1/2 bottom-full h-8 z-0 pointer-events-none whitespace-nowrap flex items-center justify-center px-4"
+                    >
+                        <span className="text-[11px] md:text-xs font-semibold text-stone-600 dark:text-stone-700 bg-stone-50 dark:bg-stone-100 border border-stone-200/80 px-4 py-1.5 rounded-full inline-flex items-center gap-1.5 leading-none shadow-md">
+                            {skillMessage.type === 'scan-error' ? (
+                                <Icons.Close className="w-3.5 h-3.5 shrink-0 text-red-500" />
+                            ) : skillMessage.type !== 'start' ? (
+                                <Icons.Check className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+                            ) : null}
+                            {skillMessage.text}
+                        </span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <div className="relative z-10 w-full flex justify-center">
+                <SudokuGrid
+                    board={board}
+                    selectedCell={selectedCell}
+                    activeNumber={activeNumber}
+                    conflicts={conflicts}
+                    revealingCell={revealingCell}
+                    animatingCell={animatingCell}
+                    isScanning={isScanning}
+                    isScanSuccess={isScanSuccess}
+                    animatingSections={animatingSections}
+                    settings={settings}
+                    numberColor={numberColor}
+                    onCellClick={onCellClickWrapper}
+                />
+            </div>
          </motion.div>
 
          {/* Number Pad */}

@@ -260,9 +260,9 @@ export const SOUND_PACKS = [
 ];
 
 export const SKILLS = [
-    { id: 'skill-auto', name: 'Auto', cost: 500, icon: Icons.Auto, class: 'text-amber-500', bgClass: 'bg-amber-50/60 dark:bg-amber-900/10', description: "Automatically fills a cell when it's the only option left." },
+    { id: 'skill-auto', name: 'Auto', cost: 500, icon: Icons.Auto, class: 'text-amber-500', bgClass: 'bg-amber-50/60 dark:bg-amber-900/10', description: "Automatically fills a cell when it's the only option left, right or wrong!" },
     { id: 'skill-scan', name: 'Scan', cost: 750, icon: Icons.Scan, class: 'text-red-500', bgClass: 'bg-red-50/60 dark:bg-red-900/10', description: "Spot errors instantly. Essential for Hard, Intense, and Impossible modes." },
-    { id: 'skill-reveal', name: 'Reveal', cost: 1000, icon: Icons.Reveal, class: 'text-purple-500', bgClass: 'bg-purple-50/60 dark:bg-purple-900/10', description: "Reveals a correct number randomly. Available after one minute of play." },
+    { id: 'skill-reveal', name: 'Reveal', cost: 1000, icon: Icons.Reveal, class: 'text-purple-500', bgClass: 'bg-purple-50/60 dark:bg-purple-900/10', description: "Reveals a correct number randomly. Available after one minute." },
 ];
 
 export const DIAMOND_OFFERS: DiamondOffer[] = [

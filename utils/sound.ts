@@ -1395,6 +1395,11 @@ class SoundController {
         // master bus as gameplay—even for Paper's filtered noise profile.
         this.playTone(freq, profile.duration, 0.5, undefined, undefined, true, profile);
     }
+
+    playSelectionHaptic() {
+        if (!this.vibrationEnabled) return;
+        Haptics.selectionChanged().catch(() => {});
+    }
 }
 
 export const sounds = new SoundController();

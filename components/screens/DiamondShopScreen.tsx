@@ -95,7 +95,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                 className="w-full bg-t-surface rounded-[1.75rem] shadow-sm border border-stone-200/80 dark:border-stone-800 overflow-hidden text-left active:scale-[0.99] transition-transform"
                             >
                                 <div className="p-4 pb-3">
-                                    <div className="flex items-start justify-between gap-3 mb-3">
+                                    <div className="mb-3">
                                         <div className="min-w-0">
                                             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-300 mb-1.5">
                                                 <Icons.Star className="w-3 h-3" />
@@ -103,9 +103,6 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                             </div>
                                             <h2 id="premium-heading" className="text-xl font-bold text-t-primary leading-tight">Meet Pepino</h2>
                                             <p className="text-[11px] font-medium text-t-secondary mt-0.5">A little companion for your Sudoku journey.</p>
-                                        </div>
-                                        <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center shrink-0 rotate-2">
-                                            <Icons.Fish className="w-7 h-7 text-red-600 dark:text-red-400" />
                                         </div>
                                     </div>
 
@@ -170,19 +167,24 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                             <Icons.Diamond className="w-5 h-5 text-blue-500 fill-current" />
                                             <div className="text-center">
                                                 <span className="block text-sm font-bold text-t-primary leading-none">500</span>
-                                                <span className="block text-[8px] font-semibold text-t-secondary mt-1">Diamonds</span>
                                             </div>
                                         </div>
                                         <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
-                                            <Icons.Auto className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                                            <Icons.Auto className="w-5 h-5 scale-150 text-amber-600 dark:text-amber-400" />
                                             <span className="text-[9px] font-bold text-t-primary">Auto</span>
                                         </div>
                                         <div className="rounded-2xl bg-red-50 dark:bg-red-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
-                                            <Icons.Scan className="w-5 h-5 text-red-500 dark:text-red-400" />
+                                            <Icons.Scan className="w-5 h-5 scale-150 text-red-500 dark:text-red-400" />
                                             <span className="text-[9px] font-bold text-t-primary">Scan</span>
                                         </div>
                                         <div className="rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
-                                            <Icons.Music className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                                            <img
+                                                src="/assets/sound-pack-icons/piano_icon.webp"
+                                                alt=""
+                                                aria-hidden="true"
+                                                className="block w-5 h-5 scale-150 object-contain object-center select-none pointer-events-none"
+                                                draggable={false}
+                                            />
                                             <span className="text-[9px] font-bold text-t-primary">Piano</span>
                                         </div>
                                     </div>

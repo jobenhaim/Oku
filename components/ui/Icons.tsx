@@ -20,8 +20,6 @@ import {
   Diamond,
   Video,
   Smartphone,
-  Zap,
-  ScanLine,
   Gift,
   Clock,
   Sun,
@@ -73,6 +71,18 @@ import {
   Terminal
 } from 'lucide-react';
 
+type SkillAssetIconProps = React.ImgHTMLAttributes<HTMLImageElement>;
+
+const SkillAssetIcon = ({ className = '', alt = '', ...props }: SkillAssetIconProps & { src: string }) => (
+  <img
+    {...props}
+    alt={alt}
+    aria-hidden={alt ? undefined : true}
+    className={`block object-contain object-center select-none pointer-events-none ${className}`}
+    draggable={false}
+  />
+);
+
 export const Icons = {
   Dev: (props: any) => <Terminal {...props} />,
   Settings: (props: any) => <Settings {...props} />,
@@ -97,9 +107,9 @@ export const Icons = {
   // Added Smartphone to match usage in constants.ts
   Smartphone: (props: any) => <Smartphone {...props} />,
   Vibration: (props: any) => <Smartphone {...props} />,
-  Auto: (props: any) => <Zap {...props} />,
-  Scan: (props: any) => <ScanLine {...props} />,
-  Reveal: (props: any) => <Eye {...props} />,
+  Auto: (props: SkillAssetIconProps) => <SkillAssetIcon src="/assets/skill-icons/auto.webp" {...props} />,
+  Scan: (props: SkillAssetIconProps) => <SkillAssetIcon src="/assets/skill-icons/scan.webp" {...props} />,
+  Reveal: (props: SkillAssetIconProps) => <SkillAssetIcon src="/assets/skill-icons/reveal.webp" {...props} />,
   Gift: (props: any) => <Gift {...props} />,
   Clock: (props: any) => <Clock {...props} />,
   Sun: (props: any) => <Sun {...props} />,

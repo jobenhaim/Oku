@@ -13,12 +13,15 @@ interface UseSudokuBoardProps {
   onSectionComplete?: (sections: string[]) => void;
 }
 
-const checkSectionCompletion = (board: Board, solvedBoard: number[][], r: number, c: number) => {
+const checkSectionCompletion = (board: Board, solvedBoard: number[][], r: number, c: number, difficulty: Difficulty) => {
     const sections: string[] = [];
+    const isStrictMode = difficulty === Difficulty.Hard || difficulty === Difficulty.Intense || difficulty === Difficulty.Impossible;
+    const isCompleteCell = (value: CellValue, expected: number) => value !== null && (isStrictMode || value === expected);
+
     // Row
-    if (board[r].every((cell, idx) => cell.value === solvedBoard[r][idx])) sections.push(`row_${r}:${r}_${c}`);
+    if (board[r].every((cell, idx) => isCompleteCell(cell.value, solvedBoard[r][idx]))) sections.push(`row_${r}:${r}_${c}`);
     // Col
-    if (board.every((row, idx) => row[c].value === solvedBoard[idx][c])) sections.push(`col_${c}:${r}_${c}`);
+    if (board.every((row, idx) => isCompleteCell(row[c].value, solvedBoard[idx][c]))) sections.push(`col_${c}:${r}_${c}`);
     // Box
     const startR = Math.floor(r/3)*3;
     const startC = Math.floor(c/3)*3;
@@ -26,7 +29,7 @@ const checkSectionCompletion = (board: Board, solvedBoard: number[][], r: number
     let boxOk = true;
     for(let i=0; i<3; i++) {
         for(let j=0; j<3; j++) {
-            if(board[startR+i][startC+j].value !== solvedBoard[startR+i][startC+j]) {
+            if(!isCompleteCell(board[startR+i][startC+j].value, solvedBoard[startR+i][startC+j])) {
                 boxOk = false;
                 break;
             }
@@ -197,7 +200,7 @@ export const useSudokuBoard = ({
                         
                         // Only trigger section complete if NOT finishing the whole board
                         if (!newCell.isError && !isFinishingMove) {
-                            const completedSections = checkSectionCompletion(newBoard, solvedBoard, row, col);
+                            const completedSections = checkSectionCompletion(newBoard, solvedBoard, row, col, difficulty);
                             if (completedSections.length > 0 && onSectionComplete) onSectionComplete(completedSections);
                         }
                      }
@@ -292,7 +295,7 @@ export const useSudokuBoard = ({
             
             // Only trigger section complete if NOT finishing the whole board
             if (!newCell.isError && !isFinishingMove) {
-                const completedSections = checkSectionCompletion(newBoard, solvedBoard, r, c);
+                const completedSections = checkSectionCompletion(newBoard, solvedBoard, r, c, difficulty);
                 if (completedSections.length > 0 && onSectionComplete) onSectionComplete(completedSections);
             }
         }

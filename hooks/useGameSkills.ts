@@ -17,15 +17,21 @@ interface UseGameSkillsProps {
     checkCompletion: (board: Board) => void;
     onSaveProgress: (board: Board, scanUses?: number, revealUses?: number, moveLog?: MoveLogEntry[], autoUses?: number) => void;
     onSectionComplete?: (sections: string[]) => void;
+    onScanResult?: (hasErrors: boolean) => void;
+    onAutoResult?: () => void;
+    onRevealResult?: () => void;
     timer: number;
 }
 
-const checkSectionCompletion = (board: Board, solvedBoard: number[][], r: number, c: number) => {
+const checkSectionCompletion = (board: Board, solvedBoard: number[][], r: number, c: number, difficulty: Difficulty) => {
     const sections: string[] = [];
+    const isStrictMode = difficulty === Difficulty.Hard || difficulty === Difficulty.Intense || difficulty === Difficulty.Impossible;
+    const isCompleteCell = (value: CellValue, expected: number) => value !== null && (isStrictMode || value === expected);
+
     // Row
-    if (board[r].every((cell, idx) => cell.value === solvedBoard[r][idx])) sections.push(`row_${r}:${r}_${c}`);
+    if (board[r].every((cell, idx) => isCompleteCell(cell.value, solvedBoard[r][idx]))) sections.push(`row_${r}:${r}_${c}`);
     // Col
-    if (board.every((row, idx) => row[c].value === solvedBoard[idx][c])) sections.push(`col_${c}:${r}_${c}`);
+    if (board.every((row, idx) => isCompleteCell(row[c].value, solvedBoard[idx][c]))) sections.push(`col_${c}:${r}_${c}`);
     // Box
     const startR = Math.floor(r/3)*3;
     const startC = Math.floor(c/3)*3;
@@ -33,7 +39,7 @@ const checkSectionCompletion = (board: Board, solvedBoard: number[][], r: number
     let boxOk = true;
     for(let i=0; i<3; i++) {
         for(let j=0; j<3; j++) {
-            if(board[startR+i][startC+j].value !== solvedBoard[startR+i][startC+j]) {
+            if(!isCompleteCell(board[startR+i][startC+j].value, solvedBoard[startR+i][startC+j])) {
                 boxOk = false;
                 break;
             }
@@ -57,6 +63,9 @@ export const useGameSkills = ({
     checkCompletion,
     onSaveProgress,
     onSectionComplete,
+    onScanResult,
+    onAutoResult,
+    onRevealResult,
     timer
 }: UseGameSkillsProps) => {
     
@@ -148,7 +157,7 @@ export const useGameSkills = ({
         if (valToFill === null) valToFill = solvedBoard[r][c];
         
         const val = valToFill as number;
-        setAnimatingCell({ r, c, value: 1 });
+        setAnimatingCell({ r, c, value: val });
         setHistory(prev => [...prev.slice(-20), JSON.parse(JSON.stringify(board))]);
         const newBoard = board.map(row => [...row]);
         
@@ -179,21 +188,12 @@ export const useGameSkills = ({
         
         const isFinishingMove = isBoardComplete(newBoard);
         if (!newBoard[r][c].isError && !isFinishingMove) {
-            const completedSections = checkSectionCompletion(newBoard, solvedBoard, r, c);
+            const completedSections = checkSectionCompletion(newBoard, solvedBoard, r, c, difficulty);
             if (completedSections.length > 0 && onSectionComplete) onSectionComplete(completedSections);
         }
 
-        const startTime = performance.now();
-        const duration = 300; 
-        const animate = (time: number) => {
-            const elapsed = time - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const currentVal = Math.floor(1 + (val - 1) * progress);
-            setAnimatingCell({ r, c, value: currentVal });
-            if (progress < 1) requestAnimationFrame(animate);
-            else setAnimatingCell(null);
-        };
-        requestAnimationFrame(animate);
+        setTimeout(() => setAnimatingCell(null), 400);
+        onAutoResult?.();
         checkCompletion(newBoard);
     };
 
@@ -222,6 +222,7 @@ export const useGameSkills = ({
                 return next;
             });
             setScanCooldown(false);
+            onScanResult?.(hasErrors);
 
             if (!hasErrors) {
                 setIsScanSuccess(true);
@@ -289,17 +290,18 @@ export const useGameSkills = ({
                 onSaveProgress(newBoard, undefined, next, moveLog.current, autoUses);
                 return next;
             });
+            onRevealResult?.();
 
             const isFinishingMove = isBoardComplete(newBoard);
             if (!isFinishingMove) {
-                const completedSections = checkSectionCompletion(newBoard, solvedBoard, target.r, target.c);
+                const completedSections = checkSectionCompletion(newBoard, solvedBoard, target.r, target.c, difficulty);
                 if (completedSections.length > 0 && onSectionComplete) onSectionComplete(completedSections);
             }
             
             setTimeout(() => {
                 setRevealingCell(null);
                 checkCompletion(newBoard);
-            }, 300); 
+            }, 450);
         }, 500); 
     };
 

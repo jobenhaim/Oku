@@ -73,13 +73,13 @@ export const GameControls: React.FC<GameControlsProps> = ({
                             disabled={revealUses <= 0 || !!revealingCell || isRevealLocked}
                         >
                         {/* Removed border class */}
-                        <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative ${getBaseContainerStyle(revealUses > 0 && !isRevealLocked)}`}>
+                        <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative flex items-center justify-center ${getBaseContainerStyle(revealUses > 0 && !isRevealLocked)}`}>
                             {isRevealLocked ? (
                                 <div className="w-5 h-5 flex items-center justify-center">
                                     <span className="text-[10px] font-bold text-stone-400 font-mono leading-none">{revealTimeLeft}s</span>
                                 </div>
                             ) : (
-                                <Icons.Reveal className={`w-5 h-5 ${revealUses > 0 ? 'text-purple-600 dark:text-purple-400' : 'text-stone-300 dark:text-stone-600'}`} />
+                                <Icons.Reveal className={`w-5 h-5 scale-[1.15] ${revealUses > 0 ? 'opacity-100' : 'opacity-30 grayscale'}`} />
                             )}
                             
                             {/* Larger Badge for Reveal - Moved to -top-4 -right-4 */}
@@ -98,8 +98,8 @@ export const GameControls: React.FC<GameControlsProps> = ({
                             className={`flex flex-col items-center gap-1 transition relative ${getBaseButtonStyle(scanUses > 0 && !scanCooldown && !isScanning)}`}
                             disabled={scanUses <= 0 || scanCooldown || isScanning}
                         >
-                        <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative ${getBaseContainerStyle(scanUses > 0 && !scanCooldown && !isScanning)}`}>
-                            <Icons.Scan className={`w-5 h-5 ${scanUses > 0 && !scanCooldown && !isScanning ? 'text-red-600 dark:text-red-400' : 'text-stone-300 dark:text-stone-600'}`} />
+                        <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative flex items-center justify-center ${getBaseContainerStyle(scanUses > 0 && !scanCooldown && !isScanning)}`}>
+                            <Icons.Scan className={`w-5 h-5 scale-[1.15] ${scanUses > 0 && !scanCooldown && !isScanning ? 'opacity-100' : 'opacity-30 grayscale'}`} />
                             {/* Larger Badge for Scan - Moved to -top-4 -right-4 */}
                             {scanUses > 0 && (
                                 <div className={`absolute -top-4 -right-4 w-7 h-7 rounded-full flex items-center justify-center text-base font-bold leading-none shadow-sm z-10 ${scanUses > 0 ? 'bg-blue-600 text-white' : 'hidden'}`}>
@@ -119,12 +119,12 @@ export const GameControls: React.FC<GameControlsProps> = ({
                         disabled={!isAutoAvailable || autoUses <= 0}
                     >
                         {/* Removed borders and rings */}
-                        <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative ${
+                        <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative flex items-center justify-center ${
                             isAutoAvailable && autoUses > 0 
                             ? 'bg-amber-100 dark:bg-amber-900/30' 
                             : 'bg-t-surface-sec dark:bg-stone-800/50'
                         }`}>
-                            <Icons.Auto className={`w-5 h-5 ${isAutoAvailable && autoUses > 0 ? 'text-amber-600 dark:text-amber-400 animate-pulse' : 'text-stone-300 dark:text-stone-600'}`} />
+                            <Icons.Auto className={`w-5 h-5 scale-[1.15] ${isAutoAvailable && autoUses > 0 ? 'opacity-100 animate-pulse' : 'opacity-30 grayscale'}`} />
                             {autoUses > 0 && (
                                 <div className="absolute -top-4 -right-4 w-7 h-7 rounded-full flex items-center justify-center text-base font-bold leading-none shadow-sm z-10 bg-blue-600 text-white">
                                     {autoUses}

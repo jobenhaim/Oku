@@ -104,7 +104,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
         setUnlockedPacks2(data.unlockedPack2 || []);
         setUnlockedPacks3(data.unlockedPack3 || []);
         setNextBonusClaimTime(data.nextBonusClaimTime || 0);
-        setPepinoState(data.pepino || { unlocked: false, hasPendingGift: false });
+        setPepinoState(data.pepino || { unlocked: false, hasPendingGift: false, pendingGiftCount: 0 });
         setRedeemedCoupons(data.redeemedCoupons || []);
         
         const isDark = data.settings.appearance === 'dark' || (data.settings.appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -321,6 +321,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   };
 
   const handleSelectSoundPack = (id: string) => {
+    sounds.playSelectionHaptic();
     Storage.selectSoundPack(id);
     setSelectedSoundPackId(id);
   };
