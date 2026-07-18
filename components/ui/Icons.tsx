@@ -16,6 +16,7 @@ import {
   Eye,
   Trash2,
   X,
+  Home,
   ShoppingBag,
   Diamond,
   Video,
@@ -100,6 +101,7 @@ export const Icons = {
   Eye: (props: any) => <Eye {...props} />,
   Trash: (props: any) => <Trash2 {...props} />,
   Close: (props: any) => <X {...props} />,
+  Home: (props: any) => <Home {...props} />,
   Store: (props: any) => <ShoppingBag {...props} />,
   ShoppingBag: (props: any) => <ShoppingBag {...props} />,
   Diamond: (props: any) => <Diamond {...props} />, // Using Diamond as Rhombus

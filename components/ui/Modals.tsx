@@ -426,11 +426,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
 
 interface NotEnoughPointsModalProps {
     onClose: () => void;
-    onGetMore: () => void;
-    onGoPlay: () => void;
+    onShop: () => void;
+    onHome: () => void;
 }
 
-export const NotEnoughPointsModal: React.FC<NotEnoughPointsModalProps> = ({ onClose, onGetMore, onGoPlay }) => {
+export const NotEnoughPointsModal: React.FC<NotEnoughPointsModalProps> = ({ onClose, onShop, onHome }) => {
     const [isClosing, setIsClosing] = useState(false);
     const handleAction = (action: () => void) => {
         sounds.playClick();
@@ -445,32 +445,29 @@ export const NotEnoughPointsModal: React.FC<NotEnoughPointsModalProps> = ({ onCl
                     <Icons.Close className="w-4 h-4" />
                 </button>
                 
-                <div className="flex flex-col items-center justify-center gap-2 mb-8 mt-4">
-                     <div className="text-lg font-bold text-t-primary flex items-center gap-2 transition-colors duration-300">
-                        Not enough <span className="text-blue-500"><Icons.Diamond className="w-5 h-5 fill-current" /></span>
-                     </div>
+                <div className="flex items-center justify-center mb-7 mt-4">
+                    <h3 className="text-lg font-bold text-t-primary flex items-center gap-2 transition-colors duration-300">
+                        <span>Not enough</span>
+                        <Icons.Diamond className="w-5 h-5 text-blue-500 fill-current" />
+                    </h3>
                 </div>
 
                 <div className="flex flex-col gap-3">
-                     {/* Premium Get More Button (Silver Design) */}
-                     <button 
-                        onClick={() => handleAction(onGetMore)} 
-                        style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f1f5f9 50%, #cbd5e1 100%)' }}
-                        className="w-full p-4 text-slate-800 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,1)] flex items-center justify-center gap-2 active:scale-95 transition-all relative overflow-hidden"
-                     >
-                          {/* Soft Blue Glow at bottom (Diamond reflection) */}
-                          <div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-blue-100/30 to-transparent pointer-events-none" />
-                          
-                          {/* Sharp Shine Animation */}
-                          <div className="absolute inset-0 -translate-x-full animate-[shimmer_4s_infinite] bg-gradient-to-r from-transparent via-white/80 to-transparent skew-x-[-20deg] pointer-events-none" />
+                    <button
+                        onClick={() => handleAction(onShop)}
+                        className="w-full py-3.5 text-white bg-blue-500 rounded-2xl font-bold shadow-sm shadow-blue-500/20 active:scale-95 transition-transform duration-200 flex items-center justify-center gap-2"
+                    >
+                        <Icons.Star className="w-4 h-4 fill-current" />
+                        Oku Shop
+                    </button>
 
-                          <Icons.Diamond className="w-4 h-4 text-blue-500 fill-current relative z-10 drop-shadow-sm" />
-                          <span className="font-bold tracking-wide relative z-10 text-slate-700">Get More</span> 
-                     </button>
-
-                     <button onClick={() => handleAction(onGoPlay)} className="w-full py-4 text-stone-700 bg-stone-200 dark:text-stone-200 dark:bg-stone-700 rounded-2xl font-bold active:scale-95 transition-all duration-300 hover:opacity-90">
-                        Go play
-                     </button>
+                    <button
+                        onClick={() => handleAction(onHome)}
+                        className="w-full py-3.5 text-stone-700 dark:text-stone-200 bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl font-bold active:scale-95 transition-transform duration-200 flex items-center justify-center gap-2"
+                    >
+                        <Icons.Home className="w-4 h-4" strokeWidth={2.6} />
+                        Home
+                    </button>
                 </div>
             </div>
         </div>

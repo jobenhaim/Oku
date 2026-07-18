@@ -430,10 +430,10 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       navigate('diamondShop', 'forward');
   };
 
-  const handleGoPlay = () => {
+  const handleReturnHome = () => {
       setShowNotEnoughPoints(false);
       setPurchaseCandidate(null);
-      if (screen === 'store') {
+      if (screen !== 'difficulty') {
           navigate('difficulty', 'back');
       }
   };
@@ -858,8 +858,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                 {showNotEnoughPoints && (
                     <NotEnoughPointsModal 
                         onClose={() => setShowNotEnoughPoints(false)} 
-                        onGetMore={handleNavigateToShop} 
-                        onGoPlay={handleGoPlay} 
+                        onShop={handleNavigateToShop}
+                        onHome={handleReturnHome}
                     />
                 )}
                 {showResetConfirm && (
