@@ -63,6 +63,36 @@ const LEVEL_START_MESSAGES = [
   "Good luck!"
 ];
 
+const HALFWAY_MESSAGES = [
+  "Halfway there!",
+  "Halfway done!",
+  "You're halfway!",
+  "Halfway through!"
+];
+
+const COMPLETE_MESSAGES = [
+  "Sudoku complete!",
+  "Puzzle solved!",
+  "Nicely done!",
+  "Beautiful work!",
+  "You did it!",
+  "All finished!",
+  "Well played!",
+  "Great solve!",
+  "Board complete!",
+  "Another one solved!",
+  "That's a win!"
+];
+
+type PillMessageType = 'scan-error' | 'scan-clean' | 'auto' | 'reveal' | 'start' | 'warning' | 'reveal-ready' | 'halfway' | 'notes' | 'complete';
+
+interface PillMessage {
+  id: number;
+  text: string;
+  type: PillMessageType;
+  holdMs: number;
+}
+
 const shuffledCopy = (messages: string[]) => {
   const shuffled = [...messages];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -99,18 +129,25 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   const [animatingSections, setAnimatingSections] = useState<Set<string>>(new Set());
   const [showStartHint, setShowStartHint] = useState(false);
-  const [showWarning, setShowWarning] = useState(false);
-  const [skillMessage, setSkillMessage] = useState<{ id: number; text: string; type: 'scan-error' | 'scan-clean' | 'auto' | 'reveal' | 'start' } | null>(null);
+  const [pillMessage, setPillMessage] = useState<PillMessage | null>(null);
+  const [pillQueue, setPillQueue] = useState<PillMessage[]>([]);
+  const [isPillGapActive, setIsPillGapActive] = useState(false);
   const scanErrorDeckRef = useRef(shuffledCopy(SCAN_ERROR_MESSAGES));
   const scanCleanDeckRef = useRef(shuffledCopy(SCAN_CLEAN_MESSAGES));
   const autoDeckRef = useRef(shuffledCopy(AUTO_MESSAGES));
   const revealDeckRef = useRef(shuffledCopy(REVEAL_MESSAGES));
+  const halfwayDeckRef = useRef(shuffledCopy(HALFWAY_MESSAGES));
+  const completeDeckRef = useRef(shuffledCopy(COMPLETE_MESSAGES));
   const scanErrorIndexRef = useRef(0);
   const scanCleanIndexRef = useRef(0);
   const autoIndexRef = useRef(0);
   const revealIndexRef = useRef(0);
-  const skillMessageIdRef = useRef(0);
-  const skillMessageTimerRef = useRef<number | null>(null);
+  const halfwayIndexRef = useRef(0);
+  const completeIndexRef = useRef(0);
+  const pillMessageIdRef = useRef(0);
+  const halfwayShownRef = useRef(false);
+  const halfwayTrackingReadyRef = useRef(false);
+  const revealReadyShownRef = useRef(false);
   
   // Timer hook
   const { timer, setTimer } = useGameTimer(
@@ -161,83 +198,78 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       }
   }, []);
 
+  const enqueuePill = useCallback((message: Omit<PillMessage, 'id'>) => {
+      pillMessageIdRef.current += 1;
+      const id = pillMessageIdRef.current;
+      setPillQueue(current => [...current, { ...message, id }]);
+  }, []);
+
+  useEffect(() => {
+      if (pillMessage || isPillGapActive || pillQueue.length === 0) return;
+      const [nextMessage, ...remainingMessages] = pillQueue;
+      setPillQueue(remainingMessages);
+      setPillMessage(nextMessage);
+  }, [pillMessage, pillQueue, isPillGapActive]);
+
+  useEffect(() => {
+      if (!pillMessage) return;
+      const displayTimer = window.setTimeout(() => {
+          setPillMessage(null);
+          setIsPillGapActive(true);
+      }, 300 + pillMessage.holdMs);
+      return () => window.clearTimeout(displayTimer);
+  }, [pillMessage]);
+
+  useEffect(() => {
+      if (!isPillGapActive) return;
+      const gapTimer = window.setTimeout(() => setIsPillGapActive(false), 800);
+      return () => window.clearTimeout(gapTimer);
+  }, [isPillGapActive]);
+
   const handleScanResult = useCallback((hasErrors: boolean) => {
       const deck = hasErrors ? scanErrorDeckRef.current : scanCleanDeckRef.current;
       const indexRef = hasErrors ? scanErrorIndexRef : scanCleanIndexRef;
       const text = deck[indexRef.current % deck.length];
       indexRef.current = (indexRef.current + 1) % deck.length;
-
-      if (skillMessageTimerRef.current !== null) {
-          window.clearTimeout(skillMessageTimerRef.current);
-      }
-
-      skillMessageIdRef.current += 1;
-      setSkillMessage({ id: skillMessageIdRef.current, text, type: hasErrors ? 'scan-error' : 'scan-clean' });
-      skillMessageTimerRef.current = window.setTimeout(() => {
-          setSkillMessage(null);
-          skillMessageTimerRef.current = null;
-      }, 2900);
-  }, []);
+      enqueuePill({ text, type: hasErrors ? 'scan-error' : 'scan-clean', holdMs: 2500 });
+  }, [enqueuePill]);
 
   const handleAutoResult = useCallback(() => {
       const deck = autoDeckRef.current;
       const text = deck[autoIndexRef.current % deck.length];
       autoIndexRef.current = (autoIndexRef.current + 1) % deck.length;
-
-      if (skillMessageTimerRef.current !== null) {
-          window.clearTimeout(skillMessageTimerRef.current);
-      }
-
-      skillMessageIdRef.current += 1;
-      setSkillMessage({ id: skillMessageIdRef.current, text, type: 'auto' });
-      skillMessageTimerRef.current = window.setTimeout(() => {
-          setSkillMessage(null);
-          skillMessageTimerRef.current = null;
-      }, 2900);
-  }, []);
+      enqueuePill({ text, type: 'auto', holdMs: 2500 });
+  }, [enqueuePill]);
 
   const handleRevealResult = useCallback(() => {
       const deck = revealDeckRef.current;
       const text = deck[revealIndexRef.current % deck.length];
       revealIndexRef.current = (revealIndexRef.current + 1) % deck.length;
-
-      if (skillMessageTimerRef.current !== null) {
-          window.clearTimeout(skillMessageTimerRef.current);
-      }
-
-      skillMessageIdRef.current += 1;
-      setSkillMessage({ id: skillMessageIdRef.current, text, type: 'reveal' });
-      skillMessageTimerRef.current = window.setTimeout(() => {
-          setSkillMessage(null);
-          skillMessageTimerRef.current = null;
-      }, 2900);
-  }, []);
-
-  useEffect(() => () => {
-      if (skillMessageTimerRef.current !== null) {
-          window.clearTimeout(skillMessageTimerRef.current);
-      }
-  }, []);
+      enqueuePill({ text, type: 'reveal', holdMs: 2500 });
+  }, [enqueuePill]);
 
   useEffect(() => {
-      if (skillMessageTimerRef.current !== null) {
-          window.clearTimeout(skillMessageTimerRef.current);
-          skillMessageTimerRef.current = null;
-      }
-      setSkillMessage(null);
+      setPillQueue([]);
+      setPillMessage(null);
+      setIsPillGapActive(false);
+      halfwayShownRef.current = false;
+      revealReadyShownRef.current = false;
 
       const startMessageTimer = window.setTimeout(() => {
           const text = LEVEL_START_MESSAGES[Math.floor(Math.random() * LEVEL_START_MESSAGES.length)];
-          skillMessageIdRef.current += 1;
-          setSkillMessage({ id: skillMessageIdRef.current, text, type: 'start' });
-          skillMessageTimerRef.current = window.setTimeout(() => {
-              setSkillMessage(null);
-              skillMessageTimerRef.current = null;
-          }, 2600);
+          enqueuePill({ text, type: 'start', holdMs: 2000 });
       }, 1000);
 
-      return () => window.clearTimeout(startMessageTimer);
-  }, [difficulty, levelId]);
+      const isStrictMode = difficulty === Difficulty.Hard || difficulty === Difficulty.Intense || difficulty === Difficulty.Impossible;
+      const warningTimer = isStrictMode ? window.setTimeout(() => {
+          enqueuePill({ text: 'Mistakes stay hidden.', type: 'warning', holdMs: 5000 });
+      }, 4100) : null;
+
+      return () => {
+          window.clearTimeout(startMessageTimer);
+          if (warningTimer !== null) window.clearTimeout(warningTimer);
+      };
+  }, [difficulty, levelId, enqueuePill]);
 
   const handleGameComplete = (completedBoard: Board, completedMoveLog: MoveLogEntry[], isPerfect: boolean) => {
       if (isCompleted || isEnding) return;
@@ -282,7 +314,18 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           generateReplay();
       }
       
-      setTimeout(() => {
+      const completionText = completeDeckRef.current[completeIndexRef.current % completeDeckRef.current.length];
+      completeIndexRef.current = (completeIndexRef.current + 1) % completeDeckRef.current.length;
+      enqueuePill({
+          text: completionText,
+          type: 'complete',
+          holdMs: 2500
+      });
+
+      window.setTimeout(() => {
+          setPillQueue([]);
+          setPillMessage(null);
+          setIsPillGapActive(false);
           setIsCompleted(true);
           onComplete();
       }, 1000);
@@ -359,6 +402,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   });
 
   useEffect(() => {
+      halfwayTrackingReadyRef.current = false;
       const progress = Storage.getLevelProgress(difficulty, levelId);
       if (progress && progress.status === 'in-progress' && progress.boardState) {
           initializeBoard(progress.boardState, progress.moveLog);
@@ -389,41 +433,43 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setReplayUrl(null);
       setShowReplay(false);
       setAnimatingSections(new Set());
+
+      const editableCells = initialBoardRef.current.flat().filter(cell => !cell.isFixed).length;
+      const currentBoard = progress?.boardState ?? initialBoardRef.current;
+      const filledEditableCells = currentBoard.flat().filter(cell => !cell.isFixed && cell.value !== null).length;
+      halfwayShownRef.current = editableCells > 0 && filledEditableCells >= Math.ceil(editableCells / 2);
+      revealReadyShownRef.current = Boolean(progress && progress.timeElapsed >= 60);
       
       setShowStartHint(true);
       const hintTimer = setTimeout(() => setShowStartHint(false), 5000);
+      const trackingTimer = setTimeout(() => {
+          halfwayTrackingReadyRef.current = true;
+      }, 0);
       return () => {
           clearTimeout(hintTimer);
+          clearTimeout(trackingTimer);
       };
   }, [difficulty, levelId, initializeBoard, setTimer, setScanUses, setRevealUses, setAutoUses]);
 
-  // Handle the automatic fade-in/fade-out warning for Hard, Intense, and Impossible levels
   useEffect(() => {
-      const isHardOrAbove = difficulty === Difficulty.Hard || difficulty === Difficulty.Intense || difficulty === Difficulty.Impossible;
-      if (!isHardOrAbove) {
-          setShowWarning(false);
-          return;
+      if (!halfwayTrackingReadyRef.current || halfwayShownRef.current || board.length === 0) return;
+      const editableCells = initialBoardRef.current.flat().filter(cell => !cell.isFixed).length;
+      const filledEditableCells = board.flat().filter(cell => !cell.isFixed && cell.value !== null).length;
+      if (editableCells > 0 && filledEditableCells >= Math.ceil(editableCells / 2)) {
+          halfwayShownRef.current = true;
+          const deck = halfwayDeckRef.current;
+          const text = deck[halfwayIndexRef.current % deck.length];
+          halfwayIndexRef.current = (halfwayIndexRef.current + 1) % deck.length;
+          enqueuePill({ text, type: 'halfway', holdMs: 2500 });
       }
+  }, [board, enqueuePill]);
 
-      // Hide immediately on level/difficulty change
-      setShowWarning(false);
+  useEffect(() => {
+      if (!purchasedSkills.includes('skill-reveal') || timer < 60 || revealUses <= 0 || revealReadyShownRef.current || isEnding || isCompleted) return;
+      revealReadyShownRef.current = true;
+      enqueuePill({ text: 'Reveal ready.', type: 'reveal-ready', holdMs: 2500 });
+  }, [timer, revealUses, purchasedSkills, isEnding, isCompleted, enqueuePill]);
 
-      // Let the level-start message finish before fading in the strict-mode warning.
-      const delayTimer = setTimeout(() => {
-          setShowWarning(true);
-      }, 4000);
-
-      // Keep it fully visible for 5 seconds after its 1-second fade-in.
-      const hideTimer = setTimeout(() => {
-          setShowWarning(false);
-      }, 10000);
-
-      return () => {
-          clearTimeout(delayTimer);
-          clearTimeout(hideTimer);
-      };
-  }, [difficulty, levelId]);
-  
   const generateReplay = () => {
         if (isGeneratingReplay || replayUrl) return;
         setIsGeneratingReplay(true);
@@ -574,12 +620,12 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   // Memoize click handlers to avoid passing new functions on every timer tick
   const onCellClickWrapper = useCallback((e: React.MouseEvent, r: number, c: number) => {
-      handleCellClick(r, c, isPaused, isCompleted);
-  }, [handleCellClick, isPaused, isCompleted]);
+      handleCellClick(r, c, isPaused, isCompleted || isEnding);
+  }, [handleCellClick, isPaused, isCompleted, isEnding]);
 
   const onNumberClickWrapper = useCallback((e: React.MouseEvent, n: number) => {
-      handleNumberInput(n, isPaused, isCompleted);
-  }, [handleNumberInput, isPaused, isCompleted]);
+      handleNumberInput(n, isPaused, isCompleted || isEnding);
+  }, [handleNumberInput, isPaused, isCompleted, isEnding]);
 
   return (
     <>
@@ -632,28 +678,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           className="flex-1 w-full flex flex-col items-center justify-start relative cursor-default" 
           onClick={handleBackgroundClick}
       >
-         {/* Non-shifting container for difficulty warnings */}
-         <div className="w-full h-8 flex items-center justify-center relative z-20">
-             <AnimatePresence>
-             {showWarning && !skillMessage && (
-                 <motion.div
-                     initial={{ opacity: 0 }}
-                     animate={{ opacity: 1 }}
-                     exit={{ opacity: 0 }}
-                     transition={{ duration: 1.0, ease: "easeInOut" }}
-                     className="pointer-events-none text-center px-4"
-                 >
-                     <span className="text-[11px] md:text-xs font-semibold text-stone-600 dark:text-stone-700 bg-stone-50 dark:bg-stone-100 border border-stone-200/80 px-4 py-1.5 rounded-full inline-flex items-center gap-1.5 leading-none shadow-md">
-                         Errors won't be revealed automatically,
-                         <span className="inline-flex items-center gap-1 text-red-500 font-bold">
-                             <Icons.Scan className="w-3.5 h-3.5 shrink-0 text-red-500" />
-                             Scan recommended
-                         </span>
-                     </span>
-                 </motion.div>
-             )}
-             </AnimatePresence>
-         </div>
+         {/* Fixed notification slot prevents the Sudoku grid from shifting. */}
+         <div className="w-full h-8 relative z-20" />
 
          <motion.div 
              initial={{ opacity: 0, scale: 0.96 }}
@@ -662,22 +688,39 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
              className="w-full flex justify-center relative overflow-visible"
          >
             <AnimatePresence mode="wait">
-                {skillMessage && (
+                {pillMessage && (
                     <motion.div
-                        key={skillMessage.id}
+                        key={pillMessage.id}
                         initial={{ x: '-50%', y: 52, opacity: 0 }}
                         animate={{ x: '-50%', y: 0, opacity: 1 }}
                         exit={{ x: '-50%', y: 52, opacity: 0 }}
-                        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
                         className="absolute left-1/2 bottom-full h-8 z-0 pointer-events-none whitespace-nowrap flex items-center justify-center px-4"
                     >
                         <span className="text-[11px] md:text-xs font-semibold text-stone-600 dark:text-stone-700 bg-stone-50 dark:bg-stone-100 border border-stone-200/80 px-4 py-1.5 rounded-full inline-flex items-center gap-1.5 leading-none shadow-md">
-                            {skillMessage.type === 'scan-error' ? (
-                                <Icons.Close className="w-3.5 h-3.5 shrink-0 text-red-500" />
-                            ) : skillMessage.type !== 'start' ? (
-                                <Icons.Check className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
-                            ) : null}
-                            {skillMessage.text}
+                            {pillMessage.type === 'warning' ? (
+                                <>
+                                    <Icons.Info className="w-3.5 h-3.5 shrink-0 text-stone-500" />
+                                    {pillMessage.text}
+                                    <span className="inline-flex items-center gap-1 text-red-500 font-bold">
+                                        <Icons.Scan className="w-3.5 h-3.5 shrink-0 text-red-500" />
+                                        Scan recommended
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    {pillMessage.type === 'scan-error' ? (
+                                        <Icons.Close className="w-3.5 h-3.5 shrink-0 text-red-500" />
+                                    ) : pillMessage.type === 'scan-clean' || pillMessage.type === 'auto' || pillMessage.type === 'reveal' ? (
+                                        <Icons.Check className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+                                    ) : pillMessage.type === 'reveal-ready' ? (
+                                        <Icons.Eye className="w-3.5 h-3.5 shrink-0 text-purple-500" />
+                                    ) : pillMessage.type === 'notes' ? (
+                                        <Icons.Pencil className="w-3.5 h-3.5 shrink-0 text-blue-500" />
+                                    ) : null}
+                                    {pillMessage.text}
+                                </>
+                            )}
                         </span>
                     </motion.div>
                 )}
@@ -730,9 +773,17 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                  canUndo={history.length > 0}
                  canErase={canErase}
                  isPencilMode={isPencilMode}
-                 onUndo={(e) => handleUndo(isPaused, isCompleted)}
-                 onErase={(e) => handleErase(isPaused, isCompleted)}
-                 onTogglePencil={() => { sounds.playClick(); setIsPencilMode(!isPencilMode); }}
+                 onUndo={(e) => handleUndo(isPaused, isCompleted || isEnding)}
+                 onErase={(e) => handleErase(isPaused, isCompleted || isEnding)}
+                 onTogglePencil={() => {
+                     if (isEnding) return;
+                     sounds.playClick();
+                     const nextPencilMode = !isPencilMode;
+                     setIsPencilMode(nextPencilMode);
+                     if (nextPencilMode) {
+                         enqueuePill({ text: 'Notes ready.', type: 'notes', holdMs: 2500 });
+                     }
+                 }}
                  purchasedSkills={purchasedSkills}
                  isAutoAvailable={isAutoAvailable}
                  scanUses={scanUses}
@@ -741,8 +792,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                  revealUses={revealUses}
                  revealingCell={revealingCell}
                  onAutoFill={() => handleAutoFill(purchasedSkills)}
-                 onScan={() => handleScan(isPaused, isCompleted)}
-                 onReveal={() => handleReveal(isPaused, isCompleted)}
+                 onScan={() => handleScan(isPaused, isCompleted || isEnding)}
+                 onReveal={() => handleReveal(isPaused, isCompleted || isEnding)}
                  autoUses={autoUses}
                  timer={timer}
                  onDevSolve={settings.devAutoSolve ? handleDevSolve : undefined}
@@ -767,7 +818,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-white/95 dark:bg-stone-950/95"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-stone-200/90 dark:bg-stone-950/95"
           >
               <div className="w-full max-w-[240px] flex flex-col items-center text-center relative z-10">
                   <AnimatePresence mode="wait">
@@ -785,7 +836,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                             
                             <div className="flex flex-col gap-3 w-full">
                                 {/* Resume - Primary */}
-                                <button onClick={() => { sounds.playClick(); setIsPaused(false); }} className="w-full h-14 bg-stone-900 text-white dark:bg-white dark:text-stone-900 rounded-2xl font-bold text-base shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2.5">
+                                <button onClick={() => { sounds.playClick(); setIsPaused(false); }} className="w-full h-14 bg-blue-500 text-white rounded-2xl font-bold text-base shadow-lg shadow-blue-500/20 active:scale-95 transition-transform flex items-center justify-center gap-2.5">
                                     <Icons.Play className="w-5 h-5 fill-current" /> Resume
                                 </button>
                                 

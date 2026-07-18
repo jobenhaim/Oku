@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Icons } from '../ui/Icons';
 import { DIAMOND_OFFERS } from '../../utils/constants';
 import { DiamondOffer } from '../../types';
@@ -34,6 +34,89 @@ const DiamondStack = ({ size }: { size: number }) => (
         <Icons.Diamond className={`relative z-10 text-blue-500 fill-current drop-shadow-sm ${size === 1 ? 'w-7 h-7' : size === 2 ? 'w-8 h-8' : 'w-9 h-9'}`} />
     </div>
 );
+
+const PremiumPepinoBackdrop = () => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const positionRef = useRef({ x: 78, y: 24 });
+    const [position, setPosition] = useState(positionRef.current);
+    const [direction, setDirection] = useState<'left' | 'right'>('left');
+    const [size, setSize] = useState({ width: 0, height: 0 });
+    const [canAnimate, setCanAnimate] = useState(false);
+
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        const updateSize = () => {
+            if (!containerRef.current) return;
+            const rect = containerRef.current.getBoundingClientRect();
+            setSize({ width: rect.width, height: rect.height });
+        };
+
+        updateSize();
+        const observer = new ResizeObserver(updateSize);
+        observer.observe(containerRef.current);
+        return () => observer.disconnect();
+    }, []);
+
+    useEffect(() => {
+        if (size.width <= 0) return;
+        const readyTimer = window.setTimeout(() => setCanAnimate(true), 100);
+        return () => window.clearTimeout(readyTimer);
+    }, [size.width]);
+
+    useEffect(() => {
+        let moveTimer: number;
+
+        const move = () => {
+            const next = {
+                x: 12 + Math.random() * 76,
+                y: 14 + Math.random() * 66
+            };
+            setDirection(next.x > positionRef.current.x ? 'right' : 'left');
+            positionRef.current = next;
+            setPosition(next);
+            moveTimer = window.setTimeout(move, 4500 + Math.random() * 2500);
+        };
+
+        moveTimer = window.setTimeout(move, 900);
+        return () => window.clearTimeout(moveTimer);
+    }, []);
+
+    const fishX = (position.x / 100) * size.width - 32;
+    const fishY = (position.y / 100) * size.height - 20;
+
+    return (
+        <div ref={containerRef} className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+            <div className="absolute inset-0 bg-gradient-to-b from-[#e0f7fa] via-[#d1f4fa] to-[#b3e5fc] dark:from-[#173b52] dark:via-[#1f4d63] dark:to-[#2b6879]" />
+            <div
+                className={`absolute top-0 left-0 w-16 h-10 transition-opacity duration-300 ${size.width > 0 ? 'opacity-70' : 'opacity-0'}`}
+                style={{
+                    transform: `translate3d(${fishX}px, ${fishY}px, 0)`,
+                    transition: canAnimate ? 'transform 4000ms ease-in-out' : 'none',
+                    willChange: 'transform',
+                    WebkitBackfaceVisibility: 'hidden',
+                    backfaceVisibility: 'hidden'
+                }}
+            >
+                <div className="w-full h-full transition-transform duration-500" style={{ transform: direction === 'left' ? 'scaleX(-1)' : 'scaleX(1)' }}>
+                    <div className="w-full h-full animate-wiggle">
+                        <svg viewBox="344.5149 210.9059 74.9591 41.2278" className="w-full h-full drop-shadow-sm">
+                            <path d="M 373.193 239.648 C 379.513 254.112 400.131 252.185 404.661 240.061 C 393.45 240.02 396.193 239.089 386.193 239.648 L 373.193 239.648 Z" fill="#ef4444" opacity="0.95" />
+                            <path d="M 372.793 224.525 C 379.113 207.278 399.731 209.576 404.261 224.033 C 393.05 224.081 395.793 225.192 385.793 224.525 L 372.793 224.525 Z" fill="#ef4444" opacity="0.95" />
+                            <path d="M 394.515 231.681 C 379.515 206.681 344.428 201.406 344.515 231.681 C 344.565 261.131 379.515 256.681 394.515 231.681 Z" fill="#ef4444" opacity="0.95" />
+                            <path d="M 394.515 231.681 C 374.515 216.681 359.515 211.681 354.515 231.681 C 359.515 251.681 374.515 246.681 394.515 231.681 Z" fill="#b91c1c" opacity="0.15" />
+                            <ellipse cx="391.474" cy="231.681" rx="28" ry="11" fill="#dc2626" />
+                            <path d="M 401.174 234.169 C 395.84 239.502 397.84 240.836 407.174 238.169 L 401.174 234.169 Z" fill="#fca5a5" opacity="0.8" transform="matrix(0.71619296, -0.69790214, 0.69790214, 0.71619296, 0.00000291, 0.0000368)" />
+                            <circle cx="411.874" cy="230.381" r="2.5" fill="black" />
+                            <circle cx="412.874" cy="229.381" r="0.8" fill="white" opacity="0.9" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div className="absolute inset-0 bg-white/18 dark:bg-slate-950/8" />
+        </div>
+    );
+};
 
 export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     points,
@@ -74,8 +157,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                 </button>
 
                 <div className="flex flex-col items-center absolute left-0 right-0 pointer-events-none z-20">
-                    <h1 className="text-xl font-bold text-t-primary leading-none">Diamonds</h1>
-                    <p className="text-t-secondary text-[10px] font-bold tracking-widest uppercase mt-1">Shop</p>
+                    <h1 className="text-xl font-bold text-t-primary leading-none">Oku Shop</h1>
                 </div>
 
                 <div className="flex items-center gap-1.5 bg-t-surface px-3 py-2 rounded-full shadow-sm relative z-30 border border-stone-200/60 dark:border-stone-800">
@@ -92,13 +174,15 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                         <section aria-labelledby="premium-heading">
                             <button
                                 onClick={() => onBuyOffer(premiumOffer)}
-                                className="w-full bg-t-surface rounded-[1.75rem] shadow-sm border border-stone-200/80 dark:border-stone-800 overflow-hidden text-left active:scale-[0.99] transition-transform"
+                                className="w-full bg-[#e0f7fa] dark:bg-[#173b52] rounded-[1.75rem] shadow-sm border border-sky-100/80 dark:border-sky-900 overflow-hidden text-left active:scale-[0.99] transition-transform relative"
                             >
-                                <div className="p-4 pb-3">
+                                <PremiumPepinoBackdrop />
+
+                                <div className="p-4 pb-3 relative z-10">
                                     <div className="mb-3">
                                         <div className="min-w-0">
-                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-300 mb-1.5">
-                                                <Icons.Star className="w-3 h-3" />
+                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-white/95 via-violet-50/95 to-sky-50/95 border border-white/90 text-[#5f5872] mb-1.5 shadow-[0_0_12px_rgba(255,255,255,0.95),0_0_26px_rgba(139,92,246,0.32)]">
+                                                <Icons.Star className="w-3 h-3 text-violet-500 drop-shadow-[0_0_4px_rgba(139,92,246,0.7)]" />
                                                 <span className="text-[9px] font-bold uppercase tracking-[0.16em]">Oku Premium</span>
                                             </div>
                                             <h2 id="premium-heading" className="text-xl font-bold text-t-primary leading-tight">Meet Pepino</h2>
@@ -106,7 +190,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         </div>
                                     </div>
 
-                                    <div className="rounded-xl bg-t-surface-sec px-3.5 py-3 mb-3">
+                                    <div className="rounded-xl bg-white/80 dark:bg-slate-950/35 px-3.5 py-3 mb-3">
                                         <p className="text-[11px] font-medium text-stone-600 dark:text-stone-300 leading-relaxed">
                                             Pepino lives in a peaceful aquarium, grows with you, and brings you a diamond gift after every completed game.
                                         </p>
@@ -125,7 +209,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     </div>
                                 </div>
 
-                                <div className="px-4 py-3 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between bg-stone-50 dark:bg-stone-900">
+                                <div className="relative z-10 px-4 py-3 border-t border-white/70 dark:border-sky-900/70 flex items-center justify-between bg-white/80 dark:bg-slate-950/55">
                                     <div className="flex items-center gap-1.5">
                                         <span className="text-sm font-bold text-t-primary">Unlock Pepino</span>
                                         <Icons.Next className="w-4 h-4 text-t-secondary" />
@@ -150,9 +234,13 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     <div className="relative flex items-center justify-between gap-3 mb-4">
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
-                                                <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                                                    <Icons.Gift className="w-4 h-4" />
-                                                </div>
+                                                <img
+                                                    src="/assets/starter-pack-icon.webp"
+                                                    alt=""
+                                                    aria-hidden="true"
+                                                    className="w-8 h-8 object-contain shrink-0 select-none pointer-events-none"
+                                                    draggable={false}
+                                                />
                                                 <h2 id="starter-heading" className="text-lg font-bold text-t-primary">Starter Pack</h2>
                                             </div>
                                             <p className="text-[11px] font-medium text-t-secondary">Four permanent rewards to begin your journey.</p>
@@ -171,11 +259,11 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         </div>
                                         <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
                                             <Icons.Auto className="w-5 h-5 scale-150 text-amber-600 dark:text-amber-400" />
-                                            <span className="text-[9px] font-bold text-t-primary">Auto</span>
+                                            <span className="text-[10px] font-bold text-t-primary">Auto</span>
                                         </div>
                                         <div className="rounded-2xl bg-red-50 dark:bg-red-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
                                             <Icons.Scan className="w-5 h-5 scale-150 text-red-500 dark:text-red-400" />
-                                            <span className="text-[9px] font-bold text-t-primary">Scan</span>
+                                            <span className="text-[10px] font-bold text-t-primary">Scan</span>
                                         </div>
                                         <div className="rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
                                             <img
@@ -185,7 +273,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                                 className="block w-5 h-5 scale-150 object-contain object-center select-none pointer-events-none"
                                                 draggable={false}
                                             />
-                                            <span className="text-[9px] font-bold text-t-primary">Piano</span>
+                                            <span className="text-[10px] font-bold text-t-primary">Piano</span>
                                         </div>
                                     </div>
                                 </div>

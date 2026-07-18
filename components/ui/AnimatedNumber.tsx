@@ -5,9 +5,11 @@ interface AnimatedNumberProps {
     value: number;
     className?: string;
     startFromZero?: boolean;
+    easing?: 'quarticOut' | 'easeInOut';
+    durationMs?: number;
 }
 
-export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({ value, className = "", startFromZero = false }) => {
+export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({ value, className = "", startFromZero = false, easing = 'quarticOut', durationMs }) => {
     const [displayValue, setDisplayValue] = useState(startFromZero ? 0 : value);
     const startValue = useRef(startFromZero ? 0 : value);
     const startTime = useRef<number | null>(null);
@@ -27,14 +29,17 @@ export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({ value, className
         
         // Dynamic duration: Longer animation for bigger numbers
         // Base 600ms + 100ms per unit difference, capped at 4000ms (4 seconds)
-        const duration = Math.min(4000, 600 + (delta * 100));
+        const duration = durationMs ?? Math.min(4000, 600 + (delta * 100));
 
         const animate = (time: number) => {
             if (!startTime.current) startTime.current = time;
             const progress = Math.min((time - startTime.current) / duration, 1);
             
-            // Ease Out Quartic for very smooth deceleration
-            const ease = 1 - Math.pow(1 - progress, 4);
+            const ease = easing === 'easeInOut'
+                ? progress < 0.5
+                    ? 2 * progress * progress
+                    : 1 - Math.pow(-2 * progress + 2, 2) / 2
+                : 1 - Math.pow(1 - progress, 4);
             
             const current = Math.floor(startValue.current + (value - startValue.current) * ease);
             
@@ -64,7 +69,7 @@ export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({ value, className
         return () => {
             if (rafId.current) cancelAnimationFrame(rafId.current);
         };
-    }, [value]);
+    }, [value, easing, durationMs]);
 
     return <span className={className}>{displayValue}</span>;
 };

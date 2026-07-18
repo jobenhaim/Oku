@@ -158,7 +158,6 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
     
     // Reward Feedback State
     const [rewardFeedback, setRewardFeedback] = useState<{amount: number} | null>(null);
-    const [rewardExiting, setRewardExiting] = useState(false);
     const [clickCoords, setClickCoords] = useState<{x: number, y: number} | null>(null);
     
     // Hearts Interaction State
@@ -180,6 +179,7 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
         y: 32 + Math.random() * 53 
     }));
     const [fishDirection, setFishDirection] = useState<'left' | 'right'>('right');
+    const [swimDuration, setSwimDuration] = useState(4100);
     
     // Container dimensions for smooth pixel-perfect transforms
     const [tankSize, setTankSize] = useState({ width: 0, height: 0 });
@@ -259,20 +259,30 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
         }
 
         let timeoutId: any;
+        let hasShownFirstMessage = pepinoState.firstMessageShown;
 
         const runCycle = () => {
             if (isGiftReady) return;
 
-            // 1. Pick random message
-            const msg = PEPINO_MESSAGES[Math.floor(Math.random() * PEPINO_MESSAGES.length)];
+            // Pepino's first speech is a one-time welcome; later messages stay random.
+            const isFirstMessage = !hasShownFirstMessage;
+            const msg = isFirstMessage
+                ? "Nice to meet you!"
+                : PEPINO_MESSAGES[Math.floor(Math.random() * PEPINO_MESSAGES.length)];
+
+            if (isFirstMessage) {
+                hasShownFirstMessage = true;
+                Storage.markPepinoFirstMessageShown();
+                setPepinoState(Storage.getPepinoState());
+            }
             setSpeech(msg);
             
-            // 2. Hide after 10 seconds
+            // 2. Hide after 6 seconds
             timeoutId = setTimeout(() => {
                 setSpeech(null);
-                // 3. Wait 5 seconds cooldown before next message
-                timeoutId = setTimeout(runCycle, 5000);
-            }, 10000);
+                // 3. Wait 2 seconds before the next message
+                timeoutId = setTimeout(runCycle, 2000);
+            }, 6000);
         };
 
         // Initial speech after 1 second of being active to give space for Gift appearance
@@ -290,31 +300,36 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
         let timeoutId: any;
         
         const moveFish = () => {
-            const currentX = fishPosRef.current.x;
-            
-            // Generate new target position
-            // X: 15-85% (avoid walls)
-            const newX = 15 + Math.random() * 70;
-            
-            // Y: Limit to lower part (avoid top 50px)
-            // Tank Height = 224px (h-56)
-            const newY = 32 + Math.random() * 53; 
-            
-            // Determine direction based on CURRENT position vs NEW position
-            const newDirection = newX > currentX ? 'right' : 'left';
-            
-            setFishDirection(newDirection);
-            setFishPos({ x: newX, y: newY });
-            
-            // Update ref
-            fishPosRef.current = { x: newX, y: newY };
+            const current = fishPosRef.current;
 
-            const delay = 4000 + Math.random() * 4000; // Slow, calm movement
-            timeoutId = setTimeout(moveFish, delay);
+            // Use nearby roaming targets instead of crossing the whole tank in
+            // one predictable line. The gentle vertical drift below bends the
+            // perceived path while this transform remains GPU-friendly.
+            let horizontalStep = (Math.random() - 0.5) * 42;
+            if (Math.abs(horizontalStep) < 10) {
+                horizontalStep = horizontalStep < 0 ? -10 : 10;
+            }
+
+            const next = {
+                x: Math.min(86, Math.max(14, current.x + horizontalStep)),
+                y: Math.min(84, Math.max(28, current.y + (Math.random() - 0.5) * 28))
+            };
+            const duration = 3000 + Math.random() * 2200;
+
+            if (Math.abs(next.x - current.x) > 2) {
+                setFishDirection(next.x > current.x ? 'right' : 'left');
+            }
+            setSwimDuration(duration);
+            setFishPos(next);
+            fishPosRef.current = next;
+
+            // Begin steering toward the next point just before this path ends,
+            // preventing the old stop-and-start pause.
+            timeoutId = setTimeout(moveFish, duration - 180);
         };
 
-        // Initial delay: Start quickly after active
-        const startDelay = 1000;
+        // Initial delay: Start gently after Pepino becomes active.
+        const startDelay = 700;
         timeoutId = setTimeout(moveFish, startDelay);
 
         return () => clearTimeout(timeoutId);
@@ -333,13 +348,14 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
              });
         }
         
+        const isFirstGift = !pepinoState.firstGiftClaimed;
         Storage.claimPepinoGift();
         const updatedPepinoState = Storage.getPepinoState();
         setPepinoState(updatedPepinoState);
         setIsGiftReady(false);
 
         const r = Math.random();
-        let amount = 5;
+        let amount = isFirstGift ? 20 : 5;
 
         // Reward Distribution:
         // 20 Diamonds: 5%
@@ -347,10 +363,12 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
         // 10 Diamonds: 30%
         // 5 Diamonds: 50%
         
-        if (r < 0.05) amount = 20;
-        else if (r < 0.20) amount = 15;
-        else if (r < 0.50) amount = 10;
-        else amount = 5;
+        if (!isFirstGift) {
+            if (r < 0.05) amount = 20;
+            else if (r < 0.20) amount = 15;
+            else if (r < 0.50) amount = 10;
+            else amount = 5;
+        }
 
         if (amount > 0) {
             // New short, punchy gift claim sound
@@ -386,18 +404,13 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
 
     const showReward = (feedback: {amount: number}, onComplete?: () => void) => {
         setRewardFeedback(feedback);
-        setRewardExiting(false);
         
         // Show for 2 seconds total
         setTimeout(() => {
-            setRewardExiting(true);
-            setTimeout(() => {
-                setRewardFeedback(null);
-                setRewardExiting(false);
-                setClickCoords(null);
-                onComplete?.();
-            }, 300); 
-        }, 1700);
+            setRewardFeedback(null);
+            setClickCoords(null);
+            onComplete?.();
+        }, 2000);
     };
 
     
@@ -405,7 +418,7 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
     const scaleValue = (introState === 'waiting' || introState === 'clearing') ? 0 : 1;
     
     // Transition Duration Logic
-    const transitionDuration = introState === 'active' ? '4000ms' : '300ms';
+    const transitionDuration = introState === 'active' ? `${swimDuration}ms` : '300ms';
 
     // Calculate Exact Pixel Coordinates for Transform
     // Fish is w-12 (48px) x h-8 (32px). Center offset is 24px, 16px.
@@ -422,6 +435,19 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
                 @keyframes heart-float {
                     0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
                     100% { transform: translate(calc(-50% + var(--tx)), calc(-50% - 75px)) scale(1.1) rotate(var(--rot)); opacity: 0; }
+                }
+                @keyframes reward-bubble-float {
+                    0% { transform: translate3d(-50%, 8px, 0) scale(0.86) rotate(-5deg); opacity: 0; }
+                    18% { transform: translate3d(calc(-50% + 2px), -3px, 0) scale(1) rotate(2deg); opacity: 1; }
+                    40% { transform: translate3d(calc(-50% + 4px), -16px, 0) scale(1) rotate(5deg); opacity: 1; }
+                    62% { transform: translate3d(calc(-50% + 1px), -29px, 0) scale(0.98) rotate(-2deg); opacity: 1; }
+                    82% { transform: translate3d(calc(-50% - 3px), -42px, 0) scale(0.95) rotate(-5deg); opacity: 0.78; }
+                    100% { transform: translate3d(-50%, -56px, 0) scale(0.9) rotate(3deg); opacity: 0; }
+                }
+                @keyframes pepino-natural-drift {
+                    0%, 100% { transform: translate3d(0, 2px, 0) rotate(-1.5deg); }
+                    35% { transform: translate3d(1px, -3px, 0) rotate(1deg); }
+                    68% { transform: translate3d(-1px, -5px, 0) rotate(1.8deg); }
                 }
             `}</style>
 
@@ -503,10 +529,12 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
                         className="w-full h-full transition-transform duration-500"
                         style={{ transform: fishDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)' }}
                      >
-                         {/* WIGGLER */}
-                         <div className="w-full h-full animate-wiggle" style={{ willChange: 'transform' }}>
-                            {/* Pepino SVG */}
-                            <svg viewBox="344.5149 210.9059 74.9591 41.2278" className="w-full h-full drop-shadow-sm filter" style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }}>
+                         {/* Natural vertical drift and small body wiggle use
+                             separate transform layers so both stay smooth. */}
+                         <div className="w-full h-full" style={{ animation: 'pepino-natural-drift 4.8s ease-in-out infinite', willChange: 'transform' }}>
+                            <div className="w-full h-full animate-wiggle" style={{ willChange: 'transform' }}>
+                                {/* Pepino SVG */}
+                                <svg viewBox="344.5149 210.9059 74.9591 41.2278" className="w-full h-full drop-shadow-sm filter" style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }}>
                                 <path d="M 373.193 239.648 C 379.513 254.112 400.131 252.185 404.661 240.061 C 393.45 240.02 396.193 239.089 386.193 239.648 L 373.193 239.648 Z" fill="#ef4444" opacity="0.95" style={{strokeWidth: 1}} transform="matrix(1, 0, 0, 1, 0, -1.4210854715202004e-14)"/>
                                 <path d="M 372.793 224.525 C 379.113 207.278 399.731 209.576 404.261 224.033 C 393.05 224.081 395.793 225.192 385.793 224.525 L 372.793 224.525 Z" fill="#ef4444" opacity="0.95" style={{strokeWidth: 1}} transform="matrix(1, 0, 0, 1, 0, -1.4210854715202004e-14)"/>
                                 <path d="M 394.515 231.681 C 379.515 206.681 344.428 201.406 344.515 231.681 C 344.565 261.131 379.515 256.681 394.515 231.681 Z" fill="#ef4444" opacity="0.95" style={{strokeWidth: 1}} transform="matrix(1, 0, 0, 1, 0, -1.4210854715202004e-14)"/>
@@ -515,7 +543,8 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
                                 <path d="M 401.174 234.169 C 395.84 239.502 397.84 240.836 407.174 238.169 L 401.174 234.169 Z" fill="#fca5a5" opacity="0.8" style={{strokeWidth: 1, transformOrigin: '402.719px 236.836px'}} transform="matrix(0.71619296, -0.69790214, 0.69790214, 0.71619296, 0.00000291, 0.0000368)"/>
                                 <circle cx="411.874" cy="230.381" r="2.5" fill="black" style={{strokeWidth: 1}} transform="matrix(1, 0, 0, 1, 0, -1.4210854715202004e-14)"/>
                                 <circle cx="412.874" cy="229.381" r="0.8" fill="white" opacity="0.9" style={{strokeWidth: 1}} transform="matrix(1, 0, 0, 1, 0, -1.4210854715202004e-14)"/>
-                            </svg>
+                                </svg>
+                            </div>
                          </div>
                      </div>
                  </div>
@@ -650,13 +679,9 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
                     style={{ left: clickCoords.x, top: clickCoords.y - 20 }}
                 >
                     <div 
-                        className={`transition-all duration-300 ease-out ${
-                            rewardExiting 
-                            ? 'opacity-0 scale-90' 
-                            : 'opacity-100 scale-100'
-                        }`}
+                        style={{ animation: 'reward-bubble-float 2s linear forwards' }}
                     >
-                        <div className="bg-white px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5 border border-stone-100 animate-scale-in origin-center">
+                        <div className="bg-white px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5 border border-stone-100 origin-center">
                             <>
                                 <span className="text-xs font-bold text-stone-800">+{rewardFeedback.amount}</span>
                                 <Icons.Diamond className="w-2.5 h-2.5 text-blue-500 fill-current" />

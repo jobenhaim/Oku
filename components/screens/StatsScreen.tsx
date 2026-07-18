@@ -196,7 +196,6 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                 
                 <div className="flex flex-col items-center absolute left-0 right-0 pointer-events-none z-20">
                     <h1 className="text-xl font-bold text-t-primary leading-none">Stats</h1>
-                    <p className="text-t-secondary text-[10px] font-bold tracking-widest uppercase mt-1">My Journey</p>
                 </div>
                 
                 <div className="flex items-center gap-1 bg-t-surface px-3 py-2 rounded-full shadow-sm relative z-30">

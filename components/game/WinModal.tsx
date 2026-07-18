@@ -177,16 +177,15 @@ export const WinModal: React.FC<WinModalProps> = ({
     
     // Animation Sequencing
     useEffect(() => {
-        // Step 1: Trophy/Icon pops up instantly
+        // Step 1: Difficulty/Level subtitle appears
         const t1 = setTimeout(() => {
             setStep(1);
             sounds.playPepinoTap();
         }, 150);
 
-        // Step 2: Difficulty/Level subtitle appears
+        // Step 2: Brief beat before the solved title
         const t2 = setTimeout(() => {
             setStep(2);
-            sounds.playPepinoTap();
         }, 400);
 
         // Step 3: Solved title appears with perfectly synchronized letters and tick sounds
@@ -222,6 +221,11 @@ export const WinModal: React.FC<WinModalProps> = ({
             sounds.playPop();
         }, 1800);
 
+        // The action area finishes its 700ms entrance after appearing at 1800ms.
+        const t7 = setTimeout(() => {
+            setStep(7);
+        }, 2500);
+
         return () => {
             clearTimeout(t1);
             clearTimeout(t2);
@@ -229,6 +233,7 @@ export const WinModal: React.FC<WinModalProps> = ({
             clearTimeout(t4);
             clearTimeout(t5);
             clearTimeout(t6);
+            clearTimeout(t7);
         };
     }, []);
 
@@ -248,7 +253,7 @@ export const WinModal: React.FC<WinModalProps> = ({
 
     return (
         <div className="fixed inset-0 w-full h-full bg-stone-950/40 dark:bg-black/60 backdrop-blur-sm z-[140] flex flex-col items-center justify-center animate-fade-in touch-none">
-            <div className="bg-white dark:bg-stone-900/95 border border-stone-200 dark:border-white/10 text-stone-800 dark:text-white p-6 rounded-[28px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[320px] max-w-[calc(100vw-32px)] text-center relative overflow-hidden transform transition-all duration-300 z-10">
+            <div className="bg-white dark:bg-stone-900/95 border border-stone-200 dark:border-white/10 text-stone-800 dark:text-white p-5 rounded-[26px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[300px] max-w-[calc(100vw-32px)] text-center relative overflow-hidden transform transition-all duration-300 z-10">
                 <style>{`
                     @keyframes letter-pop {
                         0% {
@@ -282,16 +287,9 @@ export const WinModal: React.FC<WinModalProps> = ({
                     }
                 `}</style>
                 
-                {/* Step 1: Trophy Icon */}
+                {/* Step 1: Difficulty Header */}
                 <div 
-                    className={`w-16 h-16 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-600 dark:text-amber-400 relative z-10 transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1) ${step >= 1 ? 'scale-100 opacity-100 rotate-0' : 'scale-0 opacity-0 -rotate-180'}`}
-                >
-                    <Icons.Trophy className="w-8 h-8 filter drop-shadow-[0_0_8px_rgba(245,158,11,0.3)] dark:drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
-                </div>
-                
-                {/* Step 2: Difficulty Header */}
-                <div 
-                    className={`flex flex-col gap-1 mb-2 relative z-10 transition-all duration-500 ${step >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
+                    className={`flex flex-col gap-1 mb-2 relative z-10 transition-all duration-500 ${step >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
                 >
                     <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400/90 uppercase tracking-[0.15em]">{difficulty} &bull; Level {levelId}</div>
                 </div>
@@ -365,7 +363,7 @@ export const WinModal: React.FC<WinModalProps> = ({
                         ) : replayUrl ? (
                             <button 
                                 onClick={onReplay}
-                                className="w-full h-14 bg-blue-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-600/10 dark:shadow-blue-600/20 active:scale-95 transition flex items-center justify-center gap-1.5 border border-transparent hover:bg-blue-700"
+                                className="w-full h-14 bg-blue-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-600/10 dark:shadow-blue-600/20 active:scale-95 transition-transform flex items-center justify-center gap-1.5 border border-transparent"
                             >
                                 <Icons.Video className="w-5 h-5" /> Watch Replay
                             </button>
@@ -381,7 +379,8 @@ export const WinModal: React.FC<WinModalProps> = ({
 
                     <button 
                         onClick={onReturnToMenu} 
-                        className="w-full h-14 bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-200 border border-stone-200/60 dark:border-white/5 rounded-2xl font-bold text-sm active:scale-95 transition flex items-center justify-center hover:bg-stone-200 dark:hover:bg-white/15"
+                        disabled={step < 7}
+                        className="w-full h-14 bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-200 border border-stone-200/60 dark:border-white/5 rounded-2xl font-bold text-sm active:scale-95 transition-transform flex items-center justify-center disabled:pointer-events-none"
                     >
                         Menu
                     </button>

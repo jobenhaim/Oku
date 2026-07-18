@@ -5,6 +5,8 @@ import { sounds } from '../../utils/sound';
 
 interface ProfileModalProps {
     onClose: () => void;
+    claimedRank: number;
+    onTitleClaimed: (rank: number) => void;
     stats: {
         totalGamesWon: number;
         totalDiamondsEarned?: number;
@@ -23,16 +25,76 @@ const AVATAR_OPTIONS = [
     { icon: Icons.Heart, bg: 'bg-gradient-to-br from-pink-400 to-pink-600', text: 'text-white', cardBg: 'bg-pink-500/10' },
 ];
 
-export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) => {
+const PROFILE_TITLES = [
+    'Just Arrived',
+    'New Solver',
+    'Focused Solver',
+    'Grid Explorer',
+    'Puzzle Regular',
+    'Century Club',
+    'Number Collector',
+    'Grid Resident',
+    'Sudoku Enthusiast',
+    'Puzzle Devotee',
+    'Two-Hundred Club',
+    'Grid Familiar',
+    'Sudoku Superfan',
+    'Puzzle Machine',
+    'Grid Loyalist',
+    'Three-Hundred Club'
+];
+
+export const MAX_PROFILE_RANK = PROFILE_TITLES.length + 4;
+
+const getProfileTitle = (rankIndex: number) => {
+    if (rankIndex < PROFILE_TITLES.length) return PROFILE_TITLES[rankIndex];
+    const starCount = Math.min(5, rankIndex - PROFILE_TITLES.length + 1);
+    return `Puzzle Collector ${Array(starCount).fill('★').join(' ')}`;
+};
+
+export const getStoredClaimedProfileRank = (totalGamesWon: number) => {
+    const earnedRank = Math.min(MAX_PROFILE_RANK, Math.floor(Math.max(0, totalGamesWon) / 20));
+
+    try {
+        const stored = localStorage.getItem('zen_profile');
+        if (!stored) return earnedRank;
+        const parsed = JSON.parse(stored);
+        const storedRank = typeof parsed.claimedRank === 'number'
+            ? parsed.claimedRank
+            : typeof parsed.lastSeenRank === 'number'
+                ? parsed.lastSeenRank
+                : earnedRank;
+        return Math.min(earnedRank, Math.max(0, Math.floor(storedRank)));
+    } catch {
+        return earnedRank;
+    }
+};
+
+export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, claimedRank, onTitleClaimed, stats }) => {
     const [isClosing, setIsClosing] = useState(false);
     const [showCloudToast, setShowCloudToast] = useState(false);
     const [isSelectingAvatar, setIsSelectingAvatar] = useState(false);
+    const [isRankCelebrating, setIsRankCelebrating] = useState(false);
+    const [isProgressAnimated, setIsProgressAnimated] = useState(false);
+    const totalGamesWon = Math.max(0, stats.totalGamesWon || 0);
+    const earnedRankIndex = Math.min(MAX_PROFILE_RANK, Math.floor(totalGamesWon / 20));
+    const rankIndex = Math.min(earnedRankIndex, Math.max(0, claimedRank));
+    const isHighestTitle = rankIndex === MAX_PROFILE_RANK;
+    const titleProgress = isHighestTitle ? 20 : Math.min(20, Math.max(0, totalGamesWon - rankIndex * 20));
+    const isTitleReady = !isHighestTitle && earnedRankIndex > rankIndex;
+    const currentTitle = getProfileTitle(rankIndex);
+    const nextTitle = isHighestTitle ? currentTitle : getProfileTitle(rankIndex + 1);
     
     const [profile, setProfile] = useState(() => {
         const stored = localStorage.getItem('zen_profile');
-        return stored ? JSON.parse(stored) : { 
+        const storedProfile = stored ? JSON.parse(stored) : {};
+        return {
+            ...storedProfile,
             username: "Zen Player", 
-            avatarColorIndex: 0
+            avatarColorIndex: 0,
+            ...storedProfile,
+            claimedRank: rankIndex,
+            lastSeenRank: rankIndex
         };
     });
 
@@ -41,6 +103,29 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
     useEffect(() => {
         localStorage.setItem('zen_profile', JSON.stringify(profile));
     }, [profile]);
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => setIsProgressAnimated(true), 180);
+        return () => window.clearTimeout(timer);
+    }, []);
+
+    const handleTitleClaim = () => {
+        if (!isTitleReady || isRankCelebrating) return;
+
+        const newRank = Math.min(MAX_PROFILE_RANK, rankIndex + 1);
+        setIsProgressAnimated(false);
+        setIsRankCelebrating(true);
+        sounds.playPop();
+        setProfile((current: typeof profile) => ({
+            ...current,
+            claimedRank: newRank,
+            lastSeenRank: newRank
+        }));
+        onTitleClaimed(newRank);
+
+        window.setTimeout(() => setIsProgressAnimated(true), 120);
+        window.setTimeout(() => setIsRankCelebrating(false), 1400);
+    };
 
     const handleClose = () => {
         sounds.playClick();
@@ -59,33 +144,56 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
 
     return (
         <div className={`fixed inset-0 z-[999] bg-stone-900/35 flex items-end sm:items-center justify-center ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={handleClose}>
-            <div className={`bg-stone-50 dark:bg-stone-900 border border-white/80 dark:border-stone-700 w-full max-w-sm rounded-t-[2.25rem] sm:rounded-[2.25rem] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden pb-safe relative ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} onClick={e => e.stopPropagation()}>
+            <div className={`bg-stone-50 dark:bg-stone-900 border border-white/80 dark:border-stone-700 w-[calc(100%_-_2rem)] max-w-[330px] rounded-[2rem] shadow-2xl flex flex-col max-h-[86vh] overflow-hidden pb-safe mb-4 sm:mb-0 relative ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} onClick={e => e.stopPropagation()}>
                 
                 {/* Header */}
-                <div className="flex justify-center items-center px-6 pt-6 pb-2 shrink-0 z-10 relative">
-                    <div className="text-center">
-                        <p className="text-[9px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-[0.32em] mb-1.5">Oku</p>
-                        <h3 className="text-xl font-bold text-t-primary leading-none">My Profile</h3>
-                    </div>
-                    <button onClick={handleClose} aria-label="Close profile" className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-sm absolute right-5 top-5 p-2 rounded-full text-t-primary active:scale-95 transition">
+                <div className="h-10 shrink-0 z-10 relative">
+                    <button onClick={handleClose} aria-label="Close profile" className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-sm absolute right-4 top-4 p-2 rounded-full text-t-primary active:scale-95 transition">
                         <Icons.Close className="w-5 h-5" />
                     </button>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar min-h-0 space-y-5 relative z-10">
+                <div className="flex-1 overflow-y-auto px-5 pb-5 hide-scrollbar min-h-0 space-y-4 relative z-10">
                     
                     {/* User Card */}
-                    <div className="flex flex-col items-center gap-3 px-4 pt-4 pb-2">
-                        <div 
-                            className={`w-24 h-24 rounded-full ${activeOption.bg} ${activeOption.text} flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform shadow-lg ring-[6px] ring-white dark:ring-stone-700`}
-                            onClick={() => { sounds.playClick(); setIsSelectingAvatar(!isSelectingAvatar); }}
-                            title="Tap to change avatar"
-                        >
-                            <ActiveIcon className="w-11 h-11" />
+                    <div className="px-2 pt-1 pb-1">
+                        <div className="flex items-center gap-4 min-w-0">
+                            <div
+                                className={`w-20 h-20 rounded-full ${activeOption.bg} ${activeOption.text} flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform shadow-md ring-4 ring-white dark:ring-stone-700`}
+                                onClick={() => { sounds.playClick(); setIsSelectingAvatar(!isSelectingAvatar); }}
+                                title="Tap to change avatar"
+                            >
+                                <ActiveIcon className="w-9 h-9" />
+                            </div>
+
+                            <div className="flex-1 min-w-0 text-left">
+                                {isEditingName ? (
+                                    <input
+                                        autoFocus
+                                        value={profile.username}
+                                        onChange={e => setProfile({...profile, username: e.target.value})}
+                                        onBlur={() => setIsEditingName(false)}
+                                        onKeyDown={e => e.key === 'Enter' && setIsEditingName(false)}
+                                        maxLength={20}
+                                        className="text-xl font-bold text-t-primary bg-transparent border-b border-t-secondary text-left focus:outline-none w-full min-w-0"
+                                    />
+                                ) : (
+                                    <div className="flex items-center gap-2 cursor-pointer group min-w-0" onClick={() => { sounds.playClick(); setIsEditingName(true); }}>
+                                        <span className="text-xl font-bold text-t-primary leading-tight truncate">{profile.username || "Anonymous"}</span>
+                                        <div className="text-t-secondary group-hover:text-t-primary transition-colors shrink-0">
+                                            <Icons.Pencil className="w-4 h-4" />
+                                        </div>
+                                    </div>
+                                )}
+                                <div className={`inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full bg-gradient-to-r from-blue-50 to-violet-50 dark:from-blue-500/15 dark:to-violet-500/15 border border-blue-100 dark:border-white/10 shadow-sm ${isRankCelebrating ? 'animate-pop ring-2 ring-blue-300/60' : ''}`}>
+                                    <Icons.Star className="w-3 h-3 text-blue-500" />
+                                    <span className="text-[10px] font-extrabold text-blue-700 dark:text-blue-300 tracking-wide">{currentTitle}</span>
+                                </div>
+                            </div>
                         </div>
 
                         {isSelectingAvatar && (
-                            <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex flex-wrap justify-center gap-3 animate-fade-in p-4 rounded-2xl w-full">
+                            <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex flex-wrap justify-center gap-2.5 animate-fade-in p-3 rounded-2xl w-full mt-4">
                                 {AVATAR_OPTIONS.map((opt, idx) => {
                                     const Icon = opt.icon;
                                     return (
@@ -96,7 +204,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
                                                 setProfile({...profile, avatarColorIndex: idx});
                                                 setIsSelectingAvatar(false);
                                             }}
-                                            className={`w-10 h-10 rounded-full ${opt.bg} ${opt.text} flex items-center justify-center hover:scale-110 transition-transform ${profile.avatarColorIndex === idx ? 'ring-2 ring-t-primary ring-offset-2 ring-offset-t-surface-sec' : ''}`}
+                                            className={`w-9 h-9 rounded-full ${opt.bg} ${opt.text} flex items-center justify-center active:scale-95 transition-transform ${profile.avatarColorIndex === idx ? 'ring-2 ring-t-primary ring-offset-2 ring-offset-t-surface-sec' : ''}`}
                                         >
                                             <Icon className="w-5 h-5" />
                                         </button>
@@ -104,31 +212,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
                                 })}
                             </div>
                         )}
-                        
-                        <div className="flex flex-col items-center w-full">
-                            {isEditingName ? (
-                                <input 
-                                    autoFocus
-                                    value={profile.username}
-                                    onChange={e => setProfile({...profile, username: e.target.value})}
-                                    onBlur={() => setIsEditingName(false)}
-                                    onKeyDown={e => e.key === 'Enter' && setIsEditingName(false)}
-                                    maxLength={20}
-                                    className="text-xl font-bold text-t-primary bg-transparent border-b border-t-secondary text-center focus:outline-none w-3/4"
-                                />
-                            ) : (
-                                <div className="flex items-center gap-2 cursor-pointer group" onClick={() => { sounds.playClick(); setIsEditingName(true); }}>
-                                    <span className="text-2xl font-bold text-t-primary leading-none truncate">{profile.username || "Anonymous"}</span>
-                                    <div className="text-t-secondary group-hover:text-t-primary transition-colors">
-                                        <Icons.Pencil className="w-4 h-4" />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
                     </div>
 
                     {/* Stats Overview */}
-                    <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-sm rounded-[1.75rem] grid grid-cols-2 px-2 py-5">
+                    <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-sm rounded-[1.5rem] grid grid-cols-2 px-2 py-4">
                         <div className="flex flex-col items-center text-center px-3 border-r border-stone-200/70 dark:border-white/10">
                             <div className="w-9 h-9 bg-amber-100 dark:bg-amber-400/15 rounded-full flex items-center justify-center mb-2.5">
                                 <Icons.Trophy className="w-4 h-4 text-amber-500" />
@@ -174,6 +261,39 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, stats }) =>
                             )}
                         </button>
                     </div>
+
+                    {/* Title Progress */}
+                    <button
+                        type="button"
+                        onClick={handleTitleClaim}
+                        disabled={!isTitleReady || isRankCelebrating}
+                        className={`relative w-full bg-white dark:bg-stone-800 border shadow-sm rounded-2xl px-4 py-3.5 text-left transition-transform ${isTitleReady ? 'border-blue-300 dark:border-blue-500/50 active:scale-[0.98]' : 'border-stone-200 dark:border-stone-700'} ${isRankCelebrating ? 'animate-pop' : ''}`}
+                    >
+                        {isTitleReady && <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm" aria-hidden="true" />}
+                        <div className="flex items-end justify-between gap-3 mb-2.5">
+                            <div className="min-w-0 text-left">
+                                <span className="block text-[9px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-0.5">{isHighestTitle ? 'Highest title' : isTitleReady ? 'Title ready' : 'Next title'}</span>
+                                <span className="block text-sm font-bold text-t-primary truncate">{nextTitle}</span>
+                            </div>
+                            <span className={`text-xs font-bold tabular-nums shrink-0 ${isTitleReady ? 'text-blue-600 dark:text-blue-400 pr-4' : 'text-stone-500 dark:text-stone-400'}`}>
+                                <AnimatedNumber key={rankIndex} value={isProgressAnimated ? titleProgress : 0} easing="easeInOut" durationMs={700} />/20
+                            </span>
+                        </div>
+                        <div className="h-2.5 rounded-full bg-stone-100 dark:bg-stone-700 overflow-hidden">
+                            <div
+                                key={rankIndex}
+                                className="h-full rounded-full bg-gradient-to-r from-blue-500 to-violet-500 transition-[width] duration-700 ease-in-out"
+                                style={{ width: isProgressAnimated ? `${(titleProgress / 20) * 100}%` : '0%' }}
+                            />
+                        </div>
+                        <p className="text-[9px] font-semibold text-stone-400 dark:text-stone-500 mt-2 text-left">
+                            {isHighestTitle
+                                ? 'Every Puzzle Collector star earned.'
+                                : isTitleReady
+                                    ? 'Tap to unlock your new title.'
+                                    : `Solve ${20 - titleProgress} more ${20 - titleProgress === 1 ? 'puzzle' : 'puzzles'}.`}
+                        </p>
+                    </button>
 
                 </div>
             </div>

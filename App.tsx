@@ -12,7 +12,7 @@ import { IAP } from './utils/iap'; // Import IAP Service
 // UI Components
 import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal, ResetConfirmModal } from './components/ui/Modals';
 import { WelcomeGiftModal } from './components/ui/WelcomeGiftModal';
-import { ProfileModal } from './components/ui/ProfileModal';
+import { getStoredClaimedProfileRank, MAX_PROFILE_RANK, ProfileModal } from './components/ui/ProfileModal';
 import { LandscapeBlocker } from './components/ui/LandscapeBlocker';
 
 // Screens
@@ -64,6 +64,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const [showSettings, setShowSettings] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [stats, setStats] = useState(Storage.getStoredData().stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
+  const [claimedProfileRank, setClaimedProfileRank] = useState(() => getStoredClaimedProfileRank(Storage.getStoredData().stats?.totalGamesWon || 0));
   const [replayLevelId, setReplayLevelId] = useState<number | null>(null);
   
   const [purchaseCandidate, setPurchaseCandidate] = useState<{id: string, name: string, cost: number, type: 'bg' | 'num' | 'skill' | 'sound', description?: string} | null>(null);
@@ -94,6 +95,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
         setPoints(data.points);
         setSettings(data.settings);
         setStats(data.stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
+        setClaimedProfileRank(getStoredClaimedProfileRank(data.stats?.totalGamesWon || 0));
         setPurchasedBackgrounds(data.purchasedBackgrounds);
         setPurchasedNumberColors(data.purchasedNumberColors);
         setPurchasedSoundPacks(data.purchasedSoundPacks || ['snd-zen']);
@@ -104,7 +106,13 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
         setUnlockedPacks2(data.unlockedPack2 || []);
         setUnlockedPacks3(data.unlockedPack3 || []);
         setNextBonusClaimTime(data.nextBonusClaimTime || 0);
-        setPepinoState(data.pepino || { unlocked: false, hasPendingGift: false, pendingGiftCount: 0 });
+        setPepinoState(data.pepino || {
+          unlocked: false,
+          hasPendingGift: false,
+          pendingGiftCount: 0,
+          firstGiftClaimed: false,
+          firstMessageShown: false
+        });
         setRedeemedCoupons(data.redeemedCoupons || []);
         
         const isDark = data.settings.appearance === 'dark' || (data.settings.appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -154,6 +162,27 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
         document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
+
+  useEffect(() => {
+      const earnedRank = Math.min(MAX_PROFILE_RANK, Math.floor(stats.totalGamesWon / 20));
+      setClaimedProfileRank(current => Math.min(current, earnedRank));
+  }, [stats.totalGamesWon]);
+
+  useEffect(() => {
+      try {
+          const stored = localStorage.getItem('zen_profile');
+          const profile = stored ? JSON.parse(stored) : {};
+          if (profile.claimedRank !== claimedProfileRank) {
+              localStorage.setItem('zen_profile', JSON.stringify({
+                  ...profile,
+                  claimedRank: claimedProfileRank,
+                  lastSeenRank: claimedProfileRank
+              }));
+          }
+      } catch {
+          // A storage failure should never interrupt the game.
+      }
+  }, [claimedProfileRank]);
 
   // Theme Detection
   useEffect(() => {
@@ -648,6 +677,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     nextBonusClaimTime={nextBonusClaimTime}
                                     hiddenDifficulties={settings.hiddenDifficulties}
                                     hasPendingPepinoGift={pepinoState.hasPendingGift}
+                                    hasProfileTitleUpgrade={Math.min(MAX_PROFILE_RANK, Math.floor(stats.totalGamesWon / 20)) > claimedProfileRank}
                                     onContinue={(diff, levelId) => {
                                         sounds.playLevelEnter();
                                         setSelectedDifficulty(diff);
@@ -799,6 +829,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                 {showProfile && (
                         <ProfileModal
                             onClose={() => setShowProfile(false)}
+                            claimedRank={claimedProfileRank}
+                            onTitleClaimed={setClaimedProfileRank}
                             stats={stats}
                         />
                 )}
