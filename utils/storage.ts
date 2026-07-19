@@ -1,5 +1,5 @@
 
-import { AppSettings, LevelProgress, StoredData, PepinoState, Difficulty } from '../types';
+import { AppSettings, LevelProgress, StoredData, PepinoState, Difficulty, PermanentPurchaseOwnership, StorePurchaseUnlock } from '../types';
 import { Preferences } from '@capacitor/preferences';
 
 const STORAGE_KEY = 'oku_data_v1';
@@ -61,6 +61,8 @@ function getStoredData(): StoredData {
           seenStrictModeWarnings: [],
           redeemedCoupons: [],
           welcomeGiftClaimed: false,
+          processedPurchaseTransactions: [],
+          puzzleCatalogVersion: 2,
           stats: DEFAULT_STATS
       };
       
@@ -107,6 +109,22 @@ function getStoredData(): StoredData {
     
     if (!data.purchasedSkills) data.purchasedSkills = [];
     if (!data.enabledSkills) data.enabledSkills = [...data.purchasedSkills]; // Default new field to existing purchased skills
+    // Retire Reveal and migrate former Auto owners to Scribe without losing access.
+    data.purchasedSkills = data.purchasedSkills
+        .map((skillId: string) => skillId === 'skill-auto' ? 'skill-scribe' : skillId)
+        .filter((skillId: string) => skillId !== 'skill-reveal');
+    data.enabledSkills = data.enabledSkills
+        .map((skillId: string) => skillId === 'skill-auto' ? 'skill-scribe' : skillId)
+        .filter((skillId: string) => skillId !== 'skill-reveal');
+    data.purchasedSkills = [...new Set(data.purchasedSkills)];
+    data.enabledSkills = [...new Set(data.enabledSkills)];
+
+    for (const progress of Object.values(data.progress || {}) as Array<LevelProgress & { autoUses?: number }>) {
+        if (progress.scribeUses === undefined && progress.autoUses !== undefined) {
+            progress.scribeUses = Math.min(progress.autoUses, 4);
+        }
+        delete progress.autoUses;
+    }
     
     if (data.bonusClaimed === undefined) data.bonusClaimed = false;
     if (data.nextBonusClaimTime === undefined) data.nextBonusClaimTime = 0;
@@ -157,6 +175,25 @@ function getStoredData(): StoredData {
     if (!data.seenStrictModeWarnings) data.seenStrictModeWarnings = [];
     if (!data.redeemedCoupons) data.redeemedCoupons = [];
     if (data.welcomeGiftClaimed === undefined) data.welcomeGiftClaimed = false;
+    if (!Array.isArray(data.processedPurchaseTransactions)) data.processedPurchaseTransactions = [];
+
+    // Puzzle Catalog v2 changes the deterministic board behind each level ID.
+    // Preserve every completed result, but discard legacy in-progress board snapshots
+    // so an old puzzle is never checked against a new solution.
+    if ((data.puzzleCatalogVersion ?? 1) < 2) {
+        for (const progress of Object.values(data.progress || {}) as LevelProgress[]) {
+            if (progress.status !== 'in-progress') continue;
+            progress.status = progress.bestTime !== undefined ? 'completed' : 'not-started';
+            progress.boardState = undefined;
+            progress.moveLog = undefined;
+            progress.timeElapsed = 0;
+            progress.lastPlayed = undefined;
+            progress.scanUses = 3;
+            progress.revealUses = undefined;
+            progress.scribeUses = 4;
+        }
+        data.puzzleCatalogVersion = 2;
+    }
 
     // Clean up deprecated fields if they exist from previous versions
     if ((data as any).purchasedBundles) delete (data as any).purchasedBundles;
@@ -187,6 +224,8 @@ function getStoredData(): StoredData {
         seenStrictModeWarnings: [],
         redeemedCoupons: [],
         welcomeGiftClaimed: false,
+        processedPurchaseTransactions: [],
+        puzzleCatalogVersion: 2,
         stats: DEFAULT_STATS
     };
   }
@@ -215,6 +254,31 @@ function saveData(data: StoredData) {
   } catch (e) {
     console.error("Failed to save data", e);
   }
+}
+
+function ensurePepinoUnlocked(data: StoredData) {
+  if (data.pepino?.unlocked) return;
+  data.pepino = {
+    unlocked: true,
+    hasPendingGift: true,
+    pendingGiftCount: 1,
+    firstGiftClaimed: false,
+    firstMessageShown: false,
+    unlockedAt: Date.now()
+  };
+}
+
+function ensureStarterPackUnlocked(data: StoredData) {
+  data.starterPackPurchased = true;
+  if (!data.purchasedSkills) data.purchasedSkills = [];
+  if (!data.enabledSkills) data.enabledSkills = [];
+  if (!data.purchasedSoundPacks) data.purchasedSoundPacks = ['snd-zen'];
+
+  for (const skillId of ['skill-scribe', 'skill-scan']) {
+    if (!data.purchasedSkills.includes(skillId)) data.purchasedSkills.push(skillId);
+    if (!data.enabledSkills.includes(skillId)) data.enabledSkills.push(skillId);
+  }
+  if (!data.purchasedSoundPacks.includes('snd-piano')) data.purchasedSoundPacks.push('snd-piano');
 }
 
 export const Storage = {
@@ -361,7 +425,7 @@ export const Storage = {
           data.points -= cost;
           data.purchasedSkills.push(id);
           if (!data.enabledSkills) data.enabledSkills = [];
-          if (!data.enabledSkills.includes(id)) data.enabledSkills.push(id); // Auto enable on purchase
+          if (!data.enabledSkills.includes(id)) data.enabledSkills.push(id);
           saveData(data);
           return true;
       }
@@ -408,6 +472,54 @@ export const Storage = {
       const data = getStoredData();
       data.starterPackPurchased = true;
       saveData(data);
+  },
+
+  fulfillStorePurchase: ({
+      transactionId,
+      diamonds,
+      unlock
+  }: {
+      transactionId: string;
+      diamonds: number;
+      unlock: StorePurchaseUnlock;
+  }): { applied: boolean; data: StoredData } => {
+      const data = getStoredData();
+      if (!data.processedPurchaseTransactions) data.processedPurchaseTransactions = [];
+
+      if (!transactionId || data.processedPurchaseTransactions.includes(transactionId)) {
+          return { applied: false, data };
+      }
+
+      data.processedPurchaseTransactions.push(transactionId);
+
+      if (unlock === 'premium') ensurePepinoUnlocked(data);
+      if (unlock === 'starter') ensureStarterPackUnlocked(data);
+
+      if (diamonds > 0) {
+          data.points += diamonds;
+          if (!data.stats) data.stats = { ...DEFAULT_STATS };
+          data.stats.totalDiamondsEarned += diamonds;
+      }
+
+      saveData(data);
+      return { applied: true, data };
+  },
+
+  restorePermanentPurchases: (ownership: PermanentPurchaseOwnership): StoredData => {
+      const data = getStoredData();
+      if (!data.processedPurchaseTransactions) data.processedPurchaseTransactions = [];
+
+      if (ownership.premiumOwned) ensurePepinoUnlocked(data);
+      if (ownership.starterOwned) ensureStarterPackUnlocked(data);
+
+      for (const transactionId of ownership.transactionIds) {
+          if (transactionId && !data.processedPurchaseTransactions.includes(transactionId)) {
+              data.processedPurchaseTransactions.push(transactionId);
+          }
+      }
+
+      saveData(data);
+      return data;
   },
 
   getUnlockedPacks2: (): string[] => {
@@ -506,8 +618,7 @@ export const Storage = {
                timeElapsed: 0,
                bestTime: bestTime,
                scanUses: 3,
-               revealUses: 1,
-               autoUses: 5,
+               scribeUses: 4,
            };
            saveData(data);
       }
@@ -615,8 +726,7 @@ export const Storage = {
                   timeElapsed: existing?.timeElapsed || 60,
                   bestTime: existing?.bestTime !== undefined ? Math.min(existing.bestTime, 60) : 60,
                   scanUses: existing?.scanUses ?? 3,
-                  revealUses: existing?.revealUses ?? 1,
-                  autoUses: existing?.autoUses ?? 5,
+                  scribeUses: existing?.scribeUses ?? 4,
               };
 
               if (!wasAlreadyCompleted) data.stats.totalGamesWon += 1;

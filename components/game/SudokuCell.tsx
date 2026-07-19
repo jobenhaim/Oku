@@ -14,8 +14,7 @@ interface SudokuCellProps {
     isSameValue: boolean;
     isRelated: boolean;
     highlight: boolean;
-    isRevealingCell: boolean;
-    animatingValue: number | null;
+    isScribingCell: boolean;
     settings: AppSettings;
     numberColor: string;
     onCellClick: (e: React.MouseEvent, r: number, c: number) => void;
@@ -38,8 +37,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     isSameValue,
     isRelated,
     highlight,
-    isRevealingCell,
-    animatingValue,
+    isScribingCell,
     settings,
     numberColor,
     onCellClick,
@@ -63,10 +61,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     // The board background is Stone-800 (#292524) in Dark Mode.
     // Highlights must be darker or translucent to blend nicely.
 
-    if (isRevealingCell) {
-        // Keep default background during reveal init to prevent black flash from transparency
-        bgClass = 'bg-t-board '; 
-    } else if (isMarkedWrong) {
+    if (isMarkedWrong) {
          // Scanner Detection: Bright Red Flash
          bgClass = 'bg-red-500 animate-pulse shadow-inner '; 
     } else if (isSelected && (isError || isConflict)) {
@@ -90,10 +85,8 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
          bgClass = 'bg-transparent '; 
     }
     
-    if (isRevealingCell) {
-        classes += "reveal-cell-active z-50 relative ";
-    } else if (animatingValue !== null) {
-        classes += "auto-cell-active z-40 relative ";
+    if (isScribingCell) {
+        classes += "scribe-cell-active z-40 relative ";
     }
     
     if (cell.isFixed) {
@@ -125,17 +118,10 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
         {!onlyContent && (
             <>
                 <div className={`absolute inset-0 ${bgClass} ${cornerClass} sudoku-cell-bg pointer-events-none z-0`} />
-                {isRevealingCell && (
-                    <div className="absolute inset-0 overflow-visible pointer-events-none z-10" aria-hidden="true">
-                        <div className="reveal-focus-halo" />
-                        <div className="reveal-focus-ring" />
-                        <div className="reveal-focus-spark" />
-                    </div>
-                )}
-                {animatingValue !== null && !isRevealingCell && (
+                {isScribingCell && (
                     <div className="absolute inset-0 overflow-hidden pointer-events-none z-10" aria-hidden="true">
-                        <div className="auto-lock-wash" />
-                        <div className="auto-lock-brackets" />
+                        <div className="scribe-cell-wash" />
+                        <div className="scribe-scan-line" />
                     </div>
                 )}
             </>
@@ -143,9 +129,9 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
         
         {/* Cell Content Layer */}
         {!onlyBackground && (
-            (cell.value || animatingValue !== null) ? (
-                <span className={`leading-none pt-[0.1em] relative z-20 ${isRevealingCell ? 'reveal-number-emerge' : animatingValue !== null ? 'auto-number-lock' : ''} ${!cell.isFixed && !isError && !isConflict && !isMarkedWrong && !isRevealed ? numberColor : ''}`}>
-                    {animatingValue !== null ? animatingValue : cell.value}
+            cell.value ? (
+                <span className={`leading-none pt-[0.1em] relative z-20 ${!cell.isFixed && !isError && !isConflict && !isMarkedWrong && !isRevealed ? numberColor : ''}`}>
+                    {cell.value}
                 </span>
             ) : cell.notes.length > 0 ? (
                 <div className="grid grid-cols-3 grid-rows-3 w-full h-full p-[1px] pointer-events-none relative z-20">
@@ -156,7 +142,10 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
                         }
                         return (
                             <div key={n} className="flex items-center justify-center leading-none" style={{ fontSize: noteFontSize, lineHeight: noteLineHeight }}>
-                                <span className="text-stone-500 dark:text-stone-400 font-medium">{n}</span>
+                                <span
+                                    className={`text-stone-500 dark:text-stone-400 font-medium ${isScribingCell ? 'scribe-note-arrive' : ''}`}
+                                    style={isScribingCell ? { animationDelay: `${cell.notes.indexOf(n) * 45}ms` } : undefined}
+                                >{n}</span>
                             </div>
                         )
                     })}

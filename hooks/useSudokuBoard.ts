@@ -39,6 +39,25 @@ const checkSectionCompletion = (board: Board, solvedBoard: number[][], r: number
     return sections;
 };
 
+const hasPeerConflict = (board: Board, row: number, col: number, value: number) => {
+    for (let index = 0; index < 9; index++) {
+        if (index !== col && board[row][index].value === value) return true;
+        if (index !== row && board[index][col].value === value) return true;
+    }
+
+    const startRow = Math.floor(row / 3) * 3;
+    const startCol = Math.floor(col / 3) * 3;
+    for (let rowOffset = 0; rowOffset < 3; rowOffset++) {
+        for (let colOffset = 0; colOffset < 3; colOffset++) {
+            const peerRow = startRow + rowOffset;
+            const peerCol = startCol + colOffset;
+            if ((peerRow !== row || peerCol !== col) && board[peerRow][peerCol].value === value) return true;
+        }
+    }
+
+    return false;
+};
+
 export const useSudokuBoard = ({
   difficulty,
   levelId,
@@ -177,6 +196,7 @@ export const useSudokuBoard = ({
                      newCell.isError = false;
                      newBoard[row][col] = newCell;
                  } else {
+                     const hasImmediateConflict = hasPeerConflict(currentBoard, row, col, currentActiveNumber);
                      newCell.value = currentActiveNumber as any;
                      newCell.notes = [];
                      
@@ -205,7 +225,9 @@ export const useSudokuBoard = ({
                         }
                      }
 
-                     if (currentSettings.autoEraseNotes) {
+                     // A visibly invalid move is likely temporary. Preserve its peer notes
+                     // so removing the red number restores the board naturally.
+                     if (currentSettings.autoEraseNotes && !newCell.isError && !hasImmediateConflict) {
                          removeNotesFromPeers(newBoard, row, col, currentActiveNumber);
                      }
                  }
@@ -231,7 +253,7 @@ export const useSudokuBoard = ({
     }
   }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete]);
 
-  const handleNumberInput = useCallback((num: number, isPaused: boolean, isCompleted: boolean) => {
+  const handleNumberInput = useCallback((num: number, isPaused: boolean, isCompleted: boolean, forcePlace: boolean = false) => {
     if (isPaused || isCompleted) return;
     
     const currentBoard = boardRef.current;
@@ -240,7 +262,7 @@ export const useSudokuBoard = ({
     const currentSelectedCell = selectedCellRef.current;
     const currentSettings = settingsRef.current;
 
-    if (currentSettings.digitFirst) {
+    if (currentSettings.digitFirst && !forcePlace) {
         sounds.playClick();
         if (currentActiveNumber === num) {
             setActiveNumber(null);
@@ -263,7 +285,9 @@ export const useSudokuBoard = ({
 
     newCell.isMarkedWrong = false;
 
-    if (currentIsPencilMode) {
+    const shouldUsePencil = currentIsPencilMode && !forcePlace;
+
+    if (shouldUsePencil) {
       if (newCell.notes.includes(num)) newCell.notes = newCell.notes.filter(n => n !== num);
       else newCell.notes = [...newCell.notes, num].sort();
       newBoard[r][c] = newCell;
@@ -273,6 +297,7 @@ export const useSudokuBoard = ({
           newCell.isError = false; 
           newBoard[r][c] = newCell;
       } else {
+        const hasImmediateConflict = hasPeerConflict(currentBoard, r, c, num);
         newCell.value = num as any;
         newCell.notes = [];
         const isHarderDifficulty = difficulty === Difficulty.Hard || difficulty === Difficulty.Intense || difficulty === Difficulty.Impossible;
@@ -300,7 +325,9 @@ export const useSudokuBoard = ({
             }
         }
 
-        if (currentSettings.autoEraseNotes) {
+        // Hidden mistakes in strict modes still behave like ordinary paper entries,
+        // but an immediately visible duplicate must not destroy useful notes.
+        if (currentSettings.autoEraseNotes && !newCell.isError && !hasImmediateConflict) {
              removeNotesFromPeers(newBoard, r, c, num);
         }
       }
@@ -308,7 +335,7 @@ export const useSudokuBoard = ({
     
     setBoard(newBoard);
     if (onBoardChange) onBoardChange(newBoard, moveLog.current);
-    if (!currentIsPencilMode && newCell.value) checkCompletion(newBoard);
+    if (!shouldUsePencil && newCell.value) checkCompletion(newBoard);
   }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete]);
 
   const handleUndo = useCallback((isPaused: boolean, isCompleted: boolean) => {

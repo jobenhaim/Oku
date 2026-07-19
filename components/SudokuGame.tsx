@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Difficulty, AppSettings, Board, MoveLogEntry, CellValue } from '../types';
 import { useSudokuBoard } from '../hooks/useSudokuBoard';
-import { useGameSkills } from '../hooks/useGameSkills';
+import { useGameSkills, ScribeResult } from '../hooks/useGameSkills';
 import { useGameTimer } from '../hooks/useGameTimer';
 import { SudokuGrid } from './game/SudokuGrid';
 import { GameControls } from './game/GameControls';
@@ -45,20 +45,6 @@ const SCAN_CLEAN_MESSAGES = [
   "Nothing to fix."
 ];
 
-const AUTO_MESSAGES = [
-  "Handled.",
-  "Done.",
-  "All set.",
-  "Taken care of."
-];
-
-const REVEAL_MESSAGES = [
-  "Revealed.",
-  "There it is.",
-  "Found one.",
-  "A little help."
-];
-
 const LEVEL_START_MESSAGES = [
   "Good luck!"
 ];
@@ -84,7 +70,7 @@ const COMPLETE_MESSAGES = [
   "That's a win!"
 ];
 
-type PillMessageType = 'scan-error' | 'scan-clean' | 'auto' | 'reveal' | 'start' | 'warning' | 'reveal-ready' | 'halfway' | 'notes' | 'complete';
+type PillMessageType = 'scan-error' | 'scan-clean' | 'scribe' | 'scribe-error' | 'start' | 'warning' | 'halfway' | 'notes' | 'complete';
 
 interface PillMessage {
   id: number;
@@ -134,20 +120,18 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const [isPillGapActive, setIsPillGapActive] = useState(false);
   const scanErrorDeckRef = useRef(shuffledCopy(SCAN_ERROR_MESSAGES));
   const scanCleanDeckRef = useRef(shuffledCopy(SCAN_CLEAN_MESSAGES));
-  const autoDeckRef = useRef(shuffledCopy(AUTO_MESSAGES));
-  const revealDeckRef = useRef(shuffledCopy(REVEAL_MESSAGES));
   const halfwayDeckRef = useRef(shuffledCopy(HALFWAY_MESSAGES));
   const completeDeckRef = useRef(shuffledCopy(COMPLETE_MESSAGES));
   const scanErrorIndexRef = useRef(0);
   const scanCleanIndexRef = useRef(0);
-  const autoIndexRef = useRef(0);
-  const revealIndexRef = useRef(0);
   const halfwayIndexRef = useRef(0);
   const completeIndexRef = useRef(0);
   const pillMessageIdRef = useRef(0);
+  const pillMessageRef = useRef<PillMessage | null>(null);
+  const pillGapMsRef = useRef(800);
   const halfwayShownRef = useRef(false);
   const halfwayTrackingReadyRef = useRef(false);
-  const revealReadyShownRef = useRef(false);
+  const notesReadyShownRef = useRef(false);
   
   // Timer hook
   const { timer, setTimer } = useGameTimer(
@@ -159,7 +143,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       0
   );
 
-  const saveProgress = (currentBoard: Board, scanUsesVal?: number, revealUsesVal?: number, moveLog?: MoveLogEntry[], isPerfect: boolean = false, autoUsesVal?: number) => {
+  const saveProgress = (currentBoard: Board, scanUsesVal?: number, _revealUsesVal?: number, moveLog?: MoveLogEntry[], isPerfect: boolean = false, scribeUsesVal?: number) => {
       if (isCompleted || isEnding) return;
       Storage.saveLevelProgress({
           levelId,
@@ -170,8 +154,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           moveLog: moveLog,
           lastPlayed: Date.now(),
           scanUses: scanUsesVal !== undefined ? scanUsesVal : scanUses,
-          revealUses: revealUsesVal !== undefined ? revealUsesVal : revealUses,
-          autoUses: autoUsesVal !== undefined ? autoUsesVal : autoUses,
+          scribeUses: scribeUsesVal !== undefined ? scribeUsesVal : scribeUses,
       }, isPerfect);
   };
 
@@ -198,10 +181,19 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       }
   }, []);
 
-  const enqueuePill = useCallback((message: Omit<PillMessage, 'id'>) => {
-      pillMessageIdRef.current += 1;
-      const id = pillMessageIdRef.current;
-      setPillQueue(current => [...current, { ...message, id }]);
+  useEffect(() => {
+      pillMessageRef.current = pillMessage;
+  }, [pillMessage]);
+
+  const enqueuePill = useCallback((message: Omit<PillMessage, 'id'>, deduplicate = false) => {
+      const isSameMessage = (candidate: PillMessage) => candidate.type === message.type && candidate.text === message.text;
+      if (deduplicate && pillMessageRef.current && isSameMessage(pillMessageRef.current)) return;
+
+      setPillQueue(current => {
+          if (deduplicate && current.some(isSameMessage)) return current;
+          pillMessageIdRef.current += 1;
+          return [...current, { ...message, id: pillMessageIdRef.current }];
+      });
   }, []);
 
   useEffect(() => {
@@ -214,6 +206,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   useEffect(() => {
       if (!pillMessage) return;
       const displayTimer = window.setTimeout(() => {
+          // The opening warning follows Good Luck after a shorter 0.3s visible gap.
+          pillGapMsRef.current = pillMessage.type === 'start' ? 600 : 800;
           setPillMessage(null);
           setIsPillGapActive(true);
       }, 300 + pillMessage.holdMs);
@@ -222,7 +216,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   useEffect(() => {
       if (!isPillGapActive) return;
-      const gapTimer = window.setTimeout(() => setIsPillGapActive(false), 800);
+      const gapTimer = window.setTimeout(() => setIsPillGapActive(false), pillGapMsRef.current);
       return () => window.clearTimeout(gapTimer);
   }, [isPillGapActive]);
 
@@ -234,18 +228,18 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       enqueuePill({ text, type: hasErrors ? 'scan-error' : 'scan-clean', holdMs: 2500 });
   }, [enqueuePill]);
 
-  const handleAutoResult = useCallback(() => {
-      const deck = autoDeckRef.current;
-      const text = deck[autoIndexRef.current % deck.length];
-      autoIndexRef.current = (autoIndexRef.current + 1) % deck.length;
-      enqueuePill({ text, type: 'auto', holdMs: 2500 });
-  }, [enqueuePill]);
-
-  const handleRevealResult = useCallback(() => {
-      const deck = revealDeckRef.current;
-      const text = deck[revealIndexRef.current % deck.length];
-      revealIndexRef.current = (revealIndexRef.current + 1) % deck.length;
-      enqueuePill({ text, type: 'reveal', holdMs: 2500 });
+  const handleScribeResult = useCallback((result: ScribeResult) => {
+      if (result === 'added') {
+          enqueuePill({ text: 'Notes added!', type: 'scribe', holdMs: 2500 }, true);
+      } else if (result === 'blocked') {
+          enqueuePill({ text: "Something's wrong.", type: 'scribe-error', holdMs: 2500 }, true);
+      } else if (result === 'unchanged') {
+          enqueuePill({ text: 'Notes already added.', type: 'scribe', holdMs: 2500 }, true);
+      } else if (result === 'select-cell') {
+          enqueuePill({ text: 'Select a cell first.', type: 'scribe', holdMs: 2500 }, true);
+      } else {
+          enqueuePill({ text: 'Choose an empty cell.', type: 'scribe', holdMs: 2500 }, true);
+      }
   }, [enqueuePill]);
 
   useEffect(() => {
@@ -253,17 +247,16 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setPillMessage(null);
       setIsPillGapActive(false);
       halfwayShownRef.current = false;
-      revealReadyShownRef.current = false;
 
       const startMessageTimer = window.setTimeout(() => {
           const text = LEVEL_START_MESSAGES[Math.floor(Math.random() * LEVEL_START_MESSAGES.length)];
-          enqueuePill({ text, type: 'start', holdMs: 2000 });
-      }, 1000);
+          enqueuePill({ text, type: 'start', holdMs: 1000 });
+      }, 500);
 
       const isStrictMode = difficulty === Difficulty.Hard || difficulty === Difficulty.Intense || difficulty === Difficulty.Impossible;
       const warningTimer = isStrictMode ? window.setTimeout(() => {
-          enqueuePill({ text: 'Mistakes stay hidden.', type: 'warning', holdMs: 5000 });
-      }, 4100) : null;
+          enqueuePill({ text: 'Mistakes stay hidden.', type: 'warning', holdMs: 3000 });
+      }, 2100) : null;
 
       return () => {
           window.clearTimeout(startMessageTimer);
@@ -302,8 +295,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           moveLog: completedMoveLog,
           lastPlayed: Date.now(),
           scanUses,
-          revealUses,
-          autoUses,
+          scribeUses,
       }, isPerfect);
       
       // Grant Pepino Gift on Win
@@ -352,8 +344,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       handleNumberInput,
       handleUndo,
       handleErase,
-      checkCompletion,
-      removeNotesFromPeers
+      checkCompletion
   } = useSudokuBoard({
       difficulty,
       levelId,
@@ -369,18 +360,11 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       isScanning,
       isScanSuccess,
       scanCooldown,
-      revealUses,
-      setRevealUses,
-      revealingCell,
-      setRevealingCell,
-      animatingCell,
-      setAnimatingCell,
-      isAutoAvailable,
-      autoUses,
-      setAutoUses,
-      handleAutoFill,
+      scribeUses,
+      setScribeUses,
+      scribingCell,
+      handleScribe,
       handleScan,
-      handleReveal,
   } = useGameSkills({
       board,
       setBoard,
@@ -388,21 +372,14 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setHistory,
       moveLog,
       selectedCell,
-      activeNumber,
-      settings,
-      difficulty,
-      removeNotesFromPeers,
-      checkCompletion,
       onSaveProgress: (b, s, r, ml, au) => saveProgress(b, s, r, ml, false, au),
-      onSectionComplete: handleSectionComplete,
       onScanResult: handleScanResult,
-      onAutoResult: handleAutoResult,
-      onRevealResult: handleRevealResult,
-      timer
+      onScribeResult: handleScribeResult
   });
 
   useEffect(() => {
       halfwayTrackingReadyRef.current = false;
+      notesReadyShownRef.current = false;
       const progress = Storage.getLevelProgress(difficulty, levelId);
       if (progress && progress.status === 'in-progress' && progress.boardState) {
           initializeBoard(progress.boardState, progress.moveLog);
@@ -412,19 +389,15 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           if (progress.scanUses !== undefined) setScanUses(progress.scanUses);
           else setScanUses(3);
 
-          if (progress.revealUses !== undefined) setRevealUses(progress.revealUses);
-          else setRevealUses(1);
-
-          if (progress.autoUses !== undefined) setAutoUses(progress.autoUses);
-          else setAutoUses(5);
+          if (progress.scribeUses !== undefined) setScribeUses(Math.min(progress.scribeUses, 4));
+          else setScribeUses(4);
       } else {
           initializeBoard();
           setTimer(0);
           
           // Reset skills
           setScanUses(3);
-          setRevealUses(1);
-          setAutoUses(5);
+          setScribeUses(4);
       }
       setIsCompleted(false);
       setIsEnding(false);
@@ -438,7 +411,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       const currentBoard = progress?.boardState ?? initialBoardRef.current;
       const filledEditableCells = currentBoard.flat().filter(cell => !cell.isFixed && cell.value !== null).length;
       halfwayShownRef.current = editableCells > 0 && filledEditableCells >= Math.ceil(editableCells / 2);
-      revealReadyShownRef.current = Boolean(progress && progress.timeElapsed >= 60);
       
       setShowStartHint(true);
       const hintTimer = setTimeout(() => setShowStartHint(false), 5000);
@@ -449,7 +421,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           clearTimeout(hintTimer);
           clearTimeout(trackingTimer);
       };
-  }, [difficulty, levelId, initializeBoard, setTimer, setScanUses, setRevealUses, setAutoUses]);
+  }, [difficulty, levelId, initializeBoard, setTimer, setScanUses, setScribeUses]);
 
   useEffect(() => {
       if (!halfwayTrackingReadyRef.current || halfwayShownRef.current || board.length === 0) return;
@@ -463,12 +435,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           enqueuePill({ text, type: 'halfway', holdMs: 2500 });
       }
   }, [board, enqueuePill]);
-
-  useEffect(() => {
-      if (!purchasedSkills.includes('skill-reveal') || timer < 60 || revealUses <= 0 || revealReadyShownRef.current || isEnding || isCompleted) return;
-      revealReadyShownRef.current = true;
-      enqueuePill({ text: 'Reveal ready.', type: 'reveal-ready', holdMs: 2500 });
-  }, [timer, revealUses, purchasedSkills, isEnding, isCompleted, enqueuePill]);
 
   const generateReplay = () => {
         if (isGeneratingReplay || replayUrl) return;
@@ -575,11 +541,11 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       initializeBoard(); 
       setTimer(0); 
       setScanUses(3); 
-      setRevealUses(1); 
-      setAutoUses(5);
+      setScribeUses(4);
       setShowRestartConfirm(false); 
       setIsPaused(false);
       setAnimatingSections(new Set());
+      notesReadyShownRef.current = false;
       
       setShowStartHint(true);
       setTimeout(() => setShowStartHint(false), 5000);
@@ -606,6 +572,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   };
   
   const handleBackgroundClick = (e: React.MouseEvent) => {
+      if (scribingCell) return;
       if (e.target === e.currentTarget) {
           setSelectedCell(null);
       }
@@ -620,12 +587,19 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   // Memoize click handlers to avoid passing new functions on every timer tick
   const onCellClickWrapper = useCallback((e: React.MouseEvent, r: number, c: number) => {
+      if (scribingCell) return;
       handleCellClick(r, c, isPaused, isCompleted || isEnding);
-  }, [handleCellClick, isPaused, isCompleted, isEnding]);
+  }, [handleCellClick, isPaused, isCompleted, isEnding, scribingCell]);
 
   const onNumberClickWrapper = useCallback((e: React.MouseEvent, n: number) => {
+      if (scribingCell) return;
       handleNumberInput(n, isPaused, isCompleted || isEnding);
-  }, [handleNumberInput, isPaused, isCompleted, isEnding]);
+  }, [handleNumberInput, isPaused, isCompleted, isEnding, scribingCell]);
+
+  const onNumberLongPressWrapper = useCallback((_e: React.MouseEvent, n: number) => {
+      if (scribingCell) return;
+      handleNumberInput(n, isPaused, isCompleted || isEnding, true);
+  }, [handleNumberInput, isPaused, isCompleted, isEnding, scribingCell]);
 
   return (
     <>
@@ -711,14 +685,15 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                                 <>
                                     {pillMessage.type === 'scan-error' ? (
                                         <Icons.Close className="w-3.5 h-3.5 shrink-0 text-red-500" />
-                                    ) : pillMessage.type === 'scan-clean' || pillMessage.type === 'auto' || pillMessage.type === 'reveal' ? (
+                                    ) : pillMessage.type === 'scan-clean' || pillMessage.type === 'scribe' ? (
                                         <Icons.Check className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
-                                    ) : pillMessage.type === 'reveal-ready' ? (
-                                        <Icons.Eye className="w-3.5 h-3.5 shrink-0 text-purple-500" />
+                                    ) : pillMessage.type === 'scribe-error' ? (
+                                        <Icons.Scan className="w-3.5 h-3.5 shrink-0 text-red-500" />
                                     ) : pillMessage.type === 'notes' ? (
-                                        <Icons.Pencil className="w-3.5 h-3.5 shrink-0 text-blue-500" />
+                                        <Icons.Info className="w-3.5 h-3.5 shrink-0 text-stone-500" />
                                     ) : null}
                                     {pillMessage.text}
+                                    {pillMessage.type === 'scribe-error' && <span className="font-bold text-red-500">Try Scan</span>}
                                 </>
                             )}
                         </span>
@@ -732,8 +707,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                     selectedCell={selectedCell}
                     activeNumber={activeNumber}
                     conflicts={conflicts}
-                    revealingCell={revealingCell}
-                    animatingCell={animatingCell}
+                    scribingCell={scribingCell}
                     isScanning={isScanning}
                     isScanSuccess={isScanSuccess}
                     animatingSections={animatingSections}
@@ -758,6 +732,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                 isPencilMode={isPencilMode}
                 numberColor={numberColor}
                 onNumberClick={onNumberClickWrapper}
+                onNumberLongPress={onNumberLongPressWrapper}
             />
          </motion.div>
 
@@ -773,29 +748,26 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                  canUndo={history.length > 0}
                  canErase={canErase}
                  isPencilMode={isPencilMode}
-                 onUndo={(e) => handleUndo(isPaused, isCompleted || isEnding)}
-                 onErase={(e) => handleErase(isPaused, isCompleted || isEnding)}
+                 onUndo={(e) => { if (!scribingCell) handleUndo(isPaused, isCompleted || isEnding); }}
+                 onErase={(e) => { if (!scribingCell) handleErase(isPaused, isCompleted || isEnding); }}
                  onTogglePencil={() => {
-                     if (isEnding) return;
+                     if (isEnding || scribingCell) return;
                      sounds.playClick();
                      const nextPencilMode = !isPencilMode;
                      setIsPencilMode(nextPencilMode);
-                     if (nextPencilMode) {
-                         enqueuePill({ text: 'Notes ready.', type: 'notes', holdMs: 2500 });
+                     if (nextPencilMode && !notesReadyShownRef.current) {
+                         notesReadyShownRef.current = true;
+                         enqueuePill({ text: 'Hold a number to place it', type: 'notes', holdMs: 2500 });
                      }
                  }}
                  purchasedSkills={purchasedSkills}
-                 isAutoAvailable={isAutoAvailable}
                  scanUses={scanUses}
                  isScanning={isScanning}
                  scanCooldown={scanCooldown}
-                 revealUses={revealUses}
-                 revealingCell={revealingCell}
-                 onAutoFill={() => handleAutoFill(purchasedSkills)}
+                 scribingCell={scribingCell}
+                 onScribe={() => handleScribe(purchasedSkills, isPaused, isCompleted || isEnding)}
                  onScan={() => handleScan(isPaused, isCompleted || isEnding)}
-                 onReveal={() => handleReveal(isPaused, isCompleted || isEnding)}
-                 autoUses={autoUses}
-                 timer={timer}
+                 scribeUses={scribeUses}
                  onDevSolve={settings.devAutoSolve ? handleDevSolve : undefined}
              />
          </motion.div>

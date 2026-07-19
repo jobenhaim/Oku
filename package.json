@@ -6,7 +6,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "puzzles:generate": "node scripts/generate-puzzle-catalog.mjs",
+    "puzzles:audit": "node scripts/audit-puzzle-catalog.mjs data/puzzles-v2.json"
   },
   "dependencies": {
     "@capacitor/android": "^6.0.0",

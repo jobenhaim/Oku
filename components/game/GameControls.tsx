@@ -12,17 +12,13 @@ interface GameControlsProps {
     onTogglePencil: (e: React.MouseEvent) => void;
     purchasedSkills: string[];
     // Skill specific props
-    isAutoAvailable: boolean;
-    autoUses: number;
+    scribeUses: number;
     scanUses: number;
     isScanning: boolean;
     scanCooldown: boolean;
-    revealUses: number;
-    revealingCell: {r: number, c: number} | null;
-    onAutoFill: (e: React.MouseEvent) => void;
+    scribingCell: {r: number, c: number, key: number} | null;
+    onScribe: (e: React.MouseEvent) => void;
     onScan: (e: React.MouseEvent) => void;
-    onReveal: (e: React.MouseEvent) => void;
-    timer: number;
     onDevSolve?: () => void;
 }
 
@@ -34,17 +30,13 @@ export const GameControls: React.FC<GameControlsProps> = ({
     onErase,
     onTogglePencil,
     purchasedSkills,
-    isAutoAvailable,
-    autoUses,
+    scribeUses,
     scanUses,
     isScanning,
     scanCooldown,
-    revealUses,
-    revealingCell,
-    onAutoFill,
+    scribingCell,
+    onScribe,
     onScan,
-    onReveal,
-    timer,
     onDevSolve
 }) => {
     // Helper for common enabled/disabled styles
@@ -59,38 +51,9 @@ export const GameControls: React.FC<GameControlsProps> = ({
             ? 'bg-white dark:bg-stone-800'
             : 'bg-t-surface-sec dark:bg-stone-800/50';
 
-    const revealTimeLeft = Math.max(0, 60 - timer);
-    const isRevealLocked = revealTimeLeft > 0;
-
     return (
         <div className="flex flex-col gap-4 relative">
             <div className="flex justify-between w-full relative">
-                {/* Reveal Skill Button */}
-                {purchasedSkills.includes('skill-reveal') && (
-                        <button 
-                            onClick={(e) => { e.stopPropagation(); onReveal(e); }} 
-                            className={`flex flex-col items-center gap-1 transition relative ${getBaseButtonStyle(revealUses > 0 && !revealingCell && !isRevealLocked)}`}
-                            disabled={revealUses <= 0 || !!revealingCell || isRevealLocked}
-                        >
-                        {/* Removed border class */}
-                        <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative flex items-center justify-center ${getBaseContainerStyle(revealUses > 0 && !isRevealLocked)}`}>
-                            {isRevealLocked ? (
-                                <div className="w-5 h-5 flex items-center justify-center">
-                                    <span className="text-[10px] font-bold text-stone-400 font-mono leading-none">{revealTimeLeft}s</span>
-                                </div>
-                            ) : (
-                                <Icons.Reveal className={`w-5 h-5 scale-[1.15] ${revealUses > 0 ? 'opacity-100' : 'opacity-30 grayscale'}`} />
-                            )}
-                            
-                            {/* Larger Badge for Reveal - Moved to -top-4 -right-4 */}
-                            <div className={`absolute -top-4 -right-4 w-7 h-7 rounded-full flex items-center justify-center text-base font-bold leading-none shadow-sm z-10 ${revealUses > 0 && !isRevealLocked ? 'bg-blue-600 text-white' : 'bg-stone-300 text-white dark:bg-stone-600'}`}>
-                                    {revealUses > 0 ? revealUses : '+'}
-                            </div>
-                        </div>
-                        <span className="text-sm font-medium">Reveal</span>
-                    </button>
-                )}
-
                 {/* Scan Skill Button */}
                 {purchasedSkills.includes('skill-scan') && (
                         <button 
@@ -99,7 +62,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
                             disabled={scanUses <= 0 || scanCooldown || isScanning}
                         >
                         <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative flex items-center justify-center ${getBaseContainerStyle(scanUses > 0 && !scanCooldown && !isScanning)}`}>
-                            <Icons.Scan className={`w-5 h-5 scale-[1.15] ${scanUses > 0 && !scanCooldown && !isScanning ? 'opacity-100' : 'opacity-30 grayscale'}`} />
+                            <Icons.Scan className={`w-5 h-5 scale-[1.32] ${scanUses > 0 && !scanCooldown && !isScanning ? 'opacity-100' : 'opacity-30 grayscale'}`} />
                             {/* Larger Badge for Scan - Moved to -top-4 -right-4 */}
                             {scanUses > 0 && (
                                 <div className={`absolute -top-4 -right-4 w-7 h-7 rounded-full flex items-center justify-center text-base font-bold leading-none shadow-sm z-10 ${scanUses > 0 ? 'bg-blue-600 text-white' : 'hidden'}`}>
@@ -111,27 +74,21 @@ export const GameControls: React.FC<GameControlsProps> = ({
                     </button>
                 )}
 
-                {/* Auto Skill Button */}
-                {purchasedSkills.includes('skill-auto') && (
+                {purchasedSkills.includes('skill-scribe') && (
                     <button 
-                        onClick={(e) => { e.stopPropagation(); onAutoFill(e); }} 
-                        className={`flex flex-col items-center gap-1 transition relative active:scale-95 ${isAutoAvailable && autoUses > 0 ? 'cursor-pointer text-amber-700 dark:text-amber-400' : 'cursor-not-allowed text-stone-300 dark:text-stone-600'}`}
-                        disabled={!isAutoAvailable || autoUses <= 0}
+                        onClick={(e) => { e.stopPropagation(); onScribe(e); }}
+                        className={`flex flex-col items-center gap-1 transition relative ${getBaseButtonStyle(scribeUses > 0 && !scribingCell)}`}
+                        disabled={scribeUses <= 0 || !!scribingCell}
                     >
-                        {/* Removed borders and rings */}
-                        <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative flex items-center justify-center ${
-                            isAutoAvailable && autoUses > 0 
-                            ? 'bg-amber-100 dark:bg-amber-900/30' 
-                            : 'bg-t-surface-sec dark:bg-stone-800/50'
-                        }`}>
-                            <Icons.Auto className={`w-5 h-5 scale-[1.15] ${isAutoAvailable && autoUses > 0 ? 'opacity-100 animate-pulse' : 'opacity-30 grayscale'}`} />
-                            {autoUses > 0 && (
+                        <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative flex items-center justify-center ${getBaseContainerStyle(scribeUses > 0 && !scribingCell)}`}>
+                            <Icons.Scribe className={`w-5 h-5 scale-[1.44] ${scribeUses > 0 && !scribingCell ? 'opacity-100' : 'opacity-30 grayscale'}`} />
+                            {scribeUses > 0 && (
                                 <div className="absolute -top-4 -right-4 w-7 h-7 rounded-full flex items-center justify-center text-base font-bold leading-none shadow-sm z-10 bg-blue-600 text-white">
-                                    {autoUses}
+                                    {scribeUses}
                                 </div>
                             )}
                         </div>
-                        <span className="text-sm font-medium">Auto</span>
+                        <span className="text-sm font-medium">Scribe</span>
                     </button>
                 )}
 

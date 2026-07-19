@@ -7,8 +7,7 @@ interface SudokuGridProps {
     selectedCell: [number, number] | null;
     activeNumber: number | null;
     conflicts: Set<string>;
-    revealingCell: {r: number, c: number} | null;
-    animatingCell: {r: number, c: number, value: number} | null;
+    scribingCell: {r: number, c: number, key: number} | null;
     isScanning: boolean;
     isScanSuccess?: boolean;
     animatingSections: Set<string>;
@@ -22,8 +21,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     selectedCell,
     activeNumber,
     conflicts,
-    revealingCell,
-    animatingCell,
+    scribingCell,
     isScanning,
     isScanSuccess,
     animatingSections,
@@ -141,7 +139,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                     }}
                 >
                     {board.map((row, rIndex) => row.map((cell, cIndex) => {
-                        const isAnimating = animatingCell?.r === rIndex && animatingCell?.c === cIndex;
+                        const isScribingCell = scribingCell?.r === rIndex && scribingCell?.c === cIndex;
                         const isConflict = conflicts.has(`${rIndex}-${cIndex}`);
                         const isSelected = selectedCell ? (selectedCell[0] === rIndex && selectedCell[1] === cIndex) : false;
                         
@@ -151,8 +149,6 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                         }
                     
                         const isRelated = selectedCell && (selectedCell[0] === rIndex || selectedCell[1] === cIndex || (Math.floor(selectedCell[0]/3) === Math.floor(rIndex/3) && Math.floor(selectedCell[1]/3) === Math.floor(cIndex/3)));
-                        const isRevealingCell = revealingCell?.r === rIndex && revealingCell?.c === cIndex;
-
                         return (
                             <SudokuCell
                                 key={`bg-${rIndex}-${cIndex}`}
@@ -167,8 +163,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                                 isSameValue={isSameValue}
                                 isRelated={!!isRelated}
                                 highlight={settings.highlight}
-                                isRevealingCell={isRevealingCell}
-                                animatingValue={isAnimating ? animatingCell!.value : null}
+                                isScribingCell={isScribingCell}
                                 settings={settings}
                                 numberColor={numberColor}
                                 onCellClick={() => {}}
@@ -253,7 +248,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                     }}
                 >
                     {board.map((row, rIndex) => row.map((cell, cIndex) => {
-                        const isAnimating = animatingCell?.r === rIndex && animatingCell?.c === cIndex;
+                        const isScribingCell = scribingCell?.r === rIndex && scribingCell?.c === cIndex;
                         const isConflict = conflicts.has(`${rIndex}-${cIndex}`);
                         const isSelected = selectedCell ? (selectedCell[0] === rIndex && selectedCell[1] === cIndex) : false;
                         
@@ -263,8 +258,6 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                         }
                     
                         const isRelated = selectedCell && (selectedCell[0] === rIndex || selectedCell[1] === cIndex || (Math.floor(selectedCell[0]/3) === Math.floor(rIndex/3) && Math.floor(selectedCell[1]/3) === Math.floor(cIndex/3)));
-                        const isRevealingCell = revealingCell?.r === rIndex && revealingCell?.c === cIndex;
-
                         return (
                             <SudokuCell
                                 key={`content-${rIndex}-${cIndex}`}
@@ -279,8 +272,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                                 isSameValue={isSameValue}
                                 isRelated={!!isRelated}
                                 highlight={settings.highlight}
-                                isRevealingCell={isRevealingCell}
-                                animatingValue={isAnimating ? animatingCell!.value : null}
+                                isScribingCell={isScribingCell}
                                 settings={settings}
                                 numberColor={numberColor}
                                 onCellClick={onCellClick}

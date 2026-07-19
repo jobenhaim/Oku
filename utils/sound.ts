@@ -1029,11 +1029,41 @@ class SoundController {
         }
     }
 
-    playZap() {
-        // "Auto" Skill Sound - Plays the same sound effect as pressing a normal button based on chosen sound pack
-        this.playClick();
-        if (this.vibrationEnabled) {
-            Haptics.impact({ style: ImpactStyle.Medium });
+    playScribe(candidateCount: number) {
+        if (!this.soundEnabled) return;
+        const ctx = this.getCtx();
+        const now = ctx.currentTime;
+        const scanDuration = 0.36;
+
+        // A tiny, soft upward sweep that follows the blue scanner.
+        const scanOsc = ctx.createOscillator();
+        const scanGain = ctx.createGain();
+        scanOsc.type = 'sine';
+        scanOsc.frequency.setValueAtTime(620, now);
+        scanOsc.frequency.exponentialRampToValueAtTime(1180, now + scanDuration);
+        scanGain.gain.setValueAtTime(0.001, now);
+        scanGain.gain.exponentialRampToValueAtTime(0.045, now + 0.035);
+        scanGain.gain.exponentialRampToValueAtTime(0.001, now + scanDuration);
+        scanOsc.connect(scanGain);
+        scanGain.connect(ctx.destination);
+        scanOsc.start(now);
+        scanOsc.stop(now + scanDuration + 0.02);
+
+        // Candidates arrive as a quick sequence of quiet, rounded pops.
+        for (let index = 0; index < candidateCount; index++) {
+            const start = now + scanDuration + (index * 0.045);
+            const popOsc = ctx.createOscillator();
+            const popGain = ctx.createGain();
+            popOsc.type = 'sine';
+            popOsc.frequency.setValueAtTime(920 + (index * 38), start);
+            popOsc.frequency.exponentialRampToValueAtTime(1120 + (index * 38), start + 0.055);
+            popGain.gain.setValueAtTime(0.001, start);
+            popGain.gain.exponentialRampToValueAtTime(0.055, start + 0.008);
+            popGain.gain.exponentialRampToValueAtTime(0.001, start + 0.075);
+            popOsc.connect(popGain);
+            popGain.connect(ctx.destination);
+            popOsc.start(start);
+            popOsc.stop(start + 0.085);
         }
     }
 
@@ -1136,39 +1166,6 @@ class SoundController {
                 }, 60);
             } catch (e) {}
         }
-    }
-
-    playReveal() {
-        this.playClick();
-        if (!this.soundEnabled) return;
-        const ctx = this.getCtx();
-        const now = ctx.currentTime;
-
-        // Consistent "Magical" Chord: C Major Add9 (C, E, G, D)
-        // This plays regardless of the selected sound pack
-        const frequencies = [523.25, 659.25, 783.99, 1174.66]; 
-        
-        frequencies.forEach((freq, i) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            
-            // Use Sine for pure magic sound
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, now);
-            
-            // Staggered entry for "shimmer" effect
-            const startTime = now + (i * 0.06);
-            
-            gain.gain.setValueAtTime(0, startTime);
-            gain.gain.linearRampToValueAtTime(0.15, startTime + 0.05); // Soft attack
-            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.2); // Long decay
-            
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            
-            osc.start(startTime);
-            osc.stop(startTime + 1.3);
-        });
     }
 
     playSectionComplete() {

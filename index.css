@@ -199,158 +199,6 @@
   mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 100%);
 }
 
-/* Reveal skill: a compact focus, orbit, and number-unveil sequence. */
-.reveal-cell-active {
-  isolation: isolate;
-}
-
-.reveal-focus-halo,
-.reveal-focus-ring,
-.reveal-focus-spark {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-
-.reveal-focus-halo {
-  width: 92%;
-  height: 92%;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.98) 0%, rgba(221, 214, 254, 0.88) 44%, rgba(139, 92, 246, 0) 76%);
-  animation: reveal-focus-halo 0.95s ease-out forwards;
-}
-
-.dark .reveal-focus-halo {
-  background: radial-gradient(circle, rgba(245, 243, 255, 0.92) 0%, rgba(139, 92, 246, 0.58) 44%, rgba(76, 29, 149, 0) 76%);
-}
-
-.reveal-focus-ring {
-  width: 74%;
-  height: 74%;
-  border: 2px solid rgba(139, 92, 246, 0.88);
-  border-radius: 999px;
-  animation: reveal-focus-ring 0.82s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-}
-
-.reveal-focus-spark {
-  width: 3px;
-  height: 3px;
-  border-radius: 999px;
-  background: #8b5cf6;
-  box-shadow: -13px -10px 0 #a78bfa, 12px -12px 0 #fbbf24, 14px 9px 0 #c4b5fd, -12px 11px 0 #fcd34d;
-  animation: reveal-focus-spark 0.82s ease-out forwards;
-}
-
-.reveal-number-emerge {
-  display: inline-block;
-  animation: reveal-number-emerge 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: transform, opacity;
-}
-
-@keyframes reveal-focus-halo {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.28); }
-  36% { opacity: 1; transform: translate(-50%, -50%) scale(0.86); }
-  72% { opacity: 0.72; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.08); }
-}
-
-@keyframes reveal-focus-ring {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.24); }
-  24% { opacity: 0.95; }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.32); }
-}
-
-@keyframes reveal-focus-spark {
-  0% { opacity: 0; transform: translate(-50%, -50%) rotate(0deg) scale(0.45); }
-  34% { opacity: 1; }
-  100% { opacity: 0; transform: translate(-50%, -50%) rotate(55deg) scale(1.08); }
-}
-
-@keyframes reveal-number-emerge {
-  0% { opacity: 0; transform: scale(0.42) rotate(-5deg); }
-  62% { opacity: 1; transform: scale(1.16) rotate(1deg); }
-  100% { opacity: 1; transform: scale(1) rotate(0deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .reveal-focus-halo,
-  .reveal-focus-ring,
-  .reveal-focus-spark,
-  .reveal-number-emerge {
-    animation-duration: 0.01ms !important;
-  }
-}
-
-/* Auto skill: opposing brackets close gently as the final number settles. */
-.auto-cell-active {
-  isolation: isolate;
-}
-
-.auto-lock-wash,
-.auto-lock-brackets {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-
-.auto-lock-wash {
-  width: 90%;
-  height: 90%;
-  border-radius: 6px;
-  background: rgba(251, 191, 36, 0.24);
-  animation: auto-lock-wash 0.4s ease-out forwards;
-}
-
-.dark .auto-lock-wash {
-  background: rgba(245, 158, 11, 0.22);
-}
-
-.auto-lock-brackets {
-  width: 66%;
-  height: 72%;
-  border-left: 2px solid rgba(217, 119, 6, 0.94);
-  border-right: 2px solid rgba(217, 119, 6, 0.94);
-  border-radius: 4px;
-  animation: auto-lock-brackets 0.4s cubic-bezier(0.2, 0.9, 0.25, 1) forwards;
-}
-
-.auto-number-lock {
-  display: inline-block;
-  animation: auto-number-lock 0.4s cubic-bezier(0.2, 1, 0.3, 1) both;
-  will-change: transform, opacity;
-}
-
-@keyframes auto-lock-wash {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.72); }
-  38% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
-}
-
-@keyframes auto-lock-brackets {
-  0% { opacity: 0; transform: translate(-50%, -50%) scaleX(1.7) scaleY(0.76); }
-  30% { opacity: 1; transform: translate(-50%, -50%) scaleX(1.28) scaleY(0.92); }
-  66% { opacity: 1; transform: translate(-50%, -50%) scaleX(0.88) scaleY(1); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scaleX(1) scaleY(1); }
-}
-
-@keyframes auto-number-lock {
-  0% { opacity: 0; transform: translateY(4px) scale(0.72); }
-  58% { opacity: 1; transform: translateY(-1px) scale(1.07); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .auto-lock-wash,
-  .auto-lock-brackets,
-  .auto-number-lock {
-    animation-duration: 0.01ms !important;
-  }
-}
-
 /* SAFE HIGH-PERFORMANCE THEME TRANSITIONS
    Only transition specific classes that are bound to the theme variables, avoiding any interference with Framer Motion, animations, or layout. */
 html, body, #root,
@@ -950,6 +798,52 @@ html, body {
 }
 .sudoku-cell .sudoku-cell-bg {
   transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Scribe: a lightweight blue scan followed by a staggered candidate cascade. */
+@keyframes scribe-cell-wash {
+  0% { opacity: 0; transform: scale(0.92); }
+  35% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+@keyframes scribe-scan-line {
+  0% { opacity: 0; top: -2px; }
+  15% { opacity: 0.9; }
+  75% { opacity: 0.9; }
+  100% { opacity: 0; top: calc(100% + 2px); }
+}
+
+@keyframes scribe-note-arrive {
+  0% { opacity: 0; transform: translateY(4px) scale(0.35); }
+  65% { opacity: 1; transform: translateY(-1px) scale(1.18); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.scribe-cell-wash {
+  position: absolute;
+  inset: 0;
+  background: rgba(59, 130, 246, 0.24);
+  box-shadow: inset 0 0 12px rgba(59, 130, 246, 0.5);
+  animation: scribe-cell-wash 540ms ease-out both !important;
+}
+
+.scribe-scan-line {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: #3b82f6;
+  box-shadow: 0 0 7px rgba(59, 130, 246, 0.9);
+  animation: scribe-scan-line 360ms ease-in-out both !important;
+}
+
+.scribe-note-arrive {
+  display: inline-block;
+  opacity: 0;
+  animation: scribe-note-arrive 180ms ease-out both !important;
 }
 
 /* Minimalistic Completion Soft Glow & Expanding Radial Ripple */

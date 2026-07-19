@@ -18,7 +18,7 @@ export interface Cell {
   notes: number[];
   isError?: boolean;
   isMarkedWrong?: boolean; // For Scan skill
-  isRevealed?: boolean; // For Reveal skill
+  isRevealed?: boolean; // Legacy saved-board compatibility
 }
 
 export type Board = Cell[][];
@@ -40,8 +40,8 @@ export interface LevelProgress {
   moveLog?: MoveLogEntry[]; // History of moves for replay
   bestTime?: number; // Personal best time in seconds
   scanUses?: number; // Remaining scan uses
-  revealUses?: number; // Remaining reveal uses
-  autoUses?: number; // Remaining auto uses
+  revealUses?: number; // Legacy saved-game compatibility
+  scribeUses?: number;
 }
 
 export interface AppSettings {
@@ -88,6 +88,8 @@ export interface StoredData {
   seenStrictModeWarnings?: string[]; // Track which difficulties the user has seen the hard mode warning for
   redeemedCoupons?: string[]; // Track redeemed coupon codes
   welcomeGiftClaimed?: boolean; // Track if the welcome gift has been claimed
+  processedPurchaseTransactions?: string[]; // Prevent a Store transaction from granting rewards twice
+  puzzleCatalogVersion?: number; // Allows safe migration when the deterministic puzzle set changes
   
   // Stats
   stats?: {
@@ -109,3 +111,11 @@ export type DiamondOffer = {
   type: "starter" | "pack" | "support";
   gradientClass?: string;
 };
+
+export type PermanentPurchaseOwnership = {
+  premiumOwned: boolean;
+  starterOwned: boolean;
+  transactionIds: string[];
+};
+
+export type StorePurchaseUnlock = 'premium' | 'starter' | null;

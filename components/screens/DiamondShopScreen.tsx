@@ -5,13 +5,13 @@ import { DiamondOffer } from '../../types';
 import { Storage } from '../../utils/storage';
 import { FishTank } from '../ui/FishTank';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
-import { IAP } from '../../utils/iap';
 
 interface DiamondShopScreenProps {
     points: number;
     onBack: () => void;
     onBuyOffer: (offer: DiamondOffer) => void;
     onEarnPoints: (amount: number) => void;
+    onRestorePurchases: () => Promise<'restored' | 'none' | 'failed'>;
     starterPackPurchased: boolean;
 }
 
@@ -82,14 +82,14 @@ const PremiumPepinoBackdrop = () => {
         return () => window.clearTimeout(moveTimer);
     }, []);
 
-    const fishX = (position.x / 100) * size.width - 32;
-    const fishY = (position.y / 100) * size.height - 20;
+    const fishX = (position.x / 100) * size.width - 27;
+    const fishY = (position.y / 100) * size.height - 17;
 
     return (
         <div ref={containerRef} className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
             <div className="absolute inset-0 bg-gradient-to-b from-[#e0f7fa] via-[#d1f4fa] to-[#b3e5fc] dark:from-[#173b52] dark:via-[#1f4d63] dark:to-[#2b6879]" />
             <div
-                className={`absolute top-0 left-0 w-16 h-10 transition-opacity duration-300 ${size.width > 0 ? 'opacity-70' : 'opacity-0'}`}
+                className={`absolute top-0 left-0 w-[54px] h-[34px] transition-opacity duration-300 ${size.width > 0 ? 'opacity-70' : 'opacity-0'}`}
                 style={{
                     transform: `translate3d(${fishX}px, ${fishY}px, 0)`,
                     transition: canAnimate ? 'transform 4000ms ease-in-out' : 'none',
@@ -113,7 +113,7 @@ const PremiumPepinoBackdrop = () => {
                     </div>
                 </div>
             </div>
-            <div className="absolute inset-0 bg-white/18 dark:bg-slate-950/8" />
+            <div className="absolute inset-0 bg-white/[0.58] dark:bg-slate-950/[0.48]" />
         </div>
     );
 };
@@ -123,6 +123,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     onBack,
     onBuyOffer,
     onEarnPoints,
+    onRestorePurchases,
     starterPackPurchased
 }) => {
     const pepinoState = Storage.getPepinoState();
@@ -143,9 +144,17 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
         if (!confirm('Restore previous purchases?')) return;
 
         try {
-            await IAP.restore();
+            const result = await onRestorePurchases();
+            if (result === 'restored') {
+                alert('Purchases restored.');
+            } else if (result === 'none') {
+                alert('No restorable purchases were found.');
+            } else {
+                alert('Restore failed. Please try again.');
+            }
         } catch (error) {
             console.error(error);
+            alert('Restore failed. Please try again.');
         }
     };
 
@@ -251,21 +260,21 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     </div>
 
                                     <div className="relative grid grid-cols-4 gap-2">
-                                        <div className="rounded-2xl bg-blue-50 dark:bg-blue-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
+                                        <div className="rounded-2xl bg-violet-50 dark:bg-violet-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
                                             <Icons.Diamond className="w-5 h-5 text-blue-500 fill-current" />
                                             <div className="text-center">
                                                 <span className="block text-sm font-bold text-t-primary leading-none">500</span>
                                             </div>
                                         </div>
-                                        <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
-                                            <Icons.Auto className="w-5 h-5 scale-150 text-amber-600 dark:text-amber-400" />
-                                            <span className="text-[10px] font-bold text-t-primary">Auto</span>
+                                        <div className="rounded-2xl bg-blue-50 dark:bg-blue-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
+                                            <Icons.Scribe className="w-5 h-5 scale-150" />
+                                            <span className="text-[10px] font-bold text-t-primary">Scribe</span>
                                         </div>
                                         <div className="rounded-2xl bg-red-50 dark:bg-red-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
                                             <Icons.Scan className="w-5 h-5 scale-150 text-red-500 dark:text-red-400" />
                                             <span className="text-[10px] font-bold text-t-primary">Scan</span>
                                         </div>
-                                        <div className="rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
+                                        <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
                                             <img
                                                 src="/assets/sound-pack-icons/piano_icon.webp"
                                                 alt=""

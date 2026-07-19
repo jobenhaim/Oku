@@ -5,7 +5,8 @@ import { sounds } from '../../utils/sound';
 import { AppSettings, DiamondOffer, Difficulty } from '../../types';
 import { Storage } from '../../utils/storage';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IAP } from '../../utils/iap'; // Import IAP Service
+import { IAP } from '../../utils/iap';
+import type { SuccessfulIAPPurchase } from '../../utils/iap';
 
 // ... (Privacy Policy & Terms text remain unchanged)
 const PRIVACY_POLICY_TEXT = `Privacy Policy
@@ -292,13 +293,14 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ item, onConfirm, o
 
 interface PaymentModalProps {
     offer: DiamondOffer;
-    onComplete: () => void;
+    onComplete: (purchase: SuccessfulIAPPurchase) => void;
     onCancel: () => void;
 }
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, onCancel }) => {
     const [status, setStatus] = useState<'confirm' | 'processing' | 'success' | 'failed'>('confirm');
     const [isClosing, setIsClosing] = useState(false);
+    const [wasRestored, setWasRestored] = useState(false);
     const purchaseBtnRef = useRef<HTMLButtonElement>(null);
 
     const handlePurchase = async () => {
@@ -306,19 +308,21 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
         setStatus('processing');
         
         try {
-            const success = await IAP.purchase(offer.productId);
-            if (success) {
+            const result = await IAP.purchase(offer.productId);
+            if (result.status === 'purchased' || result.status === 'restored') {
+                setWasRestored(result.status === 'restored');
                 setStatus('success');
                 sounds.playWin(); 
                 setTimeout(() => {
                     setIsClosing(true);
                     setTimeout(() => {
-                        onComplete();
+                        onComplete(result);
                     }, 300);
                 }, 1000);
+            } else if (result.status === 'cancelled') {
+                setIsClosing(true);
+                setTimeout(onCancel, 300);
             } else {
-                // If false (e.g. cancelled) reset or show fail
-                // In this simplified logic, cancel throws error, success returns true
                 setStatus('failed');
             }
         } catch (error) {
@@ -347,7 +351,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
         if (offer.type === 'starter') {
             return (
                 <span>
-                    Includes <span className="font-bold">500 Diamonds</span>, plus permanent access to <span className="font-bold">Auto</span> & <span className="font-bold">Scan</span> skills and the <span className="font-bold">Piano</span> sound pack.
+                    Includes <span className="font-bold">500 Diamonds</span>, plus permanent access to <span className="font-bold">Scribe</span> & <span className="font-bold">Scan</span> skills and the <span className="font-bold">Piano</span> sound pack.
                 </span>
             );
         }
@@ -415,8 +419,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
 
                 {status === 'success' && (
                     <div className="flex flex-col items-center justify-center py-2 animate-fade-in">
-                        <p className="text-lg font-bold text-green-600 dark:text-green-400">Payment Successful</p>
-                        <p className="text-xs text-stone-400 mt-1">Thank you for your purchase</p>
+                        <p className="text-lg font-bold text-green-600 dark:text-green-400">{wasRestored ? 'Purchase Restored' : 'Payment Successful'}</p>
+                        <p className="text-xs text-stone-400 mt-1">{wasRestored ? 'Your access is ready' : 'Thank you for your purchase'}</p>
                     </div>
                 )}
             </div>

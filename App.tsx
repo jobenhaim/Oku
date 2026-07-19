@@ -7,7 +7,8 @@ import { sounds } from './utils/sound';
 import { getPackCost, NUMBER_COLORS, ALL_BACKGROUNDS } from './utils/constants';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
-import { IAP } from './utils/iap'; // Import IAP Service
+import { IAP } from './utils/iap';
+import type { SuccessfulIAPPurchase } from './utils/iap';
 
 // UI Components
 import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal, ResetConfirmModal } from './components/ui/Modals';
@@ -88,6 +89,13 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
     const initStorage = async () => {
         // Initialize native storage
         await Storage.initializeNative();
+
+        // RevenueCat remains the source of truth for permanent purchases.
+        await IAP.initialize();
+        const ownership = await IAP.getOwnership();
+        if (ownership && (ownership.premiumOwned || ownership.starterOwned || ownership.transactionIds.length > 0)) {
+            Storage.restorePermanentPurchases(ownership);
+        }
         
         // Get updated data
         const data = Storage.getStoredData();
@@ -126,9 +134,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
         }
     };
     initStorage();
-
-    // Init IAP
-    IAP.initialize();
 
     // Lock Orientation to Portrait
     const lockOrientation = async () => {
@@ -365,6 +370,19 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
     setPoints(newTotal);
   };
 
+  const refreshCommerceState = () => {
+      const data = Storage.getStoredData();
+      setPoints(data.points);
+      setStats(data.stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
+      setStarterPackPurchased(Boolean(data.starterPackPurchased));
+      setPepinoState(Storage.getPepinoState());
+      setPurchasedSkills(data.purchasedSkills);
+      setEnabledSkills(data.enabledSkills || [...data.purchasedSkills]);
+      setPurchasedNumberColors(data.purchasedNumberColors);
+      setPurchasedBackgrounds(data.purchasedBackgrounds);
+      setPurchasedSoundPacks(data.purchasedSoundPacks || ['snd-zen']);
+  };
+
   const handleClaimWelcomeGift = (amount: number) => {
       Storage.claimWelcomeGift();
       handleEarnPoints(amount);
@@ -445,29 +463,56 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       setPaymentOffer(offer);
   };
 
-  const finalizeRealMoneyPurchase = () => {
+  const finalizeRealMoneyPurchase = (purchase: SuccessfulIAPPurchase) => {
       if (!paymentOffer) return;
       const offer = paymentOffer;
-      
-      handleEarnPoints(offer.diamonds);
-      
-      if (offer.type === 'starter') {
-          Storage.setStarterPackPurchased();
-          setStarterPackPurchased(true);
-          Storage.purchaseSkill('skill-auto', 0);
-          Storage.purchaseSkill('skill-scan', 0);
-          Storage.purchaseSoundPack('snd-piano', 0);
-      } else if (offer.type === 'support') {
-          Storage.unlockPepino();
-          setPepinoState(Storage.getPepinoState());
+
+      if (purchase.productIdentifier !== offer.productId) {
+          console.error('IAP: Refusing to fulfill a mismatched product', { offer, purchase });
+          setPaymentOffer(null);
+          return;
       }
 
-      setPurchasedSkills(Storage.getPurchasedSkills());
-      setEnabledSkills(Storage.getEnabledSkills());
-      setPurchasedNumberColors(Storage.getPurchasedNumberColors());
-      setPurchasedBackgrounds(Storage.getPurchasedBackgrounds());
-      setPurchasedSoundPacks(Storage.getPurchasedSoundPacks());
+      if (purchase.status === 'restored') {
+          const ownsExpectedProduct =
+              (offer.type === 'support' && purchase.ownership.premiumOwned) ||
+              (offer.type === 'starter' && purchase.ownership.starterOwned);
+
+          if (!ownsExpectedProduct) {
+              console.error('IAP: Refusing to restore an unverified permanent product', { offer, purchase });
+              setPaymentOffer(null);
+              return;
+          }
+
+          Storage.restorePermanentPurchases({
+              premiumOwned: purchase.ownership.premiumOwned,
+              starterOwned: purchase.ownership.starterOwned,
+              transactionIds: purchase.transactionIdentifier
+                  ? [...purchase.ownership.transactionIds, purchase.transactionIdentifier]
+                  : purchase.ownership.transactionIds
+          });
+      } else {
+          Storage.fulfillStorePurchase({
+              transactionId: purchase.transactionIdentifier,
+              diamonds: offer.diamonds,
+              unlock: offer.type === 'support' ? 'premium' : offer.type === 'starter' ? 'starter' : null
+          });
+      }
+
+      refreshCommerceState();
       setPaymentOffer(null);
+  };
+
+  const handleRestorePurchases = async (): Promise<'restored' | 'none' | 'failed'> => {
+      const ownership = await IAP.restore();
+      if (!ownership) return 'failed';
+
+      const hasPermanentPurchase = ownership.premiumOwned || ownership.starterOwned;
+      if (!hasPermanentPurchase) return 'none';
+
+      Storage.restorePermanentPurchases(ownership);
+      refreshCommerceState();
+      return 'restored';
   };
 
   const handleUnlockPack2 = () => {
@@ -703,6 +748,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     onBack={handleDiamondShopBack}
                                     onBuyOffer={handleBuyOffer}
                                     onEarnPoints={handleEarnPoints}
+                                    onRestorePurchases={handleRestorePurchases}
                                     starterPackPurchased={starterPackPurchased}
                                 />
                             </motion.div>
