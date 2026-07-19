@@ -89,7 +89,6 @@ export interface StoredData {
   redeemedCoupons?: string[]; // Track redeemed coupon codes
   welcomeGiftClaimed?: boolean; // Track if the welcome gift has been claimed
   processedPurchaseTransactions?: string[]; // Prevent a Store transaction from granting rewards twice
-  puzzleCatalogVersion?: number; // Allows safe migration when the deterministic puzzle set changes
   
   // Stats
   stats?: {

@@ -1,14 +1,12 @@
 {
   "name": "oku",
-  "version": "3.8.20",
+  "version": "3.9.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "tsc --noEmit",
-    "puzzles:generate": "node scripts/generate-puzzle-catalog.mjs",
-    "puzzles:audit": "node scripts/audit-puzzle-catalog.mjs data/puzzles-v2.json"
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@capacitor/android": "^6.0.0",

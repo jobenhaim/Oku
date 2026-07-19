@@ -62,7 +62,6 @@ function getStoredData(): StoredData {
           redeemedCoupons: [],
           welcomeGiftClaimed: false,
           processedPurchaseTransactions: [],
-          puzzleCatalogVersion: 2,
           stats: DEFAULT_STATS
       };
       
@@ -177,10 +176,10 @@ function getStoredData(): StoredData {
     if (data.welcomeGiftClaimed === undefined) data.welcomeGiftClaimed = false;
     if (!Array.isArray(data.processedPurchaseTransactions)) data.processedPurchaseTransactions = [];
 
-    // Puzzle Catalog v2 changes the deterministic board behind each level ID.
-    // Preserve every completed result, but discard legacy in-progress board snapshots
-    // so an old puzzle is never checked against a new solution.
-    if ((data.puzzleCatalogVersion ?? 1) < 2) {
+    // Generator 2.0 and 1.1 changed the board behind each level ID. When
+    // returning to Generator 1.0, reset only their unfinished snapshots so no
+    // saved board is checked against another puzzle's solution.
+    if ((data as any).puzzleCatalogVersion === 2 || (data as any).puzzleGeneratorVersion === '1.1') {
         for (const progress of Object.values(data.progress || {}) as LevelProgress[]) {
             if (progress.status !== 'in-progress') continue;
             progress.status = progress.bestTime !== undefined ? 'completed' : 'not-started';
@@ -192,8 +191,9 @@ function getStoredData(): StoredData {
             progress.revealUses = undefined;
             progress.scribeUses = 4;
         }
-        data.puzzleCatalogVersion = 2;
     }
+    if ((data as any).puzzleCatalogVersion !== undefined) delete (data as any).puzzleCatalogVersion;
+    if ((data as any).puzzleGeneratorVersion !== undefined) delete (data as any).puzzleGeneratorVersion;
 
     // Clean up deprecated fields if they exist from previous versions
     if ((data as any).purchasedBundles) delete (data as any).purchasedBundles;
@@ -225,7 +225,6 @@ function getStoredData(): StoredData {
         redeemedCoupons: [],
         welcomeGiftClaimed: false,
         processedPurchaseTransactions: [],
-        puzzleCatalogVersion: 2,
         stats: DEFAULT_STATS
     };
   }
