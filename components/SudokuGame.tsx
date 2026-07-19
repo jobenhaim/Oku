@@ -665,11 +665,11 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                 {pillMessage && (
                     <motion.div
                         key={pillMessage.id}
-                        initial={{ x: '-50%', y: 52, opacity: 0 }}
-                        animate={{ x: '-50%', y: 0, opacity: 1 }}
-                        exit={{ x: '-50%', y: 52, opacity: 0 }}
+                        initial={{ y: 52, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 52, opacity: 0 }}
                         transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="absolute left-1/2 bottom-full h-8 z-0 pointer-events-none whitespace-nowrap flex items-center justify-center px-4"
+                        className="absolute inset-x-0 bottom-full h-8 z-0 pointer-events-none whitespace-nowrap flex items-center justify-center px-4"
                     >
                         <span className="text-[11px] md:text-xs font-semibold text-stone-600 dark:text-stone-700 bg-stone-50 dark:bg-stone-100 border border-stone-200/80 px-4 py-1.5 rounded-full inline-flex items-center gap-1.5 leading-none shadow-md">
                             {pillMessage.type === 'warning' ? (
@@ -678,7 +678,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                                     {pillMessage.text}
                                     <span className="inline-flex items-center gap-1 text-red-500 font-bold">
                                         <Icons.Scan className="w-3.5 h-3.5 shrink-0 text-red-500" />
-                                        Scan recommended
+                                        Scan Recommended
                                     </span>
                                 </>
                             ) : (
@@ -687,13 +687,17 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                                         <Icons.Close className="w-3.5 h-3.5 shrink-0 text-red-500" />
                                     ) : pillMessage.type === 'scan-clean' || pillMessage.type === 'scribe' ? (
                                         <Icons.Check className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
-                                    ) : pillMessage.type === 'scribe-error' ? (
-                                        <Icons.Scan className="w-3.5 h-3.5 shrink-0 text-red-500" />
                                     ) : pillMessage.type === 'notes' ? (
                                         <Icons.Info className="w-3.5 h-3.5 shrink-0 text-stone-500" />
                                     ) : null}
                                     {pillMessage.text}
-                                    {pillMessage.type === 'scribe-error' && <span className="font-bold text-red-500">Try Scan</span>}
+                                    {pillMessage.type === 'scribe-error' && (
+                                        <span className="inline-flex items-center gap-1 font-bold text-red-500">
+                                            Try
+                                            <Icons.Scan className="w-3.5 h-3.5 shrink-0 text-red-500" />
+                                            Scan
+                                        </span>
+                                    )}
                                 </>
                             )}
                         </span>
