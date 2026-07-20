@@ -8,6 +8,7 @@ interface SudokuGridProps {
     activeNumber: number | null;
     conflicts: Set<string>;
     scribingCell: {r: number, c: number, key: number} | null;
+    nudgeCue: {r: number, c: number, key: number} | null;
     isScanning: boolean;
     isScanSuccess?: boolean;
     animatingSections: Set<string>;
@@ -22,6 +23,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     activeNumber,
     conflicts,
     scribingCell,
+    nudgeCue,
     isScanning,
     isScanSuccess,
     animatingSections,
@@ -164,6 +166,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                                 isRelated={!!isRelated}
                                 highlight={settings.highlight}
                                 isScribingCell={isScribingCell}
+                                isNudgeCue={nudgeCue?.r === rIndex && nudgeCue?.c === cIndex}
                                 settings={settings}
                                 numberColor={numberColor}
                                 onCellClick={() => {}}

@@ -14,17 +14,6 @@ interface ProfileModalProps {
     };
 }
 
-const AVATAR_OPTIONS = [
-    { icon: Icons.User, bg: 'bg-stone-500', text: 'text-white', cardBg: 'bg-stone-500/10' },
-    { icon: Icons.Star, bg: 'bg-gradient-to-br from-purple-400 to-purple-600', text: 'text-white', cardBg: 'bg-purple-500/10' },
-    { icon: Icons.Flower, bg: 'bg-gradient-to-br from-rose-400 to-rose-600', text: 'text-white', cardBg: 'bg-rose-500/10' },
-    { icon: Icons.Sun, bg: 'bg-gradient-to-br from-amber-400 to-amber-600', text: 'text-white', cardBg: 'bg-amber-500/10' },
-    { icon: Icons.Moon, bg: 'bg-gradient-to-br from-indigo-400 to-indigo-600', text: 'text-white', cardBg: 'bg-indigo-500/10' },
-    { icon: Icons.Wood, bg: 'bg-gradient-to-br from-emerald-400 to-emerald-600', text: 'text-white', cardBg: 'bg-emerald-500/10' },
-    { icon: Icons.Diamond, bg: 'bg-gradient-to-br from-cyan-400 to-cyan-600', text: 'text-white', cardBg: 'bg-cyan-500/10' },
-    { icon: Icons.Heart, bg: 'bg-gradient-to-br from-pink-400 to-pink-600', text: 'text-white', cardBg: 'bg-pink-500/10' },
-];
-
 const PROFILE_TITLES = [
     'Just Arrived',
     'New Solver',
@@ -73,7 +62,6 @@ export const getStoredClaimedProfileRank = (totalGamesWon: number) => {
 export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, claimedRank, onTitleClaimed, stats }) => {
     const [isClosing, setIsClosing] = useState(false);
     const [showCloudToast, setShowCloudToast] = useState(false);
-    const [isSelectingAvatar, setIsSelectingAvatar] = useState(false);
     const [isRankCelebrating, setIsRankCelebrating] = useState(false);
     const [isProgressAnimated, setIsProgressAnimated] = useState(false);
     const totalGamesWon = Math.max(0, stats.totalGamesWon || 0);
@@ -91,7 +79,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, claimedRank
         return {
             ...storedProfile,
             username: "Zen Player", 
-            avatarColorIndex: 0,
+            hasEditedName: storedProfile.hasEditedName ?? Boolean(storedProfile.username && storedProfile.username !== "Zen Player"),
             ...storedProfile,
             claimedRank: rankIndex,
             lastSeenRank: rankIndex
@@ -139,9 +127,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, claimedRank
         setTimeout(() => setShowCloudToast(false), 3000);
     };
 
-    const activeOption = AVATAR_OPTIONS[profile.avatarColorIndex] || AVATAR_OPTIONS[0];
-    const ActiveIcon = activeOption.icon;
-
     return (
         <div className={`fixed inset-0 z-[999] bg-stone-900/35 flex items-end sm:items-center justify-center ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={handleClose}>
             <div className={`bg-stone-50 dark:bg-stone-900 border border-white/80 dark:border-stone-700 w-[calc(100%_-_2rem)] max-w-[330px] rounded-[2rem] shadow-2xl flex flex-col max-h-[86vh] overflow-hidden pb-safe mb-4 sm:mb-0 relative ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} onClick={e => e.stopPropagation()}>
@@ -156,62 +141,32 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, claimedRank
                 <div className="flex-1 overflow-y-auto px-5 pb-5 hide-scrollbar min-h-0 space-y-4 relative z-10">
                     
                     {/* User Card */}
-                    <div className="px-2 pt-1 pb-1">
-                        <div className="flex items-center gap-4 min-w-0">
-                            <div
-                                className={`w-20 h-20 rounded-full ${activeOption.bg} ${activeOption.text} flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform shadow-md ring-4 ring-white dark:ring-stone-700`}
-                                onClick={() => { sounds.playClick(); setIsSelectingAvatar(!isSelectingAvatar); }}
-                                title="Tap to change avatar"
-                            >
-                                <ActiveIcon className="w-9 h-9" />
-                            </div>
-
-                            <div className="flex-1 min-w-0 text-left">
-                                {isEditingName ? (
-                                    <input
-                                        autoFocus
-                                        value={profile.username}
-                                        onChange={e => setProfile({...profile, username: e.target.value})}
-                                        onBlur={() => setIsEditingName(false)}
-                                        onKeyDown={e => e.key === 'Enter' && setIsEditingName(false)}
-                                        maxLength={20}
-                                        className="text-xl font-bold text-t-primary bg-transparent border-b border-t-secondary text-left focus:outline-none w-full min-w-0"
-                                    />
-                                ) : (
-                                    <div className="flex items-center gap-2 cursor-pointer group min-w-0" onClick={() => { sounds.playClick(); setIsEditingName(true); }}>
-                                        <span className="text-xl font-bold text-t-primary leading-tight truncate">{profile.username || "Anonymous"}</span>
-                                        <div className="text-t-secondary group-hover:text-t-primary transition-colors shrink-0">
-                                            <Icons.Pencil className="w-4 h-4" />
-                                        </div>
-                                    </div>
-                                )}
-                                <div className={`inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full bg-gradient-to-r from-blue-50 to-violet-50 dark:from-blue-500/15 dark:to-violet-500/15 border border-blue-100 dark:border-white/10 shadow-sm ${isRankCelebrating ? 'animate-pop ring-2 ring-blue-300/60' : ''}`}>
-                                    <Icons.Star className="w-3 h-3 text-blue-500" />
-                                    <span className="text-[10px] font-extrabold text-blue-700 dark:text-blue-300 tracking-wide">{currentTitle}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {isSelectingAvatar && (
-                            <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex flex-wrap justify-center gap-2.5 animate-fade-in p-3 rounded-2xl w-full mt-4">
-                                {AVATAR_OPTIONS.map((opt, idx) => {
-                                    const Icon = opt.icon;
-                                    return (
-                                        <button
-                                            key={idx}
-                                            onClick={() => {
-                                                sounds.playClick();
-                                                setProfile({...profile, avatarColorIndex: idx});
-                                                setIsSelectingAvatar(false);
-                                            }}
-                                            className={`w-9 h-9 rounded-full ${opt.bg} ${opt.text} flex items-center justify-center active:scale-95 transition-transform ${profile.avatarColorIndex === idx ? 'ring-2 ring-t-primary ring-offset-2 ring-offset-t-surface-sec' : ''}`}
-                                        >
-                                            <Icon className="w-5 h-5" />
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                    <div className="px-2 pt-2 pb-1 flex flex-col items-center text-center">
+                        {!profile.hasEditedName && !isEditingName && (
+                            <span className="text-[9px] font-bold text-stone-400 dark:text-stone-500 tracking-[0.18em] mb-1.5">TAP TO EDIT</span>
                         )}
+                        {isEditingName ? (
+                            <input
+                                autoFocus
+                                value={profile.username}
+                                onChange={e => setProfile({...profile, username: e.target.value, hasEditedName: true})}
+                                onBlur={() => setIsEditingName(false)}
+                                onKeyDown={e => e.key === 'Enter' && setIsEditingName(false)}
+                                maxLength={20}
+                                className="text-2xl font-bold text-t-primary bg-transparent border-b border-t-secondary text-center focus:outline-none w-full min-w-0"
+                            />
+                        ) : (
+                            <button
+                                type="button"
+                                className="max-w-full text-2xl font-bold text-t-primary leading-tight truncate active:scale-[0.98] transition-transform"
+                                onClick={() => { sounds.playClick(); setIsEditingName(true); }}
+                            >
+                                {profile.username || "Anonymous"}
+                            </button>
+                        )}
+                        <div className={`inline-flex items-center justify-center mt-2.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-50 to-violet-50 dark:from-blue-500/15 dark:to-violet-500/15 border border-blue-100 dark:border-white/10 shadow-sm ${isRankCelebrating ? 'animate-pop ring-2 ring-blue-300/60' : ''}`}>
+                            <span className="text-xs font-extrabold text-blue-700 dark:text-blue-300 tracking-wide text-center">{currentTitle}</span>
+                        </div>
                     </div>
 
                     {/* Stats Overview */}
@@ -232,9 +187,42 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, claimedRank
                         </div>
                     </div>
 
+                    {/* Title Progress */}
+                    <button
+                        type="button"
+                        onClick={handleTitleClaim}
+                        disabled={!isTitleReady || isRankCelebrating}
+                        className={`relative w-full bg-white dark:bg-stone-800 border shadow-sm rounded-2xl px-4 py-3.5 text-left transition-transform ${isTitleReady ? 'border-blue-300 dark:border-blue-500/50 active:scale-[0.98]' : 'border-stone-200 dark:border-stone-700'} ${isRankCelebrating ? 'animate-pop' : ''}`}
+                    >
+                        {isTitleReady && <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm" aria-hidden="true" />}
+                        <div className="flex items-end justify-between gap-3 mb-2.5">
+                            <div className="min-w-0 text-left">
+                                <span className="block text-[9px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-0.5">{isHighestTitle ? 'Highest title' : isTitleReady ? 'Title ready' : 'Next title'}</span>
+                                <span className="block text-[15px] font-bold text-t-primary truncate">{nextTitle}</span>
+                            </div>
+                            <span className={`text-xs font-bold tabular-nums shrink-0 ${isTitleReady ? 'text-blue-600 dark:text-blue-400 pr-4' : 'text-stone-500 dark:text-stone-400'}`}>
+                                <AnimatedNumber key={rankIndex} value={isProgressAnimated ? titleProgress : 0} easing="easeInOut" durationMs={700} />/20
+                            </span>
+                        </div>
+                        <div className="h-2.5 rounded-full bg-stone-100 dark:bg-stone-700 overflow-hidden">
+                            <div
+                                key={rankIndex}
+                                className="h-full rounded-full bg-gradient-to-r from-blue-500 to-violet-500 transition-[width] duration-700 ease-in-out"
+                                style={{ width: isProgressAnimated ? `${(titleProgress / 20) * 100}%` : '0%' }}
+                            />
+                        </div>
+                        <p className="text-[9px] font-semibold text-stone-400 dark:text-stone-500 mt-2 text-left">
+                            {isHighestTitle
+                                ? 'Every Puzzle Collector star earned.'
+                                : isTitleReady
+                                    ? 'Tap to unlock your new title.'
+                                    : `Solve ${20 - titleProgress} more ${20 - titleProgress === 1 ? 'puzzle' : 'puzzles'}.`}
+                        </p>
+                    </button>
+
                     {/* Cloud Sync */}
                     <div>
-                        <button 
+                        <button
                             onClick={handleCloudClick}
                             className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-sm w-full p-3.5 rounded-2xl flex items-center justify-between transition-all duration-300 active:scale-[0.98]"
                         >
@@ -261,39 +249,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, claimedRank
                             )}
                         </button>
                     </div>
-
-                    {/* Title Progress */}
-                    <button
-                        type="button"
-                        onClick={handleTitleClaim}
-                        disabled={!isTitleReady || isRankCelebrating}
-                        className={`relative w-full bg-white dark:bg-stone-800 border shadow-sm rounded-2xl px-4 py-3.5 text-left transition-transform ${isTitleReady ? 'border-blue-300 dark:border-blue-500/50 active:scale-[0.98]' : 'border-stone-200 dark:border-stone-700'} ${isRankCelebrating ? 'animate-pop' : ''}`}
-                    >
-                        {isTitleReady && <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm" aria-hidden="true" />}
-                        <div className="flex items-end justify-between gap-3 mb-2.5">
-                            <div className="min-w-0 text-left">
-                                <span className="block text-[9px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-0.5">{isHighestTitle ? 'Highest title' : isTitleReady ? 'Title ready' : 'Next title'}</span>
-                                <span className="block text-sm font-bold text-t-primary truncate">{nextTitle}</span>
-                            </div>
-                            <span className={`text-xs font-bold tabular-nums shrink-0 ${isTitleReady ? 'text-blue-600 dark:text-blue-400 pr-4' : 'text-stone-500 dark:text-stone-400'}`}>
-                                <AnimatedNumber key={rankIndex} value={isProgressAnimated ? titleProgress : 0} easing="easeInOut" durationMs={700} />/20
-                            </span>
-                        </div>
-                        <div className="h-2.5 rounded-full bg-stone-100 dark:bg-stone-700 overflow-hidden">
-                            <div
-                                key={rankIndex}
-                                className="h-full rounded-full bg-gradient-to-r from-blue-500 to-violet-500 transition-[width] duration-700 ease-in-out"
-                                style={{ width: isProgressAnimated ? `${(titleProgress / 20) * 100}%` : '0%' }}
-                            />
-                        </div>
-                        <p className="text-[9px] font-semibold text-stone-400 dark:text-stone-500 mt-2 text-left">
-                            {isHighestTitle
-                                ? 'Every Puzzle Collector star earned.'
-                                : isTitleReady
-                                    ? 'Tap to unlock your new title.'
-                                    : `Solve ${20 - titleProgress} more ${20 - titleProgress === 1 ? 'puzzle' : 'puzzles'}.`}
-                        </p>
-                    </button>
 
                 </div>
             </div>

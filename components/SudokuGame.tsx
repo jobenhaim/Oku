@@ -114,6 +114,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const [showReplay, setShowReplay] = useState(false);
 
   const [animatingSections, setAnimatingSections] = useState<Set<string>>(new Set());
+  const [nudgeCue, setNudgeCue] = useState<{r: number, c: number, key: number} | null>(null);
   const [showStartHint, setShowStartHint] = useState(false);
   const [pillMessage, setPillMessage] = useState<PillMessage | null>(null);
   const [pillQueue, setPillQueue] = useState<PillMessage[]>([]);
@@ -132,6 +133,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const halfwayShownRef = useRef(false);
   const halfwayTrackingReadyRef = useRef(false);
   const notesReadyShownRef = useRef(false);
+  const shownNudgeStatesRef = useRef<Set<string>>(new Set());
+  const nudgeCueIdRef = useRef(0);
   
   // Timer hook
   const { timer, setTimer } = useGameTimer(
@@ -186,6 +189,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   }, [pillMessage]);
 
   const enqueuePill = useCallback((message: Omit<PillMessage, 'id'>, deduplicate = false) => {
+      if (settings.pillNotifications === false) return;
       const isSameMessage = (candidate: PillMessage) => candidate.type === message.type && candidate.text === message.text;
       if (deduplicate && pillMessageRef.current && isSameMessage(pillMessageRef.current)) return;
 
@@ -194,7 +198,14 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           pillMessageIdRef.current += 1;
           return [...current, { ...message, id: pillMessageIdRef.current }];
       });
-  }, []);
+  }, [settings.pillNotifications]);
+
+  useEffect(() => {
+      if (settings.pillNotifications !== false) return;
+      setPillQueue([]);
+      setPillMessage(null);
+      setIsPillGapActive(false);
+  }, [settings.pillNotifications]);
 
   useEffect(() => {
       if (pillMessage || isPillGapActive || pillQueue.length === 0) return;
@@ -435,6 +446,79 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           enqueuePill({ text, type: 'halfway', holdMs: 2500 });
       }
   }, [board, enqueuePill]);
+
+  useEffect(() => {
+      shownNudgeStatesRef.current.clear();
+      setNudgeCue(null);
+  }, [difficulty, levelId]);
+
+  useEffect(() => {
+      setNudgeCue(null);
+      if (
+          !purchasedSkills.includes('skill-nudge') ||
+          board.length !== 9 ||
+          isPaused ||
+          isCompleted ||
+          isEnding ||
+          isSettingsOpen
+      ) return;
+
+      const boardSignature = board
+          .flat()
+          .map(cell => cell.value ?? 0)
+          .join('');
+      if (shownNudgeStatesRef.current.has(boardSignature)) return;
+
+      const qualifyingCells = new Map<string, {r: number, c: number, score: number}>();
+      const addCell = (r: number, c: number) => {
+          const key = `${r}-${c}`;
+          const existing = qualifyingCells.get(key);
+          qualifyingCells.set(key, { r, c, score: (existing?.score ?? 0) + 1 });
+      };
+
+      for (let index = 0; index < 9; index++) {
+          const rowEmpty = board[index]
+              .map((cell, c) => cell.value === null ? { r: index, c } : null)
+              .filter((cell): cell is {r: number, c: number} => cell !== null);
+          if (rowEmpty.length === 1) addCell(rowEmpty[0].r, rowEmpty[0].c);
+
+          const colEmpty = board
+              .map((row, r) => row[index].value === null ? { r, c: index } : null)
+              .filter((cell): cell is {r: number, c: number} => cell !== null);
+          if (colEmpty.length === 1) addCell(colEmpty[0].r, colEmpty[0].c);
+      }
+
+      for (let boxRow = 0; boxRow < 3; boxRow++) {
+          for (let boxCol = 0; boxCol < 3; boxCol++) {
+              const boxEmpty: {r: number, c: number}[] = [];
+              for (let rowOffset = 0; rowOffset < 3; rowOffset++) {
+                  for (let colOffset = 0; colOffset < 3; colOffset++) {
+                      const r = boxRow * 3 + rowOffset;
+                      const c = boxCol * 3 + colOffset;
+                      if (board[r][c].value === null) boxEmpty.push({ r, c });
+                  }
+              }
+              if (boxEmpty.length === 1) addCell(boxEmpty[0].r, boxEmpty[0].c);
+          }
+      }
+
+      const target = [...qualifyingCells.values()]
+          .sort((a, b) => b.score - a.score || a.r - b.r || a.c - b.c)[0];
+      if (!target) return;
+
+      let clearTimer: number | undefined;
+      const showTimer = window.setTimeout(() => {
+          shownNudgeStatesRef.current.add(boardSignature);
+          nudgeCueIdRef.current += 1;
+          setNudgeCue({ r: target.r, c: target.c, key: nudgeCueIdRef.current });
+          clearTimer = window.setTimeout(() => setNudgeCue(null), 6000);
+      }, 5000);
+
+      return () => {
+          window.clearTimeout(showTimer);
+          if (clearTimer !== undefined) window.clearTimeout(clearTimer);
+      };
+  }, [board, purchasedSkills, isPaused, isCompleted, isEnding, isSettingsOpen]);
 
   const generateReplay = () => {
         if (isGeneratingReplay || replayUrl) return;
@@ -712,6 +796,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                     activeNumber={activeNumber}
                     conflicts={conflicts}
                     scribingCell={scribingCell}
+                    nudgeCue={nudgeCue}
                     isScanning={isScanning}
                     isScanSuccess={isScanSuccess}
                     animatingSections={animatingSections}

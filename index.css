@@ -221,6 +221,12 @@ html, body, #root,
               stroke 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Difficulty visibility responds quickly without changing the global theme fade. */
+.oku-difficulty-visibility-option > span,
+.oku-difficulty-visibility-option > svg {
+  transition: color 0.1s ease-out, opacity 0.1s ease-out;
+}
+
 /* STRICT VIEWPORT LOCKING FOR MOBILE */
 html, body {
   margin: 0;
@@ -798,6 +804,23 @@ html, body {
 }
 .sudoku-cell .sudoku-cell-bg {
   transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Nudge: one calm, lightweight cue for a section's final empty cell. */
+@keyframes nudge-cell-cue {
+  0% { opacity: 0; }
+  16.667% { opacity: 1; }
+  83.333% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.nudge-cell-cue {
+  background: #fff6da;
+  animation: nudge-cell-cue 6s ease-in-out both !important;
+}
+
+.dark .nudge-cell-cue {
+  background: #4b3b18;
 }
 
 /* Scribe: a lightweight blue scan followed by a staggered candidate cascade. */

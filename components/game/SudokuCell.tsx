@@ -15,6 +15,7 @@ interface SudokuCellProps {
     isRelated: boolean;
     highlight: boolean;
     isScribingCell: boolean;
+    isNudgeCue?: boolean;
     settings: AppSettings;
     numberColor: string;
     onCellClick: (e: React.MouseEvent, r: number, c: number) => void;
@@ -38,6 +39,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     isRelated,
     highlight,
     isScribingCell,
+    isNudgeCue = false,
     settings,
     numberColor,
     onCellClick,
@@ -118,6 +120,9 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
         {!onlyContent && (
             <>
                 <div className={`absolute inset-0 ${bgClass} ${cornerClass} sudoku-cell-bg pointer-events-none z-0`} />
+                {isNudgeCue && (
+                    <div className={`nudge-cell-cue absolute inset-0 ${cornerClass} pointer-events-none z-10`} aria-hidden="true" />
+                )}
                 {isScribingCell && (
                     <div className="absolute inset-0 overflow-hidden pointer-events-none z-10" aria-hidden="true">
                         <div className="scribe-cell-wash" />

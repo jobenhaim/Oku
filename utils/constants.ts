@@ -260,6 +260,7 @@ export const SOUND_PACKS = [
 ];
 
 export const SKILLS = [
+    { id: 'skill-nudge', name: 'Nudge', cost: 200, icon: Icons.Nudge, class: 'text-amber-500', bgClass: 'bg-amber-50/60 dark:bg-amber-900/10', description: 'Passive skill. Highlights the last empty cell in a row, column, or box, based on your inputs.' },
     { id: 'skill-scribe', name: 'Scribe', cost: 500, icon: Icons.Scribe, class: '', bgClass: 'bg-blue-50/60 dark:bg-blue-900/10', description: 'Adds every possible note to a selected empty cell, based on your inputs.' },
     { id: 'skill-scan', name: 'Scan', cost: 750, icon: Icons.Scan, class: 'text-red-500', bgClass: 'bg-red-50/60 dark:bg-red-900/10', description: "Spot errors instantly. Essential for Hard, Intense, and Impossible modes." },
 ];
@@ -283,7 +284,7 @@ export const DIAMOND_OFFERS: DiamondOffer[] = [
         title: 'Starter Pack',
         subtitle: 'Everything you need to begin',
         diamonds: 500,
-        includes: ['Scribe & Scan Skill Unlocked', 'Piano Sound Pack Unlocked'],
+        includes: ['Nudge, Scribe & Scan Skills Unlocked', 'Piano Sound Pack Unlocked', 'Teal Number Style Unlocked'],
         badge: 'BEST VALUE',
         priceLabel: '$2.99',
         type: 'starter',

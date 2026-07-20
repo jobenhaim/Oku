@@ -3,6 +3,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Icons } from '../ui/Icons';
 import { Difficulty } from '../../types';
 import { sounds } from '../../utils/sound';
+import { easeInOut } from '../../utils/animation';
 
 interface WinModalProps {
     difficulty: Difficulty;
@@ -36,13 +37,14 @@ const useCounter = (target: number, duration: number = 800, start: boolean = fal
         const animate = (time: number) => {
             if (!startTime) startTime = time;
             const progress = Math.min((time - startTime) / duration, 1);
-            // Cubic ease out
-            const ease = 1 - Math.pow(1 - progress, 3); 
+            const ease = easeInOut(progress);
             const currentCount = Math.floor(target * ease);
             
             if (currentCount > lastTickRef.current) {
-                // Throttle tick sounds to avoid overwhelming the audio context
-                if (currentCount % Math.max(1, Math.floor(target / 10)) === 0) {
+                // Tick when an eased counter crosses a milestone, even if a
+                // rendered frame skips the milestone's exact integer value.
+                const tickInterval = Math.max(1, Math.floor(target / 10));
+                if (Math.floor(currentCount / tickInterval) > Math.floor(lastTickRef.current / tickInterval)) {
                     sounds.playCounterTick();
                 }
                 lastTickRef.current = currentCount;

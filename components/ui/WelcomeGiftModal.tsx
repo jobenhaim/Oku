@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { sounds } from '../../utils/sound';
+import { easeInOut } from '../../utils/animation';
 
 interface WelcomeGiftModalProps {
     onClose: (diamonds: number) => void;
@@ -29,8 +30,7 @@ export const WelcomeGiftModal: React.FC<WelcomeGiftModalProps> = ({ onClose }) =
             const elapsed = now - startTime;
             const progress = Math.min(elapsed / duration, 1);
             
-            // Decelerate counting towards the end (ease-out-quad)
-            const easedProgress = progress * (2 - progress);
+            const easedProgress = easeInOut(progress);
             const currentValue = Math.floor(easedProgress * target);
 
             if (currentValue !== lastValue) {

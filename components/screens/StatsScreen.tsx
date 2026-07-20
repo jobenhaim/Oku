@@ -7,6 +7,7 @@ import { formatTimeShort, getDifficultyPoints } from '../../utils/constants';
 import { sounds } from '../../utils/sound';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
 import { motion } from 'framer-motion';
+import { easeInOut } from '../../utils/animation';
 
 interface StatsScreenProps {
     onBack: () => void;
@@ -33,8 +34,7 @@ const useStatCounter = (target: number, dependency: any) => {
             if (!startTime) startTime = time;
             const progress = Math.min((time - startTime) / 1500, 1); // 1.5s duration
             
-            // Linear Easing
-            const ease = progress; 
+            const ease = easeInOut(progress);
             
             const currentRaw = target * ease;
             const currentInt = Math.floor(currentRaw);

@@ -54,6 +54,7 @@ export interface AppSettings {
   digitFirst: boolean; // Input mode
   screenWakeLock: boolean; // Keep screen on
   generateReplay: boolean; // Generate video replay on completion
+  pillNotifications: boolean; // Show gameplay pill messages
   hiddenDifficulties: Difficulty[]; // List of difficulties to hide from main screen
   devAutoSolve?: boolean; // Developer setting to enable auto-solve button
 }

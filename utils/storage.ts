@@ -15,6 +15,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   digitFirst: false, // Default OFF
   screenWakeLock: false, // Default OFF
   generateReplay: true, // Default ON
+  pillNotifications: true, // Default ON
   hiddenDifficulties: [], // Default show all
   devAutoSolve: false, // Default OFF
 };
@@ -99,6 +100,7 @@ function getStoredData(): StoredData {
     if (data.settings.digitFirst === undefined) data.settings.digitFirst = false;
     if (data.settings.screenWakeLock === undefined) data.settings.screenWakeLock = false;
     if (data.settings.generateReplay === undefined) data.settings.generateReplay = true; // Default ON
+    if (data.settings.pillNotifications === undefined) data.settings.pillNotifications = true;
     if (data.settings.hiddenDifficulties === undefined) data.settings.hiddenDifficulties = [];
     if (data.settings.devAutoSolve === undefined) data.settings.devAutoSolve = false;
 
@@ -129,6 +131,15 @@ function getStoredData(): StoredData {
     if (data.nextBonusClaimTime === undefined) data.nextBonusClaimTime = 0;
     
     if (data.starterPackPurchased === undefined) data.starterPackPurchased = false;
+    // Backfill rewards added to the Starter Pack without re-enabling skills
+    // that an existing owner deliberately switched off.
+    if (data.starterPackPurchased) {
+        if (!data.purchasedSkills.includes('skill-nudge')) {
+            data.purchasedSkills.push('skill-nudge');
+            if (!data.enabledSkills.includes('skill-nudge')) data.enabledSkills.push('skill-nudge');
+        }
+        if (!data.purchasedNumberColors.includes('num-teal')) data.purchasedNumberColors.push('num-teal');
+    }
     
     if (!data.unlockedPack2) data.unlockedPack2 = [];
     if (!data.unlockedPack3) data.unlockedPack3 = [];
@@ -273,11 +284,12 @@ function ensureStarterPackUnlocked(data: StoredData) {
   if (!data.enabledSkills) data.enabledSkills = [];
   if (!data.purchasedSoundPacks) data.purchasedSoundPacks = ['snd-zen'];
 
-  for (const skillId of ['skill-scribe', 'skill-scan']) {
+  for (const skillId of ['skill-nudge', 'skill-scribe', 'skill-scan']) {
     if (!data.purchasedSkills.includes(skillId)) data.purchasedSkills.push(skillId);
     if (!data.enabledSkills.includes(skillId)) data.enabledSkills.push(skillId);
   }
   if (!data.purchasedSoundPacks.includes('snd-piano')) data.purchasedSoundPacks.push('snd-piano');
+  if (!data.purchasedNumberColors.includes('num-teal')) data.purchasedNumberColors.push('num-teal');
 }
 
 export const Storage = {
@@ -299,7 +311,9 @@ export const Storage = {
 
           if (value) {
               localStorage.setItem(STORAGE_KEY, value);
-              return JSON.parse(value);
+              // Run the same migrations/defaults used by normal local reads before
+              // hydrating React state from native preferences.
+              return getStoredData();
           }
           return null;
       } catch (e) {

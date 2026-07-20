@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { sounds } from '../../utils/sound';
+import { easeInOut } from '../../utils/animation';
 
 interface AnimatedNumberProps {
     value: number;
@@ -9,7 +10,7 @@ interface AnimatedNumberProps {
     durationMs?: number;
 }
 
-export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({ value, className = "", startFromZero = false, easing = 'quarticOut', durationMs }) => {
+export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({ value, className = "", startFromZero = false, easing = 'easeInOut', durationMs }) => {
     const [displayValue, setDisplayValue] = useState(startFromZero ? 0 : value);
     const startValue = useRef(startFromZero ? 0 : value);
     const startTime = useRef<number | null>(null);
@@ -36,9 +37,7 @@ export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({ value, className
             const progress = Math.min((time - startTime.current) / duration, 1);
             
             const ease = easing === 'easeInOut'
-                ? progress < 0.5
-                    ? 2 * progress * progress
-                    : 1 - Math.pow(-2 * progress + 2, 2) / 2
+                ? easeInOut(progress)
                 : 1 - Math.pow(1 - progress, 4);
             
             const current = Math.floor(startValue.current + (value - startValue.current) * ease);

@@ -2,6 +2,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { sounds } from '../../utils/sound';
+import { easeInOut } from '../../utils/animation';
 
 interface UnlockCardProps {
     startLevel: number;
@@ -63,8 +64,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, co
             const animate = (time: number) => {
                 const elapsed = time - startTime;
                 const progress = duration === 0 ? 1 : Math.min(elapsed / duration, 1);
-                // Linear ease fits loading bars better for sound synchronization
-                const ease = progress; 
+                const ease = easeInOut(progress);
                 
                 setAnimatedPercent(Math.floor(rawPercent * ease));
                 setAnimatedCount(Math.floor(completedCount * ease));

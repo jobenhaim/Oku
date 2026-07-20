@@ -252,37 +252,57 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                                 />
                                                 <h2 id="starter-heading" className="text-lg font-bold text-t-primary">Starter Pack</h2>
                                             </div>
-                                            <p className="text-[11px] font-medium text-t-secondary">Four permanent rewards to begin your journey.</p>
+                                            <p className="text-[11px] font-medium text-t-secondary">Six permanent rewards to begin your journey.</p>
                                         </div>
                                         {!starterPackPurchased && (
                                             <span className="text-[8px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/40 px-2 py-1 rounded-full shrink-0">One time</span>
                                         )}
                                     </div>
 
-                                    <div className="relative grid grid-cols-4 gap-2">
-                                        <div className="rounded-2xl bg-violet-50 dark:bg-violet-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
-                                            <Icons.Diamond className="w-5 h-5 text-blue-500 fill-current" />
+                                    <div className="relative grid grid-cols-6 gap-1">
+                                        <div className="rounded-xl bg-violet-50 dark:bg-violet-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
+                                            <div className="h-8 flex items-center justify-center">
+                                                <Icons.Diamond className="w-5 h-5 text-blue-500 fill-current" />
+                                            </div>
                                             <div className="text-center">
-                                                <span className="block text-sm font-bold text-t-primary leading-none">500</span>
+                                                <span className="block text-[15px] font-bold text-t-primary leading-none">500</span>
                                             </div>
                                         </div>
-                                        <div className="rounded-2xl bg-blue-50 dark:bg-blue-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
-                                            <Icons.Scribe className="w-5 h-5 scale-150" />
-                                            <span className="text-[10px] font-bold text-t-primary">Scribe</span>
+                                        <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
+                                            <div className="h-8 flex items-center justify-center">
+                                                <Icons.Scribe className="w-[30px] h-[30px]" />
+                                            </div>
+                                            <span className="text-[11px] font-bold text-t-primary">Scribe</span>
                                         </div>
-                                        <div className="rounded-2xl bg-red-50 dark:bg-red-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
-                                            <Icons.Scan className="w-5 h-5 scale-150 text-red-500 dark:text-red-400" />
-                                            <span className="text-[10px] font-bold text-t-primary">Scan</span>
+                                        <div className="rounded-xl bg-red-50 dark:bg-red-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
+                                            <div className="h-8 flex items-center justify-center">
+                                                <Icons.Scan className="w-[30px] h-[30px] text-red-500 dark:text-red-400" />
+                                            </div>
+                                            <span className="text-[11px] font-bold text-t-primary">Scan</span>
                                         </div>
-                                        <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 px-2 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
-                                            <img
-                                                src="/assets/sound-pack-icons/piano_icon.webp"
-                                                alt=""
-                                                aria-hidden="true"
-                                                className="block w-5 h-5 scale-150 object-contain object-center select-none pointer-events-none"
-                                                draggable={false}
-                                            />
-                                            <span className="text-[10px] font-bold text-t-primary">Piano</span>
+                                        <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
+                                            <div className="h-8 flex items-center justify-center">
+                                                <Icons.Nudge className="w-8 h-8" />
+                                            </div>
+                                            <span className="text-[11px] font-bold text-t-primary">Nudge</span>
+                                        </div>
+                                        <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
+                                            <div className="h-8 flex items-center justify-center">
+                                                <img
+                                                    src="/assets/sound-pack-icons/piano_icon.webp"
+                                                    alt=""
+                                                    aria-hidden="true"
+                                                    className="block w-8 h-8 object-contain object-center select-none pointer-events-none"
+                                                    draggable={false}
+                                                />
+                                            </div>
+                                            <span className="text-[11px] font-bold text-t-primary">Piano</span>
+                                        </div>
+                                        <div className="rounded-xl bg-cyan-50 dark:bg-cyan-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
+                                            <div className="h-8 flex items-center justify-center">
+                                                <span className="text-[30px] font-semibold leading-none text-cyan-600 dark:text-cyan-400">5</span>
+                                            </div>
+                                            <span className="text-[11px] font-bold text-t-primary">Teal</span>
                                         </div>
                                     </div>
                                 </div>

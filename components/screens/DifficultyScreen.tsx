@@ -6,6 +6,7 @@ import { Icons } from '../ui/Icons';
 import { sounds } from '../../utils/sound';
 import { getDifficultyPoints, DIFFICULTY_DESCRIPTIONS } from '../../utils/constants';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
+import { easeInOut } from '../../utils/animation';
 
 interface DifficultyScreenProps {
     points: number;
@@ -44,7 +45,7 @@ const useAnimatedCounter = (target: number, duration: number = 500, delay: numbe
             const animate = (currentTime: number) => {
                 if (!startTime) startTime = currentTime;
                 const progress = Math.min((currentTime - startTime) / duration, 1);
-                const ease = progress; // Linear animation
+                const ease = easeInOut(progress);
                 
                 setCount(Math.floor(target * ease));
 
