@@ -163,7 +163,7 @@ export const useSudokuBoard = ({
   }, [isBoardComplete, onComplete]);
 
   // Memoize handlers using references to prevent any hook recreation
-  const handleCellClick = useCallback((row: number, col: number, isPaused: boolean, isCompleted: boolean) => {
+  const handleCellClick = useCallback((row: number, col: number, isPaused: boolean, isCompleted: boolean, forcePlace: boolean = false) => {
     if (isPaused || isCompleted) return;
     
     const currentBoard = boardRef.current;
@@ -174,7 +174,8 @@ export const useSudokuBoard = ({
 
     if (currentSettings.digitFirst) {
         if (currentActiveNumber !== null) {
-            sounds.playTap();
+            if (forcePlace) sounds.playNumber(currentActiveNumber);
+            else sounds.playTap();
             const currentCell = currentBoard[row][col];
             if (currentCell.isFixed || currentCell.isRevealed) return;
             
@@ -183,7 +184,9 @@ export const useSudokuBoard = ({
             const newCell = { ...newBoard[row][col] };
             newCell.isMarkedWrong = false;
 
-            if (currentIsPencilMode) {
+            const shouldUsePencil = currentIsPencilMode && !forcePlace;
+
+            if (shouldUsePencil) {
                  if (newCell.notes.includes(currentActiveNumber)) {
                      newCell.notes = newCell.notes.filter(n => n !== currentActiveNumber);
                  } else {
@@ -234,7 +237,7 @@ export const useSudokuBoard = ({
             }
             setBoard(newBoard);
             if (onBoardChange) onBoardChange(newBoard, moveLog.current);
-            if (!currentIsPencilMode && newCell.value) checkCompletion(newBoard);
+            if (!shouldUsePencil && newCell.value) checkCompletion(newBoard);
         } else {
              sounds.playTap();
              if (currentSelectedCell && currentSelectedCell[0] === row && currentSelectedCell[1] === col) {

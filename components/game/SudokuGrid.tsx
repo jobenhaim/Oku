@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { Board, Cell, AppSettings } from '../../types';
 import SudokuCell from './SudokuCell';
 
@@ -15,6 +15,9 @@ interface SudokuGridProps {
     settings: AppSettings;
     numberColor: string;
     onCellClick: (e: React.MouseEvent, r: number, c: number) => void;
+    onCellExplore: (r: number, c: number) => void;
+    onCellLongPress: (r: number, c: number) => void;
+    enableCellLongPress: boolean;
 }
 
 export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
@@ -29,8 +32,83 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     animatingSections,
     settings,
     numberColor,
-    onCellClick
+    onCellClick,
+    onCellExplore,
+    onCellLongPress,
+    enableCellLongPress
 }) => {
+    const gridAreaRef = useRef<HTMLDivElement | null>(null);
+    const dragRef = useRef({
+        active: false,
+        pointerId: -1,
+        startX: 0,
+        startY: 0,
+        dragging: false,
+        lastCell: ''
+    });
+    const suppressNextClickRef = useRef(false);
+
+    const getCellAtPoint = (clientX: number, clientY: number): [number, number] | null => {
+        const rect = gridAreaRef.current?.getBoundingClientRect();
+        if (!rect || clientX < rect.left || clientX >= rect.right || clientY < rect.top || clientY >= rect.bottom) {
+            return null;
+        }
+
+        const col = Math.min(8, Math.floor(((clientX - rect.left) / rect.width) * 9));
+        const row = Math.min(8, Math.floor(((clientY - rect.top) / rect.height) * 9));
+        return [row, col];
+    };
+
+    const handleGridPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (!e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return;
+        suppressNextClickRef.current = false;
+        dragRef.current = {
+            active: true,
+            pointerId: e.pointerId,
+            startX: e.clientX,
+            startY: e.clientY,
+            dragging: false,
+            lastCell: ''
+        };
+    };
+
+    const handleGridPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+        const drag = dragRef.current;
+        if (!drag.active || drag.pointerId !== e.pointerId) return;
+
+        if (!drag.dragging && Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < 8) return;
+        drag.dragging = true;
+
+        const cell = getCellAtPoint(e.clientX, e.clientY);
+        if (!cell) return;
+        const cellKey = `${cell[0]}-${cell[1]}`;
+        if (cellKey === drag.lastCell) return;
+
+        drag.lastCell = cellKey;
+        onCellExplore(cell[0], cell[1]);
+    };
+
+    const handleGridPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+        const drag = dragRef.current;
+        if (!drag.active || drag.pointerId !== e.pointerId) return;
+        suppressNextClickRef.current = drag.dragging;
+        drag.active = false;
+    };
+
+    const handleGridPointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (dragRef.current.pointerId === e.pointerId) {
+            dragRef.current.active = false;
+            suppressNextClickRef.current = false;
+        }
+    };
+
+    const handleGridClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!suppressNextClickRef.current) return;
+        suppressNextClickRef.current = false;
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
     // iPad Fix: Clamp max size to 500px so font calc stops growing when container stops growing
     const squareSize = 'min(96vw, 53dvh, 500px)';
     const mainFontSize = `calc(${squareSize} / 9 * 0.6)`;
@@ -90,6 +168,11 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
         <div className="flex-none w-full flex flex-col items-center justify-start min-h-0 px-0 pb-2 pt-[10px]">
             <div 
                 className="bg-t-board rounded-lg overflow-hidden relative flex-none shadow-lg" 
+                onPointerDown={handleGridPointerDown}
+                onPointerMove={handleGridPointerMove}
+                onPointerUp={handleGridPointerUp}
+                onPointerCancel={handleGridPointerCancel}
+                onClickCapture={handleGridClickCapture}
                 style={{ 
                     width: squareSize, 
                     height: squareSize, 
@@ -101,12 +184,14 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                     WebkitTransform: 'translate3d(0, 0, 0)',
                     isolation: 'isolate',
                     backfaceVisibility: 'hidden',
-                    WebkitBackfaceVisibility: 'hidden'
+                    WebkitBackfaceVisibility: 'hidden',
+                    touchAction: 'none'
                 }}
             >
             
             {/* Inner Grid Area (Inset to sit perfectly inside the 3px outer border) */}
             <div 
+                ref={gridAreaRef}
                 className="absolute inset-[3px] rounded-[5px] overflow-hidden z-10 bg-t-board"
                 style={{
                     clipPath: 'inset(0 round 5px)',
@@ -279,6 +364,8 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                                 settings={settings}
                                 numberColor={numberColor}
                                 onCellClick={onCellClick}
+                                onCellLongPress={onCellLongPress}
+                                enableLongPress={enableCellLongPress}
                                 mainFontSize={mainFontSize}
                                 noteFontSize={noteFontSize}
                                 noteLineHeight={noteLineHeight}

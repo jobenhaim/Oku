@@ -319,11 +319,19 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       
       const completionText = completeDeckRef.current[completeIndexRef.current % completeDeckRef.current.length];
       completeIndexRef.current = (completeIndexRef.current + 1) % completeDeckRef.current.length;
-      enqueuePill({
-          text: completionText,
-          type: 'complete',
-          holdMs: 2500
-      });
+
+      // The completion message always takes priority over any queued gameplay tip.
+      if (settings.pillNotifications !== false) {
+          pillMessageIdRef.current += 1;
+          setPillQueue([]);
+          setIsPillGapActive(false);
+          setPillMessage({
+              id: pillMessageIdRef.current,
+              text: completionText,
+              type: 'complete',
+              holdMs: 1000
+          });
+      }
 
       window.setTimeout(() => {
           setPillQueue([]);
@@ -675,6 +683,16 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       handleCellClick(r, c, isPaused, isCompleted || isEnding);
   }, [handleCellClick, isPaused, isCompleted, isEnding, scribingCell]);
 
+  const onCellLongPressWrapper = useCallback((r: number, c: number) => {
+      if (scribingCell || !settings.digitFirst || !isPencilMode || activeNumber === null) return;
+      handleCellClick(r, c, isPaused, isCompleted || isEnding, true);
+  }, [handleCellClick, isPaused, isCompleted, isEnding, scribingCell, settings.digitFirst, isPencilMode, activeNumber]);
+
+  const onCellExploreWrapper = useCallback((r: number, c: number) => {
+      if (scribingCell || isPaused || isCompleted || isEnding) return;
+      setSelectedCell([r, c]);
+  }, [scribingCell, isPaused, isCompleted, isEnding, setSelectedCell]);
+
   const onNumberClickWrapper = useCallback((e: React.MouseEvent, n: number) => {
       if (scribingCell) return;
       handleNumberInput(n, isPaused, isCompleted || isEnding);
@@ -803,6 +821,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                     settings={settings}
                     numberColor={numberColor}
                     onCellClick={onCellClickWrapper}
+                    onCellExplore={onCellExploreWrapper}
+                    onCellLongPress={onCellLongPressWrapper}
+                    enableCellLongPress={settings.digitFirst && isPencilMode && activeNumber !== null}
                 />
             </div>
          </motion.div>
@@ -846,7 +867,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                      setIsPencilMode(nextPencilMode);
                      if (nextPencilMode && !notesReadyShownRef.current) {
                          notesReadyShownRef.current = true;
-                         enqueuePill({ text: 'Hold a number to place it', type: 'notes', holdMs: 2500 });
+                         enqueuePill({ text: 'Long press a number to place it', type: 'notes', holdMs: 4000 });
                      }
                  }}
                  purchasedSkills={purchasedSkills}
@@ -879,7 +900,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-stone-200/90 dark:bg-stone-950/95"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-stone-200/90 dark:bg-stone-950/95 backdrop-blur-sm"
           >
               <div className="w-full max-w-[240px] flex flex-col items-center text-center relative z-10">
                   <AnimatePresence mode="wait">

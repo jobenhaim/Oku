@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Cell, AppSettings } from '../../types';
 
 interface SudokuCellProps {
@@ -19,6 +19,8 @@ interface SudokuCellProps {
     settings: AppSettings;
     numberColor: string;
     onCellClick: (e: React.MouseEvent, r: number, c: number) => void;
+    onCellLongPress?: (r: number, c: number) => void;
+    enableLongPress?: boolean;
     mainFontSize: string;
     noteFontSize: string;
     noteLineHeight: string;
@@ -43,12 +45,55 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     settings,
     numberColor,
     onCellClick,
+    onCellLongPress,
+    enableLongPress = false,
     mainFontSize,
     noteFontSize,
     noteLineHeight,
     onlyBackground = false,
     onlyContent = false
 }) => {
+    const longPressTimerRef = useRef<number | null>(null);
+    const didLongPressRef = useRef(false);
+    const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+
+    const clearLongPressTimer = () => {
+        if (longPressTimerRef.current !== null) {
+            window.clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+        }
+    };
+
+    useEffect(() => () => clearLongPressTimer(), []);
+
+    const handlePointerDown = (e: React.PointerEvent) => {
+        clearLongPressTimer();
+        didLongPressRef.current = false;
+        pointerStartRef.current = { x: e.clientX, y: e.clientY };
+        if (!enableLongPress || !onCellLongPress) return;
+
+        longPressTimerRef.current = window.setTimeout(() => {
+            longPressTimerRef.current = null;
+            didLongPressRef.current = true;
+            onCellLongPress(r, c);
+        }, 400);
+    };
+
+    const handlePointerMove = (e: React.PointerEvent) => {
+        const start = pointerStartRef.current;
+        if (!start) return;
+
+        // A drag is an exploration gesture, not a long press.
+        if (Math.hypot(e.clientX - start.x, e.clientY - start.y) >= 8) {
+            clearLongPressTimer();
+        }
+    };
+
+    const handlePointerRelease = () => {
+        clearLongPressTimer();
+        pointerStartRef.current = null;
+    };
+
     let cornerClass = '';
     if (r === 0 && c === 0) cornerClass = 'rounded-tl-[5px] ';
     else if (r === 0 && c === 8) cornerClass = 'rounded-tr-[5px] ';
@@ -112,8 +157,20 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
             className={classes} 
             onClick={(e) => {
                 e.stopPropagation();
+                if (didLongPressRef.current) {
+                    didLongPressRef.current = false;
+                    return;
+                }
                 onCellClick(e, r, c);
-            }} 
+            }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerRelease}
+            onPointerCancel={handlePointerRelease}
+            onPointerLeave={handlePointerRelease}
+            onContextMenu={(e) => {
+                if (enableLongPress) e.preventDefault();
+            }}
             style={{ fontSize: mainFontSize }}
         >
         {/* Cell Background Layer */}
