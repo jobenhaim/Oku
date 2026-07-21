@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { sounds } from '../../utils/sound';
-import { easeInOut } from '../../utils/animation';
+import { easeInOut, easeOut } from '../../utils/animation';
 
 interface AnimatedNumberProps {
     value: number;
     className?: string;
     startFromZero?: boolean;
-    easing?: 'quarticOut' | 'easeInOut';
+    easing?: 'easeOut' | 'easeInOut';
     durationMs?: number;
 }
 
@@ -36,9 +36,7 @@ export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({ value, className
             if (!startTime.current) startTime.current = time;
             const progress = Math.min((time - startTime.current) / duration, 1);
             
-            const ease = easing === 'easeInOut'
-                ? easeInOut(progress)
-                : 1 - Math.pow(1 - progress, 4);
+            const ease = easing === 'easeOut' ? easeOut(progress) : easeInOut(progress);
             
             const current = Math.floor(startValue.current + (value - startValue.current) * ease);
             

@@ -278,7 +278,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1.5 bg-t-surface px-3 py-1.5 rounded-full shadow-sm relative z-30">
-                        <AnimatedNumber value={points} className="text-sm font-semibold text-t-primary tabular-nums leading-none pt-0.5" />
+                        <AnimatedNumber value={points} easing="easeOut" durationMs={1000} className="text-sm font-semibold text-t-primary tabular-nums leading-none pt-0.5" />
                         <div className="text-blue-500"><Icons.Diamond className="w-3.5 h-3.5 fill-current" /></div>
                     </div>
                 </div>

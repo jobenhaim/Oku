@@ -181,7 +181,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
                         aria-hidden="true"
                     />
                 )}
-                {isNudgeCue && (
+                {isNudgeCue && !isSelected && (
                     <div className={`nudge-cell-cue absolute inset-0 ${cornerClass} pointer-events-none z-10`} aria-hidden="true" />
                 )}
             </>

@@ -170,7 +170,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1.5 bg-t-surface px-3 py-2 rounded-full shadow-sm relative z-30 border border-stone-200/60 dark:border-stone-800">
-                    <AnimatedNumber value={points} className="text-sm font-bold text-t-primary tabular-nums" />
+                    <AnimatedNumber value={points} easing="easeOut" durationMs={1000} className="text-sm font-bold text-t-primary tabular-nums" />
                     <Icons.Diamond className="w-3 h-3 text-blue-500 fill-current" />
                 </div>
             </div>

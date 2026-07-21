@@ -358,7 +358,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1 bg-t-surface px-3 py-2 rounded-full shadow-sm relative z-30">
-                          <AnimatedNumber value={points} className="text-sm font-bold text-t-primary tabular-nums" />
+                          <AnimatedNumber value={points} easing="easeOut" durationMs={1000} className="text-sm font-bold text-t-primary tabular-nums" />
                           <div className="text-blue-500"><Icons.Diamond className="w-3 h-3 fill-current" /></div>
                     </div>
                 </div>

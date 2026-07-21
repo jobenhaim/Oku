@@ -14,6 +14,7 @@ import { sounds } from '../utils/sound';
 import { Icons } from './ui/Icons';
 import { formatTimeShort } from '../utils/constants';
 import { motion, AnimatePresence } from 'framer-motion';
+import { App as CapacitorApp } from '@capacitor/app';
 
 interface SudokuGameProps {
   difficulty: Difficulty;
@@ -135,6 +136,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const notesReadyShownRef = useRef(false);
   const shownNudgeStatesRef = useRef<Set<string>>(new Set());
   const nudgeCueIdRef = useRef(0);
+  const saveCurrentProgressRef = useRef<() => void>(() => {});
+  const lastLifecycleSaveAtRef = useRef(0);
+  const gameFinishedRef = useRef(false);
   
   // Timer hook
   const { timer, setTimer } = useGameTimer(
@@ -262,6 +266,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   const handleGameComplete = (completedBoard: Board, completedMoveLog: MoveLogEntry[], isPerfect: boolean) => {
       if (isCompleted || isEnding) return;
+      gameFinishedRef.current = true;
       setIsEnding(true);
       sounds.playWin();
       
@@ -381,6 +386,47 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       onSaveProgress: (b, s, r, ml) => saveProgress(b, s, r, ml),
       onScanResult: handleScanResult,
   });
+
+  // Keep lifecycle listeners stable while always saving the latest render's
+  // board, timer, move log, and remaining skill uses.
+  saveCurrentProgressRef.current = () => {
+      if (gameFinishedRef.current) return;
+      saveProgress(board, scanUses, undefined, moveLog.current);
+  };
+
+  useEffect(() => {
+      let disposed = false;
+      let nativeListener: { remove: () => Promise<void> } | undefined;
+
+      const saveWhenInactive = () => {
+          const now = Date.now();
+          // iOS can emit both native and web lifecycle events for one change.
+          if (now - lastLifecycleSaveAtRef.current < 500) return;
+          lastLifecycleSaveAtRef.current = now;
+          saveCurrentProgressRef.current();
+      };
+
+      const handleVisibilityChange = () => {
+          if (document.visibilityState === 'hidden') saveWhenInactive();
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+          if (!isActive) saveWhenInactive();
+      }).then((listener) => {
+          if (disposed) void listener.remove();
+          else nativeListener = listener;
+      }).catch(() => {
+          // The browser preview is covered by visibilitychange.
+      });
+
+      return () => {
+          disposed = true;
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+          if (nativeListener) void nativeListener.remove();
+      };
+  }, [difficulty, levelId]);
 
   useEffect(() => {
       halfwayTrackingReadyRef.current = false;
@@ -660,6 +706,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   // Memoize click handlers to avoid passing new functions on every timer tick
   const onCellClickWrapper = useCallback((e: React.MouseEvent, r: number, c: number) => {
+      setNudgeCue(current => current?.r === r && current?.c === c ? null : current);
       handleCellClick(r, c, isPaused, isCompleted || isEnding);
   }, [handleCellClick, isPaused, isCompleted, isEnding]);
 
@@ -681,6 +728,13 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       handleNumberInput(n, isPaused, isCompleted || isEnding, true);
   }, [handleNumberInput, isPaused, isCompleted, isEnding]);
 
+  const handleBackToLevels = () => {
+      // Board actions already save progress. This exit save also captures time
+      // spent thinking since the player's last move without writing every second.
+      saveProgress(board, scanUses, undefined, moveLog.current);
+      onBack();
+  };
+
   return (
     <>
       <motion.div 
@@ -691,7 +745,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       >
           <div className="w-full max-w-md flex items-center justify-between relative">
               {/* Left Column: Back Button */}
-              <button onClick={onBack} aria-label="Back to levels" className="p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
+              <button onClick={handleBackToLevels} aria-label="Back to levels" className="p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
                   <Icons.Back className="w-6 h-6" />
               </button>
 

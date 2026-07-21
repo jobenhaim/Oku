@@ -3,7 +3,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Icons } from '../ui/Icons';
 import { Difficulty } from '../../types';
 import { sounds } from '../../utils/sound';
-import { easeInOut } from '../../utils/animation';
+import { easeInOut, easeOut } from '../../utils/animation';
 
 interface WinModalProps {
     difficulty: Difficulty;
@@ -22,7 +22,7 @@ interface WinModalProps {
     onReturnToMenu: (e: React.MouseEvent) => void;
 }
 
-const useCounter = (target: number, duration: number = 800, start: boolean = false) => {
+const useCounter = (target: number, duration: number = 800, start: boolean = false, easing: (progress: number) => number = easeInOut) => {
     const [count, setCount] = useState(0);
     const lastTickRef = useRef(0);
     useEffect(() => {
@@ -37,7 +37,7 @@ const useCounter = (target: number, duration: number = 800, start: boolean = fal
         const animate = (time: number) => {
             if (!startTime) startTime = time;
             const progress = Math.min((time - startTime) / duration, 1);
-            const ease = easeInOut(progress);
+            const ease = easing(progress);
             const currentCount = Math.floor(target * ease);
             
             if (currentCount > lastTickRef.current) {
@@ -60,7 +60,7 @@ const useCounter = (target: number, duration: number = 800, start: boolean = fal
         };
         animationFrame = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(animationFrame);
-    }, [target, duration, start]);
+    }, [target, duration, start, easing]);
     return count;
 };
 
@@ -239,7 +239,7 @@ export const WinModal: React.FC<WinModalProps> = ({
         };
     }, []);
 
-    const animatedPoints = useCounter(points, 800, step >= 4);
+    const animatedPoints = useCounter(points, 1000, step >= 4, easeOut);
     const animatedTimeSeconds = useCounter(timer, 800, step >= 5);
 
     const formatTime = (seconds: number) => {

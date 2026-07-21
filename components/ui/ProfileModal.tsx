@@ -182,7 +182,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, claimedRank
                             <div className="w-9 h-9 bg-sky-100 dark:bg-sky-400/15 rounded-full flex items-center justify-center mb-2.5">
                                 <Icons.Diamond className="w-4 h-4 text-blue-500 fill-current" />
                             </div>
-                            <AnimatedNumber value={stats.totalDiamondsEarned || 0} startFromZero={true} className="text-3xl font-black text-stone-800 dark:text-white tabular-nums leading-none mb-1.5" />
+                            <AnimatedNumber value={stats.totalDiamondsEarned || 0} startFromZero={true} easing="easeOut" durationMs={1000} className="text-3xl font-black text-stone-800 dark:text-white tabular-nums leading-none mb-1.5" />
                             <span className="text-[9px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider leading-tight">Diamonds Earned</span>
                         </div>
                     </div>

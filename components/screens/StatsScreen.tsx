@@ -7,7 +7,7 @@ import { formatTimeShort, getDifficultyPoints } from '../../utils/constants';
 import { sounds } from '../../utils/sound';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
 import { motion } from 'framer-motion';
-import { easeInOut } from '../../utils/animation';
+import { easeInOut, easeOut } from '../../utils/animation';
 
 interface StatsScreenProps {
     onBack: () => void;
@@ -16,7 +16,7 @@ interface StatsScreenProps {
 }
 
 // Hook for 1.5s counter animation with sound feedback (delayed by 0.5s)
-const useStatCounter = (target: number, dependency: any) => {
+const useStatCounter = (target: number, dependency: any, easing: (progress: number) => number = easeInOut, duration = 1500) => {
     const [count, setCount] = useState(0);
     const lastSoundValue = useRef(0);
 
@@ -32,9 +32,9 @@ const useStatCounter = (target: number, dependency: any) => {
         const animate = (time: number) => {
             if (disposed) return;
             if (!startTime) startTime = time;
-            const progress = Math.min((time - startTime) / 1500, 1); // 1.5s duration
+            const progress = Math.min((time - startTime) / duration, 1);
             
-            const ease = easeInOut(progress);
+            const ease = easing(progress);
             
             const currentRaw = target * ease;
             const currentInt = Math.floor(currentRaw);
@@ -67,7 +67,7 @@ const useStatCounter = (target: number, dependency: any) => {
             clearTimeout(timer);
             if (animationFrame) cancelAnimationFrame(animationFrame);
         };
-    }, [target, dependency]);
+    }, [target, dependency, easing, duration]);
 
     return count;
 };
@@ -131,7 +131,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
     const animatedBestTime = useStatCounter(stats.bestTime === Infinity ? 0 : stats.bestTime, selectedDiff);
     const animatedTotalTime = useStatCounter(stats.totalTime, selectedDiff);
     const animatedAvgTime = useStatCounter(averageTime, selectedDiff);
-    const animatedEarned = useStatCounter(totalDiamondsEarned, selectedDiff);
+    const animatedEarned = useStatCounter(totalDiamondsEarned, selectedDiff, easeOut, 1000);
     
     const formatFullTime = (seconds: number) => {
         const total = Math.floor(seconds);
@@ -200,7 +200,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                 
                 <div className="flex items-center gap-1 bg-t-surface px-3 py-2 rounded-full shadow-sm relative z-30">
                       <div className="contents">
-                        <AnimatedNumber value={points} className="text-sm font-bold text-t-primary tabular-nums" />
+                        <AnimatedNumber value={points} easing="easeOut" durationMs={1000} className="text-sm font-bold text-t-primary tabular-nums" />
                         <div className="text-blue-500"><Icons.Diamond className="w-3 h-3 fill-current" /></div>
                       </div>
                 </div>
@@ -316,7 +316,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
 
                                         <motion.div variants={cardVariants} className="bg-t-surface p-6 rounded-3xl shadow-sm flex flex-col items-center text-center">
                                             <div className="w-12 h-12 bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 rounded-full flex items-center justify-center mb-3">
-                                                <Icons.Sparkles className="w-6 h-6" />
+                                                <Icons.Timer className="w-6 h-6 stroke-[2.4]" />
                                             </div>
                                             <span className="text-3xl font-bold text-t-primary mb-1">
                                                 {stats.bestTime === Infinity ? '--' : formatTimeShort(animatedBestTime)}
