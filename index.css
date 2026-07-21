@@ -105,8 +105,9 @@
 }
 
 .dark .oku-segmented-control {
-  background: rgba(255, 255, 255, 0.5);
-  border-color: rgba(255, 255, 255, 0.35);
+  background: #292524;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
 }
 
 /* Diamond Shop copy needs stronger contrast over the pale store surfaces. */
@@ -190,7 +191,8 @@
 }
 
 .dark .oku-segmented-pill {
-  background: #ffffff;
+  background: #57534e;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
 }
 
 /* Softens hard clipping edges beneath fixed headers while scrolling. */
