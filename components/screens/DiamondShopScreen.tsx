@@ -270,9 +270,9 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         </div>
                                         <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
                                             <div className="h-8 flex items-center justify-center">
-                                                <Icons.Scribe className="w-[30px] h-[30px]" />
+                                                <Icons.Guard className="w-[30px] h-[30px]" />
                                             </div>
-                                            <span className="text-[11px] font-bold text-t-primary">Scribe</span>
+                                            <span className="text-[11px] font-bold text-t-primary">Guard</span>
                                         </div>
                                         <div className="rounded-xl bg-red-50 dark:bg-red-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
                                             <div className="h-8 flex items-center justify-center">

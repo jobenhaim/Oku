@@ -12,12 +12,9 @@ interface GameControlsProps {
     onTogglePencil: (e: React.MouseEvent) => void;
     purchasedSkills: string[];
     // Skill specific props
-    scribeUses: number;
     scanUses: number;
     isScanning: boolean;
     scanCooldown: boolean;
-    scribingCell: {r: number, c: number, key: number} | null;
-    onScribe: (e: React.MouseEvent) => void;
     onScan: (e: React.MouseEvent) => void;
     onDevSolve?: () => void;
 }
@@ -30,12 +27,9 @@ export const GameControls: React.FC<GameControlsProps> = ({
     onErase,
     onTogglePencil,
     purchasedSkills,
-    scribeUses,
     scanUses,
     isScanning,
     scanCooldown,
-    scribingCell,
-    onScribe,
     onScan,
     onDevSolve
 }) => {
@@ -71,24 +65,6 @@ export const GameControls: React.FC<GameControlsProps> = ({
                             )}
                         </div>
                         <span className="text-sm font-medium">Scan</span>
-                    </button>
-                )}
-
-                {purchasedSkills.includes('skill-scribe') && (
-                    <button 
-                        onClick={(e) => { e.stopPropagation(); onScribe(e); }}
-                        className={`flex flex-col items-center gap-1 transition relative ${getBaseButtonStyle(scribeUses > 0 && !scribingCell)}`}
-                        disabled={scribeUses <= 0 || !!scribingCell}
-                    >
-                        <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative flex items-center justify-center ${getBaseContainerStyle(scribeUses > 0 && !scribingCell)}`}>
-                            <Icons.Scribe className={`w-5 h-5 scale-[1.44] ${scribeUses > 0 && !scribingCell ? 'opacity-100' : 'opacity-30 grayscale'}`} />
-                            {scribeUses > 0 && (
-                                <div className="absolute -top-4 -right-4 w-7 h-7 rounded-full flex items-center justify-center text-base font-bold leading-none shadow-sm z-10 bg-blue-600 text-white">
-                                    {scribeUses}
-                                </div>
-                            )}
-                        </div>
-                        <span className="text-sm font-medium">Scribe</span>
                     </button>
                 )}
 

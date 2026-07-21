@@ -110,7 +110,7 @@ function getStoredData(): StoredData {
     
     if (!data.purchasedSkills) data.purchasedSkills = [];
     if (!data.enabledSkills) data.enabledSkills = [...data.purchasedSkills]; // Default new field to existing purchased skills
-    // Retire Reveal and migrate former Auto owners to Scribe without losing access.
+    // Retire Reveal and migrate former Auto owners to Guard's legacy skill ID without losing access.
     data.purchasedSkills = data.purchasedSkills
         .map((skillId: string) => skillId === 'skill-auto' ? 'skill-scribe' : skillId)
         .filter((skillId: string) => skillId !== 'skill-reveal');

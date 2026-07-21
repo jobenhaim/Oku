@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Board, Cell, AppSettings } from '../../types';
 import SudokuCell from './SudokuCell';
 
@@ -7,7 +7,7 @@ interface SudokuGridProps {
     selectedCell: [number, number] | null;
     activeNumber: number | null;
     conflicts: Set<string>;
-    scribingCell: {r: number, c: number, key: number} | null;
+    guardRejectedCell: {row: number, col: number, key: number} | null;
     nudgeCue: {r: number, c: number, key: number} | null;
     isScanning: boolean;
     isScanSuccess?: boolean;
@@ -25,7 +25,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     selectedCell,
     activeNumber,
     conflicts,
-    scribingCell,
+    guardRejectedCell,
     nudgeCue,
     isScanning,
     isScanSuccess,
@@ -38,6 +38,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     enableCellLongPress
 }) => {
     const gridAreaRef = useRef<HTMLDivElement | null>(null);
+    const [isDragExploring, setIsDragExploring] = useState(false);
     const dragRef = useRef({
         active: false,
         pointerId: -1,
@@ -77,7 +78,10 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
         if (!drag.active || drag.pointerId !== e.pointerId) return;
 
         if (!drag.dragging && Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < 8) return;
-        drag.dragging = true;
+        if (!drag.dragging) {
+            drag.dragging = true;
+            setIsDragExploring(true);
+        }
 
         const cell = getCellAtPoint(e.clientX, e.clientY);
         if (!cell) return;
@@ -93,12 +97,14 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
         if (!drag.active || drag.pointerId !== e.pointerId) return;
         suppressNextClickRef.current = drag.dragging;
         drag.active = false;
+        setIsDragExploring(false);
     };
 
     const handleGridPointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
         if (dragRef.current.pointerId === e.pointerId) {
             dragRef.current.active = false;
             suppressNextClickRef.current = false;
+            setIsDragExploring(false);
         }
     };
 
@@ -192,7 +198,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
             {/* Inner Grid Area (Inset to sit perfectly inside the 3px outer border) */}
             <div 
                 ref={gridAreaRef}
-                className="absolute inset-[3px] rounded-[5px] overflow-hidden z-10 bg-t-board"
+                className={`absolute inset-[3px] rounded-[5px] overflow-hidden z-10 bg-t-board ${isDragExploring ? 'sudoku-grid-dragging' : ''}`}
                 style={{
                     clipPath: 'inset(0 round 5px)',
                     WebkitClipPath: 'inset(0 round 5px)',
@@ -226,7 +232,6 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                     }}
                 >
                     {board.map((row, rIndex) => row.map((cell, cIndex) => {
-                        const isScribingCell = scribingCell?.r === rIndex && scribingCell?.c === cIndex;
                         const isConflict = conflicts.has(`${rIndex}-${cIndex}`);
                         const isSelected = selectedCell ? (selectedCell[0] === rIndex && selectedCell[1] === cIndex) : false;
                         
@@ -250,7 +255,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                                 isSameValue={isSameValue}
                                 isRelated={!!isRelated}
                                 highlight={settings.highlight}
-                                isScribingCell={isScribingCell}
+                                isGuardRejected={guardRejectedCell?.row === rIndex && guardRejectedCell?.col === cIndex}
                                 isNudgeCue={nudgeCue?.r === rIndex && nudgeCue?.c === cIndex}
                                 settings={settings}
                                 numberColor={numberColor}
@@ -336,7 +341,6 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                     }}
                 >
                     {board.map((row, rIndex) => row.map((cell, cIndex) => {
-                        const isScribingCell = scribingCell?.r === rIndex && scribingCell?.c === cIndex;
                         const isConflict = conflicts.has(`${rIndex}-${cIndex}`);
                         const isSelected = selectedCell ? (selectedCell[0] === rIndex && selectedCell[1] === cIndex) : false;
                         
@@ -360,7 +364,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                                 isSameValue={isSameValue}
                                 isRelated={!!isRelated}
                                 highlight={settings.highlight}
-                                isScribingCell={isScribingCell}
+                                isGuardRejected={guardRejectedCell?.row === rIndex && guardRejectedCell?.col === cIndex}
                                 settings={settings}
                                 numberColor={numberColor}
                                 onCellClick={onCellClick}

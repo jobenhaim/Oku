@@ -14,7 +14,7 @@ interface SudokuCellProps {
     isSameValue: boolean;
     isRelated: boolean;
     highlight: boolean;
-    isScribingCell: boolean;
+    isGuardRejected?: boolean;
     isNudgeCue?: boolean;
     settings: AppSettings;
     numberColor: string;
@@ -40,7 +40,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     isSameValue,
     isRelated,
     highlight,
-    isScribingCell,
+    isGuardRejected = false,
     isNudgeCue = false,
     settings,
     numberColor,
@@ -132,9 +132,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
          bgClass = 'bg-transparent '; 
     }
     
-    if (isScribingCell) {
-        classes += "scribe-cell-active z-40 relative ";
-    }
+    if (isGuardRejected) classes += "guard-note-rejected z-40 ";
     
     if (cell.isFixed) {
         classes += "font-semibold text-stone-800 dark:text-stone-200 ";
@@ -177,14 +175,14 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
         {!onlyContent && (
             <>
                 <div className={`absolute inset-0 ${bgClass} ${cornerClass} sudoku-cell-bg pointer-events-none z-0`} />
+                {isSelected && isMarkedWrong && (
+                    <div
+                        className={`absolute inset-0 ${cornerClass} pointer-events-none z-10 shadow-[inset_0_0_0_3px_rgba(59,130,246,0.95)] dark:shadow-[inset_0_0_0_3px_rgba(96,165,250,1)]`}
+                        aria-hidden="true"
+                    />
+                )}
                 {isNudgeCue && (
                     <div className={`nudge-cell-cue absolute inset-0 ${cornerClass} pointer-events-none z-10`} aria-hidden="true" />
-                )}
-                {isScribingCell && (
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none z-10" aria-hidden="true">
-                        <div className="scribe-cell-wash" />
-                        <div className="scribe-scan-line" />
-                    </div>
                 )}
             </>
         )}
@@ -205,8 +203,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
                         return (
                             <div key={n} className="flex items-center justify-center leading-none" style={{ fontSize: noteFontSize, lineHeight: noteLineHeight }}>
                                 <span
-                                    className={`text-stone-500 dark:text-stone-400 font-medium ${isScribingCell ? 'scribe-note-arrive' : ''}`}
-                                    style={isScribingCell ? { animationDelay: `${cell.notes.indexOf(n) * 45}ms` } : undefined}
+                                    className="text-stone-500 dark:text-stone-400 font-medium"
                                 >{n}</span>
                             </div>
                         )

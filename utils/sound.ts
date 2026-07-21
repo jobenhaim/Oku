@@ -1029,44 +1029,6 @@ class SoundController {
         }
     }
 
-    playScribe(candidateCount: number) {
-        if (!this.soundEnabled) return;
-        const ctx = this.getCtx();
-        const now = ctx.currentTime;
-        const scanDuration = 0.36;
-
-        // A tiny, soft upward sweep that follows the blue scanner.
-        const scanOsc = ctx.createOscillator();
-        const scanGain = ctx.createGain();
-        scanOsc.type = 'sine';
-        scanOsc.frequency.setValueAtTime(620, now);
-        scanOsc.frequency.exponentialRampToValueAtTime(1180, now + scanDuration);
-        scanGain.gain.setValueAtTime(0.001, now);
-        scanGain.gain.exponentialRampToValueAtTime(0.045, now + 0.035);
-        scanGain.gain.exponentialRampToValueAtTime(0.001, now + scanDuration);
-        scanOsc.connect(scanGain);
-        scanGain.connect(ctx.destination);
-        scanOsc.start(now);
-        scanOsc.stop(now + scanDuration + 0.02);
-
-        // Candidates arrive as a quick sequence of quiet, rounded pops.
-        for (let index = 0; index < candidateCount; index++) {
-            const start = now + scanDuration + (index * 0.045);
-            const popOsc = ctx.createOscillator();
-            const popGain = ctx.createGain();
-            popOsc.type = 'sine';
-            popOsc.frequency.setValueAtTime(920 + (index * 38), start);
-            popOsc.frequency.exponentialRampToValueAtTime(1120 + (index * 38), start + 0.055);
-            popGain.gain.setValueAtTime(0.001, start);
-            popGain.gain.exponentialRampToValueAtTime(0.055, start + 0.008);
-            popGain.gain.exponentialRampToValueAtTime(0.001, start + 0.075);
-            popOsc.connect(popGain);
-            popGain.connect(ctx.destination);
-            popOsc.start(start);
-            popOsc.stop(start + 0.085);
-        }
-    }
-
     playScan() {
         this.playClick();
         if (this.soundEnabled) {

@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Board, Difficulty, CellValue, AppSettings, MoveLogEntry } from '../types';
 import { generateLevel } from '../utils/sudoku';
 import { sounds } from '../utils/sound';
@@ -8,6 +8,7 @@ interface UseSudokuBoardProps {
   difficulty: Difficulty;
   levelId: number;
   settings: AppSettings;
+  guardEnabled?: boolean;
   onBoardChange?: (board: Board, moveLog: MoveLogEntry[]) => void;
   onComplete?: (completedBoard: Board, moveLog: MoveLogEntry[], isPerfect: boolean) => void;
   onSectionComplete?: (sections: string[]) => void;
@@ -62,6 +63,7 @@ export const useSudokuBoard = ({
   difficulty,
   levelId,
   settings,
+  guardEnabled = false,
   onBoardChange,
   onComplete,
   onSectionComplete
@@ -75,6 +77,7 @@ export const useSudokuBoard = ({
   
   const [selectedCell, setSelectedCell] = useState<[number, number] | null>(null);
   const [activeNumber, setActiveNumber] = useState<number | null>(null);
+  const [guardRejectedCell, setGuardRejectedCell] = useState<{ row: number; col: number; key: number } | null>(null);
 
   const moveLog = useRef<MoveLogEntry[]>([]);
   const errorCountRef = useRef<number>(0);
@@ -94,6 +97,24 @@ export const useSudokuBoard = ({
 
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
+
+  const guardEnabledRef = useRef(guardEnabled);
+  guardEnabledRef.current = guardEnabled;
+
+  const guardFeedbackTimerRef = useRef<number | null>(null);
+  const showGuardRejection = useCallback((row: number, col: number) => {
+      if (guardFeedbackTimerRef.current !== null) window.clearTimeout(guardFeedbackTimerRef.current);
+      sounds.playSelectionHaptic();
+      setGuardRejectedCell({ row, col, key: Date.now() });
+      guardFeedbackTimerRef.current = window.setTimeout(() => {
+          setGuardRejectedCell(null);
+          guardFeedbackTimerRef.current = null;
+      }, 320);
+  }, []);
+
+  useEffect(() => () => {
+      if (guardFeedbackTimerRef.current !== null) window.clearTimeout(guardFeedbackTimerRef.current);
+  }, []);
   
   const initializeBoard = useCallback((savedBoard?: Board, savedMoveLog?: MoveLogEntry[]) => {
     setHistory([]);
@@ -174,17 +195,26 @@ export const useSudokuBoard = ({
 
     if (currentSettings.digitFirst) {
         if (currentActiveNumber !== null) {
-            if (forcePlace) sounds.playNumber(currentActiveNumber);
-            else sounds.playTap();
             const currentCell = currentBoard[row][col];
             if (currentCell.isFixed || currentCell.isRevealed) return;
+
+            const shouldUsePencil = currentIsPencilMode && !forcePlace;
+            const isAddingBlockedNote = shouldUsePencil
+                && guardEnabledRef.current
+                && !currentCell.notes.includes(currentActiveNumber)
+                && hasPeerConflict(currentBoard, row, col, currentActiveNumber);
+            if (isAddingBlockedNote) {
+                showGuardRejection(row, col);
+                return;
+            }
+
+            if (forcePlace) sounds.playNumber(currentActiveNumber);
+            else sounds.playTap();
             
             setHistory(prev => [...prev.slice(-20), JSON.parse(JSON.stringify(currentBoard))]);
             const newBoard = currentBoard.map(r => [...r]);
             const newCell = { ...newBoard[row][col] };
             newCell.isMarkedWrong = false;
-
-            const shouldUsePencil = currentIsPencilMode && !forcePlace;
 
             if (shouldUsePencil) {
                  if (newCell.notes.includes(currentActiveNumber)) {
@@ -254,7 +284,7 @@ export const useSudokuBoard = ({
             setSelectedCell([row, col]);
         }
     }
-  }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete]);
+  }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete, showGuardRejection]);
 
   const handleNumberInput = useCallback((num: number, isPaused: boolean, isCompleted: boolean, forcePlace: boolean = false) => {
     if (isPaused || isCompleted) return;
@@ -277,18 +307,27 @@ export const useSudokuBoard = ({
     }
 
     if (!currentSelectedCell) return;
-    sounds.playNumber(num);
     const [r, c] = currentSelectedCell;
     const currentCell = currentBoard[r][c];
     if (currentCell.isFixed || currentCell.isRevealed) return; 
+
+    const shouldUsePencil = currentIsPencilMode && !forcePlace;
+    const isAddingBlockedNote = shouldUsePencil
+        && guardEnabledRef.current
+        && !currentCell.notes.includes(num)
+        && hasPeerConflict(currentBoard, r, c, num);
+    if (isAddingBlockedNote) {
+        showGuardRejection(r, c);
+        return;
+    }
+
+    sounds.playNumber(num);
 
     setHistory(prev => [...prev.slice(-20), JSON.parse(JSON.stringify(currentBoard))]);
     const newBoard = currentBoard.map(row => [...row]);
     const newCell = { ...newBoard[r][c] };
 
     newCell.isMarkedWrong = false;
-
-    const shouldUsePencil = currentIsPencilMode && !forcePlace;
 
     if (shouldUsePencil) {
       if (newCell.notes.includes(num)) newCell.notes = newCell.notes.filter(n => n !== num);
@@ -339,7 +378,7 @@ export const useSudokuBoard = ({
     setBoard(newBoard);
     if (onBoardChange) onBoardChange(newBoard, moveLog.current);
     if (!shouldUsePencil && newCell.value) checkCompletion(newBoard);
-  }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete]);
+  }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete, showGuardRejection]);
 
   const handleUndo = useCallback((isPaused: boolean, isCompleted: boolean) => {
     if (isPaused || isCompleted) return;
@@ -420,6 +459,7 @@ export const useSudokuBoard = ({
       setSelectedCell,
       activeNumber,
       setActiveNumber,
+      guardRejectedCell,
       conflicts,
       numberCounts,
       initializeBoard,

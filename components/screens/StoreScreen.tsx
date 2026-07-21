@@ -170,7 +170,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 className="w-full h-[74px] px-3 py-2 rounded-[1.25rem] shadow-sm flex items-center gap-3 text-left active:scale-[0.98] transition-all bg-t-surface relative overflow-hidden group"
                             >
                                 <div className="w-11 h-11 flex items-center justify-center shrink-0 transition-transform group-active:scale-95">
-                                    <SkillIcon className={`w-[33px] h-[33px] ${skill.class}`} />
+                                    <SkillIcon className={`w-[38px] h-[38px] ${skill.class}`} />
                                 </div>
 
                                 <div className="flex-1 min-w-0 py-0.5">

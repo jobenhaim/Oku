@@ -351,7 +351,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
         if (offer.type === 'starter') {
             return (
                 <span>
-                    Includes <span className="font-bold">500 Diamonds</span>, plus permanent access to <span className="font-bold">Scribe</span> & <span className="font-bold">Scan</span> skills and the <span className="font-bold">Piano</span> sound pack.
+                    Includes <span className="font-bold">500 Diamonds</span>, permanent access to <span className="font-bold">Nudge</span>, <span className="font-bold">Guard</span>, and <span className="font-bold">Scan</span>, plus the <span className="font-bold">Piano</span> sound pack and <span className="font-bold">Teal</span> number style.
                 </span>
             );
         }
@@ -870,7 +870,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     <div className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700 transition-colors duration-300" />
                                     <button onClick={() => { sounds.playClick(); setActiveDoc('terms'); }} className="transition-colors duration-300 px-2 py-1">Terms of Service</button>
                                 </div>
-                                <span className="text-[9px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.9.4</span>
+                                <span className="text-[9px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.9.6</span>
                             </div>
                         </div>
                     )}

@@ -41,7 +41,7 @@ export interface LevelProgress {
   bestTime?: number; // Personal best time in seconds
   scanUses?: number; // Remaining scan uses
   revealUses?: number; // Legacy saved-game compatibility
-  scribeUses?: number;
+  scribeUses?: number; // Legacy saved-game compatibility
 }
 
 export interface AppSettings {
