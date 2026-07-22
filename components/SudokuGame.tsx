@@ -137,6 +137,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const shownNudgeStatesRef = useRef<Set<string>>(new Set());
   const nudgeCueIdRef = useRef(0);
   const saveCurrentProgressRef = useRef<() => void>(() => {});
+  const hasMadeMistakeRef = useRef<() => boolean>(() => false);
   const lastLifecycleSaveAtRef = useRef(0);
   const gameFinishedRef = useRef(false);
   
@@ -150,7 +151,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       0
   );
 
-  const saveProgress = (currentBoard: Board, scanUsesVal?: number, _revealUsesVal?: number, moveLog?: MoveLogEntry[], isPerfect: boolean = false) => {
+  const saveProgress = (currentBoard: Board, scanUsesVal?: number, _revealUsesVal?: number, moveLog?: MoveLogEntry[], hasMadeMistake?: boolean) => {
       if (isCompleted || isEnding) return;
       Storage.saveLevelProgress({
           levelId,
@@ -161,7 +162,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           moveLog: moveLog,
           lastPlayed: Date.now(),
           scanUses: scanUsesVal !== undefined ? scanUsesVal : scanUses,
-      }, isPerfect);
+          hasMadeMistake: hasMadeMistake ?? hasMadeMistakeRef.current(),
+      });
   };
 
   const handleSectionComplete = useCallback((sections: string[]) => {
@@ -353,16 +355,18 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       handleNumberInput,
       handleUndo,
       handleErase,
-      checkCompletion
+      checkCompletion,
+      hasMadeMistake
   } = useSudokuBoard({
       difficulty,
       levelId,
       settings,
       guardEnabled: purchasedSkills.includes('skill-scribe'),
       onComplete: handleGameComplete,
-      onBoardChange: (newBoard, currentMoveLog) => saveProgress(newBoard, undefined, undefined, currentMoveLog),
+      onBoardChange: (newBoard, currentMoveLog, hasMadeMistake) => saveProgress(newBoard, undefined, undefined, currentMoveLog, hasMadeMistake),
       onSectionComplete: handleSectionComplete
   });
+  hasMadeMistakeRef.current = hasMadeMistake;
 
   // Switching input styles must also clear the numpad's selected digit.
   // Otherwise a Digit-First selection can remain highlighted while the
@@ -433,7 +437,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       notesReadyShownRef.current = false;
       const progress = Storage.getLevelProgress(difficulty, levelId);
       if (progress && progress.status === 'in-progress' && progress.boardState) {
-          initializeBoard(progress.boardState, progress.moveLog);
+          initializeBoard(progress.boardState, progress.moveLog, progress.hasMadeMistake);
           setTimer(progress.timeElapsed);
           
           // Restore skills

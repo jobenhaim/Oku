@@ -42,6 +42,7 @@ export interface LevelProgress {
   scanUses?: number; // Remaining scan uses
   revealUses?: number; // Legacy saved-game compatibility
   scribeUses?: number; // Legacy saved-game compatibility
+  hasMadeMistake?: boolean; // Preserve flawless-run eligibility across resumes
 }
 
 export interface AppSettings {
@@ -90,14 +91,24 @@ export interface StoredData {
   redeemedCoupons?: string[]; // Track redeemed coupon codes
   welcomeGiftClaimed?: boolean; // Track if the welcome gift has been claimed
   processedPurchaseTransactions?: string[]; // Prevent a Store transaction from granting rewards twice
+  claimedAchievements?: string[]; // Achievement rewards already collected
+  achievementCounters?: {
+      scansUsed: number;
+      pepinoGiftsOpened: number;
+      hardPerfectGames: number;
+  };
   
   // Stats
   stats?: {
       totalGamesWon: number;
       totalDiamondsEarned: number;
       perfectGames: number; // Won without errors
+      gamesWonByDifficulty?: Record<string, number>;
+      diamondsEarnedBySource?: Record<string, number>;
   };
 }
+
+export type DiamondEarnSource = 'welcomeGift' | 'dailyGifts' | 'sudoku' | 'pepino' | 'achievements' | 'purchases' | 'coupons' | 'other';
 
 export type DiamondOffer = {
   id: string;

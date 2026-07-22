@@ -95,10 +95,10 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     };
 
     let cornerClass = '';
-    if (r === 0 && c === 0) cornerClass = 'rounded-tl-[5px] ';
-    else if (r === 0 && c === 8) cornerClass = 'rounded-tr-[5px] ';
-    else if (r === 8 && c === 0) cornerClass = 'rounded-bl-[5px] ';
-    else if (r === 8 && c === 8) cornerClass = 'rounded-br-[5px] ';
+    if (r === 0 && c === 0) cornerClass = 'rounded-tl-[6px] ';
+    else if (r === 0 && c === 8) cornerClass = 'rounded-tr-[6px] ';
+    else if (r === 8 && c === 0) cornerClass = 'rounded-bl-[6px] ';
+    else if (r === 8 && c === 8) cornerClass = 'rounded-br-[6px] ';
 
     let classes = `w-full h-full flex items-center justify-center cursor-pointer select-none relative sudoku-cell ${cornerClass}`;
     

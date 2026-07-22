@@ -1,8 +1,7 @@
-
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Icons } from './Icons';
 import { sounds } from '../../utils/sound';
-import { easeInOut } from '../../utils/animation';
+import { easeInOut, easeOut } from '../../utils/animation';
 
 interface UnlockCardProps {
     startLevel: number;
@@ -13,163 +12,202 @@ interface UnlockCardProps {
     onUnlock: () => void;
 }
 
-export const UnlockCard: React.FC<UnlockCardProps> = ({ startLevel, endLevel, completedCount, totalBaseLevels, cost, onUnlock }) => {
+export const UnlockCard: React.FC<UnlockCardProps> = ({
+    startLevel,
+    endLevel,
+    completedCount,
+    totalBaseLevels,
+    cost,
+    onUnlock,
+}) => {
     const cardRef = useRef<HTMLDivElement>(null);
     const [isVisible, setIsVisible] = useState(false);
     const [animatedPercent, setAnimatedPercent] = useState(0);
     const [animatedCount, setAnimatedCount] = useState(0);
     const [showUnlockUI, setShowUnlockUI] = useState(false);
-    
-    // Calculate percentage (capped at 100%)
+    const [animatedCost, setAnimatedCost] = useState(0);
+    const [unlockReady, setUnlockReady] = useState(false);
+
     const rawPercent = Math.min(100, Math.floor((completedCount / totalBaseLevels) * 100));
+    const packNumber = startLevel === 101 ? 2 : 3;
+    const previousPackNumber = packNumber - 1;
 
     useEffect(() => {
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
                     setIsVisible(true);
-                } else {
-                    setIsVisible(false);
-                    setAnimatedPercent(0); // Reset for replay
-                    setAnimatedCount(0); // Reset count
-                    setShowUnlockUI(false); // Reset UI state
+                    return;
                 }
+
+                setIsVisible(false);
+                setAnimatedPercent(0);
+                setAnimatedCount(0);
+                setShowUnlockUI(false);
+                setAnimatedCost(0);
+                setUnlockReady(false);
             },
-            { threshold: 0.2 } // Trigger when 20% visible
+            { threshold: 0.2 },
         );
 
-        if (cardRef.current) {
-            observer.observe(cardRef.current);
-        }
-
+        const card = cardRef.current;
+        if (card) observer.observe(card);
         return () => observer.disconnect();
     }, []);
 
     useEffect(() => {
+        if (!isVisible) return;
+
+        let progressFrame = 0;
+        let priceFrame = 0;
+        let revealTimer: ReturnType<typeof setTimeout> | undefined;
         let stopSound: (() => void) | undefined;
+        let cancelled = false;
 
-        if (isVisible) {
-            // Progressive Duration: 
-            // 1% -> fast (~300ms)
-            // 99% -> slow (~3000ms)
-            const duration = rawPercent <= 0 ? 0 : 300 + (rawPercent / 100) * 2700;
+        const duration = rawPercent <= 0 ? 0 : 300 + (rawPercent / 100) * 2700;
+        if (rawPercent > 0) stopSound = sounds.playProgressFill(duration / 1000);
 
-            // Play fill sound if there is progress to show
-            if (rawPercent > 0) {
-               stopSound = sounds.playProgressFill(duration / 1000);
+        const progressStart = performance.now();
+        const animateProgress = (time: number) => {
+            if (cancelled) return;
+
+            const progress = duration === 0 ? 1 : Math.min((time - progressStart) / duration, 1);
+            const easedProgress = easeInOut(progress);
+            setAnimatedPercent(Math.floor(rawPercent * easedProgress));
+            setAnimatedCount(Math.floor(completedCount * easedProgress));
+
+            if (progress < 1) {
+                progressFrame = requestAnimationFrame(animateProgress);
+                return;
             }
 
-            const startTime = performance.now();
+            setAnimatedPercent(rawPercent);
+            setAnimatedCount(completedCount);
 
-            const animate = (time: number) => {
-                const elapsed = time - startTime;
-                const progress = duration === 0 ? 1 : Math.min(elapsed / duration, 1);
-                const ease = easeInOut(progress);
-                
-                setAnimatedPercent(Math.floor(rawPercent * ease));
-                setAnimatedCount(Math.floor(completedCount * ease));
+            if (rawPercent !== 100) return;
 
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    setAnimatedPercent(rawPercent);
-                    setAnimatedCount(completedCount);
-                    if (rawPercent === 100) {
-                        // Wait a moment after hitting 100% before showing the unlock button
-                        setTimeout(() => {
-                            setShowUnlockUI(true);
-                            sounds.playUnlockReady();
-                        }, 500);
+            revealTimer = setTimeout(() => {
+                if (cancelled) return;
+                setShowUnlockUI(true);
+                sounds.playUnlockReady();
+
+                const priceStart = performance.now();
+                const priceDuration = 800;
+                const animatePrice = (priceTime: number) => {
+                    if (cancelled) return;
+                    const priceProgress = Math.min((priceTime - priceStart) / priceDuration, 1);
+                    setAnimatedCost(Math.round(cost * easeOut(priceProgress)));
+
+                    if (priceProgress < 1) {
+                        priceFrame = requestAnimationFrame(animatePrice);
+                    } else {
+                        setAnimatedCost(cost);
+                        setUnlockReady(true);
                     }
-                }
-            };
-            requestAnimationFrame(animate);
-        }
-        
+                };
+
+                priceFrame = requestAnimationFrame(animatePrice);
+            }, 400);
+        };
+
+        progressFrame = requestAnimationFrame(animateProgress);
+
         return () => {
+            cancelled = true;
+            cancelAnimationFrame(progressFrame);
+            cancelAnimationFrame(priceFrame);
+            if (revealTimer) clearTimeout(revealTimer);
             if (stopSound) stopSound();
         };
-    }, [isVisible, rawPercent, completedCount]);
+    }, [isVisible, rawPercent, completedCount, cost]);
 
     const handleUnlockClick = () => {
-        if (!showUnlockUI) return;
+        if (!unlockReady) return;
         onUnlock();
     };
 
     return (
         <div ref={cardRef} className="w-full max-w-md mt-6 px-1">
-            <button 
+            <button
                 onClick={handleUnlockClick}
-                disabled={!showUnlockUI}
-                className={`w-full h-36 rounded-[1.5rem] relative overflow-hidden transition-all duration-500 ease-out group ${
-                    showUnlockUI 
-                        ? 'bg-white dark:bg-stone-800 shadow-lg active:scale-[0.98] cursor-pointer'
-                        : 'bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-[0_1px_3px_rgba(15,23,42,0.04)] cursor-default'
-                }`}
+                disabled={!unlockReady}
+                aria-label={showUnlockUI ? `Unlock levels ${startLevel} through ${endLevel} for ${cost} diamonds` : undefined}
+                className={`w-full h-[10.4rem] rounded-[1.75rem] relative overflow-hidden text-left transition-transform duration-200 ease-out ${
+                    unlockReady ? 'active:scale-[0.985] cursor-pointer' : 'cursor-default'
+                } bg-white dark:bg-stone-800 border border-white/90 dark:border-stone-700 shadow-[0_8px_24px_rgba(41,37,36,0.10)]`}
             >
-                {/* Content Container */}
-                <div className="absolute inset-0 flex items-center justify-center px-6">
-                    {showUnlockUI ? (
-                        <div className="flex flex-row items-center justify-between w-full animate-fade-in relative z-10 gap-2">
-                             
-                             {/* Left Side: Info & CTA */}
-                             <div className="flex flex-col items-start gap-1.5">
-                                 {/* Header Pill */}
-                                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 rounded-full shadow-sm">
+                {showUnlockUI ? (
+                    <div className="h-full flex flex-col animate-fade-in-fast">
+                        <div className="flex-1 flex items-center justify-between gap-4 px-7 py-3">
+                            <div className="min-w-0 flex-1 flex flex-col items-start text-left">
+                                <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 px-3 py-1.5 mb-2">
                                     <Icons.LockOpen className="w-4 h-4 text-blue-500" />
-                                    <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest pt-0.5">
-                                        Levels {startLevel}-{endLevel}
+                                    <span className="text-[11px] font-bold text-blue-600 dark:text-blue-300 uppercase tracking-[0.14em]">
+                                        Pack ready
                                     </span>
-                                 </div>
-                                 {/* Flashing CTA */}
-                                 <span className="text-xs font-bold text-blue-500 uppercase tracking-widest pl-1 animate-pulse ml-0.5">
-                                     Tap to Unlock
-                                 </span>
-                             </div>
-                             
-                             {/* Right Side: Price */}
-                             <div className="flex items-center gap-2">
-                                <span className="text-5xl font-bold text-stone-900 dark:text-white leading-none">
-                                    {cost}
+                                </div>
+                                <span className="text-[1.35rem] font-bold text-stone-900 dark:text-white leading-tight">
+                                    Levels {startLevel}-{endLevel}
                                 </span>
-                                <Icons.Diamond className="w-8 h-8 text-blue-500 fill-current drop-shadow-sm" />
-                             </div>
-                        </div>
-                    ) : (
-                        <div className="flex flex-row items-center justify-between w-full gap-5">
-                            {/* Left Side: Locked Status Box */}
-                            <div className="w-20 h-20 rounded-3xl bg-stone-100 dark:bg-stone-700 flex flex-col items-center justify-center shrink-0 border border-stone-200 dark:border-stone-600 shadow-sm">
-                                <Icons.Lock className="w-8 h-8 text-stone-500 dark:text-stone-400 opacity-80" />
                             </div>
-                            
-                            {/* Right Side: Progress Details */}
-                            <div className="flex-1 flex flex-col justify-center gap-3">
-                                <div className="flex justify-between items-end px-0.5">
-                                    <span className="text-sm font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide leading-none">
-                                        Locked
-                                    </span>
-                                    <span className="text-xs font-medium text-stone-500 dark:text-stone-400 leading-none tabular-nums">
-                                        {animatedCount}/{totalBaseLevels} Levels
-                                    </span>
-                                </div>
 
-                                {/* Modern Progress Bar */}
-                                <div className="w-full h-4 bg-stone-100 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-full overflow-hidden p-[3px] shadow-sm">
-                                    <div 
-                                        className={`h-full bg-stone-500 dark:bg-stone-400 rounded-full shadow-sm transition-all duration-75 ease-linear relative overflow-hidden ${animatedPercent > 0 ? 'min-w-[8px]' : 'opacity-0'}`} 
-                                        style={{ width: `${animatedPercent}%` }}
-                                    >
-                                        <div className="absolute inset-0 opacity-10 bg-[linear-gradient(45deg,rgba(255,255,255,0.5)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.5)_50%,rgba(255,255,255,0.5)_75%,transparent_75%,transparent)] bg-[length:8px_8px]" />
-                                    </div>
-                                </div>
-                                
-                                <p className="text-xs font-medium text-stone-500 dark:text-stone-400 leading-tight px-0.5">
-                                    Complete previous pack to unlock.
+                            <div className="flex items-center gap-2 shrink-0" aria-live="polite">
+                                <span className="text-[3.4rem] font-bold text-stone-950 dark:text-white leading-none tabular-nums tracking-tight">
+                                    {animatedCost}
+                                </span>
+                                <Icons.Diamond className="w-9 h-9 text-blue-500 fill-current drop-shadow-sm" />
+                            </div>
+                        </div>
+
+                        <div className={`h-12 border-t border-stone-200 dark:border-stone-700 flex items-center justify-between px-7 transition-colors duration-300 ${
+                            unlockReady ? 'bg-blue-500' : 'bg-blue-400'
+                        }`}>
+                            <span className="text-sm font-bold text-white uppercase tracking-[0.13em]">
+                                {unlockReady ? 'Tap to unlock' : 'Preparing pack'}
+                            </span>
+                            <Icons.Next className={`w-5 h-5 text-white transition-all duration-300 ${unlockReady ? 'translate-x-0 opacity-100' : '-translate-x-1 opacity-0'}`} />
+                        </div>
+                    </div>
+                ) : (
+                    <div className="h-full flex flex-col justify-center px-7 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="inline-flex items-center gap-2 rounded-full bg-stone-100 dark:bg-stone-700 px-3 py-1.5">
+                                <span className="text-[11px] font-bold text-stone-600 dark:text-stone-300 uppercase tracking-[0.14em]">
+                                    Pack {packNumber}
+                                </span>
+                                <span className="w-1 h-1 rounded-full bg-stone-400" />
+                                <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 tracking-wide">
+                                    {startLevel}-{endLevel}
+                                </span>
+                            </div>
+                            <div className="w-9 h-9 rounded-full bg-stone-100 dark:bg-stone-700 flex items-center justify-center">
+                                <Icons.Lock className="w-4.5 h-4.5 text-stone-500 dark:text-stone-400" />
+                            </div>
+                        </div>
+
+                        <div className="flex items-end justify-between gap-4 mt-3 mb-2">
+                            <div className="min-w-0">
+                                <p className="text-lg font-bold text-stone-900 dark:text-white leading-tight">
+                                    Complete Pack {previousPackNumber}
+                                </p>
+                                <p className="text-xs font-medium text-stone-500 dark:text-stone-400 mt-1">
+                                    Finish every level to reveal the unlock price.
                                 </p>
                             </div>
+                            <div className="flex items-baseline shrink-0 tabular-nums">
+                                <span className="text-3xl font-bold text-stone-900 dark:text-white leading-none">{animatedCount}</span>
+                                <span className="text-sm font-bold text-stone-400 dark:text-stone-500">/{totalBaseLevels}</span>
+                            </div>
                         </div>
-                    )}
-                </div>
+
+                        <div className="w-full h-3 bg-stone-100 dark:bg-stone-700 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full rounded-full bg-loading-blue ${animatedPercent > 0 ? 'min-w-[8px]' : 'opacity-0'}`}
+                                style={{ width: `${animatedPercent}%` }}
+                            />
+                        </div>
+                    </div>
+                )}
             </button>
         </div>
     );

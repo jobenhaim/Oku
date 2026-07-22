@@ -20,7 +20,7 @@ interface DifficultyScreenProps {
     nextBonusClaimTime: number;
     hiddenDifficulties?: Difficulty[]; 
     hasPendingPepinoGift?: boolean;
-    hasProfileTitleUpgrade?: boolean;
+    hasProfileAchievement?: boolean;
     onContinue?: (diff: Difficulty, levelId: number) => void;
     cascadeDelayMs?: number;
 }
@@ -167,7 +167,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     nextBonusClaimTime,
     hiddenDifficulties = [],
     hasPendingPepinoGift = false,
-    hasProfileTitleUpgrade = false,
+    hasProfileAchievement = false,
     onContinue,
     cascadeDelayMs = 0
 }) => {
@@ -383,9 +383,9 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                     className="w-full max-w-md flex items-center justify-center gap-3 mt-6 mb-2 opacity-0 animate-slide-in-down shrink-0" 
                     style={{ animationDelay: `${350 + cascadeDelayMs}ms` }}
                   >
-                      <button onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenProfile(); }} aria-label={hasProfileTitleUpgrade ? 'Profile, new title available' : 'Profile'} className="oku-difficulty-glass relative p-1.5 rounded-full transition active:scale-95 text-t-icon overflow-visible">
+                      <button onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenProfile(); }} aria-label={hasProfileAchievement ? 'Profile, achievement ready' : 'Profile'} className="oku-difficulty-glass relative p-1.5 rounded-full transition active:scale-95 text-t-icon overflow-visible">
                           <Icons.User className="w-5 h-5" />
-                          {hasProfileTitleUpgrade && (
+                          {hasProfileAchievement && (
                               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white dark:border-stone-900 shadow-sm" aria-hidden="true" />
                           )}
                       </button>

@@ -9,7 +9,7 @@ interface UseSudokuBoardProps {
   levelId: number;
   settings: AppSettings;
   guardEnabled?: boolean;
-  onBoardChange?: (board: Board, moveLog: MoveLogEntry[]) => void;
+  onBoardChange?: (board: Board, moveLog: MoveLogEntry[], hasMadeMistake: boolean) => void;
   onComplete?: (completedBoard: Board, moveLog: MoveLogEntry[], isPerfect: boolean) => void;
   onSectionComplete?: (sections: string[]) => void;
 }
@@ -116,11 +116,11 @@ export const useSudokuBoard = ({
       if (guardFeedbackTimerRef.current !== null) window.clearTimeout(guardFeedbackTimerRef.current);
   }, []);
   
-  const initializeBoard = useCallback((savedBoard?: Board, savedMoveLog?: MoveLogEntry[]) => {
+  const initializeBoard = useCallback((savedBoard?: Board, savedMoveLog?: MoveLogEntry[], savedHasMadeMistake = false) => {
     setHistory([]);
     setSelectedCell(null);
     setActiveNumber(null);
-    errorCountRef.current = 0;
+    errorCountRef.current = savedHasMadeMistake ? 1 : 0;
     
     if (savedMoveLog) {
         moveLog.current = savedMoveLog;
@@ -182,6 +182,8 @@ export const useSudokuBoard = ({
           if (onComplete) onComplete(currentBoard, moveLog.current, errorCountRef.current === 0);
       }
   }, [isBoardComplete, onComplete]);
+
+  const hasMadeMistake = useCallback(() => errorCountRef.current > 0, []);
 
   // Memoize handlers using references to prevent any hook recreation
   const handleCellClick = useCallback((row: number, col: number, isPaused: boolean, isCompleted: boolean, forcePlace: boolean = false) => {
@@ -266,7 +268,7 @@ export const useSudokuBoard = ({
                  }
             }
             setBoard(newBoard);
-            if (onBoardChange) onBoardChange(newBoard, moveLog.current);
+            if (onBoardChange) onBoardChange(newBoard, moveLog.current, errorCountRef.current > 0);
             if (!shouldUsePencil && newCell.value) checkCompletion(newBoard);
         } else {
              sounds.playTap();
@@ -376,7 +378,7 @@ export const useSudokuBoard = ({
     }
     
     setBoard(newBoard);
-    if (onBoardChange) onBoardChange(newBoard, moveLog.current);
+    if (onBoardChange) onBoardChange(newBoard, moveLog.current, errorCountRef.current > 0);
     if (!shouldUsePencil && newCell.value) checkCompletion(newBoard);
   }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete, showGuardRejection]);
 
@@ -387,7 +389,7 @@ export const useSudokuBoard = ({
         sounds.playClick();
         const previous = prevHistory[prevHistory.length - 1];
         setBoard(previous);
-        if (onBoardChange) onBoardChange(previous, moveLog.current);
+        if (onBoardChange) onBoardChange(previous, moveLog.current, errorCountRef.current > 0);
         return prevHistory.slice(0, -1);
     });
   }, [onBoardChange]);
@@ -408,7 +410,7 @@ export const useSudokuBoard = ({
     newBoard[r][c].isError = false;
     newBoard[r][c].isMarkedWrong = false; 
     setBoard(newBoard);
-    if (onBoardChange) onBoardChange(newBoard, moveLog.current);
+    if (onBoardChange) onBoardChange(newBoard, moveLog.current, errorCountRef.current > 0);
   }, [onBoardChange]);
 
   const conflicts = useMemo(() => {
@@ -468,6 +470,7 @@ export const useSudokuBoard = ({
       handleUndo,
       handleErase,
       checkCompletion,
+      hasMadeMistake,
       removeNotesFromPeers
   };
 };

@@ -173,7 +173,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     return (
         <div className="flex-none w-full flex flex-col items-center justify-start min-h-0 px-0 pb-2 pt-[10px]">
             <div 
-                className="bg-t-board rounded-lg overflow-hidden relative flex-none shadow-lg" 
+                className="bg-[var(--grid-thick)] rounded-lg overflow-hidden relative flex-none"
                 onPointerDown={handleGridPointerDown}
                 onPointerMove={handleGridPointerMove}
                 onPointerUp={handleGridPointerUp}
@@ -195,13 +195,13 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                 }}
             >
             
-            {/* Inner Grid Area (Inset to sit perfectly inside the 3px outer border) */}
+            {/* Inner Grid Area (Inset to sit perfectly inside the 2px outer border) */}
             <div 
                 ref={gridAreaRef}
-                className={`absolute inset-[3px] rounded-[5px] overflow-hidden z-10 bg-t-board ${isDragExploring ? 'sudoku-grid-dragging' : ''}`}
+                className={`absolute inset-[2px] rounded-[6px] overflow-hidden z-10 bg-t-board ${isDragExploring ? 'sudoku-grid-dragging' : ''}`}
                 style={{
-                    clipPath: 'inset(0 round 5px)',
-                    WebkitClipPath: 'inset(0 round 5px)',
+                    clipPath: 'inset(0 round 6px)',
+                    WebkitClipPath: 'inset(0 round 6px)',
                     transform: 'translateZ(0)',
                     WebkitTransform: 'translate3d(0, 0, 0)',
                     isolation: 'isolate',
@@ -323,12 +323,12 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
 
                     {/* Thick Lines (Rendered last so they draw over thin lines) */}
                     {/* Vertical Thick */}
-                    <div className="absolute top-0 bottom-0 left-[33.333333%] w-[3px] -ml-[1px] bg-[var(--grid-thick)]" />
-                    <div className="absolute top-0 bottom-0 left-[66.666667%] w-[3px] -ml-[1px] bg-[var(--grid-thick)]" />
+                    <div className="absolute top-0 bottom-0 left-[33.333333%] w-[2px] -ml-[1px] bg-[var(--grid-thick)]" />
+                    <div className="absolute top-0 bottom-0 left-[66.666667%] w-[2px] -ml-[1px] bg-[var(--grid-thick)]" />
 
                     {/* Horizontal Thick */}
-                    <div className="absolute left-0 right-0 top-[33.333333%] h-[3px] -mt-[1px] bg-[var(--grid-thick)]" />
-                    <div className="absolute left-0 right-0 top-[66.666667%] h-[3px] -mt-[1px] bg-[var(--grid-thick)]" />
+                    <div className="absolute left-0 right-0 top-[33.333333%] h-[2px] -mt-[1px] bg-[var(--grid-thick)]" />
+                    <div className="absolute left-0 right-0 top-[66.666667%] h-[2px] -mt-[1px] bg-[var(--grid-thick)]" />
                 </div>
 
                 {/* Layer 3: Interactive Numbers & Notes Grid (z-20) */}

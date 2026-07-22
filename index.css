@@ -743,11 +743,6 @@ html, body {
     will-change: transform, opacity !important;
   }
 
-  /* Progress bars stay crisp without six simultaneous background-position animations. */
-  .bg-loading-blue {
-    animation: none !important;
-    background-size: 100% 100%;
-  }
 }
 
 .bg-pack-flow {

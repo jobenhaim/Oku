@@ -1,6 +1,7 @@
 import React, { Dispatch, SetStateAction, useState } from 'react';
 import { Board, MoveLogEntry } from '../types';
 import { sounds } from '../utils/sound';
+import { Storage } from '../utils/storage';
 
 interface UseGameSkillsProps {
     board: Board;
@@ -45,6 +46,7 @@ export const useGameSkills = ({
             const nextScanUses = Math.max(0, scanUses - 1);
             setIsScanning(false);
             setScanUses(nextScanUses);
+            Storage.recordScanUse();
             onSaveProgress(newBoard, nextScanUses, undefined, moveLog.current);
             setScanCooldown(false);
             onScanResult?.(hasErrors);

@@ -1,5 +1,5 @@
 
-import { AppSettings, LevelProgress, StoredData, PepinoState, Difficulty, PermanentPurchaseOwnership, StorePurchaseUnlock } from '../types';
+import { AppSettings, LevelProgress, StoredData, PepinoState, Difficulty, PermanentPurchaseOwnership, StorePurchaseUnlock, DiamondEarnSource } from '../types';
 import { Preferences } from '@capacitor/preferences';
 
 const STORAGE_KEY = 'oku_data_v1';
@@ -23,8 +23,78 @@ const DEFAULT_SETTINGS: AppSettings = {
 const DEFAULT_STATS = {
     totalGamesWon: 0,
     totalDiamondsEarned: 0,
-    perfectGames: 0
+    perfectGames: 0,
+    gamesWonByDifficulty: {} as Record<string, number>,
+    diamondsEarnedBySource: {} as Record<string, number>,
 };
+
+const sanitizeBreakdown = (breakdown: unknown): Record<string, number> => {
+    if (!breakdown || typeof breakdown !== 'object') return {};
+    const sanitized: Record<string, number> = {};
+    for (const [key, value] of Object.entries(breakdown as Record<string, unknown>)) {
+        const amount = Math.max(0, Math.floor(Number(value) || 0));
+        if (amount > 0) sanitized[key] = amount;
+    }
+    return sanitized;
+};
+
+const ensureStatsBreakdowns = (data: StoredData) => {
+    if (!data.stats) data.stats = { ...DEFAULT_STATS, gamesWonByDifficulty: {}, diamondsEarnedBySource: {} };
+
+    const savedWinBreakdown = sanitizeBreakdown(data.stats.gamesWonByDifficulty);
+    if (!data.stats.gamesWonByDifficulty || savedWinBreakdown.previous) {
+        const inferred: Record<string, number> = {};
+        for (const progress of Object.values(data.progress || {})) {
+            if (progress.status !== 'completed' && progress.bestTime === undefined) continue;
+            inferred[progress.difficulty] = (inferred[progress.difficulty] || 0) + 1;
+        }
+        data.stats.gamesWonByDifficulty = inferred;
+        data.stats.totalGamesWon = Object.values(inferred).reduce((sum, value) => sum + value, 0);
+    } else {
+        data.stats.gamesWonByDifficulty = savedWinBreakdown;
+        const trackedWins = Object.values(data.stats.gamesWonByDifficulty).reduce((sum, value) => sum + value, 0);
+        data.stats.totalGamesWon = trackedWins;
+    }
+
+    const savedDiamondBreakdown = sanitizeBreakdown(data.stats.diamondsEarnedBySource);
+    if (!data.stats.diamondsEarnedBySource || savedDiamondBreakdown.previous) {
+        const rebuilt = { ...savedDiamondBreakdown };
+        const unclassified = rebuilt.previous || data.stats.totalDiamondsEarned;
+        delete rebuilt.previous;
+        let remaining = Math.max(0, unclassified);
+
+        if (data.welcomeGiftClaimed && !rebuilt.welcomeGift && remaining > 0) {
+            const welcomeAmount = Math.min(300, remaining);
+            rebuilt.welcomeGift = welcomeAmount;
+            remaining -= welcomeAmount;
+        }
+        if (remaining > 0) {
+            const source = (data.nextBonusClaimTime || 0) > 0 ? 'dailyGifts' : 'other';
+            rebuilt[source] = (rebuilt[source] || 0) + remaining;
+        }
+        data.stats.diamondsEarnedBySource = rebuilt;
+    } else {
+        data.stats.diamondsEarnedBySource = savedDiamondBreakdown;
+        const trackedDiamonds = Object.values(data.stats.diamondsEarnedBySource).reduce((sum, value) => sum + value, 0);
+        if (trackedDiamonds < data.stats.totalDiamondsEarned) {
+            data.stats.diamondsEarnedBySource.other = (data.stats.diamondsEarnedBySource.other || 0) + data.stats.totalDiamondsEarned - trackedDiamonds;
+        }
+    }
+};
+
+const recordDiamondEarning = (data: StoredData, amount: number, source: DiamondEarnSource) => {
+    if (amount <= 0) return;
+    ensureStatsBreakdowns(data);
+    data.stats!.totalDiamondsEarned += amount;
+    const breakdown = data.stats!.diamondsEarnedBySource!;
+    breakdown[source] = (breakdown[source] || 0) + amount;
+};
+
+const emptyAchievementCounters = () => ({
+    scansUsed: 0,
+    pepinoGiftsOpened: 0,
+    hardPerfectGames: 0,
+});
 
 function getStoredData(): StoredData {
   try {
@@ -63,7 +133,9 @@ function getStoredData(): StoredData {
           redeemedCoupons: [],
           welcomeGiftClaimed: false,
           processedPurchaseTransactions: [],
-          stats: DEFAULT_STATS
+          claimedAchievements: [],
+          achievementCounters: emptyAchievementCounters(),
+          stats: { ...DEFAULT_STATS, gamesWonByDifficulty: {}, diamondsEarnedBySource: {} }
       };
       
       return initialData;
@@ -179,13 +251,32 @@ function getStoredData(): StoredData {
     if (!data.stats) {
         // Simple backfill of totalGamesWon based on progress
         const wonCount = Object.values(data.progress || {}).filter((p: any) => p.status === 'completed' || p.bestTime !== undefined).length;
-        data.stats = { ...DEFAULT_STATS, totalGamesWon: wonCount };
+        data.stats = { totalGamesWon: wonCount, totalDiamondsEarned: 0, perfectGames: 0 };
     }
+    ensureStatsBreakdowns(data);
 
     if (!data.seenStrictModeWarnings) data.seenStrictModeWarnings = [];
     if (!data.redeemedCoupons) data.redeemedCoupons = [];
     if (data.welcomeGiftClaimed === undefined) data.welcomeGiftClaimed = false;
     if (!Array.isArray(data.processedPurchaseTransactions)) data.processedPurchaseTransactions = [];
+    if (!Array.isArray(data.claimedAchievements)) data.claimedAchievements = [];
+    if (!data.achievementCounters) {
+        const inferredScans = Object.values(data.progress || {}).reduce((total: number, progress: any) => {
+            const remaining = typeof progress.scanUses === 'number' ? progress.scanUses : 3;
+            return total + Math.max(0, 3 - remaining);
+        }, 0);
+        data.achievementCounters = {
+            ...emptyAchievementCounters(),
+            scansUsed: inferredScans,
+            pepinoGiftsOpened: data.pepino?.firstGiftClaimed ? 1 : 0,
+        };
+    }
+    data.achievementCounters.scansUsed = Math.max(0, Math.floor(data.achievementCounters.scansUsed || 0));
+    data.achievementCounters.pepinoGiftsOpened = Math.max(0, Math.floor(data.achievementCounters.pepinoGiftsOpened || 0));
+    if (typeof data.achievementCounters.hardPerfectGames !== 'number') {
+        data.achievementCounters.hardPerfectGames = Math.max(0, Math.floor((data.achievementCounters as any).hardPerfectStageProgress || 0));
+    }
+    data.achievementCounters.hardPerfectGames = Math.max(0, Math.floor(data.achievementCounters.hardPerfectGames || 0));
 
     // Generator 2.0 and 1.1 changed the board behind each level ID. When
     // returning to Generator 1.0, reset only their unfinished snapshots so no
@@ -236,7 +327,9 @@ function getStoredData(): StoredData {
         redeemedCoupons: [],
         welcomeGiftClaimed: false,
         processedPurchaseTransactions: [],
-        stats: DEFAULT_STATS
+        claimedAchievements: [],
+        achievementCounters: emptyAchievementCounters(),
+        stats: { ...DEFAULT_STATS, gamesWonByDifficulty: {}, diamondsEarnedBySource: {} }
     };
   }
 }
@@ -285,11 +378,17 @@ function ensureStarterPackUnlocked(data: StoredData) {
   if (!data.purchasedSoundPacks) data.purchasedSoundPacks = ['snd-zen'];
 
   for (const skillId of ['skill-nudge', 'skill-scribe', 'skill-scan']) {
-    if (!data.purchasedSkills.includes(skillId)) data.purchasedSkills.push(skillId);
+    if (!data.purchasedSkills.includes(skillId)) {
+      data.purchasedSkills.push(skillId);
+    }
     if (!data.enabledSkills.includes(skillId)) data.enabledSkills.push(skillId);
   }
-  if (!data.purchasedSoundPacks.includes('snd-piano')) data.purchasedSoundPacks.push('snd-piano');
-  if (!data.purchasedNumberColors.includes('num-teal')) data.purchasedNumberColors.push('num-teal');
+  if (!data.purchasedSoundPacks.includes('snd-piano')) {
+    data.purchasedSoundPacks.push('snd-piano');
+  }
+  if (!data.purchasedNumberColors.includes('num-teal')) {
+    data.purchasedNumberColors.push('num-teal');
+  }
 }
 
 export const Storage = {
@@ -336,15 +435,32 @@ export const Storage = {
     return getStoredData().points;
   },
 
-  addPoints: (amount: number) => {
+  addPoints: (amount: number, source: DiamondEarnSource = 'other') => {
     const data = getStoredData();
     data.points += amount;
-    // Update stats
-    if (!data.stats) data.stats = { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 };
-    data.stats.totalDiamondsEarned += amount;
+    recordDiamondEarning(data, amount, source);
     
     saveData(data);
     return data.points;
+  },
+
+  claimAchievement: (id: string, reward: number): boolean => {
+      const data = getStoredData();
+      if (!data.claimedAchievements) data.claimedAchievements = [];
+      if (!id || reward < 0 || data.claimedAchievements.includes(id)) return false;
+
+      data.claimedAchievements.push(id);
+      data.points += reward;
+      recordDiamondEarning(data, reward, 'achievements');
+      saveData(data);
+      return true;
+  },
+
+  recordScanUse: () => {
+      const data = getStoredData();
+      if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
+      data.achievementCounters.scansUsed += 1;
+      saveData(data);
   },
   
   getPurchasedBackgrounds: (): string[] => {
@@ -510,8 +626,7 @@ export const Storage = {
 
       if (diamonds > 0) {
           data.points += diamonds;
-          if (!data.stats) data.stats = { ...DEFAULT_STATS };
-          data.stats.totalDiamondsEarned += diamonds;
+          recordDiamondEarning(data, diamonds, 'purchases');
       }
 
       saveData(data);
@@ -604,9 +719,15 @@ export const Storage = {
         if (!data.stats) data.stats = { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 };
         
         data.stats.totalGamesWon += 1;
-        
+        ensureStatsBreakdowns(data);
+        const winBreakdown = data.stats.gamesWonByDifficulty!;
+        winBreakdown[progress.difficulty] = (winBreakdown[progress.difficulty] || 0) + 1;
         if (isPerfectGame) {
             data.stats.perfectGames += 1;
+            if ([Difficulty.Hard, Difficulty.Intense, Difficulty.Impossible].includes(progress.difficulty as Difficulty)) {
+                if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
+                data.achievementCounters.hardPerfectGames += 1;
+            }
         }
     }
     
@@ -693,6 +814,8 @@ export const Storage = {
           data.pepino.pendingGiftCount = Math.max(0, (data.pepino.pendingGiftCount || 0) - 1);
           data.pepino.hasPendingGift = data.pepino.pendingGiftCount > 0;
           data.pepino.firstGiftClaimed = true;
+          if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
+          data.achievementCounters.pepinoGiftsOpened += 1;
           saveData(data);
       }
   },
@@ -742,7 +865,12 @@ export const Storage = {
                   scribeUses: existing?.scribeUses ?? 4,
               };
 
-              if (!wasAlreadyCompleted) data.stats.totalGamesWon += 1;
+              if (!wasAlreadyCompleted) {
+                  data.stats.totalGamesWon += 1;
+                  ensureStatsBreakdowns(data);
+                  const winBreakdown = data.stats.gamesWonByDifficulty!;
+                  winBreakdown[Difficulty.SuperEasy] = (winBreakdown[Difficulty.SuperEasy] || 0) + 1;
+              }
           }
       }
       saveData(data);

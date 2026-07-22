@@ -90,8 +90,6 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
     // --- BATCH DATA LOADING ---
     const [progressMap] = useState(() => Storage.getStoredData().progress);
     
-    // --- TAB STATE ---
-    const [activeTab, setActiveTab] = useState<1 | 2 | 3>(1);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     
     // Helper to determine if a level should actually be shown as "in-progress"
@@ -106,13 +104,6 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
         
         return hasUserInteraction ? 'in-progress' : 'not-started';
     };
-
-    // Reset scroll on tab change
-    useEffect(() => {
-        if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollTop = 0;
-        }
-    }, [activeTab]);
 
     // --- CALCULATE STATS ---
     const { globalBest, completedRange1, completedRange2 } = useMemo(() => {
@@ -142,6 +133,26 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
 
     const isPack2Unlocked = unlockedPacks2.includes(difficulty);
     const isPack3Unlocked = unlockedPacks3.includes(difficulty);
+
+    // Open on the first pack that still has something useful for the player.
+    // A completed pack advances to the next pack's unlock card automatically.
+    const defaultTab: 1 | 2 | 3 = isPack3Unlocked || (isPack2Unlocked && completedRange2 >= 100)
+        ? 3
+        : isPack2Unlocked || completedRange1 >= 100
+            ? 2
+            : 1;
+    const [activeTab, setActiveTab] = useState<1 | 2 | 3>(() => defaultTab);
+
+    useEffect(() => {
+        setActiveTab(defaultTab);
+    }, [difficulty, defaultTab]);
+
+    // Reset scroll on tab change
+    useEffect(() => {
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = 0;
+        }
+    }, [activeTab]);
 
     // Determine Visible Tabs: Pack 1 & 2 always visible. Pack 3 only if Pack 2 unlocked.
     const visibleTabs = [1, 2];

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Difficulty, AppSettings, DiamondOffer, PepinoState } from './types';
+import { Difficulty, AppSettings, DiamondOffer, PepinoState, DiamondEarnSource } from './types';
 import { SudokuGame } from './components/SudokuGame';
 import { Storage } from './utils/storage';
 import { sounds } from './utils/sound';
@@ -13,7 +13,8 @@ import type { SuccessfulIAPPurchase } from './utils/iap';
 // UI Components
 import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal, ResetConfirmModal } from './components/ui/Modals';
 import { WelcomeGiftModal } from './components/ui/WelcomeGiftModal';
-import { getStoredClaimedProfileRank, MAX_PROFILE_RANK, ProfileModal } from './components/ui/ProfileModal';
+import { getStoredClaimedProfileRank, MAX_PROFILE_RANK, ProfileScreen } from './components/screens/ProfileScreen';
+import { hasClaimableAchievement } from './utils/achievements';
 import { LandscapeBlocker } from './components/ui/LandscapeBlocker';
 
 // Screens
@@ -24,7 +25,7 @@ import { StoreScreen } from './components/screens/StoreScreen';
 import { DiamondShopScreen } from './components/screens/DiamondShopScreen';
 import { StatsScreen } from './components/screens/StatsScreen';
 
-type Screen = 'splash' | 'difficulty' | 'levels' | 'game' | 'settings' | 'store' | 'diamondShop' | 'stats';
+type Screen = 'splash' | 'difficulty' | 'levels' | 'game' | 'settings' | 'store' | 'diamondShop' | 'stats' | 'profile';
 
 const SCREEN_SETTLE_MS = 180;
 
@@ -63,7 +64,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const [redeemedCoupons, setRedeemedCoupons] = useState<string[]>([]);
 
   const [showSettings, setShowSettings] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
   const [stats, setStats] = useState(Storage.getStoredData().stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
   const [claimedProfileRank, setClaimedProfileRank] = useState(() => getStoredClaimedProfileRank(Storage.getStoredData().stats?.totalGamesWon || 0));
   const [replayLevelId, setReplayLevelId] = useState<number | null>(null);
@@ -275,6 +275,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const handleStoreBack = () => { sounds.playClick(); navigate('difficulty', 'back'); };
   const handleDiamondShopBack = () => { sounds.playClick(); navigate('difficulty', 'back'); };
   const handleStatsBack = () => { sounds.playClick(); navigate('difficulty', 'back'); };
+  const handleProfileBack = () => { sounds.playClick(); navigate('difficulty', 'back'); };
 
   const handleLevelSelect = (levelId: number) => {
     const progress = Storage.getLevelProgress(selectedDifficulty!, levelId);
@@ -365,9 +366,18 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
     setEnabledSkills([...next]);
   };
 
-  const handleEarnPoints = (amount: number) => {
-    const newTotal = Storage.addPoints(amount);
+  const handleEarnPoints = (amount: number, source: DiamondEarnSource = 'other') => {
+    const newTotal = Storage.addPoints(amount, source);
     setPoints(newTotal);
+  };
+
+  const handleClaimAchievement = (id: string, reward: number) => {
+    const claimed = Storage.claimAchievement(id, reward);
+    if (!claimed) return false;
+    const data = Storage.getStoredData();
+    setPoints(data.points);
+    setStats(data.stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
+    return true;
   };
 
   const refreshCommerceState = () => {
@@ -385,7 +395,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
   const handleClaimWelcomeGift = (amount: number) => {
       Storage.claimWelcomeGift();
-      handleEarnPoints(amount);
+      handleEarnPoints(amount, 'welcomeGift');
       setShowWelcomeGift(false);
   };
   
@@ -401,7 +411,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
     Storage.setNextBonusClaimTime(nextTime);
     setNextBonusClaimTime(nextTime);
-    handleEarnPoints(10);
+    handleEarnPoints(10, 'dailyGifts');
   };
   
   const initiatePurchase = (item: any, type: 'bg' | 'num' | 'skill' | 'sound') => {
@@ -559,7 +569,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
       if (lowerCode === 'haha5000') {
           sounds.playWin();
-          handleEarnPoints(5000);
+          handleEarnPoints(5000, 'coupons');
           Storage.markCouponRedeemed(normalizedCode);
           setRedeemedCoupons(Storage.getStoredData().redeemedCoupons || []);
           return true;
@@ -713,7 +723,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     points={points}
                                     onDifficultySelect={handleDifficultySelect}
                                     onOpenSettings={() => setShowSettings(true)}
-                                    onOpenProfile={() => setShowProfile(true)}
+                                    onOpenProfile={() => navigate('profile', 'forward')}
                                     onOpenStore={() => navigate('store', 'forward')}
                                     onOpenDiamondShop={() => navigate('diamondShop', 'forward')}
                                     onClaimBonus={handleClaimBonus}
@@ -722,7 +732,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     nextBonusClaimTime={nextBonusClaimTime}
                                     hiddenDifficulties={settings.hiddenDifficulties}
                                     hasPendingPepinoGift={pepinoState.hasPendingGift}
-                                    hasProfileTitleUpgrade={Math.min(MAX_PROFILE_RANK, Math.floor(stats.totalGamesWon / 20)) > claimedProfileRank}
+                                    hasProfileAchievement={hasClaimableAchievement(Storage.getStoredData(), claimedProfileRank)}
                                     onContinue={(diff, levelId) => {
                                         sounds.playLevelEnter();
                                         setSelectedDifficulty(diff);
@@ -747,7 +757,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     points={points}
                                     onBack={handleDiamondShopBack}
                                     onBuyOffer={handleBuyOffer}
-                                    onEarnPoints={handleEarnPoints}
+                                    onEarnPoints={(amount) => handleEarnPoints(amount, 'pepino')}
                                     onRestorePurchases={handleRestorePurchases}
                                     starterPackPurchased={starterPackPurchased}
                                 />
@@ -829,7 +839,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     }}
                                     onSettingsOpen={() => setShowSettings(true)}
                                     settings={settings}
-                                    onEarnPoints={handleEarnPoints}
+                                    onEarnPoints={(amount) => handleEarnPoints(amount, 'sudoku')}
                                     currentPoints={points}
                                     isSettingsOpen={showSettings}
                                     backgroundClass={activeBackgroundClass}
@@ -851,8 +861,28 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                             >
                                 <StatsScreen
                                     onBack={handleStatsBack}
-                                    onEarnPoints={handleEarnPoints}
+                                    onEarnPoints={(amount) => handleEarnPoints(amount, 'other')}
                                     points={points}
+                                />
+                            </motion.div>
+                        )}
+
+                        {screen === 'profile' && (
+                            <motion.div
+                                key="profile"
+                                custom={direction}
+                                variants={variants}
+                                initial="initial"
+                                animate="animate"
+                                exit="exit"
+                                className="absolute inset-0 z-20 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
+                            >
+                                <ProfileScreen
+                                    onClose={handleProfileBack}
+                                    points={points}
+                                    claimedRank={claimedProfileRank}
+                                    onTitleClaimed={setClaimedProfileRank}
+                                    onClaimAchievement={handleClaimAchievement}
                                 />
                             </motion.div>
                         )}
@@ -871,14 +901,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                         onRedeemCode={handleRedeemCode}
                         redeemedCoupons={redeemedCoupons}
                     />
-                )}
-                {showProfile && (
-                        <ProfileModal
-                            onClose={() => setShowProfile(false)}
-                            claimedRank={claimedProfileRank}
-                            onTitleClaimed={setClaimedProfileRank}
-                            stats={stats}
-                        />
                 )}
                 {replayLevelId !== null && selectedDifficulty && (
                     <ReplayModal 
