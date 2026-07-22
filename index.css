@@ -279,6 +279,9 @@ html, body {
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
+.h-safe-bottom {
+  height: env(safe-area-inset-bottom);
+}
 .h-safe-screen {
   height: 100vh; /* Fallback */
   height: 100dvh;

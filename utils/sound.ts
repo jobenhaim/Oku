@@ -1035,6 +1035,9 @@ class SoundController {
             const ctx = this.getCtx();
             const now = ctx.currentTime;
             const duration = 1.2;
+            const scanOutput = ctx.createGain();
+            scanOutput.gain.setValueAtTime(0.6, now);
+            scanOutput.connect(ctx.destination);
 
             const tikOsc = ctx.createOscillator();
             const tikGain = ctx.createGain();
@@ -1047,7 +1050,7 @@ class SoundController {
                 tikGain.gain.setTargetAtTime(0, t + 0.02, 0.005);
             }
             tikOsc.connect(tikGain);
-            tikGain.connect(ctx.destination);
+            tikGain.connect(scanOutput);
             tikOsc.start(now);
             tikOsc.stop(now + duration);
 
@@ -1060,7 +1063,7 @@ class SoundController {
             bzzGain.gain.linearRampToValueAtTime(0.045, now + 0.2); 
             bzzGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
             bzzOsc.connect(bzzGain);
-            bzzGain.connect(ctx.destination);
+            bzzGain.connect(scanOutput);
             bzzOsc.start(now);
             bzzOsc.stop(now + duration);
 
@@ -1073,7 +1076,7 @@ class SoundController {
             chimeGain.gain.setTargetAtTime(0.0675, now + 0.4, 0.2); 
             chimeGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
             chimeOsc.connect(chimeGain);
-            chimeGain.connect(ctx.destination);
+            chimeGain.connect(scanOutput);
             chimeOsc.start(now + 0.3);
             chimeOsc.stop(now + duration);
 
@@ -1090,7 +1093,7 @@ class SoundController {
             noiseGain.gain.linearRampToValueAtTime(0.016875, now + duration - 0.2);
             noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
             whiteNoise.connect(noiseGain);
-            noiseGain.connect(ctx.destination);
+            noiseGain.connect(scanOutput);
             whiteNoise.start(now + duration - 0.4);
         }
 

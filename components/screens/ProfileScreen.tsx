@@ -1,5 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AchievementItem, getOtherAchievements, getPackAchievements, getProfileTitle, getReadyTitleAchievementCount, getTitleAchievement, MAX_PROFILE_RANK } from '../../utils/achievements';
 import { Storage } from '../../utils/storage';
 import { sounds } from '../../utils/sound';
@@ -60,12 +59,18 @@ const AchievementRow: React.FC<{
             type="button"
             onClick={() => achievement.ready && onClaim(achievement)}
             disabled={!achievement.ready}
-            className={`w-full h-[82px] px-4 py-3 text-left rounded-[1.25rem] border transition-transform ${
+            className={`relative w-full h-[82px] px-4 py-3 text-left rounded-[1.25rem] border transition-transform ${
                 achievement.claimed
                     ? 'bg-stone-100/90 dark:bg-stone-900/70 border-stone-200/60 dark:border-stone-800/70 shadow-none'
                     : 'bg-t-surface border-stone-200/80 dark:border-stone-800 shadow-sm'
             } ${achievement.ready ? 'active:scale-[0.98]' : ''}`}
         >
+            {achievement.ready && (
+                <span
+                    aria-label="Ready to claim"
+                    className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_0_3px_rgba(239,68,68,0.12)]"
+                />
+            )}
             <div className="flex items-center gap-3 h-full">
                 <div className="min-w-0 flex-1 flex flex-col justify-center">
                     <div className="flex items-center gap-2">
@@ -79,14 +84,14 @@ const AchievementRow: React.FC<{
                         )}
                     </div>
                     <span className="block text-[11px] font-medium text-stone-500 dark:text-stone-400 mt-1 leading-tight">
-                        {achievement.claimed ? 'Completed' : achievement.detail}
+                        {achievement.detail}
                     </span>
 
                     {showProgress && (
                         <div className="h-2 mt-2 flex items-center gap-2.5">
                             <div className="h-2 flex-1 rounded-full bg-stone-100 dark:bg-stone-700 overflow-hidden">
                                 <div
-                                    className={`h-full rounded-full transition-[width] duration-700 ease-in-out ${achievement.ready ? 'bg-blue-500' : 'bg-stone-400 dark:bg-stone-500'}`}
+                                    className={`h-full rounded-full transition-[width] duration-700 ease-in-out ${achievement.ready ? 'bg-emerald-400 dark:bg-emerald-400' : 'bg-emerald-300 dark:bg-emerald-500/70'}`}
                                     style={{ width: `${progress}%` }}
                                 />
                             </div>
@@ -138,30 +143,24 @@ const AchievementGroup: React.FC<{
                     <Icons.Eye className={`w-3.5 h-3.5 transition-opacity duration-150 ${isHidden ? 'opacity-45' : 'opacity-80'}`} />
                 </button>
             </div>
-            <AnimatePresence initial={false}>
-                {!isHidden && (
-                    <motion.div
-                        key="achievement-list"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2, ease: 'easeOut' }}
-                        className="flex flex-col gap-2.5 overflow-hidden"
-                    >
+            <div
+                aria-hidden={isHidden}
+                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+                    isHidden
+                        ? 'grid-rows-[0fr] opacity-0 pointer-events-none'
+                        : 'grid-rows-[1fr] opacity-100'
+                }`}
+            >
+                <div className="min-h-0 overflow-hidden">
+                    <div className="flex flex-col gap-2.5">
                         {achievements.map((achievement) => (
-                            <motion.div
-                                key={achievement.id}
-                                initial={{ opacity: 0, y: 3 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -3 }}
-                                transition={{ duration: 0.16, ease: 'easeOut' }}
-                            >
+                            <div key={achievement.id}>
                                 <AchievementRow achievement={achievement} onClaim={onClaim} />
-                            </motion.div>
+                            </div>
                         ))}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    </div>
+                </div>
+            </div>
         </section>
     ) : null;
 };
@@ -179,6 +178,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     const [hideCompleted, setHideCompleted] = useState(false);
     const [expandedStat, setExpandedStat] = useState<ProfileStatBreakdown>(null);
     const [visibleStatBreakdown, setVisibleStatBreakdown] = useState<Exclude<ProfileStatBreakdown, null>>('games');
+    const statSwitchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [profile, setProfile] = useState(() => {
         try {
             const stored = localStorage.getItem('zen_profile');
@@ -198,6 +198,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     useEffect(() => {
         localStorage.setItem('zen_profile', JSON.stringify(profile));
     }, [profile]);
+
+    useEffect(() => () => {
+        if (statSwitchTimer.current) window.clearTimeout(statSwitchTimer.current);
+    }, []);
 
     const currentTitle = getProfileTitle(claimedRank);
     const titleAchievement = useMemo(() => getTitleAchievement(storedData, claimedRank), [storedData, claimedRank]);
@@ -232,11 +236,29 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     const toggleStat = (stat: Exclude<ProfileStatBreakdown, null>, hasItems: boolean) => {
         if (!hasItems) return;
         sounds.playClick();
-        setExpandedStat((current) => {
-            if (current === stat) return null;
-            setVisibleStatBreakdown(stat);
-            return stat;
-        });
+
+        if (statSwitchTimer.current) {
+            window.clearTimeout(statSwitchTimer.current);
+            statSwitchTimer.current = null;
+        }
+
+        if (expandedStat === stat) {
+            setExpandedStat(null);
+            return;
+        }
+
+        if (expandedStat) {
+            setExpandedStat(null);
+            statSwitchTimer.current = window.setTimeout(() => {
+                setVisibleStatBreakdown(stat);
+                setExpandedStat(stat);
+                statSwitchTimer.current = null;
+            }, 150);
+            return;
+        }
+
+        setVisibleStatBreakdown(stat);
+        setExpandedStat(stat);
     };
 
     const handleClaim = (achievement: AchievementItem) => {
@@ -320,7 +342,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                                     )}
                                 </div>
                                 <div className="mt-3">
-                                    <AnimatedNumber value={storedData.stats?.totalGamesWon || 0} startFromZero className="block text-[1.75rem] font-black tabular-nums leading-none text-stone-900 dark:text-stone-50" />
+                                    <AnimatedNumber value={storedData.stats?.totalGamesWon || 0} startFromZero durationMs={1500} className="block text-[1.75rem] font-semibold tabular-nums leading-none text-stone-900 dark:text-stone-50" />
                                     <span className="block mt-1 text-[9px] font-bold text-amber-800/65 dark:text-amber-200/70 uppercase tracking-[0.13em]">Games Won</span>
                                 </div>
                             </button>
@@ -341,13 +363,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                                     )}
                                 </div>
                                 <div className="mt-3">
-                                    <AnimatedNumber value={storedData.stats?.totalDiamondsEarned || 0} startFromZero easing="easeOut" durationMs={1000} className="block text-[1.75rem] font-black tabular-nums leading-none text-stone-900 dark:text-stone-50" />
+                                    <AnimatedNumber value={storedData.stats?.totalDiamondsEarned || 0} startFromZero easing="easeOut" durationMs={1500} className="block text-[1.75rem] font-semibold tabular-nums leading-none text-stone-900 dark:text-stone-50" />
                                     <span className="block mt-1 text-[9px] font-bold text-blue-800/65 dark:text-blue-200/70 uppercase tracking-[0.13em]">Diamonds Earned</span>
                                 </div>
                             </button>
                         </div>
                         <div
-                            className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${expandedStat ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}
+                            className={`grid transition-[grid-template-rows,opacity] duration-150 ease-in-out ${expandedStat ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}
                             aria-hidden={!expandedStat}
                         >
                             <div className="overflow-hidden">
@@ -420,6 +442,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         {showCloudToast ? <span className="text-[10px] font-bold text-blue-500">Coming Soon</span> : <Icons.Next className="w-4 h-4 text-stone-400" />}
                     </button>
                 </div>
+                <div className="h-safe-bottom w-full shrink-0" />
             </main>
         </div>
     );

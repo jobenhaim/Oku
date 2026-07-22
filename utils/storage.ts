@@ -64,7 +64,7 @@ const ensureStatsBreakdowns = (data: StoredData) => {
         let remaining = Math.max(0, unclassified);
 
         if (data.welcomeGiftClaimed && !rebuilt.welcomeGift && remaining > 0) {
-            const welcomeAmount = Math.min(300, remaining);
+            const welcomeAmount = Math.min(200, remaining);
             rebuilt.welcomeGift = welcomeAmount;
             remaining -= welcomeAmount;
         }
@@ -94,6 +94,7 @@ const emptyAchievementCounters = () => ({
     scansUsed: 0,
     pepinoGiftsOpened: 0,
     hardPerfectGames: 0,
+    replaysWatched: 0,
 });
 
 function getStoredData(): StoredData {
@@ -277,6 +278,7 @@ function getStoredData(): StoredData {
         data.achievementCounters.hardPerfectGames = Math.max(0, Math.floor((data.achievementCounters as any).hardPerfectStageProgress || 0));
     }
     data.achievementCounters.hardPerfectGames = Math.max(0, Math.floor(data.achievementCounters.hardPerfectGames || 0));
+    data.achievementCounters.replaysWatched = Math.max(0, Math.floor(data.achievementCounters.replaysWatched || 0));
 
     // Generator 2.0 and 1.1 changed the board behind each level ID. When
     // returning to Generator 1.0, reset only their unfinished snapshots so no
@@ -460,6 +462,13 @@ export const Storage = {
       const data = getStoredData();
       if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
       data.achievementCounters.scansUsed += 1;
+      saveData(data);
+  },
+
+  recordReplayWatch: () => {
+      const data = getStoredData();
+      if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
+      data.achievementCounters.replaysWatched += 1;
       saveData(data);
   },
   

@@ -374,6 +374,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                     </motion.div>
 
                 </div>
+                <div className="h-safe-bottom w-full shrink-0" />
             </div>
         </div>
     );

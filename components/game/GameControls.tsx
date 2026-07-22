@@ -6,6 +6,7 @@ import { sounds } from '../../utils/sound';
 interface GameControlsProps {
     canUndo: boolean;
     canErase: boolean;
+    isEraseMode: boolean;
     isPencilMode: boolean;
     onUndo: (e: React.MouseEvent) => void;
     onErase: (e: React.MouseEvent) => void;
@@ -22,6 +23,7 @@ interface GameControlsProps {
 export const GameControls: React.FC<GameControlsProps> = ({
     canUndo,
     canErase,
+    isEraseMode,
     isPencilMode,
     onUndo,
     onErase,
@@ -100,10 +102,20 @@ export const GameControls: React.FC<GameControlsProps> = ({
                 <button 
                     onClick={onErase} 
                     disabled={!canErase}
-                    className={`flex flex-col items-center gap-1 transition ${getBaseButtonStyle(canErase)}`}
+                    className={`flex flex-col items-center gap-1 transition ${getBaseButtonStyle(canErase)} ${isEraseMode ? 'text-blue-700 dark:text-blue-300' : ''}`}
                 >
-                    <div className={`p-3 rounded-full shadow-sm transition-colors ${getBaseContainerStyle(canErase)}`}>
-                        <Icons.Erase className={`w-5 h-5 ${canErase ? 'text-stone-700 dark:text-stone-300' : 'text-stone-300 dark:text-stone-600'}`} />
+                    <div className={`p-3 rounded-full shadow-sm transition-colors ${
+                        isEraseMode
+                            ? 'bg-blue-100 dark:bg-blue-900/40'
+                            : getBaseContainerStyle(canErase)
+                    }`}>
+                        <Icons.Erase className={`w-5 h-5 ${
+                            isEraseMode
+                                ? 'text-blue-600 dark:text-blue-400'
+                                : canErase
+                                    ? 'text-stone-700 dark:text-stone-300'
+                                    : 'text-stone-300 dark:text-stone-600'
+                        }`} />
                     </div>
                     <span className="text-sm font-medium">Erase</span>
                 </button>

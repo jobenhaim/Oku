@@ -394,8 +394,8 @@ export const useSudokuBoard = ({
     });
   }, [onBoardChange]);
 
-  const handleErase = useCallback((isPaused: boolean, isCompleted: boolean) => {
-    const currentSelectedCell = selectedCellRef.current;
+  const handleErase = useCallback((isPaused: boolean, isCompleted: boolean, targetCell?: [number, number]) => {
+    const currentSelectedCell = targetCell ?? selectedCellRef.current;
     const currentBoard = boardRef.current;
     if (!currentSelectedCell || isPaused || isCompleted) return;
     sounds.playClick();

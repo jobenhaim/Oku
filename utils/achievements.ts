@@ -49,6 +49,15 @@ const PACK_REWARDS: Record<Difficulty, number> = {
     [Difficulty.Impossible]: 300,
 };
 
+const PACK_TITLES: Record<Difficulty, [string, string, string]> = {
+    [Difficulty.SuperEasy]: ['Gentle Start', 'Easy Momentum', 'Super Easy Hero'],
+    [Difficulty.Easy]: ['Easy Rhythm', 'Smooth Sailing', 'Easy Going'],
+    [Difficulty.Normal]: ['Finding Balance', 'In the Flow', 'Perfectly Normal'],
+    [Difficulty.Hard]: ['Steady Resolve', 'Hard Earned', 'Strong Finish'],
+    [Difficulty.Intense]: ['Full Focus', 'Pressure Proof', 'Unshaken'],
+    [Difficulty.Impossible]: ['Against the Odds', 'Beyond Limits', 'Impossible, Done'],
+};
+
 const completedInRange = (data: StoredData, difficulty: Difficulty, start: number, end: number) => {
     let completed = 0;
     for (let level = start; level <= end; level++) {
@@ -128,8 +137,8 @@ export const getPackAchievements = (data: StoredData): AchievementItem[] => {
 
         return makeItem(claimedIds, {
             id,
-            title: `Finish Pack ${displayPack} · ${difficulty}`,
-            detail: `Complete levels ${start}-${end}.`,
+            title: PACK_TITLES[difficulty][displayPack - 1],
+            detail: `Complete Pack ${displayPack} - ${difficulty}.`,
             current,
             target: 100,
             reward: PACK_REWARDS[difficulty],
@@ -142,9 +151,14 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
     const claimedIds = new Set(data.claimedAchievements || []);
     const totalGamesWon = Math.max(0, data.stats?.totalGamesWon || 0);
     const difficultiesCompleted = Object.values(Difficulty).filter((difficulty) => completedInRange(data, difficulty, 1, 300) > 0).length;
+    const guidedDifficultiesCompleted = [Difficulty.SuperEasy, Difficulty.Easy, Difficulty.Normal]
+        .filter((difficulty) => completedInRange(data, difficulty, 1, 300) > 0).length;
+    const hiddenMistakeDifficultiesCompleted = [Difficulty.Hard, Difficulty.Intense, Difficulty.Impossible]
+        .filter((difficulty) => completedInRange(data, difficulty, 1, 300) > 0).length;
     const pepinoGiftsOpened = Math.max(0, data.achievementCounters?.pepinoGiftsOpened || 0);
     const hardPerfectGames = Math.max(0, data.achievementCounters?.hardPerfectGames || 0);
     const scansUsed = Math.max(0, data.achievementCounters?.scansUsed || 0);
+    const replaysWatched = Math.max(0, data.achievementCounters?.replaysWatched || 0);
     const backgrounds = data.purchasedBackgrounds.filter((id) => id !== 'bg-default' && id !== 'bg-dyn-default').length;
     const numberStyles = data.purchasedNumberColors.filter((id) => id !== 'num-default').length;
     const soundPacks = data.purchasedSoundPacks.filter((id) => id !== 'snd-zen').length;
@@ -166,6 +180,14 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
         { id: 'five-perfect-hard', title: 'Steady Hand', detail: 'Win 5 flawless puzzles on Hard or above.', current: hardPerfectGames, target: 5, reward: 15, category: 'journey' },
         { id: 'ten-perfect-hard', title: 'Smooth Operator', detail: 'Win 10 flawless puzzles on Hard or above.', current: hardPerfectGames, target: 10, reward: 25, category: 'journey' },
         { id: 'twenty-perfect-hard', title: 'Untouchable', detail: 'Win 20 flawless puzzles on Hard or above.', current: hardPerfectGames, target: 20, reward: 40, category: 'journey' },
+    ];
+    const replayMilestones: AchievementDefinition[] = [
+        { id: 'one-replay-watched', title: 'First Screening', detail: 'Watch 1 gameplay replay.', current: replaysWatched, target: 1, reward: 10, category: 'journey' },
+        { id: 'five-replays-watched', title: 'One More Episode', detail: 'Watch 5 gameplay replays.', current: replaysWatched, target: 5, reward: 10, category: 'journey' },
+        { id: 'ten-replays-watched', title: 'Couch Critic', detail: 'Watch 10 gameplay replays.', current: replaysWatched, target: 10, reward: 15, category: 'journey' },
+        { id: 'twenty-five-replays-watched', title: 'Replay Regular', detail: 'Watch 25 gameplay replays.', current: replaysWatched, target: 25, reward: 15, category: 'journey' },
+        { id: 'fifty-replays-watched', title: 'Prime Time', detail: 'Watch 50 gameplay replays.', current: replaysWatched, target: 50, reward: 20, category: 'journey' },
+        { id: 'hundred-replays-watched', title: "Director's Cut", detail: 'Watch 100 gameplay replays.', current: replaysWatched, target: 100, reward: 25, category: 'journey' },
     ];
     const scanMilestones: AchievementDefinition[] = [
         { id: 'one-scan', title: 'Quick Check', detail: 'Use Scan 1 time.', current: scansUsed, target: 1, reward: 5, category: 'skills' },
@@ -189,8 +211,11 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
 
     const definitions: AchievementDefinition[] = [
         selectCurrentMilestone(journeyMilestones),
+        { id: 'guided-difficulties', title: 'Clear Path', detail: 'Win once in Super Easy, Easy, and Normal.', current: guidedDifficultiesCompleted, target: 3, reward: 10, category: 'journey' },
+        { id: 'hidden-mistake-difficulties', title: 'No Safety Net', detail: 'Win once in Hard, Intense, and Impossible.', current: hiddenMistakeDifficultiesCompleted, target: 3, reward: 20, category: 'journey' },
         { id: 'every-difficulty', title: 'Try Everything', detail: 'Complete a puzzle in every difficulty.', current: difficultiesCompleted, target: 6, reward: 75, category: 'journey' },
         selectCurrentMilestone(perfectMilestones),
+        selectCurrentMilestone(replayMilestones),
         selectCurrentMilestone(scanMilestones),
         selectCurrentMilestone(backgroundMilestones),
         selectCurrentMilestone(numberStyleMilestones),

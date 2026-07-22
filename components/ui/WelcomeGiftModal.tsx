@@ -21,7 +21,7 @@ export const WelcomeGiftModal: React.FC<WelcomeGiftModalProps> = ({ onClose }) =
     useEffect(() => {
         setHasStarted(true);
         const duration = 1000;
-        const target = 300;
+        const target = 200;
         const startTime = performance.now();
         let lastValue = 0;
 
@@ -58,7 +58,7 @@ export const WelcomeGiftModal: React.FC<WelcomeGiftModalProps> = ({ onClose }) =
         sounds.playWin(); // Play delightful win sound on claim!
         setIsClosing(true);
         setTimeout(() => {
-            onClose(300);
+            onClose(200);
         }, 300);
     };
 

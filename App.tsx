@@ -717,7 +717,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 initial="initial"
                                 animate="animate"
                                 exit="exit"
-                                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
+                                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
                             >
                                 <DifficultyScreen 
                                     points={points}
@@ -751,7 +751,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 initial="initial"
                                 animate="animate"
                                 exit="exit"
-                                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
+                                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
                             >
                                 <DiamondShopScreen 
                                     points={points}
@@ -772,7 +772,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 initial="initial"
                                 animate="animate"
                                 exit="exit"
-                                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
+                                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
                             >
                                 <LevelsScreen 
                                     difficulty={selectedDifficulty}
@@ -796,7 +796,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 initial="initial"
                                 animate="animate"
                                 exit="exit"
-                                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
+                                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
                             >
                                 <StoreScreen 
                                     points={points}
@@ -857,7 +857,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 initial="initial"
                                 animate="animate"
                                 exit="exit"
-                                className="absolute inset-0 z-20 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
+                                className="absolute inset-0 z-20 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
                             >
                                 <StatsScreen
                                     onBack={handleStatsBack}
@@ -875,7 +875,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 initial="initial"
                                 animate="animate"
                                 exit="exit"
-                                className="absolute inset-0 z-20 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
+                                className="absolute inset-0 z-20 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
                             >
                                 <ProfileScreen
                                     onClose={handleProfileBack}

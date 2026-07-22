@@ -105,6 +105,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   purchasedSkills
 }) => {
   const [isPaused, setIsPaused] = useState(false);
+  const [isEraseMode, setIsEraseMode] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
@@ -373,6 +374,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   // board has already returned to normal cell-first input behavior.
   useEffect(() => {
       setActiveNumber(null);
+      setIsEraseMode(false);
   }, [settings.digitFirst, setActiveNumber]);
 
   const {
@@ -711,8 +713,12 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   // Memoize click handlers to avoid passing new functions on every timer tick
   const onCellClickWrapper = useCallback((e: React.MouseEvent, r: number, c: number) => {
       setNudgeCue(current => current?.r === r && current?.c === c ? null : current);
+      if (settings.digitFirst && isEraseMode) {
+          handleErase(isPaused, isCompleted || isEnding, [r, c]);
+          return;
+      }
       handleCellClick(r, c, isPaused, isCompleted || isEnding);
-  }, [handleCellClick, isPaused, isCompleted, isEnding]);
+  }, [handleCellClick, handleErase, isPaused, isCompleted, isEnding, settings.digitFirst, isEraseMode]);
 
   const onCellLongPressWrapper = useCallback((r: number, c: number) => {
       if (!settings.digitFirst || !isPencilMode || activeNumber === null) return;
@@ -725,6 +731,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   }, [isPaused, isCompleted, isEnding, setSelectedCell]);
 
   const onNumberClickWrapper = useCallback((e: React.MouseEvent, n: number) => {
+      setIsEraseMode(false);
       handleNumberInput(n, isPaused, isCompleted || isEnding);
   }, [handleNumberInput, isPaused, isCompleted, isEnding]);
 
@@ -779,7 +786,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                   <button onClick={() => { sounds.playClick(); setIsPaused(true); }} aria-label="Pause game" className="p-2 rounded-full transition text-t-icon active:scale-95">
                       <Icons.Pause className="w-6 h-6" />
                   </button>
-                  <button onClick={onSettingsOpen} aria-label="Game settings" className="p-2 rounded-full transition text-t-icon active:scale-95">
+                  <button onClick={() => { sounds.playClick(); onSettingsOpen(); }} aria-label="Game settings" className="p-2 rounded-full transition text-t-icon active:scale-95">
                       <Icons.Settings className="w-6 h-6" />
                   </button>
               </div>
@@ -885,10 +892,20 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
          >
              <GameControls 
                  canUndo={history.length > 0}
-                 canErase={canErase}
+                 canErase={settings.digitFirst || canErase}
+                 isEraseMode={settings.digitFirst && isEraseMode}
                  isPencilMode={isPencilMode}
                  onUndo={() => handleUndo(isPaused, isCompleted || isEnding)}
-                 onErase={() => handleErase(isPaused, isCompleted || isEnding)}
+                 onErase={() => {
+                     if (settings.digitFirst) {
+                         sounds.playClick();
+                         setIsEraseMode(current => !current);
+                         setActiveNumber(null);
+                         setSelectedCell(null);
+                         return;
+                     }
+                     handleErase(isPaused, isCompleted || isEnding);
+                 }}
                  onTogglePencil={() => {
                      if (isEnding) return;
                      sounds.playClick();
@@ -896,7 +913,13 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                      setIsPencilMode(nextPencilMode);
                      if (nextPencilMode && !notesReadyShownRef.current) {
                          notesReadyShownRef.current = true;
-                         enqueuePill({ text: 'Long press a number to place it', type: 'notes', holdMs: 4000 });
+                         enqueuePill({
+                             text: settings.digitFirst
+                                 ? 'Long press a cell to place a number'
+                                 : 'Long press a number to place it',
+                             type: 'notes',
+                             holdMs: 4000
+                         });
                      }
                  }}
                  purchasedSkills={purchasedSkills}
@@ -996,7 +1019,11 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
               replayUrl={replayUrl}
               showReplay={showReplay}
               generateReplayEnabled={settings.generateReplay}
-              onReplay={(e) => { e.stopPropagation(); setShowReplay(true); }}
+              onReplay={(e) => {
+                  e.stopPropagation();
+                  Storage.recordReplayWatch();
+                  setShowReplay(true);
+              }}
               onShareReplay={handleShareReplay}
               onCloseReplay={() => setShowReplay(false)}
               onGenerateReplay={generateReplay}
