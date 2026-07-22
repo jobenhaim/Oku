@@ -9,7 +9,7 @@ import { GameControls } from './game/GameControls';
 import { NumberPad } from './game/NumberPad';
 import { WinModal } from './game/WinModal';
 import { generateReplayVideo, ReplayMove } from '../utils/replay';
-import { Storage } from '../utils/storage';
+import { hasPlayerBoardInput, Storage } from '../utils/storage';
 import { sounds } from '../utils/sound';
 import { Icons } from './ui/Icons';
 import { formatTimeShort } from '../utils/constants';
@@ -154,6 +154,14 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   const saveProgress = (currentBoard: Board, scanUsesVal?: number, _revealUsesVal?: number, moveLog?: MoveLogEntry[], hasMadeMistake?: boolean) => {
       if (isCompleted || isEnding) return;
+      // A fresh or fully reset board is not a resumable game. Avoid creating
+      // Continue Game entries for merely opening a puzzle, and remove an old
+      // in-progress snapshot when the player returns the board to its start.
+      if (currentBoard.length !== 9) return;
+      if (!hasPlayerBoardInput(currentBoard)) {
+          Storage.clearLevelProgress(difficulty, levelId);
+          return;
+      }
       Storage.saveLevelProgress({
           levelId,
           difficulty,

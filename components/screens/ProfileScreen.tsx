@@ -342,7 +342,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                                     )}
                                 </div>
                                 <div className="mt-3">
-                                    <AnimatedNumber value={storedData.stats?.totalGamesWon || 0} startFromZero durationMs={1500} className="block text-[1.75rem] font-semibold tabular-nums leading-none text-stone-900 dark:text-stone-50" />
+                                    <span className="block text-[1.75rem] font-bold tracking-[0.035em] tabular-nums leading-none text-stone-900 dark:text-stone-50">
+                                        {storedData.stats?.totalGamesWon || 0}
+                                    </span>
                                     <span className="block mt-1 text-[9px] font-bold text-amber-800/65 dark:text-amber-200/70 uppercase tracking-[0.13em]">Games Won</span>
                                 </div>
                             </button>
@@ -363,7 +365,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                                     )}
                                 </div>
                                 <div className="mt-3">
-                                    <AnimatedNumber value={storedData.stats?.totalDiamondsEarned || 0} startFromZero easing="easeOut" durationMs={1500} className="block text-[1.75rem] font-semibold tabular-nums leading-none text-stone-900 dark:text-stone-50" />
+                                    <span className="block text-[1.75rem] font-bold tracking-[0.035em] tabular-nums leading-none text-stone-900 dark:text-stone-50">
+                                        {storedData.stats?.totalDiamondsEarned || 0}
+                                    </span>
                                     <span className="block mt-1 text-[9px] font-bold text-blue-800/65 dark:text-blue-200/70 uppercase tracking-[0.13em]">Diamonds Earned</span>
                                 </div>
                             </button>

@@ -1,9 +1,13 @@
 
-import { AppSettings, LevelProgress, StoredData, PepinoState, Difficulty, PermanentPurchaseOwnership, StorePurchaseUnlock, DiamondEarnSource } from '../types';
+import { AppSettings, Board, LevelProgress, StoredData, PepinoState, Difficulty, PermanentPurchaseOwnership, StorePurchaseUnlock, DiamondEarnSource } from '../types';
 import { Preferences } from '@capacitor/preferences';
 
 const STORAGE_KEY = 'oku_data_v1';
 const LEGACY_STORAGE_KEY = 'minimal_sudoku_data_v1';
+
+export const hasPlayerBoardInput = (board?: Board) => Boolean(board?.some(row =>
+    row.some(cell => !cell.isFixed && (cell.value !== null || cell.notes.length > 0))
+));
 
 const DEFAULT_SETTINGS: AppSettings = {
   sound: true,
@@ -703,7 +707,9 @@ export const Storage = {
 
   getLastPlayedGame: (): LevelProgress | undefined => {
     const data = getStoredData();
-    const inProgressGames = Object.values(data.progress).filter(p => p.status === 'in-progress');
+    const inProgressGames = Object.values(data.progress).filter(p =>
+        p.status === 'in-progress' && hasPlayerBoardInput(p.boardState)
+    );
     if (inProgressGames.length === 0) return undefined;
     inProgressGames.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
     return inProgressGames[0];
