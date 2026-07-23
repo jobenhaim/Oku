@@ -333,7 +333,9 @@ export const useSudokuBoard = ({
 
     if (shouldUsePencil) {
       if (newCell.notes.includes(num)) newCell.notes = newCell.notes.filter(n => n !== num);
-      else newCell.notes = [...newCell.notes, num].sort();
+      else {
+          newCell.notes = [...newCell.notes, num].sort();
+      }
       newBoard[r][c] = newCell;
     } else {
       if (newCell.value === num) { 

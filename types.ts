@@ -97,6 +97,7 @@ export interface StoredData {
       pepinoGiftsOpened: number;
       hardPerfectGames: number;
       replaysWatched: number;
+      nudgeCellClicks: number;
   };
   
   // Stats

@@ -50,20 +50,40 @@ export const getStoredClaimedProfileRank = (totalGamesWon: number) => {
 const AchievementRow: React.FC<{
     achievement: AchievementItem;
     onClaim: (achievement: AchievementItem) => void;
-}> = ({ achievement, onClaim }) => {
+    isEntering?: boolean;
+}> = ({ achievement, onClaim, isEntering = false }) => {
     const progress = Math.min(100, (achievement.current / achievement.target) * 100);
     const showProgress = achievement.target > 1 && !achievement.claimed;
+    const [isClaiming, setIsClaiming] = useState(false);
+    const claimTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => () => {
+        if (claimTimer.current) clearTimeout(claimTimer.current);
+    }, []);
+
+    const handleClick = () => {
+        if (!achievement.ready || isClaiming) return;
+        sounds.playSelectionHaptic();
+        setIsClaiming(true);
+        claimTimer.current = setTimeout(() => {
+            onClaim(achievement);
+            setIsClaiming(false);
+            claimTimer.current = null;
+        }, 420);
+    };
 
     return (
         <button
             type="button"
-            onClick={() => achievement.ready && onClaim(achievement)}
-            disabled={!achievement.ready}
-            className={`relative w-full h-[82px] px-4 py-3 text-left rounded-[1.25rem] border transition-transform ${
+            onClick={handleClick}
+            disabled={!achievement.ready || isClaiming}
+            className={`relative w-full h-[82px] px-4 py-3 text-left rounded-[1.25rem] border transition-transform overflow-hidden focus:outline-none ${
                 achievement.claimed
                     ? 'bg-stone-100/90 dark:bg-stone-900/70 border-stone-200/60 dark:border-stone-800/70 shadow-none'
                     : 'bg-t-surface border-stone-200/80 dark:border-stone-800 shadow-sm'
-            } ${achievement.ready ? 'active:scale-[0.98]' : ''}`}
+            } ${achievement.ready ? 'active:scale-[0.98]' : ''} ${
+                isClaiming ? 'achievement-claim-win' : ''
+            } ${isEntering ? 'achievement-milestone-enter' : ''}`}
         >
             {achievement.ready && (
                 <span
@@ -108,7 +128,7 @@ const AchievementRow: React.FC<{
                         : achievement.claimed
                             ? 'bg-stone-100 dark:bg-stone-700'
                             : 'bg-blue-50 dark:bg-blue-500/10'
-                }`}>
+                } ${isClaiming ? 'achievement-reward-pop' : ''}`}>
                     <span className={`text-sm font-bold tabular-nums ${achievement.ready ? 'text-white' : achievement.claimed ? 'text-stone-400 dark:text-stone-500' : 'text-blue-600 dark:text-blue-400'}`}>
                         {achievement.reward}
                     </span>
@@ -123,7 +143,8 @@ const AchievementGroup: React.FC<{
     title: string;
     achievements: AchievementItem[];
     onClaim: (achievement: AchievementItem) => void;
-}> = ({ title, achievements, onClaim }) => {
+    enteringAchievementIds: Set<string>;
+}> = ({ title, achievements, onClaim, enteringAchievementIds }) => {
     const [isHidden, setIsHidden] = useState(false);
 
     return achievements.length > 0 ? (
@@ -155,7 +176,11 @@ const AchievementGroup: React.FC<{
                     <div className="flex flex-col gap-2.5">
                         {achievements.map((achievement) => (
                             <div key={achievement.id}>
-                                <AchievementRow achievement={achievement} onClaim={onClaim} />
+                                <AchievementRow
+                                    achievement={achievement}
+                                    onClaim={onClaim}
+                                    isEntering={enteringAchievementIds.has(achievement.id)}
+                                />
                             </div>
                         ))}
                     </div>
@@ -178,7 +203,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     const [hideCompleted, setHideCompleted] = useState(false);
     const [expandedStat, setExpandedStat] = useState<ProfileStatBreakdown>(null);
     const [visibleStatBreakdown, setVisibleStatBreakdown] = useState<Exclude<ProfileStatBreakdown, null>>('games');
-    const statSwitchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [enteringAchievementIds, setEnteringAchievementIds] = useState<Set<string>>(() => new Set());
+    const statSwitchTimer = useRef<number | null>(null);
+    const achievementEntranceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [profile, setProfile] = useState(() => {
         try {
             const stored = localStorage.getItem('zen_profile');
@@ -201,6 +228,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
     useEffect(() => () => {
         if (statSwitchTimer.current) window.clearTimeout(statSwitchTimer.current);
+        if (achievementEntranceTimer.current) clearTimeout(achievementEntranceTimer.current);
     }, []);
 
     const currentTitle = getProfileTitle(claimedRank);
@@ -263,15 +291,39 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
     const handleClaim = (achievement: AchievementItem) => {
         if (!achievement.ready) return;
+        const previousIds = new Set([
+            titleAchievement.id,
+            ...packAchievements.map((item) => item.id),
+            ...otherAchievements.map((item) => item.id),
+        ]);
         if (!onClaimAchievement(achievement.id, achievement.reward)) return;
 
         sounds.playGiftClaim();
+        const nextClaimedRank = achievement.onClaimTitleRank ?? claimedRank;
         if (achievement.onClaimTitleRank !== undefined) {
             const newRank = achievement.onClaimTitleRank;
             setProfile((current: typeof profile) => ({ ...current, claimedRank: newRank, lastSeenRank: newRank }));
             onTitleClaimed(newRank);
         }
-        setStoredData(Storage.getStoredData());
+        const freshData = Storage.getStoredData();
+        const nextAchievements = [
+            getTitleAchievement(freshData, nextClaimedRank),
+            ...getPackAchievements(freshData),
+            ...getOtherAchievements(freshData),
+        ];
+        const newIds = new Set(
+            nextAchievements
+                .map((item) => item.id)
+                .filter((id) => !previousIds.has(id))
+        );
+
+        setStoredData(freshData);
+        if (achievementEntranceTimer.current) clearTimeout(achievementEntranceTimer.current);
+        setEnteringAchievementIds(newIds);
+        achievementEntranceTimer.current = setTimeout(() => {
+            setEnteringAchievementIds(new Set());
+            achievementEntranceTimer.current = null;
+        }, 700);
     };
 
     const handleCloudClick = () => {
@@ -419,12 +471,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         </div>
 
                         <div className="space-y-6">
-                            <AchievementGroup title="Next title" achievements={visibleTitleAchievements} onClaim={handleClaim} />
-                            <AchievementGroup title="Packs" achievements={visiblePackAchievements} onClaim={handleClaim} />
-                            <AchievementGroup title="Journey" achievements={visibleJourneyAchievements} onClaim={handleClaim} />
-                            <AchievementGroup title="Skills" achievements={visibleSkillAchievements} onClaim={handleClaim} />
-                            <AchievementGroup title="Pepino" achievements={visiblePepinoAchievements} onClaim={handleClaim} />
-                            <AchievementGroup title="Collection" achievements={visibleCollectionAchievements} onClaim={handleClaim} />
+                            <AchievementGroup title="Next title" achievements={visibleTitleAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
+                            <AchievementGroup title="Packs" achievements={visiblePackAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
+                            <AchievementGroup title="Journey" achievements={visibleJourneyAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
+                            <AchievementGroup title="Skills" achievements={visibleSkillAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
+                            <AchievementGroup title="Pepino" achievements={visiblePepinoAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
+                            <AchievementGroup title="Collection" achievements={visibleCollectionAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
                         </div>
                     </div>
 

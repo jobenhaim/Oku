@@ -6,7 +6,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "audit:sudoku": "node scripts/audit-sudoku.mjs",
+    "audit:sudoku:impossible": "node scripts/audit-impossible-sudoku.mjs",
+    "mine:sudoku": "node scripts/mine-sudoku-catalog.mjs",
+    "mine:sudoku:impossible": "node scripts/mine-impossible-catalog.mjs",
+    "mine:sudoku:production": "node scripts/mine-sudoku-catalog.mjs --count=300 --start-seed=1000000 --max-attempts=100000 --format=seeds --output=data/sudoku-seed-catalog.json && node scripts/mine-impossible-catalog.mjs && node scripts/build-sudoku-level-catalog.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^6.0.0",

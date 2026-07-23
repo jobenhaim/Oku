@@ -99,6 +99,7 @@ const emptyAchievementCounters = () => ({
     pepinoGiftsOpened: 0,
     hardPerfectGames: 0,
     replaysWatched: 0,
+    nudgeCellClicks: 0,
 });
 
 function getStoredData(): StoredData {
@@ -283,6 +284,10 @@ function getStoredData(): StoredData {
     }
     data.achievementCounters.hardPerfectGames = Math.max(0, Math.floor(data.achievementCounters.hardPerfectGames || 0));
     data.achievementCounters.replaysWatched = Math.max(0, Math.floor(data.achievementCounters.replaysWatched || 0));
+    data.achievementCounters.nudgeCellClicks = Math.max(
+        0,
+        Math.floor(data.achievementCounters.nudgeCellClicks || 0)
+    );
 
     // Generator 2.0 and 1.1 changed the board behind each level ID. When
     // returning to Generator 1.0, reset only their unfinished snapshots so no
@@ -462,10 +467,19 @@ export const Storage = {
       return true;
   },
 
-  recordScanUse: () => {
+  recordScanUse: (elapsedSeconds: number) => {
+      if (elapsedSeconds < 60) return false;
       const data = getStoredData();
       if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
       data.achievementCounters.scansUsed += 1;
+      saveData(data);
+      return true;
+  },
+
+  recordNudgeCellClick: () => {
+      const data = getStoredData();
+      if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
+      data.achievementCounters.nudgeCellClicks += 1;
       saveData(data);
   },
 
@@ -720,7 +734,10 @@ export const Storage = {
     return getStoredData().progress[key];
   },
 
-  saveLevelProgress: (progress: LevelProgress, isPerfectGame: boolean = false) => {
+  saveLevelProgress: (
+    progress: LevelProgress,
+    isPerfectGame: boolean = false
+  ) => {
     const data = getStoredData();
     const key = `${progress.difficulty}-${progress.levelId}`;
     const existing = data.progress[key];

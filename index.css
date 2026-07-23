@@ -904,3 +904,67 @@ html, body {
   animation: board-complete-glow 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   pointer-events: none;
 }
+
+/* Achievements: a small claim celebration, followed by the next milestone. */
+@keyframes achievement-claim-win {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  }
+  38% {
+    transform: scale(0.975);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.18);
+  }
+  72% {
+    transform: scale(1.012);
+    box-shadow: 0 7px 22px rgba(59, 130, 246, 0.18);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  }
+}
+
+@keyframes achievement-reward-pop {
+  0%, 100% { transform: scale(1); }
+  45% { transform: scale(1.12); }
+  72% { transform: scale(0.98); }
+}
+
+@keyframes achievement-milestone-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(9px) scale(0.985);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-1px) scale(1.005);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.achievement-claim-win {
+  animation: achievement-claim-win 420ms ease-in-out both;
+  will-change: transform, box-shadow;
+}
+
+.achievement-reward-pop {
+  animation: achievement-reward-pop 420ms ease-in-out both;
+  will-change: transform;
+}
+
+.achievement-milestone-enter {
+  animation: achievement-milestone-enter 600ms ease-in-out both;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .achievement-claim-win,
+  .achievement-reward-pop,
+  .achievement-milestone-enter {
+    animation-duration: 1ms !important;
+  }
+}

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Board, Cell, AppSettings } from '../../types';
 import SudokuCell from './SudokuCell';
 
@@ -16,6 +16,7 @@ interface SudokuGridProps {
     numberColor: string;
     onCellClick: (e: React.MouseEvent, r: number, c: number) => void;
     onCellExplore: (r: number, c: number) => void;
+    enableDragExplore: boolean;
     onCellLongPress: (r: number, c: number) => void;
     enableCellLongPress: boolean;
 }
@@ -34,6 +35,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     numberColor,
     onCellClick,
     onCellExplore,
+    enableDragExplore,
     onCellLongPress,
     enableCellLongPress
 }) => {
@@ -49,6 +51,14 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     });
     const suppressNextClickRef = useRef(false);
 
+    useEffect(() => {
+        if (enableDragExplore) return;
+        dragRef.current.active = false;
+        dragRef.current.dragging = false;
+        suppressNextClickRef.current = false;
+        setIsDragExploring(false);
+    }, [enableDragExplore]);
+
     const getCellAtPoint = (clientX: number, clientY: number): [number, number] | null => {
         const rect = gridAreaRef.current?.getBoundingClientRect();
         if (!rect || clientX < rect.left || clientX >= rect.right || clientY < rect.top || clientY >= rect.bottom) {
@@ -61,6 +71,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     };
 
     const handleGridPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (!enableDragExplore) return;
         if (!e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return;
         suppressNextClickRef.current = false;
         dragRef.current = {
@@ -74,6 +85,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     };
 
     const handleGridPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (!enableDragExplore) return;
         const drag = dragRef.current;
         if (!drag.active || drag.pointerId !== e.pointerId) return;
 

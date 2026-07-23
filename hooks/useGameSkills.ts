@@ -10,6 +10,7 @@ interface UseGameSkillsProps {
     onSaveProgress: (board: Board, scanUses?: number, revealUses?: number, moveLog?: MoveLogEntry[]) => void;
     onScanResult?: (hasErrors: boolean) => void;
     solvedBoard: number[][];
+    elapsedSeconds: number;
 }
 
 export const useGameSkills = ({
@@ -18,7 +19,8 @@ export const useGameSkills = ({
     solvedBoard,
     moveLog,
     onSaveProgress,
-    onScanResult
+    onScanResult,
+    elapsedSeconds
 }: UseGameSkillsProps) => {
     const [scanUses, setScanUses] = useState(3);
     const [isScanning, setIsScanning] = useState(false);
@@ -27,6 +29,7 @@ export const useGameSkills = ({
 
     const handleScan = (isPaused: boolean, isCompleted: boolean) => {
         if (scanUses <= 0 || isScanning || scanCooldown || isPaused || isCompleted) return;
+        const scanAchievementTime = elapsedSeconds;
         setIsScanning(true);
         setScanCooldown(true);
         sounds.playScan();
@@ -46,7 +49,7 @@ export const useGameSkills = ({
             const nextScanUses = Math.max(0, scanUses - 1);
             setIsScanning(false);
             setScanUses(nextScanUses);
-            Storage.recordScanUse();
+            Storage.recordScanUse(scanAchievementTime);
             onSaveProgress(newBoard, nextScanUses, undefined, moveLog.current);
             setScanCooldown(false);
             onScanResult?.(hasErrors);

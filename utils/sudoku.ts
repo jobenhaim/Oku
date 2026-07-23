@@ -1,6 +1,7 @@
 
 import { Difficulty, Board, Cell, CellValue } from '../types';
 import { IMPOSSIBLE_SEEDS } from './constants';
+import approvedLevelCatalog from '../data/sudoku-level-catalog.json';
 
 // Improved seeded random number generator (Mulberry32)
 // Good distribution, fast, 32-bit state
@@ -489,18 +490,64 @@ function generateAttempt(difficulty: Difficulty, seed: number): { initial: Board
     return { initial, solved: solvedRaw, clues: currentClues };
 }
 
+// Development tooling uses this to mine and grade candidate seeds offline.
+// The production game continues to use generateLevel's stable level mapping.
+export function generateCandidateFromSeed(
+    difficulty: Difficulty,
+    seed: number
+): { initial: Board, solved: number[][], clues: number } {
+    return generateAttempt(difficulty, seed);
+}
+
+type ApprovedLevel = {
+    seed: number;
+    puzzle: string;
+    solution: string;
+};
+
+const APPROVED_LEVELS: Partial<Record<Difficulty, readonly ApprovedLevel[]>> = {
+    [Difficulty.Normal]: approvedLevelCatalog.levels.Normal,
+    [Difficulty.Hard]: approvedLevelCatalog.levels.Hard,
+    [Difficulty.Intense]: approvedLevelCatalog.levels.Intense,
+    [Difficulty.Impossible]: approvedLevelCatalog.levels.Impossible
+};
+
+const deserializeGrid = (serialized: string): number[][] =>
+    serialized.split('/').map(row => row.split('').map(Number));
+
+const materializeApprovedLevel = (
+    level: ApprovedLevel
+): { initial: Board, solved: number[][] } => {
+    const puzzle = deserializeGrid(level.puzzle);
+    const solved = deserializeGrid(level.solution);
+    const initial: Board = puzzle.map((row, rowIndex) =>
+        row.map((value, colIndex) => ({
+            row: rowIndex,
+            col: colIndex,
+            value: value === 0 ? null : (value as CellValue),
+            isFixed: value !== 0,
+            notes: [],
+            isError: false
+        }))
+    );
+
+    return { initial, solved };
+};
+
 export function generateLevel(difficulty: Difficulty, levelId: number): { initial: Board, solved: number[][] } {
     
-    // GOLDEN SEEDS STRATEGY (Impossible Difficulty)
-    // Instead of generating at runtime (slow), we pick from a list of pre-mined seeds.
+    // Normal through Impossible load prebuilt boards approved by the offline
+    // logical-difficulty audits, avoiding generator work on the device.
+    const approvedLevels = APPROVED_LEVELS[difficulty];
+    if (approvedLevels && approvedLevels.length > 0) {
+        const levelIndex = ((levelId - 1) % approvedLevels.length + approvedLevels.length) % approvedLevels.length;
+        return materializeApprovedLevel(approvedLevels[levelIndex]);
+    }
+
+    // Legacy fallback for an unavailable Impossible catalogue.
     if (difficulty === Difficulty.Impossible) {
-        // Deterministically pick a seed from the pool based on Level ID
         const seedIndex = (levelId - 1) % IMPOSSIBLE_SEEDS.length;
-        const goldenSeed = IMPOSSIBLE_SEEDS[seedIndex];
-        
-        // This generates ONE board instantly using the golden seed.
-        // We assume the seed guarantees the clue count.
-        const attempt = generateAttempt(difficulty, goldenSeed);
+        const attempt = generateAttempt(difficulty, IMPOSSIBLE_SEEDS[seedIndex]);
         return { initial: attempt.initial, solved: attempt.solved };
     }
 

@@ -150,7 +150,6 @@ export const getPackAchievements = (data: StoredData): AchievementItem[] => {
 export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
     const claimedIds = new Set(data.claimedAchievements || []);
     const totalGamesWon = Math.max(0, data.stats?.totalGamesWon || 0);
-    const difficultiesCompleted = Object.values(Difficulty).filter((difficulty) => completedInRange(data, difficulty, 1, 300) > 0).length;
     const guidedDifficultiesCompleted = [Difficulty.SuperEasy, Difficulty.Easy, Difficulty.Normal]
         .filter((difficulty) => completedInRange(data, difficulty, 1, 300) > 0).length;
     const hiddenMistakeDifficultiesCompleted = [Difficulty.Hard, Difficulty.Intense, Difficulty.Impossible]
@@ -159,6 +158,10 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
     const hardPerfectGames = Math.max(0, data.achievementCounters?.hardPerfectGames || 0);
     const scansUsed = Math.max(0, data.achievementCounters?.scansUsed || 0);
     const replaysWatched = Math.max(0, data.achievementCounters?.replaysWatched || 0);
+    const nudgeCellClicks = Math.max(
+        0,
+        data.achievementCounters?.nudgeCellClicks || 0
+    );
     const backgrounds = data.purchasedBackgrounds.filter((id) => id !== 'bg-default' && id !== 'bg-dyn-default').length;
     const numberStyles = data.purchasedNumberColors.filter((id) => id !== 'num-default').length;
     const soundPacks = data.purchasedSoundPacks.filter((id) => id !== 'snd-zen').length;
@@ -190,11 +193,26 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
         { id: 'hundred-replays-watched', title: "Director's Cut", detail: 'Watch 100 gameplay replays.', current: replaysWatched, target: 100, reward: 25, category: 'journey' },
     ];
     const scanMilestones: AchievementDefinition[] = [
-        { id: 'one-scan', title: 'Quick Check', detail: 'Use Scan 1 time.', current: scansUsed, target: 1, reward: 5, category: 'skills' },
-        { id: 'ten-scans', title: 'Double Checker', detail: 'Use Scan 10 times.', current: scansUsed, target: 10, reward: 15, category: 'skills' },
-        { id: 'twenty-five-scans', title: 'Careful Eyes', detail: 'Use Scan 25 times.', current: scansUsed, target: 25, reward: 20, category: 'skills' },
-        { id: 'fifty-scans', title: 'Trust Issues', detail: 'Use Scan 50 times.', current: scansUsed, target: 50, reward: 35, category: 'skills' },
-        { id: 'hundred-scans', title: 'Nothing Gets Past Me', detail: 'Use Scan 100 times.', current: scansUsed, target: 100, reward: 50, category: 'skills' },
+        { id: 'one-scan', title: 'Quick Check', detail: 'Use Scan after 1 minute of play.', current: scansUsed, target: 1, reward: 5, category: 'skills' },
+        { id: 'five-scans', title: 'Second Look', detail: 'Use Scan 5 times after 1 minute of play.', current: scansUsed, target: 5, reward: 10, category: 'skills' },
+        { id: 'ten-scans', title: 'Double Checker', detail: 'Use Scan 10 times after 1 minute of play.', current: scansUsed, target: 10, reward: 10, category: 'skills' },
+        { id: 'twenty-scans', title: 'Careful Eyes', detail: 'Use Scan 20 times after 1 minute of play.', current: scansUsed, target: 20, reward: 10, category: 'skills' },
+        { id: 'thirty-scans', title: 'Scan Habit', detail: 'Use Scan 30 times after 1 minute of play.', current: scansUsed, target: 30, reward: 10, category: 'skills' },
+        { id: 'fifty-scans', title: 'Trust Issues', detail: 'Use Scan 50 times after 1 minute of play.', current: scansUsed, target: 50, reward: 15, category: 'skills' },
+        { id: 'seventy-five-scans', title: 'Sharp Eye', detail: 'Use Scan 75 times after 1 minute of play.', current: scansUsed, target: 75, reward: 15, category: 'skills' },
+        { id: 'hundred-scans', title: 'Nothing Gets Past Me', detail: 'Use Scan 100 times after 1 minute of play.', current: scansUsed, target: 100, reward: 15, category: 'skills' },
+    ];
+    const nudgeMilestones: AchievementDefinition[] = [
+        { id: 'one-nudge-cell', title: 'Gentle Hint', detail: 'Tap 1 Nudge-highlighted cell.', current: nudgeCellClicks, target: 1, reward: 5, category: 'skills' },
+        { id: 'five-nudge-cells', title: 'Small Push', detail: 'Tap 5 Nudge-highlighted cells.', current: nudgeCellClicks, target: 5, reward: 10, category: 'skills' },
+        { id: 'ten-nudge-cells', title: 'Right on Cue', detail: 'Tap 10 Nudge-highlighted cells.', current: nudgeCellClicks, target: 10, reward: 10, category: 'skills' },
+        { id: 'fifteen-nudge-cells', title: 'Taking the Hint', detail: 'Tap 15 Nudge-highlighted cells.', current: nudgeCellClicks, target: 15, reward: 10, category: 'skills' },
+        { id: 'twenty-nudge-cells', title: 'Subtle Signal', detail: 'Tap 20 Nudge-highlighted cells.', current: nudgeCellClicks, target: 20, reward: 10, category: 'skills' },
+        { id: 'thirty-nudge-cells', title: 'Friendly Reminder', detail: 'Tap 30 Nudge-highlighted cells.', current: nudgeCellClicks, target: 30, reward: 10, category: 'skills' },
+        { id: 'forty-nudge-cells', title: 'Helpful Glow', detail: 'Tap 40 Nudge-highlighted cells.', current: nudgeCellClicks, target: 40, reward: 10, category: 'skills' },
+        { id: 'fifty-nudge-cells', title: 'Nudge Regular', detail: 'Tap 50 Nudge-highlighted cells.', current: nudgeCellClicks, target: 50, reward: 15, category: 'skills' },
+        { id: 'seventy-five-nudge-cells', title: 'Guiding Light', detail: 'Tap 75 Nudge-highlighted cells.', current: nudgeCellClicks, target: 75, reward: 15, category: 'skills' },
+        { id: 'hundred-nudge-cells', title: 'Hint Whisperer', detail: 'Tap 100 Nudge-highlighted cells.', current: nudgeCellClicks, target: 100, reward: 15, category: 'skills' },
     ];
     const backgroundMilestones: AchievementDefinition[] = [
         { id: 'first-background', title: 'A New View', detail: 'Get 1 background.', current: backgrounds, target: 1, reward: 15, category: 'collection' },
@@ -213,10 +231,10 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
         selectCurrentMilestone(journeyMilestones),
         { id: 'guided-difficulties', title: 'Clear Path', detail: 'Win once in Super Easy, Easy, and Normal.', current: guidedDifficultiesCompleted, target: 3, reward: 10, category: 'journey' },
         { id: 'hidden-mistake-difficulties', title: 'No Safety Net', detail: 'Win once in Hard, Intense, and Impossible.', current: hiddenMistakeDifficultiesCompleted, target: 3, reward: 20, category: 'journey' },
-        { id: 'every-difficulty', title: 'Try Everything', detail: 'Complete a puzzle in every difficulty.', current: difficultiesCompleted, target: 6, reward: 75, category: 'journey' },
         selectCurrentMilestone(perfectMilestones),
         selectCurrentMilestone(replayMilestones),
         selectCurrentMilestone(scanMilestones),
+        selectCurrentMilestone(nudgeMilestones),
         selectCurrentMilestone(backgroundMilestones),
         selectCurrentMilestone(numberStyleMilestones),
         selectCurrentMilestone(soundPackMilestones),

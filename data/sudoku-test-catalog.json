@@ -1,0 +1,673 @@
+{
+  "generatedAt": "2026-07-23T06:51:41.640Z",
+  "purpose": "Human difficulty testing only. Not connected to the production level catalogue.",
+  "targets": {
+    "Normal": {
+      "clueRange": [
+        34,
+        38
+      ],
+      "minimumTier": 1,
+      "maximumTier": 2,
+      "minimumComplexityScore": 4,
+      "minimumAdvancedScore": 0,
+      "description": "Several hidden singles or a small locked-candidate step; notes remain optional."
+    },
+    "Hard": {
+      "clueRange": [
+        29,
+        34
+      ],
+      "minimumTier": 2,
+      "maximumTier": 3,
+      "minimumComplexityScore": 12,
+      "minimumAdvancedScore": 6,
+      "description": "Must require candidate interaction, not merely a long chain of singles."
+    },
+    "Intense": {
+      "clueRange": [
+        24,
+        30
+      ],
+      "minimumTier": 3,
+      "maximumTier": 3,
+      "minimumComplexityScore": 28,
+      "minimumAdvancedScore": 24,
+      "description": "Must require pairs plus multiple connected candidate eliminations."
+    }
+  },
+  "summary": [
+    {
+      "difficulty": "Normal",
+      "attempts": 61,
+      "accepted": 12,
+      "acceptanceRate": 0.19672131147540983
+    },
+    {
+      "difficulty": "Hard",
+      "attempts": 810,
+      "accepted": 12,
+      "acceptanceRate": 0.014814814814814815
+    },
+    {
+      "difficulty": "Intense",
+      "attempts": 204,
+      "accepted": 12,
+      "acceptanceRate": 0.058823529411764705
+    }
+  ],
+  "puzzles": [
+    {
+      "difficulty": "Normal",
+      "seed": 100002,
+      "clues": 36,
+      "minimumTier": 1,
+      "complexityScore": 18,
+      "advancedScore": 0,
+      "techniques": {
+        "nakedSingle": 36,
+        "hiddenSingle": 9,
+        "lockedCandidate": 0,
+        "nakedPair": 0
+      },
+      "logicalSteps": 45,
+      "longestSinglesRun": 45,
+      "puzzle": "590468210/010702800/280900000/800200090/700006085/001000607/008309004/000647000/030501970"
+    },
+    {
+      "difficulty": "Normal",
+      "seed": 100003,
+      "clues": 36,
+      "minimumTier": 1,
+      "complexityScore": 12,
+      "advancedScore": 0,
+      "techniques": {
+        "nakedSingle": 39,
+        "hiddenSingle": 6,
+        "lockedCandidate": 0,
+        "nakedPair": 0
+      },
+      "logicalSteps": 45,
+      "longestSinglesRun": 45,
+      "puzzle": "003095000/006870090/070432000/900516020/065007000/701300950/600000082/082009005/500208340"
+    },
+    {
+      "difficulty": "Normal",
+      "seed": 100006,
+      "clues": 36,
+      "minimumTier": 1,
+      "complexityScore": 8,
+      "advancedScore": 0,
+      "techniques": {
+        "nakedSingle": 41,
+        "hiddenSingle": 4,
+        "lockedCandidate": 0,
+        "nakedPair": 0
+      },
+      "logicalSteps": 45,
+      "longestSinglesRun": 45,
+      "puzzle": "000000900/008079002/001802070/014258090/837490005/900000006/126905300/700000200/000627850"
+    },
+    {
+      "difficulty": "Normal",
+      "seed": 100011,
+      "clues": 36,
+      "minimumTier": 1,
+      "complexityScore": 8,
+      "advancedScore": 0,
+      "techniques": {
+        "nakedSingle": 41,
+        "hiddenSingle": 4,
+        "lockedCandidate": 0,
+        "nakedPair": 0
+      },
+      "logicalSteps": 45,
+      "longestSinglesRun": 45,
+      "puzzle": "305021800/047006000/000000024/031008059/052910000/900000012/009060240/003050960/406102305"
+    },
+    {
+      "difficulty": "Normal",
+      "seed": 100015,
+      "clues": 36,
+      "minimumTier": 1,
+      "complexityScore": 14,
+      "advancedScore": 0,
+      "techniques": {
+        "nakedSingle": 38,
+        "hiddenSingle": 7,
+        "lockedCandidate": 0,
+        "nakedPair": 0
+      },
+      "logicalSteps": 45,
+      "longestSinglesRun": 45,
+      "puzzle": "000607000/060400815/210000064/007100302/380200100/125803496/030500008/070080600/001700040"
+    },
+    {
+      "difficulty": "Normal",
+      "seed": 100020,
+      "clues": 36,
+      "minimumTier": 1,
+      "complexityScore": 8,
+      "advancedScore": 0,
+      "techniques": {
+        "nakedSingle": 41,
+        "hiddenSingle": 4,
+        "lockedCandidate": 0,
+        "nakedPair": 0
+      },
+      "logicalSteps": 45,
+      "longestSinglesRun": 45,
+      "puzzle": "000000092/000980400/000203005/007059040/300840076/406327000/018405600/670100004/504700980"
+    },
+    {
+      "difficulty": "Normal",
+      "seed": 100034,
+      "clues": 36,
+      "minimumTier": 1,
+      "complexityScore": 8,
+      "advancedScore": 0,
+      "techniques": {
+        "nakedSingle": 41,
+        "hiddenSingle": 4,
+        "lockedCandidate": 0,
+        "nakedPair": 0
+      },
+      "logicalSteps": 45,
+      "longestSinglesRun": 45,
+      "puzzle": "000800000/000000820/000002075/160087354/042650007/500410086/470360092/001720030/000098040"
+    },
+    {
+      "difficulty": "Normal",
+      "seed": 100038,
+      "clues": 36,
+      "minimumTier": 1,
+      "complexityScore": 14,
+      "advancedScore": 0,
+      "techniques": {
+        "nakedSingle": 38,
+        "hiddenSingle": 7,
+        "lockedCandidate": 0,
+        "nakedPair": 0
+      },
+      "logicalSteps": 45,
+      "longestSinglesRun": 45,
+      "puzzle": "301500064/500000703/000002050/750648000/129003040/060920537/007005010/000297005/005100006"
+    },
+    {
+      "difficulty": "Normal",
+      "seed": 100045,
+      "clues": 36,
+      "minimumTier": 1,
+      "complexityScore": 12,
+      "advancedScore": 0,
+      "techniques": {
+        "nakedSingle": 39,
+        "hiddenSingle": 6,
+        "lockedCandidate": 0,
+        "nakedPair": 0
+      },
+      "logicalSteps": 45,
+      "longestSinglesRun": 45,
+      "puzzle": "001500000/000060500/905030640/856007010/020600485/000280007/000700196/612850004/007006850"
+    },
+    {
+      "difficulty": "Normal",
+      "seed": 100053,
+      "clues": 36,
+      "minimumTier": 1,
+      "complexityScore": 20,
+      "advancedScore": 0,
+      "techniques": {
+        "nakedSingle": 35,
+        "hiddenSingle": 10,
+        "lockedCandidate": 0,
+        "nakedPair": 0
+      },
+      "logicalSteps": 45,
+      "longestSinglesRun": 45,
+      "puzzle": "507090000/086753491/090800560/630500000/000237046/002000300/000900803/020180059/079020000"
+    },
+    {
+      "difficulty": "Normal",
+      "seed": 100059,
+      "clues": 36,
+      "minimumTier": 1,
+      "complexityScore": 6,
+      "advancedScore": 0,
+      "techniques": {
+        "nakedSingle": 42,
+        "hiddenSingle": 3,
+        "lockedCandidate": 0,
+        "nakedPair": 0
+      },
+      "logicalSteps": 45,
+      "longestSinglesRun": 45,
+      "puzzle": "002000860/700000150/000581000/300600098/400028300/800310500/006002743/574193000/030006905"
+    },
+    {
+      "difficulty": "Normal",
+      "seed": 100060,
+      "clues": 36,
+      "minimumTier": 1,
+      "complexityScore": 6,
+      "advancedScore": 0,
+      "techniques": {
+        "nakedSingle": 42,
+        "hiddenSingle": 3,
+        "lockedCandidate": 0,
+        "nakedPair": 0
+      },
+      "logicalSteps": 45,
+      "longestSinglesRun": 45,
+      "puzzle": "000305600/090271080/080690000/060008007/908710500/000050091/059140006/003809704/024003010"
+    },
+    {
+      "difficulty": "Hard",
+      "seed": 200232,
+      "clues": 32,
+      "minimumTier": 2,
+      "complexityScore": 22,
+      "advancedScore": 6,
+      "techniques": {
+        "nakedSingle": 41,
+        "hiddenSingle": 8,
+        "lockedCandidate": 1,
+        "nakedPair": 0
+      },
+      "logicalSteps": 50,
+      "longestSinglesRun": 29,
+      "puzzle": "397400500/060075009/100000000/035000000/002001037/710643000/000000603/900064720/400307008"
+    },
+    {
+      "difficulty": "Hard",
+      "seed": 200309,
+      "clues": 32,
+      "minimumTier": 2,
+      "complexityScore": 18,
+      "advancedScore": 6,
+      "techniques": {
+        "nakedSingle": 43,
+        "hiddenSingle": 6,
+        "lockedCandidate": 1,
+        "nakedPair": 0
+      },
+      "logicalSteps": 50,
+      "longestSinglesRun": 31,
+      "puzzle": "000090013/000200604/070401200/040813000/103700005/080000071/610000527/000070000/900180036"
+    },
+    {
+      "difficulty": "Hard",
+      "seed": 200335,
+      "clues": 32,
+      "minimumTier": 2,
+      "complexityScore": 24,
+      "advancedScore": 12,
+      "techniques": {
+        "nakedSingle": 43,
+        "hiddenSingle": 6,
+        "lockedCandidate": 2,
+        "nakedPair": 0
+      },
+      "logicalSteps": 51,
+      "longestSinglesRun": 31,
+      "puzzle": "008000507/947803006/310072094/000034280/003260009/000009300/060090050/050000900/000020600"
+    },
+    {
+      "difficulty": "Hard",
+      "seed": 200368,
+      "clues": 32,
+      "minimumTier": 2,
+      "complexityScore": 34,
+      "advancedScore": 12,
+      "techniques": {
+        "nakedSingle": 38,
+        "hiddenSingle": 11,
+        "lockedCandidate": 2,
+        "nakedPair": 0
+      },
+      "logicalSteps": 51,
+      "longestSinglesRun": 32,
+      "puzzle": "060050020/400160500/350040016/000000952/002690070/000012004/603428005/090030080/000900000"
+    },
+    {
+      "difficulty": "Hard",
+      "seed": 200369,
+      "clues": 32,
+      "minimumTier": 2,
+      "complexityScore": 42,
+      "advancedScore": 18,
+      "techniques": {
+        "nakedSingle": 37,
+        "hiddenSingle": 12,
+        "lockedCandidate": 3,
+        "nakedPair": 0
+      },
+      "logicalSteps": 52,
+      "longestSinglesRun": 32,
+      "puzzle": "500300000/003067010/000500400/000051903/050036182/000798600/100600300/070040001/096000750"
+    },
+    {
+      "difficulty": "Hard",
+      "seed": 200592,
+      "clues": 32,
+      "minimumTier": 2,
+      "complexityScore": 34,
+      "advancedScore": 12,
+      "techniques": {
+        "nakedSingle": 38,
+        "hiddenSingle": 11,
+        "lockedCandidate": 2,
+        "nakedPair": 0
+      },
+      "logicalSteps": 51,
+      "longestSinglesRun": 31,
+      "puzzle": "010080500/206145900/057900800/003000006/000200098/790010050/000502007/600000130/078061000"
+    },
+    {
+      "difficulty": "Hard",
+      "seed": 200595,
+      "clues": 32,
+      "minimumTier": 2,
+      "complexityScore": 32,
+      "advancedScore": 6,
+      "techniques": {
+        "nakedSingle": 36,
+        "hiddenSingle": 13,
+        "lockedCandidate": 1,
+        "nakedPair": 0
+      },
+      "logicalSteps": 50,
+      "longestSinglesRun": 31,
+      "puzzle": "072501900/080000007/600002830/000200670/007805300/400013500/049008003/000300169/003000400"
+    },
+    {
+      "difficulty": "Hard",
+      "seed": 200607,
+      "clues": 32,
+      "minimumTier": 3,
+      "complexityScore": 30,
+      "advancedScore": 12,
+      "techniques": {
+        "nakedSingle": 40,
+        "hiddenSingle": 9,
+        "lockedCandidate": 0,
+        "nakedPair": 1
+      },
+      "logicalSteps": 50,
+      "longestSinglesRun": 27,
+      "puzzle": "970000000/064008000/051740006/700001900/096800500/813002670/609005008/000000030/507020060"
+    },
+    {
+      "difficulty": "Hard",
+      "seed": 200686,
+      "clues": 32,
+      "minimumTier": 3,
+      "complexityScore": 26,
+      "advancedScore": 12,
+      "techniques": {
+        "nakedSingle": 42,
+        "hiddenSingle": 7,
+        "lockedCandidate": 0,
+        "nakedPair": 1
+      },
+      "logicalSteps": 50,
+      "longestSinglesRun": 25,
+      "puzzle": "700020000/800095070/005060020/180002000/072000600/006003090/900030400/054709230/208504060"
+    },
+    {
+      "difficulty": "Hard",
+      "seed": 200690,
+      "clues": 32,
+      "minimumTier": 2,
+      "complexityScore": 18,
+      "advancedScore": 6,
+      "techniques": {
+        "nakedSingle": 43,
+        "hiddenSingle": 6,
+        "lockedCandidate": 1,
+        "nakedPair": 0
+      },
+      "logicalSteps": 50,
+      "longestSinglesRun": 25,
+      "puzzle": "050130006/000402057/600009000/702000000/160200000/004090002/006800095/210000873/840703200"
+    },
+    {
+      "difficulty": "Hard",
+      "seed": 200744,
+      "clues": 32,
+      "minimumTier": 2,
+      "complexityScore": 46,
+      "advancedScore": 12,
+      "techniques": {
+        "nakedSingle": 32,
+        "hiddenSingle": 17,
+        "lockedCandidate": 2,
+        "nakedPair": 0
+      },
+      "logicalSteps": 51,
+      "longestSinglesRun": 28,
+      "puzzle": "003195000/600740395/000000407/000089000/002600050/305204009/500400170/200000030/030001502"
+    },
+    {
+      "difficulty": "Hard",
+      "seed": 200809,
+      "clues": 32,
+      "minimumTier": 2,
+      "complexityScore": 36,
+      "advancedScore": 6,
+      "techniques": {
+        "nakedSingle": 34,
+        "hiddenSingle": 15,
+        "lockedCandidate": 1,
+        "nakedPair": 0
+      },
+      "logicalSteps": 50,
+      "longestSinglesRun": 25,
+      "puzzle": "000200900/900048360/150003007/080026503/060009002/090400076/000060050/003050009/020001630"
+    },
+    {
+      "difficulty": "Intense",
+      "seed": 300019,
+      "clues": 26,
+      "minimumTier": 3,
+      "complexityScore": 48,
+      "advancedScore": 24,
+      "techniques": {
+        "nakedSingle": 43,
+        "hiddenSingle": 12,
+        "lockedCandidate": 2,
+        "nakedPair": 1
+      },
+      "logicalSteps": 58,
+      "longestSinglesRun": 54,
+      "puzzle": "000000000/030004086/900860030/000900400/000376810/007005000/093000600/050001040/708020000"
+    },
+    {
+      "difficulty": "Intense",
+      "seed": 300036,
+      "clues": 26,
+      "minimumTier": 3,
+      "complexityScore": 52,
+      "advancedScore": 30,
+      "techniques": {
+        "nakedSingle": 44,
+        "hiddenSingle": 11,
+        "lockedCandidate": 3,
+        "nakedPair": 1
+      },
+      "logicalSteps": 59,
+      "longestSinglesRun": 47,
+      "puzzle": "060000000/108060304/030980010/009002050/480000092/000000000/013620700/000703000/020000008"
+    },
+    {
+      "difficulty": "Intense",
+      "seed": 300046,
+      "clues": 26,
+      "minimumTier": 3,
+      "complexityScore": 62,
+      "advancedScore": 42,
+      "techniques": {
+        "nakedSingle": 45,
+        "hiddenSingle": 10,
+        "lockedCandidate": 5,
+        "nakedPair": 1
+      },
+      "logicalSteps": 61,
+      "longestSinglesRun": 43,
+      "puzzle": "008407000/100900000/050000000/000840007/501603000/700002300/620708009/040001082/000000070"
+    },
+    {
+      "difficulty": "Intense",
+      "seed": 300055,
+      "clues": 26,
+      "minimumTier": 3,
+      "complexityScore": 66,
+      "advancedScore": 48,
+      "techniques": {
+        "nakedSingle": 46,
+        "hiddenSingle": 9,
+        "lockedCandidate": 6,
+        "nakedPair": 1
+      },
+      "logicalSteps": 62,
+      "longestSinglesRun": 47,
+      "puzzle": "482000000/000408500/006003040/900030180/024000000/000000409/019005604/050100300/007000000"
+    },
+    {
+      "difficulty": "Intense",
+      "seed": 300060,
+      "clues": 26,
+      "minimumTier": 3,
+      "complexityScore": 48,
+      "advancedScore": 30,
+      "techniques": {
+        "nakedSingle": 46,
+        "hiddenSingle": 9,
+        "lockedCandidate": 3,
+        "nakedPair": 1
+      },
+      "logicalSteps": 59,
+      "longestSinglesRun": 35,
+      "puzzle": "500007096/070000000/080000105/032000600/000036810/000410900/600590000/900074000/800200000"
+    },
+    {
+      "difficulty": "Intense",
+      "seed": 300061,
+      "clues": 26,
+      "minimumTier": 3,
+      "complexityScore": 52,
+      "advancedScore": 36,
+      "techniques": {
+        "nakedSingle": 47,
+        "hiddenSingle": 8,
+        "lockedCandidate": 2,
+        "nakedPair": 2
+      },
+      "logicalSteps": 59,
+      "longestSinglesRun": 51,
+      "puzzle": "008060004/000000020/000048950/700485190/000006400/004009003/170000000/053000010/200030000"
+    },
+    {
+      "difficulty": "Intense",
+      "seed": 300096,
+      "clues": 26,
+      "minimumTier": 3,
+      "complexityScore": 54,
+      "advancedScore": 24,
+      "techniques": {
+        "nakedSingle": 40,
+        "hiddenSingle": 15,
+        "lockedCandidate": 2,
+        "nakedPair": 1
+      },
+      "logicalSteps": 58,
+      "longestSinglesRun": 42,
+      "puzzle": "000000394/109000058/080700001/060900500/703000000/001007940/000200100/000008000/075060800"
+    },
+    {
+      "difficulty": "Intense",
+      "seed": 300117,
+      "clues": 26,
+      "minimumTier": 3,
+      "complexityScore": 54,
+      "advancedScore": 24,
+      "techniques": {
+        "nakedSingle": 40,
+        "hiddenSingle": 15,
+        "lockedCandidate": 2,
+        "nakedPair": 1
+      },
+      "logicalSteps": 58,
+      "longestSinglesRun": 26,
+      "puzzle": "800001060/406000130/010090007/030000090/001300005/500000078/060000009/002700086/080005000"
+    },
+    {
+      "difficulty": "Intense",
+      "seed": 300133,
+      "clues": 26,
+      "minimumTier": 3,
+      "complexityScore": 70,
+      "advancedScore": 42,
+      "techniques": {
+        "nakedSingle": 41,
+        "hiddenSingle": 14,
+        "lockedCandidate": 3,
+        "nakedPair": 2
+      },
+      "logicalSteps": 60,
+      "longestSinglesRun": 41,
+      "puzzle": "000040200/640092000/000180070/500000000/098200005/003600800/006008107/200750000/000001050"
+    },
+    {
+      "difficulty": "Intense",
+      "seed": 300150,
+      "clues": 26,
+      "minimumTier": 3,
+      "complexityScore": 44,
+      "advancedScore": 24,
+      "techniques": {
+        "nakedSingle": 45,
+        "hiddenSingle": 10,
+        "lockedCandidate": 2,
+        "nakedPair": 1
+      },
+      "logicalSteps": 58,
+      "longestSinglesRun": 43,
+      "puzzle": "000008609/008605030/004100070/083000907/002000500/600004080/000090040/000000002/030416000"
+    },
+    {
+      "difficulty": "Intense",
+      "seed": 300177,
+      "clues": 26,
+      "minimumTier": 3,
+      "complexityScore": 70,
+      "advancedScore": 36,
+      "techniques": {
+        "nakedSingle": 38,
+        "hiddenSingle": 17,
+        "lockedCandidate": 4,
+        "nakedPair": 1
+      },
+      "logicalSteps": 60,
+      "longestSinglesRun": 49,
+      "puzzle": "080000004/000070600/003060051/570006000/800000009/300290080/000020000/000150370/051007020"
+    },
+    {
+      "difficulty": "Intense",
+      "seed": 300203,
+      "clues": 26,
+      "minimumTier": 3,
+      "complexityScore": 34,
+      "advancedScore": 30,
+      "techniques": {
+        "nakedSingle": 53,
+        "hiddenSingle": 2,
+        "lockedCandidate": 3,
+        "nakedPair": 1
+      },
+      "logicalSteps": 59,
+      "longestSinglesRun": 37,
+      "puzzle": "307040800/018073064/000000503/005008096/100300000/004090000/580000200/006000050/000000040"
+    }
+  ]
+}

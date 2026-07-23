@@ -183,12 +183,12 @@ export const WinModal: React.FC<WinModalProps> = ({
         const t1 = setTimeout(() => {
             setStep(1);
             sounds.playPepinoTap();
-        }, 150);
+        }, 100);
 
         // Step 2: Brief beat before the solved title
         const t2 = setTimeout(() => {
             setStep(2);
-        }, 400);
+        }, 300);
 
         // Step 3: Solved title appears with perfectly synchronized letters and tick sounds
         const t3 = setTimeout(() => {
@@ -203,7 +203,7 @@ export const WinModal: React.FC<WinModalProps> = ({
                     clearInterval(letterInterval);
                 }
             }, 75); // Snappy, frame-accurate 75ms spacing
-        }, 650);
+        }, 400);
 
         // Step 4: Points Card appears
         const t4 = setTimeout(() => {
@@ -291,9 +291,9 @@ export const WinModal: React.FC<WinModalProps> = ({
                 
                 {/* Step 1: Difficulty Header */}
                 <div 
-                    className={`flex flex-col gap-1 mb-2 relative z-10 transition-all duration-500 ${step >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
+                    className={`flex flex-col gap-1 mb-2 relative z-10 transition-all duration-300 ${step >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
                 >
-                    <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400/90 uppercase tracking-[0.15em]">{difficulty} &bull; Level {levelId}</div>
+                    <div className="text-[10px] font-bold text-black dark:text-white uppercase tracking-[0.15em]">{difficulty} &bull; Level {levelId}</div>
                 </div>
 
                 {/* Step 3: Solved Title (Letter by Letter All-Caps Celebratory Pop) */}

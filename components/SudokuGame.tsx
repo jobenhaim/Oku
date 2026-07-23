@@ -136,11 +136,13 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const halfwayTrackingReadyRef = useRef(false);
   const notesReadyShownRef = useRef(false);
   const shownNudgeStatesRef = useRef<Set<string>>(new Set());
+  const countedNudgeCuesRef = useRef<Set<number>>(new Set());
   const nudgeCueIdRef = useRef(0);
   const saveCurrentProgressRef = useRef<() => void>(() => {});
   const hasMadeMistakeRef = useRef<() => boolean>(() => false);
   const lastLifecycleSaveAtRef = useRef(0);
   const gameFinishedRef = useRef(false);
+  const isGuardActive = purchasedSkills.includes('skill-scribe');
   
   // Timer hook
   const { timer, setTimer } = useGameTimer(
@@ -370,10 +372,10 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       difficulty,
       levelId,
       settings,
-      guardEnabled: purchasedSkills.includes('skill-scribe'),
+      guardEnabled: isGuardActive,
       onComplete: handleGameComplete,
       onBoardChange: (newBoard, currentMoveLog, hasMadeMistake) => saveProgress(newBoard, undefined, undefined, currentMoveLog, hasMadeMistake),
-      onSectionComplete: handleSectionComplete
+      onSectionComplete: handleSectionComplete,
   });
   hasMadeMistakeRef.current = hasMadeMistake;
 
@@ -399,6 +401,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       moveLog,
       onSaveProgress: (b, s, r, ml) => saveProgress(b, s, r, ml),
       onScanResult: handleScanResult,
+      elapsedSeconds: timer,
   });
 
   // Keep lifecycle listeners stable while always saving the latest render's
@@ -500,6 +503,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   useEffect(() => {
       shownNudgeStatesRef.current.clear();
+      countedNudgeCuesRef.current.clear();
       setNudgeCue(null);
   }, [difficulty, levelId]);
 
@@ -680,6 +684,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setIsPaused(false);
       setAnimatingSections(new Set());
       notesReadyShownRef.current = false;
+      countedNudgeCuesRef.current.clear();
       
       setShowStartHint(true);
       setTimeout(() => setShowStartHint(false), 5000);
@@ -720,13 +725,21 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   // Memoize click handlers to avoid passing new functions on every timer tick
   const onCellClickWrapper = useCallback((e: React.MouseEvent, r: number, c: number) => {
+      if (
+          nudgeCue?.r === r &&
+          nudgeCue?.c === c &&
+          !countedNudgeCuesRef.current.has(nudgeCue.key)
+      ) {
+          countedNudgeCuesRef.current.add(nudgeCue.key);
+          Storage.recordNudgeCellClick();
+      }
       setNudgeCue(current => current?.r === r && current?.c === c ? null : current);
       if (settings.digitFirst && isEraseMode) {
           handleErase(isPaused, isCompleted || isEnding, [r, c]);
           return;
       }
       handleCellClick(r, c, isPaused, isCompleted || isEnding);
-  }, [handleCellClick, handleErase, isPaused, isCompleted, isEnding, settings.digitFirst, isEraseMode]);
+  }, [handleCellClick, handleErase, isPaused, isCompleted, isEnding, settings.digitFirst, isEraseMode, nudgeCue]);
 
   const onCellLongPressWrapper = useCallback((r: number, c: number) => {
       if (!settings.digitFirst || !isPencilMode || activeNumber === null) return;
@@ -866,6 +879,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                     numberColor={numberColor}
                     onCellClick={onCellClickWrapper}
                     onCellExplore={onCellExploreWrapper}
+                    enableDragExplore={!settings.digitFirst}
                     onCellLongPress={onCellLongPressWrapper}
                     enableCellLongPress={settings.digitFirst && isPencilMode && activeNumber !== null}
                 />
