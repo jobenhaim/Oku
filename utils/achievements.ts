@@ -91,7 +91,7 @@ export const getTitleAchievement = (data: StoredData, claimedRank: number): Achi
             detail: 'Every solver title earned.',
             current: 20,
             target: 20,
-            reward: 20,
+            reward: 10,
             claimed: true,
             ready: false,
             category: 'title',
@@ -108,7 +108,7 @@ export const getTitleAchievement = (data: StoredData, claimedRank: number): Achi
         detail: `Solve 20 puzzles as ${getProfileTitle(safeRank)}.`,
         current,
         target: 20,
-        reward: 20,
+        reward: 10,
         claimed,
         ready: !claimed && earnedRank >= nextRank,
         category: 'title',
@@ -158,6 +158,8 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
     const hardPerfectGames = Math.max(0, data.achievementCounters?.hardPerfectGames || 0);
     const scansUsed = Math.max(0, data.achievementCounters?.scansUsed || 0);
     const replaysWatched = Math.max(0, data.achievementCounters?.replaysWatched || 0);
+    const hardNoScanWins = Math.max(0, data.achievementCounters?.hardNoScanWins || 0);
+    const noteGamesWon = Math.max(0, data.achievementCounters?.noteGamesWon || 0);
     const nudgeCellClicks = Math.max(
         0,
         data.achievementCounters?.nudgeCellClicks || 0
@@ -173,10 +175,21 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
     );
 
     const journeyMilestones: AchievementDefinition[] = [
-        { id: 'first-win', title: 'First Step', detail: 'Complete 1 puzzle.', current: totalGamesWon, target: 1, reward: 10, category: 'journey' },
-        { id: 'ten-wins', title: 'Finding a Rhythm', detail: 'Complete 10 puzzles.', current: totalGamesWon, target: 10, reward: 20, category: 'journey' },
-        { id: 'fifty-wins', title: 'In the Flow', detail: 'Complete 50 puzzles.', current: totalGamesWon, target: 50, reward: 40, category: 'journey' },
-        { id: 'hundred-wins', title: 'One Hundred', detail: 'Complete 100 puzzles.', current: totalGamesWon, target: 100, reward: 75, category: 'journey' },
+        { id: 'first-win', title: 'First Step', detail: 'Complete 1 puzzle.', current: totalGamesWon, target: 1, reward: 5, category: 'journey' },
+        { id: 'five-wins', title: 'Warming Up', detail: 'Complete 5 puzzles.', current: totalGamesWon, target: 5, reward: 5, category: 'journey' },
+        { id: 'ten-wins', title: 'Finding a Rhythm', detail: 'Complete 10 puzzles.', current: totalGamesWon, target: 10, reward: 10, category: 'journey' },
+        { id: 'twenty-five-wins', title: 'Settling In', detail: 'Complete 25 puzzles.', current: totalGamesWon, target: 25, reward: 10, category: 'journey' },
+        { id: 'fifty-wins', title: 'In the Flow', detail: 'Complete 50 puzzles.', current: totalGamesWon, target: 50, reward: 15, category: 'journey' },
+        { id: 'seventy-five-wins', title: 'Grid Regular', detail: 'Complete 75 puzzles.', current: totalGamesWon, target: 75, reward: 15, category: 'journey' },
+        { id: 'hundred-wins', title: 'One Hundred', detail: 'Complete 100 puzzles.', current: totalGamesWon, target: 100, reward: 20, category: 'journey' },
+        { id: 'one-fifty-wins', title: 'Keeping Pace', detail: 'Complete 150 puzzles.', current: totalGamesWon, target: 150, reward: 20, category: 'journey' },
+        { id: 'two-hundred-wins', title: 'Double Century', detail: 'Complete 200 puzzles.', current: totalGamesWon, target: 200, reward: 20, category: 'journey' },
+        { id: 'three-hundred-wins', title: 'Deep Focus', detail: 'Complete 300 puzzles.', current: totalGamesWon, target: 300, reward: 25, category: 'journey' },
+        { id: 'four-hundred-wins', title: 'Grid Resident', detail: 'Complete 400 puzzles.', current: totalGamesWon, target: 400, reward: 25, category: 'journey' },
+        { id: 'five-hundred-wins', title: 'Halfway There', detail: 'Complete 500 puzzles.', current: totalGamesWon, target: 500, reward: 30, category: 'journey' },
+        { id: 'six-fifty-wins', title: 'Puzzle Habit', detail: 'Complete 650 puzzles.', current: totalGamesWon, target: 650, reward: 30, category: 'journey' },
+        { id: 'eight-hundred-wins', title: 'The Long Game', detail: 'Complete 800 puzzles.', current: totalGamesWon, target: 800, reward: 35, category: 'journey' },
+        { id: 'thousand-wins', title: 'Thousand Strong', detail: 'Complete 1,000 puzzles.', current: totalGamesWon, target: 1000, reward: 50, category: 'journey' },
     ];
     const perfectMilestones: AchievementDefinition[] = [
         { id: 'first-perfect-hard', title: 'Clean Slate', detail: 'Win 1 flawless puzzle on Hard or above.', current: hardPerfectGames, target: 1, reward: 10, category: 'journey' },
@@ -194,13 +207,13 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
     ];
     const scanMilestones: AchievementDefinition[] = [
         { id: 'one-scan', title: 'Quick Check', detail: 'Use Scan after 1 minute of play.', current: scansUsed, target: 1, reward: 5, category: 'skills' },
-        { id: 'five-scans', title: 'Second Look', detail: 'Use Scan 5 times after 1 minute of play.', current: scansUsed, target: 5, reward: 10, category: 'skills' },
-        { id: 'ten-scans', title: 'Double Checker', detail: 'Use Scan 10 times after 1 minute of play.', current: scansUsed, target: 10, reward: 10, category: 'skills' },
-        { id: 'twenty-scans', title: 'Careful Eyes', detail: 'Use Scan 20 times after 1 minute of play.', current: scansUsed, target: 20, reward: 10, category: 'skills' },
-        { id: 'thirty-scans', title: 'Scan Habit', detail: 'Use Scan 30 times after 1 minute of play.', current: scansUsed, target: 30, reward: 10, category: 'skills' },
-        { id: 'fifty-scans', title: 'Trust Issues', detail: 'Use Scan 50 times after 1 minute of play.', current: scansUsed, target: 50, reward: 15, category: 'skills' },
-        { id: 'seventy-five-scans', title: 'Sharp Eye', detail: 'Use Scan 75 times after 1 minute of play.', current: scansUsed, target: 75, reward: 15, category: 'skills' },
-        { id: 'hundred-scans', title: 'Nothing Gets Past Me', detail: 'Use Scan 100 times after 1 minute of play.', current: scansUsed, target: 100, reward: 15, category: 'skills' },
+        { id: 'five-scans', title: 'Second Look', detail: 'Use Scan 10 times after 1 minute of play.', current: scansUsed, target: 10, reward: 10, category: 'skills' },
+        { id: 'ten-scans', title: 'Double Checker', detail: 'Use Scan 25 times after 1 minute of play.', current: scansUsed, target: 25, reward: 10, category: 'skills' },
+        { id: 'twenty-scans', title: 'Careful Eyes', detail: 'Use Scan 50 times after 1 minute of play.', current: scansUsed, target: 50, reward: 10, category: 'skills' },
+        { id: 'thirty-scans', title: 'Scan Habit', detail: 'Use Scan 100 times after 1 minute of play.', current: scansUsed, target: 100, reward: 10, category: 'skills' },
+        { id: 'fifty-scans', title: 'Trust Issues', detail: 'Use Scan 200 times after 1 minute of play.', current: scansUsed, target: 200, reward: 15, category: 'skills' },
+        { id: 'seventy-five-scans', title: 'Sharp Eye', detail: 'Use Scan 350 times after 1 minute of play.', current: scansUsed, target: 350, reward: 15, category: 'skills' },
+        { id: 'hundred-scans', title: 'Nothing Gets Past Me', detail: 'Use Scan 500 times after 1 minute of play.', current: scansUsed, target: 500, reward: 15, category: 'skills' },
     ];
     const nudgeMilestones: AchievementDefinition[] = [
         { id: 'one-nudge-cell', title: 'Gentle Hint', detail: 'Tap 1 Nudge-highlighted cell.', current: nudgeCellClicks, target: 1, reward: 5, category: 'skills' },
@@ -213,6 +226,28 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
         { id: 'fifty-nudge-cells', title: 'Nudge Regular', detail: 'Tap 50 Nudge-highlighted cells.', current: nudgeCellClicks, target: 50, reward: 15, category: 'skills' },
         { id: 'seventy-five-nudge-cells', title: 'Guiding Light', detail: 'Tap 75 Nudge-highlighted cells.', current: nudgeCellClicks, target: 75, reward: 15, category: 'skills' },
         { id: 'hundred-nudge-cells', title: 'Hint Whisperer', detail: 'Tap 100 Nudge-highlighted cells.', current: nudgeCellClicks, target: 100, reward: 15, category: 'skills' },
+    ];
+    const noScanMilestones: AchievementDefinition[] = [
+        { id: 'one-hard-no-scan', title: 'Own Eyes', detail: 'Win 1 puzzle on Hard or above without Scan.', current: hardNoScanWins, target: 1, reward: 5, category: 'skills' },
+        { id: 'five-hard-no-scan', title: 'Looking Good', detail: 'Win 5 puzzles on Hard or above without Scan.', current: hardNoScanWins, target: 5, reward: 5, category: 'skills' },
+        { id: 'ten-hard-no-scan', title: 'Clear Judgment', detail: 'Win 10 puzzles on Hard or above without Scan.', current: hardNoScanWins, target: 10, reward: 10, category: 'skills' },
+        { id: 'twenty-five-hard-no-scan', title: 'Steady Confidence', detail: 'Win 25 puzzles on Hard or above without Scan.', current: hardNoScanWins, target: 25, reward: 10, category: 'skills' },
+        { id: 'fifty-hard-no-scan', title: 'No Second Guess', detail: 'Win 50 puzzles on Hard or above without Scan.', current: hardNoScanWins, target: 50, reward: 10, category: 'skills' },
+        { id: 'hundred-hard-no-scan', title: 'Self-Reliant', detail: 'Win 100 puzzles on Hard or above without Scan.', current: hardNoScanWins, target: 100, reward: 15, category: 'skills' },
+        { id: 'two-hundred-hard-no-scan', title: 'Clear Mind', detail: 'Win 200 puzzles on Hard or above without Scan.', current: hardNoScanWins, target: 200, reward: 15, category: 'skills' },
+        { id: 'three-fifty-hard-no-scan', title: 'Unassisted', detail: 'Win 350 puzzles on Hard or above without Scan.', current: hardNoScanWins, target: 350, reward: 20, category: 'skills' },
+        { id: 'five-hundred-hard-no-scan', title: 'Pure Focus', detail: 'Win 500 puzzles on Hard or above without Scan.', current: hardNoScanWins, target: 500, reward: 25, category: 'skills' },
+    ];
+    const noteKeeperMilestones: AchievementDefinition[] = [
+        { id: 'one-note-game', title: 'First Notes', detail: 'Complete 1 puzzle after using notes.', current: noteGamesWon, target: 1, reward: 5, category: 'skills' },
+        { id: 'five-note-games', title: 'Pencil Ready', detail: 'Complete 5 puzzles after using notes.', current: noteGamesWon, target: 5, reward: 5, category: 'skills' },
+        { id: 'ten-note-games', title: 'Note Taker', detail: 'Complete 10 puzzles after using notes.', current: noteGamesWon, target: 10, reward: 10, category: 'skills' },
+        { id: 'twenty-five-note-games', title: 'Candidate Keeper', detail: 'Complete 25 puzzles after using notes.', current: noteGamesWon, target: 25, reward: 10, category: 'skills' },
+        { id: 'fifty-note-games', title: 'Fine Print', detail: 'Complete 50 puzzles after using notes.', current: noteGamesWon, target: 50, reward: 10, category: 'skills' },
+        { id: 'hundred-note-games', title: 'Pencil Habit', detail: 'Complete 100 puzzles after using notes.', current: noteGamesWon, target: 100, reward: 15, category: 'skills' },
+        { id: 'two-hundred-note-games', title: 'Written Method', detail: 'Complete 200 puzzles after using notes.', current: noteGamesWon, target: 200, reward: 15, category: 'skills' },
+        { id: 'three-fifty-note-games', title: 'Margin Master', detail: 'Complete 350 puzzles after using notes.', current: noteGamesWon, target: 350, reward: 20, category: 'skills' },
+        { id: 'five-hundred-note-games', title: 'Note Keeper', detail: 'Complete 500 puzzles after using notes.', current: noteGamesWon, target: 500, reward: 25, category: 'skills' },
     ];
     const backgroundMilestones: AchievementDefinition[] = [
         { id: 'first-background', title: 'A New View', detail: 'Get 1 background.', current: backgrounds, target: 1, reward: 15, category: 'collection' },
@@ -235,6 +270,8 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
         selectCurrentMilestone(replayMilestones),
         selectCurrentMilestone(scanMilestones),
         selectCurrentMilestone(nudgeMilestones),
+        selectCurrentMilestone(noScanMilestones),
+        selectCurrentMilestone(noteKeeperMilestones),
         selectCurrentMilestone(backgroundMilestones),
         selectCurrentMilestone(numberStyleMilestones),
         selectCurrentMilestone(soundPackMilestones),

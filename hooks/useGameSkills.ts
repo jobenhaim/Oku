@@ -11,6 +11,7 @@ interface UseGameSkillsProps {
     onScanResult?: (hasErrors: boolean) => void;
     solvedBoard: number[][];
     elapsedSeconds: number;
+    isGameLocked?: () => boolean;
 }
 
 export const useGameSkills = ({
@@ -20,7 +21,8 @@ export const useGameSkills = ({
     moveLog,
     onSaveProgress,
     onScanResult,
-    elapsedSeconds
+    elapsedSeconds,
+    isGameLocked,
 }: UseGameSkillsProps) => {
     const [scanUses, setScanUses] = useState(3);
     const [isScanning, setIsScanning] = useState(false);
@@ -28,12 +30,20 @@ export const useGameSkills = ({
     const [isScanSuccess, setIsScanSuccess] = useState(false);
 
     const handleScan = (isPaused: boolean, isCompleted: boolean) => {
-        if (scanUses <= 0 || isScanning || scanCooldown || isPaused || isCompleted) return;
+        if (scanUses <= 0 || isScanning || scanCooldown || isPaused || isCompleted || isGameLocked?.()) return;
         const scanAchievementTime = elapsedSeconds;
         setIsScanning(true);
         setScanCooldown(true);
         sounds.playScan();
         window.setTimeout(() => {
+            // Completing the puzzle locks the board synchronously. A Scan that
+            // began just before the final move must never overwrite that win
+            // with a delayed in-progress save.
+            if (isGameLocked?.()) {
+                setIsScanning(false);
+                setScanCooldown(false);
+                return;
+            }
             let hasErrors = false;
             const newBoard = board.map(row => row.map(cell => {
                 if (!cell.isFixed && cell.value !== null) {

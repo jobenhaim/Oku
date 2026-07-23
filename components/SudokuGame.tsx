@@ -135,6 +135,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const halfwayShownRef = useRef(false);
   const halfwayTrackingReadyRef = useRef(false);
   const notesReadyShownRef = useRef(false);
+  const hasUsedNotesRef = useRef(false);
   const shownNudgeStatesRef = useRef<Set<string>>(new Set());
   const countedNudgeCuesRef = useRef<Set<number>>(new Set());
   const nudgeCueIdRef = useRef(0);
@@ -155,7 +156,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   );
 
   const saveProgress = (currentBoard: Board, scanUsesVal?: number, _revealUsesVal?: number, moveLog?: MoveLogEntry[], hasMadeMistake?: boolean) => {
-      if (isCompleted || isEnding) return;
+      if (gameFinishedRef.current || isCompleted || isEnding) return;
       // A fresh or fully reset board is not a resumable game. Avoid creating
       // Continue Game entries for merely opening a puzzle, and remove an old
       // in-progress snapshot when the player returns the board to its start.
@@ -174,6 +175,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           lastPlayed: Date.now(),
           scanUses: scanUsesVal !== undefined ? scanUsesVal : scanUses,
           hasMadeMistake: hasMadeMistake ?? hasMadeMistakeRef.current(),
+          hasUsedNotes: hasUsedNotesRef.current,
       });
   };
 
@@ -278,7 +280,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   }, [difficulty, levelId, enqueuePill]);
 
   const handleGameComplete = (completedBoard: Board, completedMoveLog: MoveLogEntry[], isPerfect: boolean) => {
-      if (isCompleted || isEnding) return;
+      // This ref changes synchronously, unlike React state. It makes the win
+      // atomic and rejects duplicate completion calls in the same render frame.
+      if (gameFinishedRef.current || isCompleted || isEnding) return;
       gameFinishedRef.current = true;
       setIsEnding(true);
       sounds.playWin();
@@ -309,6 +313,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           moveLog: completedMoveLog,
           lastPlayed: Date.now(),
           scanUses,
+          hasUsedNotes: hasUsedNotesRef.current,
       }, isPerfect);
       
       // Grant Pepino Gift on Win
@@ -374,7 +379,12 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       settings,
       guardEnabled: isGuardActive,
       onComplete: handleGameComplete,
-      onBoardChange: (newBoard, currentMoveLog, hasMadeMistake) => saveProgress(newBoard, undefined, undefined, currentMoveLog, hasMadeMistake),
+      onBoardChange: (newBoard, currentMoveLog, hasMadeMistake) => {
+          if (!hasUsedNotesRef.current && newBoard.some(row => row.some(cell => !cell.isFixed && cell.notes.length > 0))) {
+              hasUsedNotesRef.current = true;
+          }
+          saveProgress(newBoard, undefined, undefined, currentMoveLog, hasMadeMistake);
+      },
       onSectionComplete: handleSectionComplete,
   });
   hasMadeMistakeRef.current = hasMadeMistake;
@@ -402,6 +412,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       onSaveProgress: (b, s, r, ml) => saveProgress(b, s, r, ml),
       onScanResult: handleScanResult,
       elapsedSeconds: timer,
+      isGameLocked: () => gameFinishedRef.current,
   });
 
   // Keep lifecycle listeners stable while always saving the latest render's
@@ -448,8 +459,11 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   useEffect(() => {
       halfwayTrackingReadyRef.current = false;
       notesReadyShownRef.current = false;
+      gameFinishedRef.current = false;
       const progress = Storage.getLevelProgress(difficulty, levelId);
       if (progress && progress.status === 'in-progress' && progress.boardState) {
+          hasUsedNotesRef.current = progress.hasUsedNotes === true
+              || progress.boardState.some(row => row.some(cell => !cell.isFixed && cell.notes.length > 0));
           initializeBoard(progress.boardState, progress.moveLog, progress.hasMadeMistake);
           setTimer(progress.timeElapsed);
           
@@ -458,6 +472,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           else setScanUses(3);
 
       } else {
+          hasUsedNotesRef.current = false;
           initializeBoard();
           setTimer(0);
           
@@ -633,7 +648,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
             const isDark = document.documentElement.classList.contains('dark');
             
             // This promise resolves when the recording is complete
-            generateReplayVideo(initialBoardRef.current, cleanMoves, difficulty, levelId, isDark, timer)
+            generateReplayVideo(initialBoardRef.current, cleanMoves, difficulty, levelId, isDark, timer, settings.showTimer)
                 .then(url => {
                     setReplayUrl(url);
                     setIsGeneratingReplay(false);
@@ -661,7 +676,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
               await navigator.share({
                   files: [file],
                   title: 'Oku Replay',
-                  text: `I solved Level ${levelId} (${difficulty}) in ${formatTimeShort(timer)}!`
+                  text: settings.showTimer
+                      ? `I solved Level ${levelId} (${difficulty}) in ${formatTimeShort(timer)}!`
+                      : `I solved Level ${levelId} (${difficulty})!`
               });
           } else {
               const a = document.createElement('a');
@@ -683,7 +700,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setShowRestartConfirm(false); 
       setIsPaused(false);
       setAnimatingSections(new Set());
+      gameFinishedRef.current = false;
       notesReadyShownRef.current = false;
+      hasUsedNotesRef.current = false;
       countedNudgeCuesRef.current.clear();
       
       setShowStartHint(true);
@@ -691,7 +710,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   };
   
   const handleDevSolve = () => {
-      if (isCompleted || isEnding) return;
+      if (gameFinishedRef.current || isCompleted || isEnding) return;
       sounds.playWin();
       
       const newBoard = board.map((row, r) => row.map((cell, c) => ({
@@ -725,6 +744,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   // Memoize click handlers to avoid passing new functions on every timer tick
   const onCellClickWrapper = useCallback((e: React.MouseEvent, r: number, c: number) => {
+      if (gameFinishedRef.current) return;
       if (
           nudgeCue?.r === r &&
           nudgeCue?.c === c &&
@@ -742,25 +762,28 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   }, [handleCellClick, handleErase, isPaused, isCompleted, isEnding, settings.digitFirst, isEraseMode, nudgeCue]);
 
   const onCellLongPressWrapper = useCallback((r: number, c: number) => {
-      if (!settings.digitFirst || !isPencilMode || activeNumber === null) return;
+      if (gameFinishedRef.current || !settings.digitFirst || !isPencilMode || activeNumber === null) return;
       handleCellClick(r, c, isPaused, isCompleted || isEnding, true);
   }, [handleCellClick, isPaused, isCompleted, isEnding, settings.digitFirst, isPencilMode, activeNumber]);
 
   const onCellExploreWrapper = useCallback((r: number, c: number) => {
-      if (isPaused || isCompleted || isEnding) return;
+      if (gameFinishedRef.current || isPaused || isCompleted || isEnding) return;
       setSelectedCell([r, c]);
   }, [isPaused, isCompleted, isEnding, setSelectedCell]);
 
   const onNumberClickWrapper = useCallback((e: React.MouseEvent, n: number) => {
+      if (gameFinishedRef.current) return;
       setIsEraseMode(false);
       handleNumberInput(n, isPaused, isCompleted || isEnding);
   }, [handleNumberInput, isPaused, isCompleted, isEnding]);
 
   const onNumberLongPressWrapper = useCallback((_e: React.MouseEvent, n: number) => {
+      if (gameFinishedRef.current) return;
       handleNumberInput(n, isPaused, isCompleted || isEnding, true);
   }, [handleNumberInput, isPaused, isCompleted, isEnding]);
 
   const handleBackToLevels = () => {
+      if (gameFinishedRef.current) return;
       // Board actions already save progress. This exit save also captures time
       // spent thinking since the player's last move without writing every second.
       saveProgress(board, scanUses, undefined, moveLog.current);
@@ -797,17 +820,29 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
               <div className="flex items-center gap-1 relative z-30 -mr-2">
                   {settings.devAutoSolve && (
                       <button 
-                          onClick={() => { sounds.playClick(); handleDevSolve(); }} 
+                          onClick={() => {
+                              if (gameFinishedRef.current) return;
+                              sounds.playClick();
+                              handleDevSolve();
+                          }}
                           className="p-2 rounded-full transition text-red-600 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 active:scale-90"
                           title="Dev Auto Solve"
                       >
                           <Icons.Dev className="w-6 h-6" />
                       </button>
                   )}
-                  <button onClick={() => { sounds.playClick(); setIsPaused(true); }} aria-label="Pause game" className="p-2 rounded-full transition text-t-icon active:scale-95">
+                  <button onClick={() => {
+                      if (gameFinishedRef.current) return;
+                      sounds.playClick();
+                      setIsPaused(true);
+                  }} aria-label="Pause game" className="p-2 rounded-full transition text-t-icon active:scale-95">
                       <Icons.Pause className="w-6 h-6" />
                   </button>
-                  <button onClick={() => { sounds.playClick(); onSettingsOpen(); }} aria-label="Game settings" className="p-2 rounded-full transition text-t-icon active:scale-95">
+                  <button onClick={() => {
+                      if (gameFinishedRef.current) return;
+                      sounds.playClick();
+                      onSettingsOpen();
+                  }} aria-label="Game settings" className="p-2 rounded-full transition text-t-icon active:scale-95">
                       <Icons.Settings className="w-6 h-6" />
                   </button>
               </div>
@@ -917,8 +952,12 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                  canErase={settings.digitFirst || canErase}
                  isEraseMode={settings.digitFirst && isEraseMode}
                  isPencilMode={isPencilMode}
-                 onUndo={() => handleUndo(isPaused, isCompleted || isEnding)}
+                 onUndo={() => {
+                     if (gameFinishedRef.current) return;
+                     handleUndo(isPaused, isCompleted || isEnding);
+                 }}
                  onErase={() => {
+                     if (gameFinishedRef.current) return;
                      if (settings.digitFirst) {
                          sounds.playClick();
                          setIsEraseMode(current => !current);
@@ -929,7 +968,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                      handleErase(isPaused, isCompleted || isEnding);
                  }}
                  onTogglePencil={() => {
-                     if (isEnding) return;
+                     if (gameFinishedRef.current || isEnding) return;
                      sounds.playClick();
                      const nextPencilMode = !isPencilMode;
                      setIsPencilMode(nextPencilMode);
@@ -948,7 +987,10 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                  scanUses={scanUses}
                  isScanning={isScanning}
                  scanCooldown={scanCooldown}
-                 onScan={() => handleScan(isPaused, isCompleted || isEnding)}
+                 onScan={() => {
+                     if (gameFinishedRef.current) return;
+                     handleScan(isPaused, isCompleted || isEnding);
+                 }}
                  onDevSolve={settings.devAutoSolve ? handleDevSolve : undefined}
              />
          </motion.div>
@@ -1036,6 +1078,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
               difficulty={difficulty}
               levelId={levelId}
               timer={timer}
+              showTimer={settings.showTimer}
               points={earnedPoints}
               isGeneratingReplay={isGeneratingReplay}
               replayUrl={replayUrl}

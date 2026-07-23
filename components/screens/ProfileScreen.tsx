@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AchievementItem, getOtherAchievements, getPackAchievements, getProfileTitle, getReadyTitleAchievementCount, getTitleAchievement, MAX_PROFILE_RANK } from '../../utils/achievements';
+import { AchievementItem, getOtherAchievements, getPackAchievements, getProfileTitle, getTitleAchievement, MAX_PROFILE_RANK } from '../../utils/achievements';
 import { Storage } from '../../utils/storage';
 import { sounds } from '../../utils/sound';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
@@ -245,8 +245,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     const visibleCollectionAchievements = hideCompleted ? collectionAchievements.filter((achievement) => !achievement.claimed) : collectionAchievements;
     const visibleSkillAchievements = hideCompleted ? skillAchievements.filter((achievement) => !achievement.claimed) : skillAchievements;
     const visiblePepinoAchievements = hideCompleted ? pepinoAchievements.filter((achievement) => !achievement.claimed) : pepinoAchievements;
-    const readyCount = getReadyTitleAchievementCount(storedData, claimedRank)
-        + [...packAchievements, ...otherAchievements].filter((achievement) => achievement.ready).length;
     const gamesWonBreakdown = useMemo(() => {
         const breakdown = storedData.stats?.gamesWonByDifficulty || {};
         return [
@@ -453,9 +451,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         <div className="flex items-center justify-between mb-3 px-1 gap-3">
                             <h2 className="text-2xl font-bold">Achievements</h2>
                             <div className="flex items-center gap-2.5 shrink-0">
-                                <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 tabular-nums">
-                                    {readyCount} ready
-                                </span>
                                 <button
                                     type="button"
                                     onClick={() => { sounds.playClick(); setHideCompleted((current) => !current); }}

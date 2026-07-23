@@ -65,7 +65,8 @@ export async function generateReplayVideo(
   difficulty: string,
   levelId: number,
   isDark: boolean,
-  totalTime: number
+  totalTime: number,
+  showTimer: boolean = true,
 ): Promise<string | null> {
   if (typeof document === 'undefined') return null;
 
@@ -249,7 +250,7 @@ export async function generateReplayVideo(
       ctx.fillStyle = c.textFixed;
       ctx.font = 'bold 40px "Outfit", sans-serif';
       const titleY = padding / 2;
-      ctx.fillText(`${difficulty.toUpperCase()} • LEVEL ${levelId}`, size/2, titleY - 14);
+      ctx.fillText(`${difficulty.toUpperCase()} • LEVEL ${levelId}`, size/2, showTimer ? titleY - 14 : titleY + 5);
 
       // Timer
       let currentSeconds = 0;
@@ -263,8 +264,10 @@ export async function generateReplayVideo(
           currentSeconds = totalTime;
       }
       
-      ctx.font = 'bold 40px "Outfit", sans-serif';
-      ctx.fillText(formatTime(currentSeconds), size/2, titleY + 31);
+      if (showTimer) {
+          ctx.font = 'bold 40px "Outfit", sans-serif';
+          ctx.fillText(formatTime(currentSeconds), size/2, titleY + 31);
+      }
 
       // Watermark text only (centered)
       const watermarkText = "OKU: SUDOKU";

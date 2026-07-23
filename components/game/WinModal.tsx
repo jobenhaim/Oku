@@ -9,6 +9,7 @@ interface WinModalProps {
     difficulty: Difficulty;
     levelId: number;
     timer: number;
+    showTimer: boolean;
     points: number;
     isGeneratingReplay: boolean;
     replayUrl: string | null;
@@ -162,6 +163,7 @@ export const WinModal: React.FC<WinModalProps> = ({
     difficulty,
     levelId,
     timer,
+    showTimer,
     points,
     isGeneratingReplay,
     replayUrl,
@@ -214,7 +216,7 @@ export const WinModal: React.FC<WinModalProps> = ({
         // Step 5: Time Card appears
         const t5 = setTimeout(() => {
             setStep(5);
-            sounds.playPop();
+            if (showTimer) sounds.playPop();
         }, 1550);
 
         // Step 6: Action buttons slide up
@@ -237,10 +239,10 @@ export const WinModal: React.FC<WinModalProps> = ({
             clearTimeout(t6);
             clearTimeout(t7);
         };
-    }, []);
+    }, [showTimer]);
 
     const animatedPoints = useCounter(points, 1000, step >= 4, easeOut);
-    const animatedTimeSeconds = useCounter(timer, 800, step >= 5);
+    const animatedTimeSeconds = useCounter(timer, 800, showTimer && step >= 5);
 
     const formatTime = (seconds: number) => {
         const total = Math.floor(seconds);
@@ -327,7 +329,7 @@ export const WinModal: React.FC<WinModalProps> = ({
                 </div>
                 
                 {/* Grid of stats (Side-by-side to minimize height and eliminate empty space) */}
-                <div className="grid grid-cols-2 gap-3 mb-5 relative z-10">
+                <div className={`grid gap-3 mb-5 relative z-10 ${showTimer ? 'grid-cols-2' : 'grid-cols-1'}`}>
                     {/* Step 4: Earnings */}
                     <div 
                         className={`bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 rounded-2xl p-3 transition-all duration-500 ${
@@ -342,14 +344,16 @@ export const WinModal: React.FC<WinModalProps> = ({
                     </div>
                     
                     {/* Step 5: Time */}
-                    <div 
-                        className={`bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 rounded-2xl p-3 transition-all duration-500 ${
-                            step >= 5 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-                        }`}
-                    >
-                        <p className="text-stone-500 dark:text-stone-400 text-[9px] font-bold uppercase tracking-wider mb-1">Time</p>
-                        <p className="text-base font-extrabold tabular-nums text-stone-800 dark:text-white leading-none pt-0.5">{formatTime(animatedTimeSeconds)}</p>
-                    </div>
+                    {showTimer && (
+                        <div
+                            className={`bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 rounded-2xl p-3 transition-all duration-500 ${
+                                step >= 5 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+                            }`}
+                        >
+                            <p className="text-stone-500 dark:text-stone-400 text-[9px] font-bold uppercase tracking-wider mb-1">Time</p>
+                            <p className="text-base font-extrabold tabular-nums text-stone-800 dark:text-white leading-none pt-0.5">{formatTime(animatedTimeSeconds)}</p>
+                        </div>
+                    )}
                 </div>
                 
                 {/* Step 6: Actions */}

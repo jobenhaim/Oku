@@ -100,6 +100,8 @@ const emptyAchievementCounters = () => ({
     hardPerfectGames: 0,
     replaysWatched: 0,
     nudgeCellClicks: 0,
+    hardNoScanWins: 0,
+    noteGamesWon: 0,
 });
 
 function getStoredData(): StoredData {
@@ -287,6 +289,14 @@ function getStoredData(): StoredData {
     data.achievementCounters.nudgeCellClicks = Math.max(
         0,
         Math.floor(data.achievementCounters.nudgeCellClicks || 0)
+    );
+    data.achievementCounters.hardNoScanWins = Math.max(
+        0,
+        Math.floor(data.achievementCounters.hardNoScanWins || 0)
+    );
+    data.achievementCounters.noteGamesWon = Math.max(
+        0,
+        Math.floor(data.achievementCounters.noteGamesWon || 0)
     );
 
     // Generator 2.0 and 1.1 changed the board behind each level ID. When
@@ -760,6 +770,16 @@ export const Storage = {
                 if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
                 data.achievementCounters.hardPerfectGames += 1;
             }
+        }
+        if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
+        if (
+            [Difficulty.Hard, Difficulty.Intense, Difficulty.Impossible].includes(progress.difficulty as Difficulty)
+            && (progress.scanUses ?? 3) === 3
+        ) {
+            data.achievementCounters.hardNoScanWins += 1;
+        }
+        if (progress.hasUsedNotes) {
+            data.achievementCounters.noteGamesWon += 1;
         }
     }
     

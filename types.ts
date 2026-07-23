@@ -43,6 +43,7 @@ export interface LevelProgress {
   revealUses?: number; // Legacy saved-game compatibility
   scribeUses?: number; // Legacy saved-game compatibility
   hasMadeMistake?: boolean; // Preserve flawless-run eligibility across resumes
+  hasUsedNotes?: boolean; // Preserve note-based achievement eligibility across resumes
 }
 
 export interface AppSettings {
@@ -98,6 +99,8 @@ export interface StoredData {
       hardPerfectGames: number;
       replaysWatched: number;
       nudgeCellClicks: number;
+      hardNoScanWins: number;
+      noteGamesWon: number;
   };
   
   // Stats

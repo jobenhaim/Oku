@@ -777,6 +777,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 <LevelsScreen 
                                     difficulty={selectedDifficulty}
                                     points={points}
+                                    showTimer={settings.showTimer}
                                     unlockedPacks2={unlockedPacks2}
                                     unlockedPacks3={unlockedPacks3}
                                     onBack={handleLevelBack}

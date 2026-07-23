@@ -14,10 +14,11 @@ interface LevelButtonProps {
     status?: 'locked' | 'not-started' | 'in-progress' | 'completed';
     bestTime?: number;
     isGlobalBest: boolean;
+    showTimer: boolean;
     onSelect: (levelId: number) => void;
 }
 
-const LevelButton = React.memo(({ levelId, index, status, bestTime, isGlobalBest, onSelect }: LevelButtonProps) => {
+const LevelButton = React.memo(({ levelId, index, status, bestTime, isGlobalBest, showTimer, onSelect }: LevelButtonProps) => {
     const isSolved = bestTime !== undefined || status === 'completed';
     const isInProgress = status === 'in-progress';
 
@@ -44,7 +45,7 @@ const LevelButton = React.memo(({ levelId, index, status, bestTime, isGlobalBest
             className={buttonClass}
         >
             <div className="absolute inset-0 flex items-center justify-center"><span className="font-bold text-2xl leading-none">{levelId}</span></div>
-            {isSolved ? (
+            {isSolved && showTimer ? (
                 isGlobalBest ? (
                     <>
                         <div className="absolute top-1.5 inset-x-0 flex justify-center">
@@ -67,6 +68,7 @@ const LevelButton = React.memo(({ levelId, index, status, bestTime, isGlobalBest
 interface LevelsScreenProps {
     difficulty: Difficulty;
     points: number;
+    showTimer: boolean;
     unlockedPacks2: string[];
     unlockedPacks3: string[];
     onBack: () => void;
@@ -79,6 +81,7 @@ interface LevelsScreenProps {
 export const LevelsScreen: React.FC<LevelsScreenProps> = ({ 
     difficulty, 
     points,
+    showTimer,
     unlockedPacks2, 
     unlockedPacks3, 
     onBack, 
@@ -180,6 +183,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                                     status={getDisplayStatus(progress)}
                                     bestTime={progress?.bestTime}
                                     isGlobalBest={globalBest !== undefined && progress?.bestTime === globalBest}
+                                    showTimer={showTimer}
                                     onSelect={onLevelSelect}
                                 />
                             );
@@ -219,6 +223,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                                     status={getDisplayStatus(progress)}
                                     bestTime={progress?.bestTime}
                                     isGlobalBest={globalBest !== undefined && progress?.bestTime === globalBest}
+                                    showTimer={showTimer}
                                     onSelect={onLevelSelect}
                                 />
                             );
@@ -258,6 +263,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                                     status={getDisplayStatus(progress)}
                                     bestTime={progress?.bestTime}
                                     isGlobalBest={globalBest !== undefined && progress?.bestTime === globalBest}
+                                    showTimer={showTimer}
                                     onSelect={onLevelSelect}
                                 />
                             );
@@ -281,7 +287,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                     <div className="flex flex-col items-center absolute left-0 right-0 pointer-events-none z-20">
                         <h1 className="text-xl font-bold leading-none">{difficulty}</h1>
                         <p className="text-xs font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-[0.2em] mt-1">Select Level</p>
-                        {globalBest !== undefined && (
+                        {showTimer && globalBest !== undefined && (
                             <div className="flex flex-col items-center animate-fade-in-fast mt-1">
                                 <span className="text-[10px] font-bold text-amber-500 tracking-widest uppercase mb-px opacity-90">Best: {formatTimeShort(globalBest)}</span>
                             </div>
