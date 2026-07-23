@@ -378,7 +378,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
                     ) : status === 'failed' ? (
                         <Icons.Close className="w-8 h-8 text-red-500 animate-pop" />
                     ) : offer.type === 'support' ? (
-                        <Icons.Trophy className="w-8 h-8 text-amber-500 fill-current" />
+                        <Icons.Trophy className="w-10 h-10" />
                     ) : (
                         <Icons.Diamond className="w-8 h-8 text-blue-500 fill-current" />
                     )}
@@ -870,7 +870,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     <div className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700 transition-colors duration-300" />
                                     <button onClick={() => { sounds.playClick(); setActiveDoc('terms'); }} className="transition-colors duration-300 px-2 py-1">Terms of Service</button>
                                 </div>
-                                <span className="text-[9px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.9.7</span>
+                                <span className="text-[9px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.9.8</span>
                             </div>
                         </div>
                     )}

@@ -385,7 +385,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                             >
                                 <div className="flex items-start justify-between">
                                     <div className="w-9 h-9 rounded-xl bg-white/80 dark:bg-black/20 text-amber-500 flex items-center justify-center shadow-sm">
-                                        <Icons.Trophy className="w-[18px] h-[18px]" />
+                                        <Icons.Trophy className="w-7 h-7" />
                                     </div>
                                     {gamesWonBreakdown.length > 0 && (
                                         <span className="w-7 h-7 rounded-full bg-white/75 dark:bg-black/20 text-amber-700 dark:text-amber-300 flex items-center justify-center">
