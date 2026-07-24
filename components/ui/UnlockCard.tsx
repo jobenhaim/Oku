@@ -142,7 +142,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
                             <div className="min-w-0 flex-1 flex flex-col items-start text-left">
                                 <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 px-3 py-1.5 mb-2">
                                     <Icons.LockOpen className="w-4 h-4 text-blue-500" />
-                                    <span className="text-[11px] font-bold text-blue-600 dark:text-blue-300 uppercase tracking-[0.14em]">
+                                    <span className="text-[11px] font-bold text-blue-600 dark:text-blue-300 uppercase tracking-[0.14em] whitespace-nowrap">
                                         Pack ready
                                     </span>
                                 </div>
