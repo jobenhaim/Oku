@@ -20,7 +20,7 @@ const FeatureRow = ({ icon, children }: { icon: React.ReactNode; children: React
         <div className="w-6 h-6 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-500 flex items-center justify-center shrink-0">
             {icon}
         </div>
-        <span className="text-[11px] font-semibold text-stone-600 dark:text-stone-300 leading-tight">{children}</span>
+        <span className="text-[13px] font-semibold text-stone-600 dark:text-stone-300 leading-tight">{children}</span>
     </div>
 );
 
@@ -192,15 +192,15 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         <div className="min-w-0">
                                             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-white/95 via-violet-50/95 to-sky-50/95 border border-white/90 text-[#5f5872] mb-1.5 shadow-[0_0_12px_rgba(255,255,255,0.95),0_0_26px_rgba(139,92,246,0.32)]">
                                                 <Icons.Star className="w-3 h-3 text-violet-500 drop-shadow-[0_0_4px_rgba(139,92,246,0.7)]" />
-                                                <span className="text-[9px] font-bold uppercase tracking-[0.16em]">Oku Premium</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-[0.16em]">Oku Premium</span>
                                             </div>
                                             <h2 id="premium-heading" className="text-xl font-bold text-t-primary leading-tight">Meet Pepino</h2>
-                                            <p className="text-[11px] font-medium text-t-secondary mt-0.5">A little companion for your Sudoku journey.</p>
+                                            <p className="text-[13px] font-medium text-t-secondary mt-0.5">A little companion for your Sudoku journey.</p>
                                         </div>
                                     </div>
 
                                     <div className="rounded-xl bg-white/80 dark:bg-slate-950/35 px-3.5 py-3 mb-3">
-                                        <p className="text-[11px] font-medium text-stone-600 dark:text-stone-300 leading-relaxed">
+                                        <p className="text-[13px] font-medium text-stone-600 dark:text-stone-300 leading-relaxed">
                                             Pepino lives in a peaceful aquarium, grows with you, and brings you a diamond gift after every completed game.
                                         </p>
                                     </div>
@@ -252,7 +252,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                                 />
                                                 <h2 id="starter-heading" className="text-lg font-bold text-t-primary">Starter Pack</h2>
                                             </div>
-                                            <p className="text-[11px] font-medium text-t-secondary">Six permanent rewards to begin your journey.</p>
+                                            <p className="text-[13px] font-medium text-t-secondary">Six permanent rewards to begin your journey.</p>
                                         </div>
                                         {!starterPackPurchased && (
                                             <span className="text-[8px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/40 px-2 py-1 rounded-full shrink-0">One time</span>
@@ -323,7 +323,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                     <section aria-labelledby="packs-heading">
                         <div className="px-1 mb-3">
                             <h2 id="packs-heading" className="text-xs font-bold text-t-secondary uppercase tracking-widest">Diamond Packs</h2>
-                            <p className="text-[11px] font-medium text-t-secondary mt-1">Use diamonds for skills, themes, sounds, and more.</p>
+                            <p className="text-[13px] font-medium text-t-secondary mt-1">Use diamonds for skills, themes, sounds, and more.</p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">

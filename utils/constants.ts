@@ -129,15 +129,15 @@ export const getDifficultyPoints = (diff: Difficulty) => {
 
 export const STATIC_BACKGROUNDS = [
     { id: 'bg-default', name: 'Default', cost: 0, class: 'bg-paper dark:bg-stone-900' },
-    { id: 'bg-dawn', name: 'Dawn', cost: 100, class: 'bg-gradient-to-br from-orange-100 to-rose-100' },
-    { id: 'bg-ocean', name: 'Ocean', cost: 100, class: 'bg-gradient-to-br from-sky-100 to-cyan-200' },
-    { id: 'bg-forest', name: 'Forest', cost: 100, class: 'bg-gradient-to-br from-green-100 to-emerald-200' },
-    { id: 'bg-dusk', name: 'Dusk', cost: 100, class: 'bg-gradient-to-br from-indigo-100 to-slate-300' },
-    { id: 'bg-dune', name: 'Dune', cost: 100, class: 'bg-gradient-to-br from-amber-100 to-orange-100' },
-    { id: 'bg-lavender', name: 'Lavender', cost: 100, class: 'bg-gradient-to-br from-purple-100 to-violet-200' },
-    { id: 'bg-mint', name: 'Mint', cost: 100, class: 'bg-gradient-to-br from-emerald-50 to-teal-100' },
-    { id: 'bg-berry', name: 'Berry', cost: 100, class: 'bg-gradient-to-br from-pink-100 to-rose-100' },
-    { id: 'bg-glacier', name: 'Glacier', cost: 100, class: 'bg-gradient-to-br from-cyan-50 to-sky-100' },
+    { id: 'bg-dawn', name: 'Dawn', cost: 150, class: 'bg-gradient-to-br from-orange-100 to-rose-100' },
+    { id: 'bg-ocean', name: 'Ocean', cost: 150, class: 'bg-gradient-to-br from-sky-100 to-cyan-200' },
+    { id: 'bg-forest', name: 'Forest', cost: 150, class: 'bg-gradient-to-br from-green-100 to-emerald-200' },
+    { id: 'bg-dusk', name: 'Dusk', cost: 150, class: 'bg-gradient-to-br from-indigo-100 to-slate-300' },
+    { id: 'bg-dune', name: 'Dune', cost: 150, class: 'bg-gradient-to-br from-amber-100 to-orange-100' },
+    { id: 'bg-lavender', name: 'Lavender', cost: 150, class: 'bg-gradient-to-br from-purple-100 to-violet-200' },
+    { id: 'bg-mint', name: 'Mint', cost: 150, class: 'bg-gradient-to-br from-emerald-50 to-teal-100' },
+    { id: 'bg-berry', name: 'Berry', cost: 150, class: 'bg-gradient-to-br from-pink-100 to-rose-100' },
+    { id: 'bg-glacier', name: 'Glacier', cost: 150, class: 'bg-gradient-to-br from-cyan-50 to-sky-100' },
 ];
 
 export const ALL_BACKGROUNDS = STATIC_BACKGROUNDS;
@@ -260,7 +260,7 @@ export const SOUND_PACKS = [
 ];
 
 export const SKILLS = [
-    { id: 'skill-nudge', name: 'Nudge', cost: 200, icon: Icons.Nudge, class: 'text-amber-500', bgClass: 'bg-amber-50/60 dark:bg-amber-900/10', description: 'Passive skill. Highlights the last empty cell in a row, column, or box, based on your inputs.' },
+    { id: 'skill-nudge', name: 'Nudge', cost: 200, icon: Icons.Nudge, class: 'text-amber-500', bgClass: 'bg-amber-50/60 dark:bg-amber-900/10', description: 'Passive skill. Highlights a helpful last empty cell based on your inputs.' },
     { id: 'skill-scribe', name: 'Guard', cost: 300, icon: Icons.Guard, class: '', bgClass: 'bg-blue-50/60 dark:bg-blue-900/10', description: 'Passive skill. Blocks notes that conflict with your current board.' },
     { id: 'skill-scan', name: 'Scan', cost: 750, icon: Icons.Scan, class: 'text-red-500', bgClass: 'bg-red-50/60 dark:bg-red-900/10', description: "Spot errors instantly. Essential for Hard, Intense, and Impossible modes." },
 ];

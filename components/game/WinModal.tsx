@@ -295,7 +295,7 @@ export const WinModal: React.FC<WinModalProps> = ({
                 <div 
                     className={`flex flex-col gap-1 mb-2 relative z-10 transition-all duration-300 ${step >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
                 >
-                    <div className="text-[10px] font-bold text-black dark:text-white uppercase tracking-[0.15em]">{difficulty} &bull; Level {levelId}</div>
+                    <div className="text-[15px] font-bold text-black dark:text-white uppercase tracking-[0.12em]">{difficulty} &bull; Level {levelId}</div>
                 </div>
 
                 {/* Step 3: Solved Title (Letter by Letter All-Caps Celebratory Pop) */}
@@ -315,7 +315,7 @@ export const WinModal: React.FC<WinModalProps> = ({
                                 <span 
                                     key={i}
                                     style={{ '--start-color': startColors[i] } as React.CSSProperties}
-                                    className={`text-3xl font-black leading-none inline-block opacity-0 ${
+                                    className={`text-[42px] font-black leading-none inline-block opacity-0 ${
                                         revealedLetters > i 
                                         ? 'letter-animate' 
                                         : ''
@@ -336,9 +336,9 @@ export const WinModal: React.FC<WinModalProps> = ({
                             step >= 4 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
                         }`}
                     >
-                        <p className="text-stone-500 dark:text-stone-400 text-[9px] font-bold uppercase tracking-wider mb-1">Diamonds</p>
+                        <p className="text-stone-500 dark:text-stone-400 text-[14px] font-bold uppercase tracking-wider mb-1">Diamonds</p>
                         <div className="flex items-center justify-center gap-1">
-                            <span className="text-base font-extrabold text-stone-800 dark:text-white tabular-nums">+{animatedPoints}</span>
+                            <span className="text-2xl font-extrabold text-stone-800 dark:text-white tabular-nums">+{animatedPoints}</span>
                             <Icons.Diamond className="w-4 h-4 text-blue-500 dark:text-blue-400 fill-current" />
                         </div>
                     </div>
@@ -350,8 +350,8 @@ export const WinModal: React.FC<WinModalProps> = ({
                                 step >= 5 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
                             }`}
                         >
-                            <p className="text-stone-500 dark:text-stone-400 text-[9px] font-bold uppercase tracking-wider mb-1">Time</p>
-                            <p className="text-base font-extrabold tabular-nums text-stone-800 dark:text-white leading-none pt-0.5">{formatTime(animatedTimeSeconds)}</p>
+                            <p className="text-stone-500 dark:text-stone-400 text-[14px] font-bold uppercase tracking-wider mb-1">Time</p>
+                            <p className="text-2xl font-extrabold tabular-nums text-stone-800 dark:text-white leading-none pt-0.5">{formatTime(animatedTimeSeconds)}</p>
                         </div>
                     )}
                 </div>
@@ -363,20 +363,20 @@ export const WinModal: React.FC<WinModalProps> = ({
                     {/* Replay Button */}
                     {generateReplayEnabled && (
                          isGeneratingReplay ? (
-                            <div className="w-full h-14 flex items-center justify-center gap-1.5 text-stone-500 dark:text-stone-400 font-bold text-sm animate-pulse bg-stone-50 dark:bg-white/5 rounded-2xl border border-dashed border-stone-200 dark:border-white/10">
+                            <div className="w-full h-14 flex items-center justify-center gap-1.5 text-stone-500 dark:text-stone-400 font-bold text-[18px] animate-pulse bg-stone-50 dark:bg-white/5 rounded-2xl border border-dashed border-stone-200 dark:border-white/10">
                                 <Icons.Video className="w-5 h-5" /> Generating Replay...
                             </div>
                         ) : replayUrl ? (
                             <button 
                                 onClick={onReplay}
-                                className="w-full h-14 bg-blue-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-600/10 dark:shadow-blue-600/20 active:scale-95 transition-transform flex items-center justify-center gap-1.5 border border-transparent"
+                                className="w-full h-14 bg-blue-600 text-white rounded-2xl font-bold text-[18px] shadow-lg shadow-blue-600/10 dark:shadow-blue-600/20 active:scale-95 transition-transform flex items-center justify-center gap-1.5 border border-transparent"
                             >
                                 <Icons.Video className="w-5 h-5" /> Watch Replay
                             </button>
                         ) : (
                             <button 
                                 onClick={onGenerateReplay}
-                                className="w-full h-14 bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-200 rounded-2xl font-bold text-sm active:scale-95 transition flex items-center justify-center gap-1.5 border border-stone-200/60 dark:border-white/5 hover:bg-stone-200 dark:hover:bg-white/15"
+                                className="w-full h-14 bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-200 rounded-2xl font-bold text-[18px] active:scale-95 transition flex items-center justify-center gap-1.5 border border-stone-200/60 dark:border-white/5 hover:bg-stone-200 dark:hover:bg-white/15"
                             >
                                 <Icons.Video className="w-5 h-5" /> Create Replay
                             </button>
@@ -386,7 +386,7 @@ export const WinModal: React.FC<WinModalProps> = ({
                     <button 
                         onClick={onReturnToMenu} 
                         disabled={step < 7}
-                        className="w-full h-14 bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-200 border border-stone-200/60 dark:border-white/5 rounded-2xl font-bold text-sm active:scale-95 transition-transform flex items-center justify-center disabled:pointer-events-none"
+                        className="w-full h-14 bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-200 border border-stone-200/60 dark:border-white/5 rounded-2xl font-bold text-[18px] active:scale-95 transition-transform flex items-center justify-center disabled:pointer-events-none"
                     >
                         Menu
                     </button>

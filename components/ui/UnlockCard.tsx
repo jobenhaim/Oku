@@ -190,7 +190,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
                                 <p className="text-lg font-bold text-stone-900 dark:text-white leading-tight">
                                     Complete Pack {previousPackNumber}
                                 </p>
-                                <p className="text-xs font-medium text-stone-500 dark:text-stone-400 mt-1">
+                                <p className="text-[14px] font-medium text-stone-500 dark:text-stone-400 mt-1">
                                     Finish every level to reveal the unlock price.
                                 </p>
                             </div>

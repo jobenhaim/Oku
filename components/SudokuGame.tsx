@@ -872,10 +872,10 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                         transition={{ duration: 0.3, ease: "easeInOut" }}
                         className="absolute inset-x-0 bottom-full h-8 z-0 pointer-events-none whitespace-nowrap flex items-center justify-center px-4"
                     >
-                        <span className="text-[11px] md:text-xs font-semibold text-stone-600 dark:text-stone-700 bg-stone-50 dark:bg-stone-100 border border-stone-200/80 px-4 py-1.5 rounded-full inline-flex items-center gap-1.5 leading-none shadow-md">
+                        <span className="text-[11px] md:text-xs font-semibold text-stone-600 dark:text-stone-100 bg-stone-50 dark:bg-stone-800 border border-stone-200/80 dark:border-stone-700 px-4 py-1.5 rounded-full inline-flex items-center gap-1.5 leading-none shadow-md dark:shadow-black/30">
                             {pillMessage.type === 'warning' ? (
                                 <>
-                                    <Icons.Info className="w-3.5 h-3.5 shrink-0 text-stone-500" />
+                                    <Icons.Info className="w-3.5 h-3.5 shrink-0 text-stone-500 dark:text-stone-300" />
                                     {pillMessage.text}
                                     <span className="inline-flex items-center gap-1 text-red-500 font-bold">
                                         <Icons.Scan className="w-3.5 h-3.5 shrink-0 text-red-500" />
@@ -889,7 +889,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                                     ) : pillMessage.type === 'scan-clean' ? (
                                         <Icons.Check className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
                                     ) : pillMessage.type === 'notes' ? (
-                                        <Icons.Info className="w-3.5 h-3.5 shrink-0 text-stone-500" />
+                                        <Icons.Info className="w-3.5 h-3.5 shrink-0 text-stone-500 dark:text-stone-300" />
                                     ) : null}
                                     {pillMessage.text}
                                 </>

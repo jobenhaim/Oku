@@ -103,7 +103,7 @@ const AchievementRow: React.FC<{
                             </span>
                         )}
                     </div>
-                    <span className="block text-[11px] font-medium text-stone-500 dark:text-stone-400 mt-1 leading-tight">
+                    <span className="block text-[13px] font-medium text-stone-500 dark:text-stone-400 mt-1 leading-tight">
                         {achievement.detail}
                     </span>
 
@@ -395,7 +395,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                                     <span className="block text-[1.75rem] font-bold tracking-[0.035em] tabular-nums leading-none text-stone-900 dark:text-stone-50">
                                         {storedData.stats?.totalGamesWon || 0}
                                     </span>
-                                    <span className="block mt-1 text-[9px] font-bold text-amber-800/65 dark:text-amber-200/70 uppercase tracking-[0.13em]">Games Won</span>
+                                    <span className="block mt-1 text-[11px] font-bold text-amber-800/65 dark:text-amber-200/70 uppercase tracking-[0.13em]">Games Won</span>
                                 </div>
                             </button>
                             <button
@@ -418,7 +418,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                                     <span className="block text-[1.75rem] font-bold tracking-[0.035em] tabular-nums leading-none text-stone-900 dark:text-stone-50">
                                         {storedData.stats?.totalDiamondsEarned || 0}
                                     </span>
-                                    <span className="block mt-1 text-[9px] font-bold text-blue-800/65 dark:text-blue-200/70 uppercase tracking-[0.13em]">Diamonds Earned</span>
+                                    <span className="block mt-1 text-[11px] font-bold text-blue-800/65 dark:text-blue-200/70 uppercase tracking-[0.13em]">Diamonds Earned</span>
                                 </div>
                             </button>
                         </div>

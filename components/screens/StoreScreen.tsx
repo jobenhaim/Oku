@@ -174,8 +174,8 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 </div>
 
                                 <div className="flex-1 min-w-0 py-0.5">
-                                    <h3 className="text-[15px] font-bold text-t-primary leading-tight mb-0.5">{skill.name}</h3>
-                                    <p className="text-[10px] font-semibold text-stone-600 dark:text-stone-300 leading-[1.15] line-clamp-2">{skill.description}</p>
+                                    <h3 className="text-[17px] font-bold text-t-primary leading-tight mb-0.5">{skill.name}</h3>
+                                    <p className="text-[12px] font-semibold text-stone-600 dark:text-stone-300 leading-[1.15] line-clamp-2">{skill.description}</p>
                                 </div>
 
                                 <div className={`shrink-0 flex justify-end ${skill.cost >= 1000 ? 'w-[84px]' : 'w-[68px]'}`}>
@@ -219,7 +219,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                     </div>
                                     <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={bg.cost} />
                                 </button>
-                                <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{bg.name}</span>
+                                <span className={`text-[12px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{bg.name}</span>
                             </div>
                         </StoreItemWrapper>
                     );
@@ -276,7 +276,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={pack.cost} />
                             </button>
                             
-                            <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{pack.name}</span>
+                            <span className={`text-[12px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{pack.name}</span>
                         </div>
                     </StoreItemWrapper>
                 );
@@ -312,7 +312,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 </div>
                                 <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={num.cost} />
                             </button>
-                            <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{num.name}</span>
+                            <span className={`text-[12px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{num.name}</span>
                         </div>
                     </StoreItemWrapper>
                 );

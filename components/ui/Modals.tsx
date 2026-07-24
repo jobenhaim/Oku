@@ -504,14 +504,14 @@ const SettingRow = ({
     settings: AppSettings,
     onToggle: (key: keyof AppSettings) => void
 }) => (
-    <div className="flex items-center justify-between gap-3 px-3 py-2.5 border-b border-stone-300/70 dark:border-neutral-600/70 last:border-b-0 transition-colors duration-300">
+    <div className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-t-surface-sec transition-colors duration-300">
         <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-8 h-8 rounded-lg bg-t-surface flex items-center justify-center flex-none text-stone-900 dark:text-stone-100 transition-colors duration-300">
                 <Icon className="w-[18px] h-[18px]" />
             </div>
             <div className="flex flex-col gap-0.5 min-w-0">
                 <span className="text-sm font-bold text-t-primary leading-tight transition-colors duration-300">{title}</span>
-                <span className="text-[11px] font-medium text-t-secondary leading-snug transition-colors duration-300">{desc}</span>
+                <span className="text-[13px] font-medium text-t-secondary leading-snug transition-colors duration-300">{desc}</span>
             </div>
         </div>
         <button onClick={() => onToggle(sKey)} className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-300 flex-none ${settings[sKey] ? 'bg-green-500' : 'bg-stone-300 dark:bg-stone-600'}`}>
@@ -652,7 +652,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                             </div>
                                             <div className="text-left flex flex-col gap-0.5">
                                                 <span className="text-sm font-bold text-t-primary leading-tight transition-colors duration-300">Active Difficulties</span>
-                                                <span className="text-[11px] font-medium text-t-secondary leading-tight transition-colors duration-300">
+                                                <span className="text-[13px] font-medium text-t-secondary leading-tight transition-colors duration-300">
                                                     {Object.values(Difficulty).length - (settings.hiddenDifficulties?.length || 0)} Visible
                                                 </span>
                                             </div>
@@ -663,7 +663,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     <div className={`grid transition-[grid-template-rows,opacity] duration-200 ease-in-out ${isDifficultyExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}>
                                         <div className="min-h-0 overflow-hidden">
                                             <div className="px-2 pb-2 border-t border-t-border">
-                                                <p className="px-2.5 py-2 text-[10px] text-t-secondary leading-relaxed font-medium transition-colors duration-300">
+                                                <p className="px-2.5 py-2 text-[12px] text-t-secondary leading-relaxed font-medium transition-colors duration-300">
                                                     Hide difficulties you don't play. At least one must remain visible.
                                                 </p>
                                                 <div className="divide-y divide-stone-200/60 dark:divide-white/5">
@@ -690,7 +690,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                             {/* Gameplay */}
                             <div className="mb-4">
                                 <label className="block text-[10px] font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Gameplay</label>
-                                <div className="bg-t-surface-sec rounded-xl overflow-hidden">
+                                <div className="flex flex-col gap-2">
                                 <SettingRow
                                     sKey="autoEraseNotes" 
                                     icon={Icons.Note}
@@ -723,7 +723,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                             {/* Interface */}
                             <div className="mb-4">
                                 <label className="block text-[10px] font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Interface</label>
-                                <div className="bg-t-surface-sec rounded-xl overflow-hidden">
+                                <div className="flex flex-col gap-2">
 
                                 <SettingRow 
                                     sKey="showTimer" 
@@ -843,7 +843,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                             </div>
                                             <div className="flex flex-col gap-0.5 text-left">
                                                 <span className="text-sm font-bold text-t-primary leading-tight transition-colors duration-300">Redeem Coupon</span>
-                                                <span className="text-[11px] font-medium text-t-secondary leading-tight transition-colors duration-300">Enter code for rewards</span>
+                                                <span className="text-[13px] font-medium text-t-secondary leading-tight transition-colors duration-300">Enter code for rewards</span>
                                             </div>
                                         </div>
                                         <div className="bg-t-surface p-1.5 rounded-full text-stone-900 dark:text-stone-100 transition-colors">
@@ -858,7 +858,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                 <button onClick={() => { sounds.playClick(); setShowResetPreConfirm(true); }} className="w-full py-2.5 flex items-center justify-center gap-2 text-red-500 rounded-xl transition-colors duration-300 font-bold text-sm">
                                     <Icons.Trash className="w-4 h-4 text-stone-900 dark:text-stone-100" /> Reset All Progress
                                 </button>
-                                <p className="text-[9px] text-center text-t-secondary font-medium px-4 leading-relaxed transition-colors duration-300">
+                                <p className="text-[11px] text-center text-t-secondary font-medium px-4 leading-relaxed transition-colors duration-300">
                                     Your progress is saved in your device's Cloud Backup.<br/>We cannot access your data.
                                 </p>
                             </div>
@@ -870,7 +870,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     <div className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700 transition-colors duration-300" />
                                     <button onClick={() => { sounds.playClick(); setActiveDoc('terms'); }} className="transition-colors duration-300 px-2 py-1">Terms of Service</button>
                                 </div>
-                                <span className="text-[9px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.9.9</span>
+                                <span className="text-[9px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.9.10</span>
                             </div>
                         </div>
                     )}
