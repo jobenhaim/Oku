@@ -14,6 +14,15 @@ interface UseSudokuBoardProps {
   onSectionComplete?: (sections: string[]) => void;
 }
 
+const UNDO_HISTORY_LIMIT = 100;
+
+const cloneBoard = (board: Board): Board => (
+    board.map(row => row.map(cell => ({
+        ...cell,
+        notes: [...cell.notes]
+    })))
+);
+
 const checkSectionCompletion = (board: Board, solvedBoard: number[][], r: number, c: number, difficulty: Difficulty) => {
     const sections: string[] = [];
     const isStrictMode = difficulty === Difficulty.Hard || difficulty === Difficulty.Intense || difficulty === Difficulty.Impossible;
@@ -115,6 +124,14 @@ export const useSudokuBoard = ({
   useEffect(() => () => {
       if (guardFeedbackTimerRef.current !== null) window.clearTimeout(guardFeedbackTimerRef.current);
   }, []);
+
+  const rememberBoardForUndo = useCallback((currentBoard: Board) => {
+      const snapshot = cloneBoard(currentBoard);
+      setHistory(previous => [
+          ...previous.slice(-(UNDO_HISTORY_LIMIT - 1)),
+          snapshot
+      ]);
+  }, []);
   
   const initializeBoard = useCallback((savedBoard?: Board, savedMoveLog?: MoveLogEntry[], savedHasMadeMistake = false) => {
     setHistory([]);
@@ -213,8 +230,8 @@ export const useSudokuBoard = ({
             if (forcePlace) sounds.playNumber(currentActiveNumber);
             else sounds.playTap();
             
-            setHistory(prev => [...prev.slice(-20), JSON.parse(JSON.stringify(currentBoard))]);
-            const newBoard = currentBoard.map(r => [...r]);
+            rememberBoardForUndo(currentBoard);
+            const newBoard = cloneBoard(currentBoard);
             const newCell = { ...newBoard[row][col] };
             newCell.isMarkedWrong = false;
 
@@ -267,6 +284,7 @@ export const useSudokuBoard = ({
                      }
                  }
             }
+            boardRef.current = newBoard;
             setBoard(newBoard);
             if (onBoardChange) onBoardChange(newBoard, moveLog.current, errorCountRef.current > 0);
             if (!shouldUsePencil && newCell.value) checkCompletion(newBoard);
@@ -286,7 +304,7 @@ export const useSudokuBoard = ({
             setSelectedCell([row, col]);
         }
     }
-  }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete, showGuardRejection]);
+  }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete, showGuardRejection, rememberBoardForUndo]);
 
   const handleNumberInput = useCallback((num: number, isPaused: boolean, isCompleted: boolean, forcePlace: boolean = false) => {
     if (isPaused || isCompleted) return;
@@ -325,8 +343,8 @@ export const useSudokuBoard = ({
 
     sounds.playNumber(num);
 
-    setHistory(prev => [...prev.slice(-20), JSON.parse(JSON.stringify(currentBoard))]);
-    const newBoard = currentBoard.map(row => [...row]);
+    rememberBoardForUndo(currentBoard);
+    const newBoard = cloneBoard(currentBoard);
     const newCell = { ...newBoard[r][c] };
 
     newCell.isMarkedWrong = false;
@@ -379,10 +397,11 @@ export const useSudokuBoard = ({
       }
     }
     
+    boardRef.current = newBoard;
     setBoard(newBoard);
     if (onBoardChange) onBoardChange(newBoard, moveLog.current, errorCountRef.current > 0);
     if (!shouldUsePencil && newCell.value) checkCompletion(newBoard);
-  }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete, showGuardRejection]);
+  }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete, showGuardRejection, rememberBoardForUndo]);
 
   const handleUndo = useCallback((isPaused: boolean, isCompleted: boolean) => {
     if (isPaused || isCompleted) return;
@@ -390,6 +409,7 @@ export const useSudokuBoard = ({
         if (prevHistory.length === 0) return prevHistory;
         sounds.playClick();
         const previous = prevHistory[prevHistory.length - 1];
+        boardRef.current = previous;
         setBoard(previous);
         if (onBoardChange) onBoardChange(previous, moveLog.current, errorCountRef.current > 0);
         return prevHistory.slice(0, -1);
@@ -404,16 +424,23 @@ export const useSudokuBoard = ({
     const [r, c] = currentSelectedCell;
     const currentCell = currentBoard[r][c];
     if (currentCell.isFixed || currentCell.isRevealed) return; 
+    if (
+        currentCell.value === null
+        && currentCell.notes.length === 0
+        && !currentCell.isError
+        && !currentCell.isMarkedWrong
+    ) return;
 
-    setHistory(prev => [...prev, JSON.parse(JSON.stringify(currentBoard))]);
-    const newBoard = currentBoard.map(row => [...row]);
+    rememberBoardForUndo(currentBoard);
+    const newBoard = cloneBoard(currentBoard);
     newBoard[r][c].value = null; 
     newBoard[r][c].notes = []; 
     newBoard[r][c].isError = false;
     newBoard[r][c].isMarkedWrong = false; 
+    boardRef.current = newBoard;
     setBoard(newBoard);
     if (onBoardChange) onBoardChange(newBoard, moveLog.current, errorCountRef.current > 0);
-  }, [onBoardChange]);
+  }, [onBoardChange, rememberBoardForUndo]);
 
   const conflicts = useMemo(() => {
       const conf = new Set<string>();

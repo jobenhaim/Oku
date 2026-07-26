@@ -106,6 +106,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [isEraseMode, setIsEraseMode] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
@@ -482,6 +483,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setIsCompleted(false);
       setIsEnding(false);
       setIsPaused(false);
+      setIsFocusMode(false);
       setShowRestartConfirm(false);
       setReplayUrl(null);
       setShowReplay(false);
@@ -699,6 +701,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setScanUses(3); 
       setShowRestartConfirm(false); 
       setIsPaused(false);
+      setIsFocusMode(false);
       setAnimatingSections(new Set());
       gameFinishedRef.current = false;
       notesReadyShownRef.current = false;
@@ -917,6 +920,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                     enableDragExplore={!settings.digitFirst}
                     onCellLongPress={onCellLongPressWrapper}
                     enableCellLongPress={settings.digitFirst && isPencilMode && activeNumber !== null}
+                    hideNotes={isFocusMode}
                 />
             </div>
          </motion.div>
@@ -952,6 +956,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                  canErase={settings.digitFirst || canErase}
                  isEraseMode={settings.digitFirst && isEraseMode}
                  isPencilMode={isPencilMode}
+                 isFocusMode={isFocusMode}
                  onUndo={() => {
                      if (gameFinishedRef.current) return;
                      handleUndo(isPaused, isCompleted || isEnding);
@@ -971,8 +976,17 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                      if (gameFinishedRef.current || isEnding) return;
                      sounds.playClick();
                      const nextPencilMode = !isPencilMode;
+                     const isRevealingFocusedNotes = nextPencilMode && isFocusMode;
+                     if (isRevealingFocusedNotes) {
+                         setIsFocusMode(false);
+                         enqueuePill({
+                             text: 'Notes visible',
+                             type: 'notes',
+                             holdMs: 2500
+                         }, true);
+                     }
                      setIsPencilMode(nextPencilMode);
-                     if (nextPencilMode && !notesReadyShownRef.current) {
+                     if (nextPencilMode && !isRevealingFocusedNotes && !notesReadyShownRef.current) {
                          notesReadyShownRef.current = true;
                          enqueuePill({
                              text: settings.digitFirst
@@ -982,6 +996,20 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                              holdMs: 4000
                          });
                      }
+                 }}
+                 onToggleFocus={() => {
+                     if (gameFinishedRef.current || isEnding) return;
+                     sounds.playClick();
+                     const nextFocusMode = !isFocusMode;
+                     setIsFocusMode(nextFocusMode);
+                     if (nextFocusMode && isPencilMode) {
+                         setIsPencilMode(false);
+                     }
+                     enqueuePill({
+                         text: nextFocusMode ? 'Notes hidden' : 'Notes visible',
+                         type: 'notes',
+                         holdMs: 2500
+                     }, true);
                  }}
                  purchasedSkills={purchasedSkills}
                  scanUses={scanUses}

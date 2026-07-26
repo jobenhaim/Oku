@@ -73,8 +73,8 @@ const PROFILES: Record<string, SoundProfile> = {
         // Pentatonic Major Scale: C4, D4, E4, G4, A4, C5, D5, E5, G5
         numberFreqs: [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99],
         popFreq: 196, // G3
-        duration: 1.5, // Long sustained tail
-        volumeScale: 0.48,
+        duration: 0.9,
+        volumeScale: 0.5,
         pitchDrop: false
     },
     'snd-stone': {
@@ -104,12 +104,12 @@ const PROFILES: Record<string, SoundProfile> = {
         id: 'snd-retro',
         type: 'square',
         uiClickFreq: 440,
-        uiTapFreq: 880,
-        // C Major Scale High
-        numberFreqs: [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50, 1174.66],
+        uiTapFreq: 659.25,
+        // A warmer C-major handheld register that remains clear on phones.
+        numberFreqs: [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33],
         popFreq: 220,
-        duration: 0.1,
-        volumeScale: 0.06,
+        duration: 0.09,
+        volumeScale: 0.207,
         pitchDrop: false
     },
     'snd-crystal': {
@@ -133,8 +133,8 @@ const PROFILES: Record<string, SoundProfile> = {
         // Japanese Pentatonic (Hirajoshi): A, B, C, E, F
         numberFreqs: [440.00, 493.88, 523.25, 659.25, 698.46, 880.00, 987.77, 1046.50, 1318.51],
         popFreq: 220,
-        duration: 1.0, 
-        volumeScale: 0.32,
+        duration: 0.65,
+        volumeScale: 0.3,
         pitchDrop: false
     }
 };
@@ -437,6 +437,25 @@ class SoundController {
         noise.stop(ctx.currentTime + duration + 0.1);
     }
 
+    /**
+     * Builds a compact pulse wave like the duty-cycle channels used by classic
+     * handheld consoles. Different duty cycles give the notes distinct colors
+     * without relying on harsh full-volume square waves.
+     */
+    private createHandheldPulseWave(ctx: AudioContext, dutyCycle: number): PeriodicWave {
+        const harmonicCount = 24;
+        const real = new Float32Array(harmonicCount + 1);
+        const imag = new Float32Array(harmonicCount + 1);
+
+        for (let harmonic = 1; harmonic <= harmonicCount; harmonic++) {
+            imag[harmonic] = (
+                2 * Math.sin(Math.PI * harmonic * dutyCycle)
+            ) / (Math.PI * harmonic);
+        }
+
+        return ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+    }
+
     private playTone(
         freq: number, 
         duration: number, 
@@ -481,16 +500,82 @@ class SoundController {
              osc.connect(gain);
 
         } else if (profile.id === 'snd-piano') {
-            // Piano Synthesis (Filtered Triangle)
+            // Cozy upright piano: a warm fundamental, gently inharmonic
+            // overtones, and a very short felt-hammer transient. The compact
+            // tail keeps fast number entry clear instead of becoming muddy.
+            const now = ctx.currentTime;
+            const output = this.getProfileOutput(ctx);
+            const brightnessVariation = 0.94 + Math.random() * 0.12;
+
             osc.type = 'triangle';
             const filter = ctx.createBiquadFilter();
             filter.type = 'lowpass';
-            filter.Q.value = 0.5; 
-            filter.frequency.setValueAtTime(Math.min(freq * 6, 8000), ctx.currentTime); 
-            filter.frequency.exponentialRampToValueAtTime(freq * 1.5, ctx.currentTime + 0.3);
+            filter.Q.value = 0.65;
+            filter.frequency.setValueAtTime(
+                Math.min(7600, Math.max(2200, freq * 7 * brightnessVariation)),
+                now
+            );
+            filter.frequency.exponentialRampToValueAtTime(
+                Math.max(700, freq * 2),
+                now + Math.min(0.2, duration * 0.25)
+            );
             osc.connect(filter);
             filter.connect(gain);
-            
+
+            const addPianoPartial = (
+                ratio: number,
+                level: number,
+                partialDuration: number
+            ) => {
+                const partial = ctx.createOscillator();
+                const partialGain = ctx.createGain();
+                partial.type = 'sine';
+                partial.frequency.setValueAtTime(freq * ratio, now);
+                partialGain.gain.setValueAtTime(0, now);
+                partialGain.gain.linearRampToValueAtTime(vol * level, now + 0.003);
+                partialGain.gain.exponentialRampToValueAtTime(
+                    0.001,
+                    now + Math.min(partialDuration, duration)
+                );
+                partial.connect(partialGain);
+                partialGain.connect(output);
+                partial.start(now);
+                partial.stop(now + Math.min(partialDuration, duration) + 0.03);
+            };
+
+            // Piano strings are slightly inharmonic; these tiny offsets make
+            // the voice feel struck rather than like a perfect synthesizer.
+            addPianoPartial(2.003, 0.18, 0.38);
+            addPianoPartial(3.008, 0.07, 0.2);
+
+            const hammerDuration = 0.016;
+            const hammerBuffer = ctx.createBuffer(
+                1,
+                Math.max(1, Math.floor(ctx.sampleRate * hammerDuration)),
+                ctx.sampleRate
+            );
+            const hammerData = hammerBuffer.getChannelData(0);
+            for (let i = 0; i < hammerData.length; i++) {
+                hammerData[i] = Math.random() * 2 - 1;
+            }
+            const hammer = ctx.createBufferSource();
+            const hammerFilter = ctx.createBiquadFilter();
+            const hammerGain = ctx.createGain();
+            hammer.buffer = hammerBuffer;
+            hammerFilter.type = 'bandpass';
+            hammerFilter.Q.value = 0.7;
+            hammerFilter.frequency.setValueAtTime(
+                Math.min(3400, Math.max(1700, freq * 4.5)),
+                now
+            );
+            hammerGain.gain.setValueAtTime(vol * 0.075, now);
+            hammerGain.gain.exponentialRampToValueAtTime(0.001, now + hammerDuration);
+            hammer.connect(hammerFilter);
+            hammerFilter.connect(hammerGain);
+            hammerGain.connect(output);
+            hammer.start(now);
+            hammer.stop(now + hammerDuration);
+
         } else if (profile.id === 'snd-stone') {
             // Stone synthesis: a grounded body plus a brief, phone-audible impact.
             osc.type = 'sine';
@@ -544,18 +629,156 @@ class SoundController {
 
             osc.connect(gain);
 
-        } else if (profile.id === 'snd-koto') {
-            // Koto (Twangy Pluck)
-            osc.type = 'sawtooth';
+        } else if (profile.id === 'snd-retro') {
+            // Cozy handheld voice: a warm duty-cycle pulse, a tiny octave
+            // sparkle, and a nearly inaudible noise-channel button edge.
+            const now = ctx.currentTime;
+            const output = this.getProfileOutput(ctx);
+            const dutyCycle = freq < 360 ? 0.5 : freq < 520 ? 0.375 : 0.25;
+
+            osc.setPeriodicWave(this.createHandheldPulseWave(ctx, dutyCycle));
             const filter = ctx.createBiquadFilter();
             filter.type = 'lowpass';
-            filter.Q.value = 2; // Resonance for the twang
-            
-            filter.frequency.setValueAtTime(freq * 4, ctx.currentTime);
-            filter.frequency.exponentialRampToValueAtTime(freq, ctx.currentTime + 0.2);
-            
+            filter.Q.value = 0.35;
+            filter.frequency.setValueAtTime(Math.min(5200, Math.max(2400, freq * 7)), now);
             osc.connect(filter);
             filter.connect(gain);
+
+            // A very brief octave grace note creates a playful console chirp
+            // without turning every input into a long melody.
+            const sparkleOsc = ctx.createOscillator();
+            const sparkleGain = ctx.createGain();
+            sparkleOsc.setPeriodicWave(this.createHandheldPulseWave(ctx, 0.25));
+            sparkleOsc.frequency.setValueAtTime(freq * 2, now + 0.012);
+            sparkleGain.gain.setValueAtTime(0, now);
+            sparkleGain.gain.setValueAtTime(vol * 0.2, now + 0.012);
+            sparkleGain.gain.setValueAtTime(vol * 0.1, now + 0.026);
+            sparkleGain.gain.setValueAtTime(0.001, now + 0.04);
+            sparkleOsc.connect(sparkleGain);
+            sparkleGain.connect(output);
+            sparkleOsc.start(now + 0.012);
+            sparkleOsc.stop(now + 0.045);
+
+            const clickDuration = 0.008;
+            const clickBuffer = ctx.createBuffer(
+                1,
+                Math.max(1, Math.floor(ctx.sampleRate * clickDuration)),
+                ctx.sampleRate
+            );
+            const clickData = clickBuffer.getChannelData(0);
+            for (let i = 0; i < clickData.length; i++) {
+                clickData[i] = Math.random() * 2 - 1;
+            }
+            const clickNoise = ctx.createBufferSource();
+            const clickFilter = ctx.createBiquadFilter();
+            const clickGain = ctx.createGain();
+            clickNoise.buffer = clickBuffer;
+            clickFilter.type = 'bandpass';
+            clickFilter.frequency.setValueAtTime(2800, now);
+            clickFilter.Q.value = 0.8;
+            clickGain.gain.setValueAtTime(vol * 0.1, now);
+            clickGain.gain.setValueAtTime(0.001, now + clickDuration);
+            clickNoise.connect(clickFilter);
+            clickFilter.connect(clickGain);
+            clickGain.connect(output);
+            clickNoise.start(now);
+            clickNoise.stop(now + clickDuration);
+
+        } else if (profile.id === 'snd-koto') {
+            // Koto: a crisp plectrum strike, softened string harmonics, and a
+            // quiet wooden-body resonance. Each strike varies very slightly so
+            // repeated notes feel played rather than mechanically duplicated.
+            const now = ctx.currentTime;
+            const output = this.getProfileOutput(ctx);
+            const velocityVariation = 0.94 + Math.random() * 0.08;
+            const brightnessVariation = 0.94 + Math.random() * 0.12;
+
+            osc.type = 'triangle';
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.Q.value = 1.8;
+            filter.frequency.setValueAtTime(
+                Math.min(6800, freq * 4.2 * brightnessVariation),
+                now
+            );
+            filter.frequency.exponentialRampToValueAtTime(
+                Math.max(600, freq * 1.18),
+                now + Math.min(0.16, duration * 0.3)
+            );
+            osc.connect(filter);
+            filter.connect(gain);
+
+            // A brief saw layer provides the bright string edge without
+            // leaving the full note sounding like a buzzy synthesizer.
+            const harmonicOsc = ctx.createOscillator();
+            const harmonicFilter = ctx.createBiquadFilter();
+            const harmonicGain = ctx.createGain();
+            harmonicOsc.type = 'sawtooth';
+            harmonicOsc.frequency.setValueAtTime(freq * 1.007, now);
+            harmonicOsc.frequency.exponentialRampToValueAtTime(freq, now + 0.055);
+            harmonicFilter.type = 'lowpass';
+            harmonicFilter.Q.value = 0.8;
+            harmonicFilter.frequency.setValueAtTime(Math.min(7200, freq * 5), now);
+            harmonicFilter.frequency.exponentialRampToValueAtTime(
+                Math.max(900, freq * 1.8),
+                now + 0.1
+            );
+            harmonicGain.gain.setValueAtTime(0, now);
+            harmonicGain.gain.linearRampToValueAtTime(vol * 0.2 * velocityVariation, now + 0.002);
+            harmonicGain.gain.exponentialRampToValueAtTime(0.001, now + Math.min(0.16, duration * 0.28));
+            harmonicOsc.connect(harmonicFilter);
+            harmonicFilter.connect(harmonicGain);
+            harmonicGain.connect(output);
+            harmonicOsc.start(now);
+            harmonicOsc.stop(now + Math.min(0.22, duration * 0.4));
+
+            // The plectrum itself: a tiny band-passed noise impulse.
+            const pickDuration = 0.018;
+            const pickBuffer = ctx.createBuffer(
+                1,
+                Math.max(1, Math.floor(ctx.sampleRate * pickDuration)),
+                ctx.sampleRate
+            );
+            const pickData = pickBuffer.getChannelData(0);
+            for (let i = 0; i < pickData.length; i++) {
+                pickData[i] = Math.random() * 2 - 1;
+            }
+            const pickNoise = ctx.createBufferSource();
+            const pickFilter = ctx.createBiquadFilter();
+            const pickGain = ctx.createGain();
+            pickNoise.buffer = pickBuffer;
+            pickFilter.type = 'bandpass';
+            pickFilter.Q.value = 1.25;
+            pickFilter.frequency.setValueAtTime(
+                Math.min(4200, Math.max(1900, freq * 3.5)),
+                now
+            );
+            pickGain.gain.setValueAtTime(vol * 0.16 * velocityVariation, now);
+            pickGain.gain.exponentialRampToValueAtTime(0.001, now + pickDuration);
+            pickNoise.connect(pickFilter);
+            pickFilter.connect(pickGain);
+            pickGain.connect(output);
+            pickNoise.start(now);
+            pickNoise.stop(now + pickDuration);
+
+            // A subtle lower resonance gives the note a wooden instrument body
+            // while remaining audible on small phone speakers.
+            const bodyOsc = ctx.createOscillator();
+            const bodyFilter = ctx.createBiquadFilter();
+            const bodyGain = ctx.createGain();
+            bodyOsc.type = 'sine';
+            bodyOsc.frequency.setValueAtTime(Math.max(110, freq * 0.5), now);
+            bodyFilter.type = 'bandpass';
+            bodyFilter.Q.value = 1.1;
+            bodyFilter.frequency.setValueAtTime(Math.max(240, freq * 0.72), now);
+            bodyGain.gain.setValueAtTime(0, now);
+            bodyGain.gain.linearRampToValueAtTime(vol * 0.075 * velocityVariation, now + 0.003);
+            bodyGain.gain.exponentialRampToValueAtTime(0.001, now + Math.min(0.28, duration * 0.48));
+            bodyOsc.connect(bodyFilter);
+            bodyFilter.connect(bodyGain);
+            bodyGain.connect(output);
+            bodyOsc.start(now);
+            bodyOsc.stop(now + Math.min(0.32, duration * 0.55));
 
         } else if (profile.id === 'snd-crystal') {
             // Crystal (Glassy Sine + Slight FM)
@@ -590,9 +813,10 @@ class SoundController {
             osc.frequency.linearRampToValueAtTime(freq * 1.1, ctx.currentTime + duration);
 
         } else if (profile.id === 'snd-koto') {
-            // Koto: Slight pitch bend down (string settling)
-            osc.frequency.setValueAtTime(freq * 1.02, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(freq, ctx.currentTime + 0.1);
+            // A restrained string-settling bend (about 9 cents) avoids the
+            // conspicuously sharp attack of the previous 2% pitch change.
+            osc.frequency.setValueAtTime(freq * 1.007, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(freq, ctx.currentTime + 0.055);
 
         } else if (profile.id === 'snd-wood' || profile.id === 'snd-stone' || profile.id === 'snd-mech' || profile.id === 'snd-retro' || profile.id === 'snd-crystal') {
              // Fixed pitch for these
@@ -609,9 +833,13 @@ class SoundController {
         
         gain.gain.setValueAtTime(0, ctx.currentTime);
         
-        if (profile.id === 'snd-piano' || profile.id === 'snd-koto') {
-             // Plucked/Struck String Envelope
-             gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.01);
+        if (profile.id === 'snd-koto') {
+             // Fast plectrum attack with a compact, uncluttered string tail.
+             gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.002);
+             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        } else if (profile.id === 'snd-piano') {
+             // Immediate hammer attack followed by a compact upright tail.
+             gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.004);
              gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
         } else if (profile.id === 'snd-wood' || profile.id === 'snd-mech') {
              gain.gain.setValueAtTime(vol, ctx.currentTime);
@@ -625,10 +853,12 @@ class SoundController {
              gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.02);
              gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
         } else if (profile.id === 'snd-retro') {
-             // Square wave gate-like envelope
-             gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.005);
-             gain.gain.setValueAtTime(vol, ctx.currentTime + duration - 0.02);
-             gain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
+             // Deliberately stepped volume levels mimic a tiny digital channel.
+             const end = ctx.currentTime + duration;
+             gain.gain.setValueAtTime(vol, ctx.currentTime + 0.001);
+             gain.gain.setValueAtTime(vol * 0.72, ctx.currentTime + Math.min(0.032, duration * 0.38));
+             gain.gain.setValueAtTime(vol * 0.42, ctx.currentTime + Math.min(0.058, duration * 0.68));
+             gain.gain.setValueAtTime(0.001, end);
         } else if (profile.id === 'snd-crystal') {
              // Crystal Envelope: Fast attack, very long tail
              gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.005);
@@ -648,19 +878,19 @@ class SoundController {
     playClick() {
         if (this.soundEnabled) {
             if (this.activeProfile.id === 'snd-piano') {
-                const chord = [261.63, 329.63, 392.00]; 
+                const chord = [523.25, 783.99];
                 chord.forEach((f, i) => {
                     setTimeout(() => {
-                        this.playTone(f, 0.6, 0.2, 'triangle', undefined, true); 
-                    }, i * 12); 
+                        this.playTone(f, 0.38, 0.2, undefined, undefined, true);
+                    }, i * 24);
                 });
             } else if (this.activeProfile.id === 'snd-koto') {
-                // Quick strum for Koto
-                const chord = [329.63, 440.00]; 
+                // Compact two-string Koto strum.
+                const chord = [329.63, 440.00];
                 chord.forEach((f, i) => {
                     setTimeout(() => {
-                        this.playTone(f, 0.8, 0.2, 'sawtooth', undefined, true);
-                    }, i * 20); 
+                        this.playTone(f, 0.52, 0.2, undefined, undefined, true);
+                    }, i * 24);
                 });
             } else if (this.activeProfile.id === 'snd-wood') {
                 this.playTone(330, 0.1, 0.4, 'sine', undefined, true);
@@ -873,35 +1103,67 @@ class SoundController {
 
     playWin() {
         if (this.soundEnabled) {
-            // Minimalistic success chime (e.g., C6 -> G6)
-            const ctx = this.getCtx();
-            const time = ctx.currentTime;
-            
-            // First note
-            const osc1 = ctx.createOscillator();
-            const gain1 = ctx.createGain();
-            osc1.type = 'sine';
-            osc1.frequency.setValueAtTime(1046.50, time); // C6
-            gain1.gain.setValueAtTime(0, time);
-            gain1.gain.linearRampToValueAtTime(0.05, time + 0.05);
-            gain1.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
-            osc1.connect(gain1);
-            gain1.connect(ctx.destination);
-            osc1.start(time);
-            osc1.stop(time + 0.5);
+            if (this.activeProfile.id === 'snd-koto') {
+                // A celebratory Hirajoshi flourish using the same refined
+                // instrument voice as normal gameplay.
+                this.playProfileSequence(
+                    [440.00, 523.25, 659.25, 880.00],
+                    0.65,
+                    0.42,
+                    85,
+                    this.activeProfile
+                );
+            } else if (this.activeProfile.id === 'snd-piano') {
+                // Warm upright cadence with enough space for every hammer
+                // attack to remain audible on a phone.
+                this.playProfileSequence(
+                    [523.25, 659.25, 783.99, 1046.50],
+                    0.78,
+                    0.34,
+                    95,
+                    this.activeProfile
+                );
+            } else if (this.activeProfile.id === 'snd-retro') {
+                // A compact handheld victory jingle: recognizable and cheerful
+                // without becoming an aggressive arcade fanfare.
+                this.playProfileSequence(
+                    [523.25, 659.25, 783.99, 1046.50],
+                    0.1,
+                    0.44,
+                    72,
+                    this.activeProfile
+                );
+            } else {
+                // Minimalistic success chime (e.g., C6 -> G6)
+                const ctx = this.getCtx();
+                const time = ctx.currentTime;
 
-            // Second note
-            const osc2 = ctx.createOscillator();
-            const gain2 = ctx.createGain();
-            osc2.type = 'sine';
-            osc2.frequency.setValueAtTime(1567.98, time + 0.15); // G6
-            gain2.gain.setValueAtTime(0, time + 0.15);
-            gain2.gain.linearRampToValueAtTime(0.08, time + 0.2);
-            gain2.gain.exponentialRampToValueAtTime(0.001, time + 1.2);
-            osc2.connect(gain2);
-            gain2.connect(ctx.destination);
-            osc2.start(time + 0.15);
-            osc2.stop(time + 1.2);
+                // First note
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(1046.50, time); // C6
+                gain1.gain.setValueAtTime(0, time);
+                gain1.gain.linearRampToValueAtTime(0.05, time + 0.05);
+                gain1.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(time);
+                osc1.stop(time + 0.5);
+
+                // Second note
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(1567.98, time + 0.15); // G6
+                gain2.gain.setValueAtTime(0, time + 0.15);
+                gain2.gain.linearRampToValueAtTime(0.08, time + 0.2);
+                gain2.gain.exponentialRampToValueAtTime(0.001, time + 1.2);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(time + 0.15);
+                osc2.stop(time + 1.2);
+            }
         }
         
         if (this.vibrationEnabled) {
@@ -998,11 +1260,17 @@ class SoundController {
                  setTimeout(() => this.playTone(f, 0.08, 0.3), i * 60);
              });
 
-        } else if (pid === 'snd-piano' || pid === 'snd-koto') {
+        } else if (pid === 'snd-piano') {
             const notes = [261.63, 329.63, 392.00, 493.88];
-            const type = pid === 'snd-koto' ? 'sawtooth' : 'triangle';
             notes.forEach((f, i) => {
-                setTimeout(() => this.playTone(f, 1.0, 0.4, type as any, undefined, false), i * 60);
+                setTimeout(() => this.playTone(f, 0.72, 0.36, undefined, undefined, true), i * 75);
+            });
+        } else if (pid === 'snd-koto') {
+            // A restrained Hirajoshi welcome phrase that stays clear rather
+            // than sustaining four overlapping one-second saw waves.
+            const notes = [440.00, 493.88, 659.25, 880.00];
+            notes.forEach((f, i) => {
+                setTimeout(() => this.playTone(f, 0.58, 0.34, undefined, undefined, true), i * 70);
             });
         } else if (pid === 'snd-crystal') {
             [523, 659, 783].forEach((f, i) => {
@@ -1108,13 +1376,13 @@ class SoundController {
         const profile = this.activeProfile;
         const sequences: Record<string, { notes: number[]; duration: number; volume: number; spacing: number }> = {
             'snd-paper': { notes: [1800, 2400], duration: 0.04, volume: 0.42, spacing: 50 },
-            'snd-retro': { notes: [1318.51, 1975.53], duration: 0.09, volume: 0.46, spacing: 40 },
+            'snd-retro': { notes: [783.99, 1046.50], duration: 0.09, volume: 0.44, spacing: 48 },
             'snd-wood': { notes: [659.25, 880], duration: 0.1, volume: 0.42, spacing: 40 },
             'snd-water': { notes: [1174.66, 1567.98], duration: 0.13, volume: 0.42, spacing: 45 },
-            'snd-piano': { notes: [659.25, 987.77], duration: 0.35, volume: 0.36, spacing: 40 },
+            'snd-piano': { notes: [659.25, 987.77], duration: 0.46, volume: 0.34, spacing: 55 },
             'snd-stone': { notes: [329.63, 440], duration: 0.13, volume: 0.42, spacing: 50 },
             'snd-mech': { notes: [1800, 2400], duration: 0.06, volume: 0.44, spacing: 40 },
-            'snd-koto': { notes: [523.25, 659.25], duration: 0.3, volume: 0.36, spacing: 40 },
+            'snd-koto': { notes: [523.25, 659.25], duration: 0.42, volume: 0.36, spacing: 55 },
             'snd-crystal': { notes: [1567.98, 2093], duration: 0.32, volume: 0.34, spacing: 40 },
             'snd-zen': { notes: [1318.51, 1975.53], duration: 0.16, volume: 0.36, spacing: 45 }
         };
@@ -1139,34 +1407,23 @@ class SoundController {
         const now = ctx.currentTime;
         const pid = this.activeProfile.id;
         const master = this.getProfileOutput(ctx);
+        const completionOutput = ctx.createGain();
+        completionOutput.gain.setValueAtTime(0.8, now);
+        completionOutput.connect(master);
 
         if (pid === 'snd-paper') {
             // Satisfying 3-step crisp paper rustling ripple
             const centerFreqs = [1200, 1600, 2200];
             centerFreqs.forEach((freq, i) => {
                 setTimeout(() => {
-                    this.playTone(freq, 0.045, 0.35, undefined, undefined, true);
+                    this.playTone(freq, 0.045, 0.28, undefined, undefined, true);
                 }, i * 45);
             });
         } else if (pid === 'snd-mech') {
-            this.playProfileSequence([1600, 2000, 2400], 0.065, 0.44, 45);
+            this.playProfileSequence([1600, 2000, 2400], 0.065, 0.352, 45);
         } else if (pid === 'snd-retro') {
-            // Rapid ascending arcade blips
-            const notes = [1046.50, 1318.51, 1567.98]; // C6, E6, G6
-            notes.forEach((freq, i) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(freq, now + i * 0.05);
-                const start = now + i * 0.05;
-                gain.gain.setValueAtTime(0, start);
-                gain.gain.linearRampToValueAtTime(0.04, start + 0.005);
-                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.1);
-                osc.connect(gain);
-                gain.connect(master);
-                osc.start(start);
-                osc.stop(start + 0.15);
-            });
+            // Warm three-note handheld completion phrase.
+            this.playProfileSequence([523.25, 659.25, 783.99], 0.1, 0.4, 55);
         } else if (pid === 'snd-wood') {
             // Triple snappy wood-block percussion knocks
             const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
@@ -1190,7 +1447,7 @@ class SoundController {
                 gain.gain.exponentialRampToValueAtTime(0.001, start + 0.1);
                 
                 osc.connect(gain);
-                gain.connect(master);
+                gain.connect(completionOutput);
                 mod.start(start);
                 osc.start(start);
                 mod.stop(start + 0.12);
@@ -1212,35 +1469,19 @@ class SoundController {
                 gain.gain.exponentialRampToValueAtTime(0.001, start + 0.15);
                 
                 osc.connect(gain);
-                gain.connect(master);
+                gain.connect(completionOutput);
                 osc.start(start);
                 osc.stop(start + 0.2);
             });
         } else if (pid === 'snd-piano') {
-            // Beautiful piano chord-arpeggio
-            const notes = [523.25, 659.25, 783.99, 987.77]; // C5, E5, G5, B5
-            notes.forEach((freq, i) => {
-                const osc = ctx.createOscillator();
-                const filter = ctx.createBiquadFilter();
-                const gain = ctx.createGain();
-                osc.type = 'triangle';
-                filter.type = 'lowpass';
-                filter.Q.value = 1;
-                filter.frequency.setValueAtTime(freq * 3, now + i * 0.04);
-                filter.frequency.exponentialRampToValueAtTime(freq * 1.2, now + i * 0.04 + 0.2);
-                
-                osc.frequency.setValueAtTime(freq, now + i * 0.04);
-                const start = now + i * 0.04;
-                gain.gain.setValueAtTime(0, start);
-                gain.gain.linearRampToValueAtTime(0.12, start + 0.01);
-                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.45);
-                
-                osc.connect(filter);
-                filter.connect(gain);
-                gain.connect(master);
-                osc.start(start);
-                osc.stop(start + 0.5);
-            });
+            // Compact upright arpeggio using the exact gameplay voice.
+            this.playProfileSequence(
+                [523.25, 659.25, 783.99, 987.77],
+                0.62,
+                0.2,
+                60,
+                this.activeProfile
+            );
         } else if (pid === 'snd-stone') {
             // Resonant stone chime-thud
             const notes = [196.00, 261.63, 329.63]; // G3, C4, E4
@@ -1256,35 +1497,14 @@ class SoundController {
                 gain.gain.exponentialRampToValueAtTime(0.001, start + 0.18);
                 
                 osc.connect(gain);
-                gain.connect(master);
+                gain.connect(completionOutput);
                 osc.start(start);
                 osc.stop(start + 0.22);
             });
         } else if (pid === 'snd-koto') {
-            // Traditional Japanese pluck cascade
-            const notes = [440.00, 523.25, 659.25]; // A4, C5, E5
-            notes.forEach((freq, i) => {
-                const osc = ctx.createOscillator();
-                const filter = ctx.createBiquadFilter();
-                const gain = ctx.createGain();
-                osc.type = 'sawtooth';
-                filter.type = 'lowpass';
-                filter.Q.value = 2;
-                filter.frequency.setValueAtTime(freq * 3, now + i * 0.05);
-                filter.frequency.exponentialRampToValueAtTime(freq * 1.1, now + i * 0.05 + 0.15);
-                
-                const start = now + i * 0.05;
-                osc.frequency.setValueAtTime(freq, start);
-                gain.gain.setValueAtTime(0, start);
-                gain.gain.linearRampToValueAtTime(0.1, start + 0.005);
-                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
-                
-                osc.connect(filter);
-                filter.connect(gain);
-                gain.connect(master);
-                osc.start(start);
-                osc.stop(start + 0.4);
-            });
+            // A brighter three-string cascade through the same refined Koto
+            // voice used for number placement.
+            this.playProfileSequence([440.00, 523.25, 659.25], 0.5, 0.34, 58);
         } else if (pid === 'snd-crystal') {
             // Glassy high shimmering crystals
             const notes = [1567.98, 2093.00, 2637.02]; // G6, C7, E7
@@ -1300,7 +1520,7 @@ class SoundController {
                 gain.gain.exponentialRampToValueAtTime(0.001, start + 0.4);
                 
                 osc.connect(gain);
-                gain.connect(master);
+                gain.connect(completionOutput);
                 osc.start(start);
                 osc.stop(start + 0.45);
             });
@@ -1320,7 +1540,7 @@ class SoundController {
                 gain.gain.exponentialRampToValueAtTime(0.001, start + 0.18); // Snappy, clean ring-out
                 
                 osc.connect(gain);
-                gain.connect(master);
+                gain.connect(completionOutput);
                 osc.start(start);
                 osc.stop(start + 0.22);
             });

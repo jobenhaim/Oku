@@ -968,3 +968,52 @@ html, body {
     animation-duration: 1ms !important;
   }
 }
+
+/*
+ * Premium static backgrounds. These are intentionally built from composited
+ * CSS gradients only: no animation, filters, blur, canvas, or image decoding.
+ */
+.bg-static-aurora {
+  background-color: #eaf8f5;
+  background-image:
+    radial-gradient(ellipse at 18% 12%, rgba(126, 231, 202, 0.72) 0%, rgba(126, 231, 202, 0) 48%),
+    radial-gradient(ellipse at 82% 4%, rgba(170, 164, 242, 0.62) 0%, rgba(170, 164, 242, 0) 50%),
+    radial-gradient(ellipse at 52% 92%, rgba(248, 184, 211, 0.52) 0%, rgba(248, 184, 211, 0) 55%),
+    linear-gradient(150deg, #effcf9 0%, #e7f2ff 52%, #f8edf8 100%);
+}
+
+.bg-static-washi {
+  background-color: #f2eadf;
+  background-image:
+    repeating-linear-gradient(8deg, rgba(114, 91, 66, 0) 0 11px, rgba(114, 91, 66, 0.042) 12px, rgba(114, 91, 66, 0) 13px 25px),
+    repeating-linear-gradient(96deg, rgba(255, 255, 255, 0) 0 17px, rgba(255, 255, 255, 0.264) 18px, rgba(255, 255, 255, 0) 19px 37px),
+    radial-gradient(ellipse at 18% 20%, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0) 50%),
+    linear-gradient(145deg, #fcf9f2 0%, #efe7da 58%, #e9dfd1 100%);
+}
+
+.bg-static-sakura {
+  background-color: #fff4f4;
+  background-image:
+    radial-gradient(ellipse at 12% 16%, rgba(252, 190, 207, 0.68) 0%, rgba(252, 190, 207, 0) 40%),
+    radial-gradient(ellipse at 88% 30%, rgba(247, 206, 220, 0.62) 0%, rgba(247, 206, 220, 0) 44%),
+    radial-gradient(ellipse at 48% 96%, rgba(246, 214, 190, 0.55) 0%, rgba(246, 214, 190, 0) 50%),
+    linear-gradient(145deg, #fff9f6 0%, #fdecef 55%, #f7e2e8 100%);
+}
+
+.bg-static-lagoon {
+  background-color: #e5f7f4;
+  background-image:
+    radial-gradient(ellipse at 12% 78%, rgba(87, 205, 194, 0.52) 0%, rgba(87, 205, 194, 0) 48%),
+    radial-gradient(ellipse at 84% 20%, rgba(102, 190, 224, 0.54) 0%, rgba(102, 190, 224, 0) 52%),
+    radial-gradient(ellipse at 54% 52%, rgba(206, 246, 228, 0.76) 0%, rgba(206, 246, 228, 0) 46%),
+    linear-gradient(150deg, #eefbf8 0%, #d9f3ee 48%, #dceefa 100%);
+}
+
+.bg-static-soft-prism {
+  background-color: #f8f6fb;
+  background-image:
+    linear-gradient(128deg, rgba(255, 204, 218, 0.5) 0%, rgba(255, 204, 218, 0) 34%),
+    linear-gradient(232deg, rgba(192, 221, 255, 0.6) 0%, rgba(192, 221, 255, 0) 38%),
+    linear-gradient(34deg, rgba(255, 234, 173, 0.48) 0%, rgba(255, 234, 173, 0) 38%),
+    radial-gradient(ellipse at 50% 45%, #ffffff 0%, #f4effa 72%, #ecf3fa 100%);
+}

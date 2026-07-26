@@ -6,7 +6,7 @@ import { Icons } from '../components/ui/Icons';
 // These seeds are pre-mined. They guarantee a valid, unique puzzle with 20-23 clues.
 // This allows "Impossible" levels to load INSTANTLY without freezing the phone.
 export const IMPOSSIBLE_SEEDS = [
-    // Pack 1 (Levels 1-100)
+    // Book 1 (Levels 1-100)
     36, 57, 101, 129, 153, 160, 169, 237, 435, 471, 
     594, 598, 665, 692, 874, 1221, 1368, 1499, 1584, 1674, 
     1728, 2032, 2058, 2077, 2078, 2143, 2187, 2191, 2233, 2614, 
@@ -18,7 +18,7 @@ export const IMPOSSIBLE_SEEDS = [
     6290, 6306, 6310, 6509, 6559, 6599, 6635, 6756, 6867, 6938, 
     7009, 7053, 7354, 7511, 7579, 7597, 7681, 7692,
     
-    // Pack 2 (Levels 101-200)
+    // Book 2 (Levels 101-200)
     7708, 7718, 7790, 8098, 8233, 8442, 8616, 8691, 8753, 8789, 
     8961, 9093, 9129, 9182, 9228, 9290, 9536, 9581, 9611, 9853, 
     9903, 9946, 10036, 10043, 10046, 10089, 10135, 10174, 10181, 10203, 
@@ -30,7 +30,7 @@ export const IMPOSSIBLE_SEEDS = [
     14126, 14221, 14397, 14467, 14858, 14861, 14980, 15179, 15336, 15379, 
     15426, 15433, 15438, 15678, 15682, 16101,
 
-    // Pack 3 (Levels 201-300)
+    // Book 3 (Levels 201-300)
     16114, 16269, 16342, 16547, 16562, 16654, 16769, 16816, 16915, 16937, 
     16944, 17069, 17115, 17159, 17194, 17203, 17208, 17427, 17431, 17498, 
     17509, 17536, 17551, 17629, 17768, 17795, 17835, 17918, 18070, 18076, 
@@ -101,10 +101,10 @@ const PACK_BASE_COST = {
 export const getPackCost = (difficulty: Difficulty, packIndex: number): number => {
     let cost = PACK_BASE_COST[difficulty] || 0;
     
-    // Pack 2 is the base (Levels 101-200). Pack 1 is included.
+    // Book 2 is the base (Levels 101-200). Book 1 is included.
     if (packIndex <= 2) return cost;
 
-    // Calculate cost for Pack 3+ iteratively
+    // Calculate cost for Book 3+ iteratively
     for (let i = 3; i <= packIndex; i++) {
         // Increase by 15%
         const increased = cost * 1.15;
@@ -138,6 +138,11 @@ export const STATIC_BACKGROUNDS = [
     { id: 'bg-mint', name: 'Mint', cost: 150, class: 'bg-gradient-to-br from-emerald-50 to-teal-100' },
     { id: 'bg-berry', name: 'Berry', cost: 150, class: 'bg-gradient-to-br from-pink-100 to-rose-100' },
     { id: 'bg-glacier', name: 'Glacier', cost: 150, class: 'bg-gradient-to-br from-cyan-50 to-sky-100' },
+    { id: 'bg-aurora', name: 'Aurora', cost: 250, class: 'bg-static-aurora' },
+    { id: 'bg-washi', name: 'Washi', cost: 250, class: 'bg-static-washi' },
+    { id: 'bg-sakura', name: 'Sakura', cost: 250, class: 'bg-static-sakura' },
+    { id: 'bg-lagoon', name: 'Lagoon', cost: 250, class: 'bg-static-lagoon' },
+    { id: 'bg-soft-prism', name: 'Prism', cost: 250, class: 'bg-static-soft-prism' },
 ];
 
 export const ALL_BACKGROUNDS = STATIC_BACKGROUNDS;
@@ -260,7 +265,8 @@ export const SOUND_PACKS = [
 ];
 
 export const SKILLS = [
-    { id: 'skill-nudge', name: 'Nudge', cost: 200, icon: Icons.Nudge, class: 'text-amber-500', bgClass: 'bg-amber-50/60 dark:bg-amber-900/10', description: 'Passive skill. Highlights a helpful last empty cell based on your inputs.' },
+    { id: 'skill-nudge', name: 'Light', cost: 100, icon: Icons.Nudge, class: 'text-amber-500', bgClass: 'bg-amber-50/60 dark:bg-amber-900/10', description: 'Passive skill. Highlights a helpful last empty cell based on your inputs.' },
+    { id: 'skill-focus', name: 'Focus', cost: 200, icon: Icons.Focus, class: '', bgClass: 'bg-blue-50/60 dark:bg-blue-900/10', description: 'Active skill. Temporarily hides every note for a clearer view.' },
     { id: 'skill-scribe', name: 'Guard', cost: 300, icon: Icons.Guard, class: '', bgClass: 'bg-blue-50/60 dark:bg-blue-900/10', description: 'Passive skill. Blocks notes that conflict with your current board.' },
     { id: 'skill-scan', name: 'Scan', cost: 750, icon: Icons.Scan, class: 'text-red-500', bgClass: 'bg-red-50/60 dark:bg-red-900/10', description: "Spot errors instantly. Essential for Hard, Intense, and Impossible modes." },
 ];
@@ -284,7 +290,7 @@ export const DIAMOND_OFFERS: DiamondOffer[] = [
         title: 'Starter Pack',
         subtitle: 'Everything you need to begin',
         diamonds: 500,
-        includes: ['Nudge, Guard & Scan Skills Unlocked', 'Piano Sound Pack Unlocked', 'Teal Number Style Unlocked'],
+        includes: ['Light, Guard & Scan Skills Unlocked', 'Piano Sound Pack Unlocked', 'Teal Number Style Unlocked'],
         badge: 'BEST VALUE',
         priceLabel: '$2.99',
         type: 'starter',

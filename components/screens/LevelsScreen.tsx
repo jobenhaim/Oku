@@ -137,8 +137,8 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
     const isPack2Unlocked = unlockedPacks2.includes(difficulty);
     const isPack3Unlocked = unlockedPacks3.includes(difficulty);
 
-    // Open on the first pack that still has something useful for the player.
-    // A completed pack advances to the next pack's unlock card automatically.
+    // Open on the first book that still has something useful for the player.
+    // A completed book advances to the next book's unlock card automatically.
     const defaultTab: 1 | 2 | 3 = isPack3Unlocked || (isPack2Unlocked && completedRange2 >= 100)
         ? 3
         : isPack2Unlocked || completedRange1 >= 100
@@ -157,7 +157,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
         }
     }, [activeTab]);
 
-    // Determine Visible Tabs: Pack 1 & 2 always visible. Pack 3 only if Pack 2 unlocked.
+    // Determine visible tabs: Books 1 & 2 are always visible. Book 3 appears once Book 2 is unlocked.
     const visibleTabs = [1, 2];
     if (isPack2Unlocked) visibleTabs.push(3);
 
@@ -321,7 +321,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                                     `}
                                 >
                                     {isLocked && <Icons.Lock className="w-3 h-3 opacity-60" />}
-                                    <span>Pack {tabNum}</span>
+                                    <span>Book {tabNum}</span>
                                 </button>
                             );
                         })}

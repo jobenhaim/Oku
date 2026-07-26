@@ -143,7 +143,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
                                 <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 px-3 py-1.5 mb-2">
                                     <Icons.LockOpen className="w-4 h-4 text-blue-500" />
                                     <span className="text-[11px] font-bold text-blue-600 dark:text-blue-300 uppercase tracking-[0.14em] whitespace-nowrap">
-                                        Pack ready
+                                        Book ready
                                     </span>
                                 </div>
                                 <span className="text-[1.35rem] font-bold text-stone-900 dark:text-white leading-tight">
@@ -163,7 +163,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
                             unlockReady ? 'bg-blue-500' : 'bg-blue-400'
                         }`}>
                             <span className="text-sm font-bold text-white uppercase tracking-[0.13em]">
-                                {unlockReady ? 'Tap to unlock' : 'Preparing pack'}
+                                {unlockReady ? 'Tap to unlock' : 'Preparing book'}
                             </span>
                             <Icons.Next className={`w-5 h-5 text-white transition-all duration-300 ${unlockReady ? 'translate-x-0 opacity-100' : '-translate-x-1 opacity-0'}`} />
                         </div>
@@ -173,7 +173,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
                         <div className="flex items-center justify-between gap-3">
                             <div className="inline-flex items-center gap-2 rounded-full bg-stone-100 dark:bg-stone-700 px-3 py-1.5">
                                 <span className="text-[11px] font-bold text-stone-600 dark:text-stone-300 uppercase tracking-[0.14em]">
-                                    Pack {packNumber}
+                                    Book {packNumber}
                                 </span>
                                 <span className="w-1 h-1 rounded-full bg-stone-400" />
                                 <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 tracking-wide">
@@ -188,7 +188,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
                         <div className="flex items-end justify-between gap-4 mt-3 mb-2">
                             <div className="min-w-0">
                                 <p className="text-lg font-bold text-stone-900 dark:text-white leading-tight">
-                                    Complete Pack {previousPackNumber}
+                                    Complete Book {previousPackNumber}
                                 </p>
                                 <p className="text-[14px] font-medium text-stone-500 dark:text-stone-400 mt-1">
                                     Finish every level to reveal the unlock price.

@@ -351,7 +351,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
         if (offer.type === 'starter') {
             return (
                 <span>
-                    Includes <span className="font-bold">500 Diamonds</span>, permanent access to <span className="font-bold">Nudge</span>, <span className="font-bold">Guard</span>, and <span className="font-bold">Scan</span>, plus the <span className="font-bold">Piano</span> sound pack and <span className="font-bold">Teal</span> number style.
+                    Includes <span className="font-bold">500 Diamonds</span>, permanent access to <span className="font-bold">Light</span>, <span className="font-bold">Guard</span>, and <span className="font-bold">Scan</span>, plus the <span className="font-bold">Piano</span> sound pack and <span className="font-bold">Teal</span> number style.
                 </span>
             );
         }

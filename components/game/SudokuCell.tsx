@@ -24,6 +24,7 @@ interface SudokuCellProps {
     mainFontSize: string;
     noteFontSize: string;
     noteLineHeight: string;
+    hideNotes?: boolean;
     onlyBackground?: boolean;
     onlyContent?: boolean;
 }
@@ -50,6 +51,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     mainFontSize,
     noteFontSize,
     noteLineHeight,
+    hideNotes = false,
     onlyBackground = false,
     onlyContent = false
 }) => {
@@ -194,7 +196,12 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
                     {cell.value}
                 </span>
             ) : cell.notes.length > 0 ? (
-                <div className="grid grid-cols-3 grid-rows-3 w-full h-full p-[1px] pointer-events-none relative z-20">
+                <div
+                    className={`grid grid-cols-3 grid-rows-3 w-full h-full p-[1px] pointer-events-none relative z-20 ${
+                        hideNotes ? 'opacity-0' : 'opacity-100'
+                    }`}
+                    aria-hidden={hideNotes}
+                >
                     {[1,2,3,4,5,6,7,8,9].map(n => {
                         const hasNote = cell.notes.includes(n);
                         if (!hasNote) {

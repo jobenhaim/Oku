@@ -315,7 +315,7 @@ export const WinModal: React.FC<WinModalProps> = ({
                                 <span 
                                     key={i}
                                     style={{ '--start-color': startColors[i] } as React.CSSProperties}
-                                    className={`text-[42px] font-black leading-none inline-block opacity-0 ${
+                                    className={`text-[34px] font-black leading-none inline-block opacity-0 ${
                                         revealedLetters > i 
                                         ? 'letter-animate' 
                                         : ''
@@ -336,7 +336,7 @@ export const WinModal: React.FC<WinModalProps> = ({
                             step >= 4 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
                         }`}
                     >
-                        <p className="text-stone-500 dark:text-stone-400 text-[14px] font-bold uppercase tracking-wider mb-1">Diamonds</p>
+                        <p className="text-stone-500 dark:text-stone-400 text-[14px] font-bold uppercase tracking-wider mb-1">Earned</p>
                         <div className="flex items-center justify-center gap-1">
                             <span className="text-2xl font-extrabold text-stone-800 dark:text-white tabular-nums">+{animatedPoints}</span>
                             <Icons.Diamond className="w-4 h-4 text-blue-500 dark:text-blue-400 fill-current" />

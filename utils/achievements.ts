@@ -138,7 +138,7 @@ export const getPackAchievements = (data: StoredData): AchievementItem[] => {
         return makeItem(claimedIds, {
             id,
             title: PACK_TITLES[difficulty][displayPack - 1],
-            detail: `Complete Pack ${displayPack} - ${difficulty}.`,
+            detail: `Complete Book ${displayPack} - ${difficulty}.`,
             current,
             target: 100,
             reward: PACK_REWARDS[difficulty],
@@ -167,7 +167,7 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
     const backgrounds = data.purchasedBackgrounds.filter((id) => id !== 'bg-default' && id !== 'bg-dyn-default').length;
     const numberStyles = data.purchasedNumberColors.filter((id) => id !== 'num-default').length;
     const soundPacks = data.purchasedSoundPacks.filter((id) => id !== 'snd-zen').length;
-    const skills = new Set(data.purchasedSkills.filter((id) => ['skill-nudge', 'skill-scribe', 'skill-scan'].includes(id))).size;
+    const skills = new Set(data.purchasedSkills.filter((id) => ['skill-focus', 'skill-nudge', 'skill-scribe', 'skill-scan'].includes(id))).size;
 
     type AchievementDefinition = Omit<AchievementItem, 'claimed' | 'ready'>;
     const selectCurrentMilestone = (milestones: AchievementDefinition[]) => (
@@ -216,16 +216,16 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
         { id: 'hundred-scans', title: 'Nothing Gets Past Me', detail: 'Use Scan 500 times after 1 minute of play.', current: scansUsed, target: 500, reward: 15, category: 'skills' },
     ];
     const nudgeMilestones: AchievementDefinition[] = [
-        { id: 'one-nudge-cell', title: 'Gentle Hint', detail: 'Tap 1 Nudge-highlighted cell.', current: nudgeCellClicks, target: 1, reward: 5, category: 'skills' },
-        { id: 'five-nudge-cells', title: 'Small Push', detail: 'Tap 5 Nudge-highlighted cells.', current: nudgeCellClicks, target: 5, reward: 10, category: 'skills' },
-        { id: 'ten-nudge-cells', title: 'Right on Cue', detail: 'Tap 10 Nudge-highlighted cells.', current: nudgeCellClicks, target: 10, reward: 10, category: 'skills' },
-        { id: 'fifteen-nudge-cells', title: 'Taking the Hint', detail: 'Tap 15 Nudge-highlighted cells.', current: nudgeCellClicks, target: 15, reward: 10, category: 'skills' },
-        { id: 'twenty-nudge-cells', title: 'Subtle Signal', detail: 'Tap 20 Nudge-highlighted cells.', current: nudgeCellClicks, target: 20, reward: 10, category: 'skills' },
-        { id: 'thirty-nudge-cells', title: 'Friendly Reminder', detail: 'Tap 30 Nudge-highlighted cells.', current: nudgeCellClicks, target: 30, reward: 10, category: 'skills' },
-        { id: 'forty-nudge-cells', title: 'Helpful Glow', detail: 'Tap 40 Nudge-highlighted cells.', current: nudgeCellClicks, target: 40, reward: 10, category: 'skills' },
-        { id: 'fifty-nudge-cells', title: 'Nudge Regular', detail: 'Tap 50 Nudge-highlighted cells.', current: nudgeCellClicks, target: 50, reward: 15, category: 'skills' },
-        { id: 'seventy-five-nudge-cells', title: 'Guiding Light', detail: 'Tap 75 Nudge-highlighted cells.', current: nudgeCellClicks, target: 75, reward: 15, category: 'skills' },
-        { id: 'hundred-nudge-cells', title: 'Hint Whisperer', detail: 'Tap 100 Nudge-highlighted cells.', current: nudgeCellClicks, target: 100, reward: 15, category: 'skills' },
+        { id: 'one-nudge-cell', title: 'Gentle Hint', detail: 'Tap 1 Light-highlighted cell.', current: nudgeCellClicks, target: 1, reward: 5, category: 'skills' },
+        { id: 'five-nudge-cells', title: 'Small Push', detail: 'Tap 5 Light-highlighted cells.', current: nudgeCellClicks, target: 5, reward: 10, category: 'skills' },
+        { id: 'ten-nudge-cells', title: 'Right on Cue', detail: 'Tap 10 Light-highlighted cells.', current: nudgeCellClicks, target: 10, reward: 10, category: 'skills' },
+        { id: 'fifteen-nudge-cells', title: 'Taking the Hint', detail: 'Tap 15 Light-highlighted cells.', current: nudgeCellClicks, target: 15, reward: 10, category: 'skills' },
+        { id: 'twenty-nudge-cells', title: 'Subtle Signal', detail: 'Tap 20 Light-highlighted cells.', current: nudgeCellClicks, target: 20, reward: 10, category: 'skills' },
+        { id: 'thirty-nudge-cells', title: 'Friendly Reminder', detail: 'Tap 30 Light-highlighted cells.', current: nudgeCellClicks, target: 30, reward: 10, category: 'skills' },
+        { id: 'forty-nudge-cells', title: 'Helpful Glow', detail: 'Tap 40 Light-highlighted cells.', current: nudgeCellClicks, target: 40, reward: 10, category: 'skills' },
+        { id: 'fifty-nudge-cells', title: 'Light Regular', detail: 'Tap 50 Light-highlighted cells.', current: nudgeCellClicks, target: 50, reward: 15, category: 'skills' },
+        { id: 'seventy-five-nudge-cells', title: 'Guiding Light', detail: 'Tap 75 Light-highlighted cells.', current: nudgeCellClicks, target: 75, reward: 15, category: 'skills' },
+        { id: 'hundred-nudge-cells', title: 'Hint Whisperer', detail: 'Tap 100 Light-highlighted cells.', current: nudgeCellClicks, target: 100, reward: 15, category: 'skills' },
     ];
     const noScanMilestones: AchievementDefinition[] = [
         { id: 'one-hard-no-scan', title: 'Own Eyes', detail: 'Win 1 puzzle on Hard or above without Scan.', current: hardNoScanWins, target: 1, reward: 5, category: 'skills' },
@@ -275,7 +275,7 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
         selectCurrentMilestone(backgroundMilestones),
         selectCurrentMilestone(numberStyleMilestones),
         selectCurrentMilestone(soundPackMilestones),
-        { id: 'all-skills', title: 'Complete Toolkit', detail: 'Unlock every skill.', current: skills, target: 3, reward: 50, category: 'collection' },
+        { id: 'all-skills', title: 'Complete Toolkit', detail: 'Unlock every skill.', current: skills, target: 4, reward: 50, category: 'collection' },
     ];
 
     const pepinoMilestones: Array<Omit<AchievementItem, 'claimed' | 'ready'>> = [

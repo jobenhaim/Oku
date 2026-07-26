@@ -111,9 +111,10 @@ export const Icons = {
   // Added Smartphone to match usage in constants.ts
   Smartphone: (props: any) => <Smartphone {...props} />,
   Vibration: (props: any) => <Smartphone {...props} />,
-  Guard: (props: SkillAssetIconProps) => <SkillAssetIcon src="/assets/skill-icons/guard-dark-blue-number.webp" {...props} />,
+  Guard: (props: SkillAssetIconProps) => <SkillAssetIcon src="/assets/skill-icons/guard3.webp" {...props} />,
   Scan: (props: SkillAssetIconProps) => <SkillAssetIcon src="/assets/skill-icons/scan.webp" {...props} />,
   Nudge: (props: SkillAssetIconProps) => <SkillAssetIcon src="/assets/skill-icons/nudge.webp" {...props} />,
+  Focus: (props: SkillAssetIconProps) => <SkillAssetIcon src="/assets/skill-icons/focus.webp" {...props} />,
   Gift: (props: any) => <Gift {...props} />,
   Clock: (props: any) => <Clock {...props} />,
   Timer: (props: any) => <Timer {...props} />,

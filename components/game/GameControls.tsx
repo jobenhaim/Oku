@@ -8,9 +8,11 @@ interface GameControlsProps {
     canErase: boolean;
     isEraseMode: boolean;
     isPencilMode: boolean;
+    isFocusMode: boolean;
     onUndo: (e: React.MouseEvent) => void;
     onErase: (e: React.MouseEvent) => void;
     onTogglePencil: (e: React.MouseEvent) => void;
+    onToggleFocus: (e: React.MouseEvent) => void;
     purchasedSkills: string[];
     // Skill specific props
     scanUses: number;
@@ -25,9 +27,11 @@ export const GameControls: React.FC<GameControlsProps> = ({
     canErase,
     isEraseMode,
     isPencilMode,
+    isFocusMode,
     onUndo,
     onErase,
     onTogglePencil,
+    onToggleFocus,
     purchasedSkills,
     scanUses,
     isScanning,
@@ -50,6 +54,25 @@ export const GameControls: React.FC<GameControlsProps> = ({
     return (
         <div className="flex flex-col gap-4 relative">
             <div className="flex justify-between w-full relative">
+                {/* Focus Skill Button */}
+                {purchasedSkills.includes('skill-focus') && (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onToggleFocus(e); }}
+                        className={`flex flex-col items-center gap-1 active:scale-95 transition cursor-pointer ${
+                            isFocusMode ? 'text-blue-700 dark:text-blue-300' : 'text-stone-900 dark:text-stone-100'
+                        }`}
+                    >
+                        <div className={`p-3 rounded-full transition-all duration-300 relative flex items-center justify-center ${
+                            isFocusMode
+                                ? 'bg-blue-100 dark:bg-blue-900/50 shadow-[0_0_14px_rgba(59,130,246,0.45)]'
+                                : 'bg-white dark:bg-stone-800 shadow-sm'
+                        }`}>
+                            <Icons.Focus className="w-5 h-5 scale-[1.32]" />
+                        </div>
+                        <span className="text-sm font-medium">Focus</span>
+                    </button>
+                )}
+
                 {/* Scan Skill Button */}
                 {purchasedSkills.includes('skill-scan') && (
                         <button 

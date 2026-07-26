@@ -1,4 +1,4 @@
-import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
+import { Purchases, LOG_LEVEL, PRODUCT_CATEGORY } from '@revenuecat/purchases-capacitor';
 import type { CustomerInfo } from '@revenuecat/purchases-capacitor';
 import { Capacitor } from '@capacitor/core';
 import { PermanentPurchaseOwnership } from '../types';
@@ -52,6 +52,7 @@ const isProductOwned = (ownership: PermanentPurchaseOwnership, productId: string
 
 class IAPManager {
     private initialized = false;
+    private localizedPrices: Record<string, string> = {};
 
     async initialize(): Promise<void> {
         if (this.initialized) return;
@@ -84,6 +85,37 @@ class IAPManager {
             console.error('IAP: Failed to fetch customer ownership:', error);
             return null;
         }
+    }
+
+    async getLocalizedPrices(productIds: string[]): Promise<Record<string, string>> {
+        if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'ios') return {};
+        if (!this.initialized) await this.initialize();
+        if (!this.initialized) return {};
+
+        const missingProductIds = productIds.filter(productId => !this.localizedPrices[productId]);
+
+        if (missingProductIds.length > 0) {
+            try {
+                const { products } = await Purchases.getProducts({
+                    productIdentifiers: missingProductIds,
+                    type: PRODUCT_CATEGORY.NON_SUBSCRIPTION
+                });
+
+                products.forEach(product => {
+                    if (product.priceString) {
+                        this.localizedPrices[product.identifier] = product.priceString;
+                    }
+                });
+            } catch (error) {
+                console.error('IAP: Failed to fetch localized prices:', error);
+            }
+        }
+
+        return productIds.reduce<Record<string, string>>((prices, productId) => {
+            const localizedPrice = this.localizedPrices[productId];
+            if (localizedPrice) prices[productId] = localizedPrice;
+            return prices;
+        }, {});
     }
 
     async purchase(productId: string): Promise<IAPPurchaseResult> {
@@ -132,8 +164,8 @@ class IAPManager {
             console.log(`IAP: Purchasing ${productId} via RevenueCat`);
             const { products } = await Purchases.getProducts({
                 productIdentifiers: [productId],
-                type: 'NON_SUBSCRIPTION'
-            } as any);
+                type: PRODUCT_CATEGORY.NON_SUBSCRIPTION
+            });
 
             const product = products.find(candidate => candidate.identifier === productId);
             if (!product) {

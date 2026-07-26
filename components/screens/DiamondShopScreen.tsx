@@ -5,6 +5,7 @@ import { DiamondOffer } from '../../types';
 import { Storage } from '../../utils/storage';
 import { FishTank } from '../ui/FishTank';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
+import { IAP } from '../../utils/iap';
 
 interface DiamondShopScreenProps {
     points: number;
@@ -126,10 +127,32 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     onRestorePurchases,
     starterPackPurchased
 }) => {
+    const [localizedPrices, setLocalizedPrices] = useState<Record<string, string>>({});
     const pepinoState = Storage.getPepinoState();
     const premiumOffer = DIAMOND_OFFERS.find(offer => offer.type === 'support');
     const starterOffer = DIAMOND_OFFERS.find(offer => offer.type === 'starter');
     const diamondPacks = DIAMOND_OFFERS.filter(offer => offer.type === 'pack');
+
+    useEffect(() => {
+        let isActive = true;
+
+        IAP.getLocalizedPrices(DIAMOND_OFFERS.map(offer => offer.productId)).then(prices => {
+            if (isActive) setLocalizedPrices(prices);
+        });
+
+        return () => {
+            isActive = false;
+        };
+    }, []);
+
+    const getPriceLabel = (offer: DiamondOffer) => localizedPrices[offer.productId] || offer.priceLabel;
+
+    const handleBuyOffer = (offer: DiamondOffer) => {
+        onBuyOffer({
+            ...offer,
+            priceLabel: getPriceLabel(offer)
+        });
+    };
 
     const shouldShowIntro = () => {
         if (!pepinoState.unlocked || !pepinoState.unlockedAt) return false;
@@ -182,7 +205,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                     ) : premiumOffer ? (
                         <section aria-labelledby="premium-heading">
                             <button
-                                onClick={() => onBuyOffer(premiumOffer)}
+                                onClick={() => handleBuyOffer(premiumOffer)}
                                 className="w-full bg-[#e0f7fa] dark:bg-[#173b52] rounded-[1.75rem] shadow-sm border border-sky-100/80 dark:border-sky-900 overflow-hidden text-left active:scale-[0.99] transition-transform relative"
                             >
                                 <PremiumPepinoBackdrop />
@@ -224,7 +247,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         <Icons.Next className="w-4 h-4 text-t-secondary" />
                                     </div>
                                     <span className="px-3 py-1.5 rounded-full bg-blue-500 text-white text-sm font-bold shadow-sm shadow-blue-500/20">
-                                        {premiumOffer.priceLabel}
+                                        {getPriceLabel(premiumOffer)}
                                     </span>
                                 </div>
                             </button>
@@ -234,7 +257,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                     {starterOffer && (
                         <section aria-labelledby="starter-heading">
                             <button
-                                onClick={() => !starterPackPurchased && onBuyOffer(starterOffer)}
+                                onClick={() => !starterPackPurchased && handleBuyOffer(starterOffer)}
                                 disabled={starterPackPurchased}
                                 className={`w-full bg-t-surface rounded-3xl shadow-sm border border-stone-200/80 dark:border-stone-800 text-left transition-all overflow-hidden relative ${starterPackPurchased ? 'opacity-60 cursor-default' : 'active:scale-[0.99]'}`}
                             >
@@ -284,7 +307,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                             <div className="h-8 flex items-center justify-center">
                                                 <Icons.Nudge className="w-8 h-8" />
                                             </div>
-                                            <span className="text-[11px] font-bold text-t-primary">Nudge</span>
+                                            <span className="text-[11px] font-bold text-t-primary">Light</span>
                                         </div>
                                         <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
                                             <div className="h-8 flex items-center justify-center">
@@ -313,7 +336,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         {!starterPackPurchased && <Icons.Next className="w-4 h-4 text-t-secondary" />}
                                     </div>
                                     <span className={`px-3 py-1.5 rounded-full text-sm font-bold ${starterPackPurchased ? 'bg-t-surface-sec text-t-secondary' : 'bg-blue-500 text-white shadow-sm shadow-blue-500/20'}`}>
-                                        {starterPackPurchased ? 'Owned' : starterOffer.priceLabel}
+                                        {starterPackPurchased ? 'Owned' : getPriceLabel(starterOffer)}
                                     </span>
                                 </div>
                             </button>
@@ -332,7 +355,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                 return (
                                     <button
                                         key={offer.id}
-                                        onClick={() => onBuyOffer(offer)}
+                                        onClick={() => handleBuyOffer(offer)}
                                         className={`relative overflow-hidden bg-t-surface rounded-3xl p-3.5 min-h-[148px] flex flex-col items-center justify-between text-center shadow-sm border active:scale-[0.98] transition-transform ${isBestValue ? 'border-blue-300 dark:border-blue-800' : 'border-stone-200/80 dark:border-stone-800'}`}
                                     >
                                         {isBestValue && (
@@ -344,7 +367,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                             <span className="sr-only">diamonds</span>
                                         </div>
                                         <span className="relative px-3 py-1.5 rounded-full text-sm font-bold bg-blue-500 text-white shadow-sm shadow-blue-500/20">
-                                            {offer.priceLabel}
+                                            {getPriceLabel(offer)}
                                         </span>
                                     </button>
                                 );

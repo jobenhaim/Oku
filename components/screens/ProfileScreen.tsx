@@ -379,46 +379,38 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                                 type="button"
                                 onClick={() => toggleStat('games', gamesWonBreakdown.length > 0)}
                                 aria-expanded={expandedStat === 'games'}
-                                className={`relative min-h-[112px] overflow-hidden rounded-[1.4rem] border p-4 text-left shadow-sm active:scale-[0.98] transition-transform ${expandedStat === 'games' ? 'border-amber-300 dark:border-amber-700' : 'border-amber-100 dark:border-amber-900/50'} bg-gradient-to-br from-amber-50 to-orange-100/70 dark:from-amber-950/40 dark:to-orange-950/20`}
+                                className={`relative min-h-[112px] overflow-hidden rounded-[1.4rem] border p-4 text-left shadow-sm active:scale-[0.98] transition-transform bg-white dark:bg-stone-900 ${expandedStat === 'games' ? 'border-amber-300 dark:border-amber-700' : 'border-stone-200/80 dark:border-stone-800'}`}
                             >
-                                <div className="flex items-start justify-between">
-                                    <div className="w-9 h-9 rounded-xl bg-white/80 dark:bg-black/20 text-amber-500 flex items-center justify-center shadow-sm">
-                                        <Icons.Trophy className="w-7 h-7" />
-                                    </div>
-                                    {gamesWonBreakdown.length > 0 && (
-                                        <span className="w-7 h-7 rounded-full bg-white/75 dark:bg-black/20 text-amber-700 dark:text-amber-300 flex items-center justify-center">
-                                            <Icons.Down className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedStat === 'games' ? 'rotate-180' : ''}`} />
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="mt-3">
-                                    <span className="block text-[1.75rem] font-bold tracking-[0.035em] tabular-nums leading-none text-stone-900 dark:text-stone-50">
+                                <Icons.Trophy className="absolute -right-10 -bottom-16 w-48 h-48 opacity-[0.105] pointer-events-none" />
+                                {gamesWonBreakdown.length > 0 && (
+                                    <span className="absolute z-20 right-4 top-4 w-8 h-8 rounded-full bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 flex items-center justify-center border border-stone-100 dark:border-stone-700">
+                                        <Icons.Down className={`w-4 h-4 transition-transform duration-200 ${expandedStat === 'games' ? 'rotate-180' : ''}`} />
+                                    </span>
+                                )}
+                                <div className="relative z-10 mt-5">
+                                    <span className="block text-[2.15rem] font-bold tracking-[0.035em] tabular-nums leading-none text-stone-900 dark:text-stone-50">
                                         {storedData.stats?.totalGamesWon || 0}
                                     </span>
-                                    <span className="block mt-1 text-[9px] font-bold text-amber-800/65 dark:text-amber-200/70 uppercase tracking-[0.13em]">Games Won</span>
+                                    <span className="block mt-1.5 text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.13em]">Games Won</span>
                                 </div>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => toggleStat('diamonds', diamondBreakdown.length > 0)}
                                 aria-expanded={expandedStat === 'diamonds'}
-                                className={`relative min-h-[112px] overflow-hidden rounded-[1.4rem] border p-4 text-left shadow-sm active:scale-[0.98] transition-transform ${expandedStat === 'diamonds' ? 'border-blue-300 dark:border-blue-700' : 'border-blue-100 dark:border-blue-900/50'} bg-gradient-to-br from-blue-50 to-cyan-100/70 dark:from-blue-950/40 dark:to-cyan-950/20`}
+                                className={`relative min-h-[112px] overflow-hidden rounded-[1.4rem] border p-4 text-left shadow-sm active:scale-[0.98] transition-transform bg-white dark:bg-stone-900 ${expandedStat === 'diamonds' ? 'border-blue-300 dark:border-blue-700' : 'border-stone-200/80 dark:border-stone-800'}`}
                             >
-                                <div className="flex items-start justify-between">
-                                    <div className="w-9 h-9 rounded-xl bg-white/80 dark:bg-black/20 text-blue-500 flex items-center justify-center shadow-sm">
-                                        <Icons.Diamond className="w-[18px] h-[18px] fill-current" />
-                                    </div>
-                                    {diamondBreakdown.length > 0 && (
-                                        <span className="w-7 h-7 rounded-full bg-white/75 dark:bg-black/20 text-blue-700 dark:text-blue-300 flex items-center justify-center">
-                                            <Icons.Down className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedStat === 'diamonds' ? 'rotate-180' : ''}`} />
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="mt-3">
-                                    <span className="block text-[1.75rem] font-bold tracking-[0.035em] tabular-nums leading-none text-stone-900 dark:text-stone-50">
+                                <Icons.Diamond className="absolute -right-8 -bottom-12 w-40 h-40 text-blue-500 fill-current opacity-[0.095] pointer-events-none" />
+                                {diamondBreakdown.length > 0 && (
+                                    <span className="absolute z-20 right-4 top-4 w-8 h-8 rounded-full bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 flex items-center justify-center border border-stone-100 dark:border-stone-700">
+                                        <Icons.Down className={`w-4 h-4 transition-transform duration-200 ${expandedStat === 'diamonds' ? 'rotate-180' : ''}`} />
+                                    </span>
+                                )}
+                                <div className="relative z-10 mt-5">
+                                    <span className="block text-[2.15rem] font-bold tracking-[0.035em] tabular-nums leading-none text-stone-900 dark:text-stone-50">
                                         {storedData.stats?.totalDiamondsEarned || 0}
                                     </span>
-                                    <span className="block mt-1 text-[9px] font-bold text-blue-800/65 dark:text-blue-200/70 uppercase tracking-[0.13em]">Diamonds Earned</span>
+                                    <span className="block mt-1.5 text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.13em]">Diamonds Earned</span>
                                 </div>
                             </button>
                         </div>
@@ -427,15 +419,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                             aria-hidden={!expandedStat}
                         >
                             <div className="overflow-hidden">
-                                <div className={`rounded-[1.25rem] border shadow-sm ${visibleStatBreakdown === 'games' ? 'bg-amber-50/70 border-amber-100 dark:bg-amber-950/25 dark:border-amber-900/50' : 'bg-blue-50/70 border-blue-100 dark:bg-blue-950/25 dark:border-blue-900/50'}`}>
-                                    <div className="px-4 py-3 space-y-2.5">
+                                <div className="rounded-[1.25rem] border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm">
+                                    <div className="px-4 py-3.5 space-y-3">
                                         {(visibleStatBreakdown === 'games' ? gamesWonBreakdown : diamondBreakdown).map((item) => (
-                                            <div key={item.label} className="flex items-center justify-between text-xs font-semibold">
+                                            <div key={item.label} className="flex items-center justify-between text-sm font-semibold">
                                                 <span className="flex items-center gap-2 text-stone-600 dark:text-stone-300">
                                                     <span className={`w-1.5 h-1.5 rounded-full ${visibleStatBreakdown === 'games' ? 'bg-amber-400' : 'bg-blue-400'}`} />
                                                     {item.label}
                                                 </span>
-                                                <span className="min-w-9 px-2 py-1 rounded-full bg-white/80 dark:bg-black/20 text-center text-t-primary font-bold tabular-nums inline-flex items-center justify-center gap-1.5">
+                                                <span className="min-w-10 px-2.5 py-1.5 rounded-full bg-stone-50 dark:bg-stone-800 text-center text-t-primary font-bold tabular-nums inline-flex items-center justify-center gap-1.5">
                                                     {item.value}
                                                     {visibleStatBreakdown === 'diamonds' && <Icons.Diamond className="w-2.5 h-2.5 text-blue-500 fill-current" />}
                                                 </span>
@@ -467,11 +459,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
                         <div className="space-y-6">
                             <AchievementGroup title="Next title" achievements={visibleTitleAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
-                            <AchievementGroup title="Packs" achievements={visiblePackAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
                             <AchievementGroup title="Journey" achievements={visibleJourneyAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
                             <AchievementGroup title="Skills" achievements={visibleSkillAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
                             <AchievementGroup title="Pepino" achievements={visiblePepinoAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
                             <AchievementGroup title="Collection" achievements={visibleCollectionAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
+                            <AchievementGroup title="Books" achievements={visiblePackAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
                         </div>
                     </div>
 
