@@ -142,6 +142,7 @@ function getStoredData(): StoredData {
           welcomeGiftClaimed: false,
           processedPurchaseTransactions: [],
           claimedAchievements: [],
+          watchedReplayPuzzleIds: [],
           achievementCounters: emptyAchievementCounters(),
           stats: { ...DEFAULT_STATS, gamesWonByDifficulty: {}, diamondsEarnedBySource: {} }
       };
@@ -285,7 +286,13 @@ function getStoredData(): StoredData {
         data.achievementCounters.hardPerfectGames = Math.max(0, Math.floor((data.achievementCounters as any).hardPerfectStageProgress || 0));
     }
     data.achievementCounters.hardPerfectGames = Math.max(0, Math.floor(data.achievementCounters.hardPerfectGames || 0));
-    data.achievementCounters.replaysWatched = Math.max(0, Math.floor(data.achievementCounters.replaysWatched || 0));
+    if (!Array.isArray(data.watchedReplayPuzzleIds)) {
+        data.watchedReplayPuzzleIds = [];
+    }
+    data.watchedReplayPuzzleIds = [...new Set(
+        data.watchedReplayPuzzleIds.filter((id: unknown): id is string => typeof id === 'string' && id.length > 0)
+    )];
+    data.achievementCounters.replaysWatched = data.watchedReplayPuzzleIds.length;
     data.achievementCounters.nudgeCellClicks = Math.max(
         0,
         Math.floor(data.achievementCounters.nudgeCellClicks || 0)
@@ -349,6 +356,7 @@ function getStoredData(): StoredData {
         welcomeGiftClaimed: false,
         processedPurchaseTransactions: [],
         claimedAchievements: [],
+        watchedReplayPuzzleIds: [],
         achievementCounters: emptyAchievementCounters(),
         stats: { ...DEFAULT_STATS, gamesWonByDifficulty: {}, diamondsEarnedBySource: {} }
     };
@@ -493,11 +501,17 @@ export const Storage = {
       saveData(data);
   },
 
-  recordReplayWatch: () => {
+  recordReplayWatch: (puzzleId: string): boolean => {
+      if (!puzzleId) return false;
       const data = getStoredData();
+      if (!data.watchedReplayPuzzleIds) data.watchedReplayPuzzleIds = [];
+      if (data.watchedReplayPuzzleIds.includes(puzzleId)) return false;
+
+      data.watchedReplayPuzzleIds.push(puzzleId);
       if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
-      data.achievementCounters.replaysWatched += 1;
+      data.achievementCounters.replaysWatched = data.watchedReplayPuzzleIds.length;
       saveData(data);
+      return true;
   },
   
   getPurchasedBackgrounds: (): string[] => {

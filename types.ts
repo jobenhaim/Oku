@@ -93,6 +93,7 @@ export interface StoredData {
   welcomeGiftClaimed?: boolean; // Track if the welcome gift has been claimed
   processedPurchaseTransactions?: string[]; // Prevent a Store transaction from granting rewards twice
   claimedAchievements?: string[]; // Achievement rewards already collected
+  watchedReplayPuzzleIds?: string[]; // Count each completed puzzle only once for replay achievements
   achievementCounters?: {
       scansUsed: number;
       pepinoGiftsOpened: number;

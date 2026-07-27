@@ -53,7 +53,7 @@ const AchievementRow: React.FC<{
     isEntering?: boolean;
 }> = ({ achievement, onClaim, isEntering = false }) => {
     const progress = Math.min(100, (achievement.current / achievement.target) * 100);
-    const showProgress = achievement.target > 1 && !achievement.claimed;
+    const showProgress = achievement.showProgress !== false && achievement.target > 1 && !achievement.claimed;
     const [isClaiming, setIsClaiming] = useState(false);
     const claimTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 

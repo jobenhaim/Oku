@@ -120,8 +120,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const [nudgeCue, setNudgeCue] = useState<{r: number, c: number, key: number} | null>(null);
   const [showStartHint, setShowStartHint] = useState(false);
   const [pillMessage, setPillMessage] = useState<PillMessage | null>(null);
-  const [pillQueue, setPillQueue] = useState<PillMessage[]>([]);
-  const [isPillGapActive, setIsPillGapActive] = useState(false);
   const scanErrorDeckRef = useRef(shuffledCopy(SCAN_ERROR_MESSAGES));
   const scanCleanDeckRef = useRef(shuffledCopy(SCAN_CLEAN_MESSAGES));
   const halfwayDeckRef = useRef(shuffledCopy(HALFWAY_MESSAGES));
@@ -132,7 +130,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const completeIndexRef = useRef(0);
   const pillMessageIdRef = useRef(0);
   const pillMessageRef = useRef<PillMessage | null>(null);
-  const pillGapMsRef = useRef(800);
+  const pendingPillRef = useRef<PillMessage | null>(null);
+  const isPillExitingRef = useRef(false);
   const halfwayShownRef = useRef(false);
   const halfwayTrackingReadyRef = useRef(false);
   const notesReadyShownRef = useRef(false);
@@ -203,52 +202,61 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       }
   }, []);
 
-  useEffect(() => {
-      pillMessageRef.current = pillMessage;
-  }, [pillMessage]);
+  const dismissCurrentPill = useCallback(() => {
+      if (!pillMessageRef.current) return;
+      pillMessageRef.current = null;
+      isPillExitingRef.current = true;
+      setPillMessage(null);
+  }, []);
 
   const enqueuePill = useCallback((message: Omit<PillMessage, 'id'>, deduplicate = false) => {
       if (settings.pillNotifications === false) return;
       const isSameMessage = (candidate: PillMessage) => candidate.type === message.type && candidate.text === message.text;
       if (deduplicate && pillMessageRef.current && isSameMessage(pillMessageRef.current)) return;
+      if (deduplicate && pendingPillRef.current && isSameMessage(pendingPillRef.current)) return;
 
-      setPillQueue(current => {
-          if (deduplicate && current.some(isSameMessage)) return current;
-          pillMessageIdRef.current += 1;
-          return [...current, { ...message, id: pillMessageIdRef.current }];
-      });
-  }, [settings.pillNotifications]);
+      pillMessageIdRef.current += 1;
+      const nextMessage = { ...message, id: pillMessageIdRef.current };
+
+      // Keep at most one pending notification. A new action replaces anything
+      // that has not appeared yet, so feedback can never build up into a queue.
+      if (pillMessageRef.current || isPillExitingRef.current) {
+          pendingPillRef.current = nextMessage;
+          dismissCurrentPill();
+          return;
+      }
+
+      pillMessageRef.current = nextMessage;
+      setPillMessage(nextMessage);
+  }, [dismissCurrentPill, settings.pillNotifications]);
 
   useEffect(() => {
       if (settings.pillNotifications !== false) return;
-      setPillQueue([]);
+      pendingPillRef.current = null;
+      pillMessageRef.current = null;
+      isPillExitingRef.current = false;
       setPillMessage(null);
-      setIsPillGapActive(false);
   }, [settings.pillNotifications]);
-
-  useEffect(() => {
-      if (pillMessage || isPillGapActive || pillQueue.length === 0) return;
-      const [nextMessage, ...remainingMessages] = pillQueue;
-      setPillQueue(remainingMessages);
-      setPillMessage(nextMessage);
-  }, [pillMessage, pillQueue, isPillGapActive]);
 
   useEffect(() => {
       if (!pillMessage) return;
       const displayTimer = window.setTimeout(() => {
-          // The opening warning follows Good Luck after a shorter 0.3s visible gap.
-          pillGapMsRef.current = pillMessage.type === 'start' ? 600 : 800;
-          setPillMessage(null);
-          setIsPillGapActive(true);
+          if (pillMessageRef.current?.id === pillMessage.id) {
+              dismissCurrentPill();
+          }
       }, 300 + pillMessage.holdMs);
       return () => window.clearTimeout(displayTimer);
-  }, [pillMessage]);
+  }, [dismissCurrentPill, pillMessage]);
 
-  useEffect(() => {
-      if (!isPillGapActive) return;
-      const gapTimer = window.setTimeout(() => setIsPillGapActive(false), pillGapMsRef.current);
-      return () => window.clearTimeout(gapTimer);
-  }, [isPillGapActive]);
+  const handlePillExitComplete = useCallback(() => {
+      isPillExitingRef.current = false;
+      const nextMessage = pendingPillRef.current;
+      pendingPillRef.current = null;
+      if (!nextMessage || settings.pillNotifications === false) return;
+
+      pillMessageRef.current = nextMessage;
+      setPillMessage(nextMessage);
+  }, [settings.pillNotifications]);
 
   const handleScanResult = useCallback((hasErrors: boolean) => {
       const deck = hasErrors ? scanErrorDeckRef.current : scanCleanDeckRef.current;
@@ -259,9 +267,10 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   }, [enqueuePill]);
 
   useEffect(() => {
-      setPillQueue([]);
+      pendingPillRef.current = null;
+      pillMessageRef.current = null;
+      isPillExitingRef.current = false;
       setPillMessage(null);
-      setIsPillGapActive(false);
       halfwayShownRef.current = false;
 
       const startMessageTimer = window.setTimeout(() => {
@@ -330,11 +339,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
       // The completion message always takes priority over any queued gameplay tip.
       if (settings.pillNotifications !== false) {
-          pillMessageIdRef.current += 1;
-          setPillQueue([]);
-          setIsPillGapActive(false);
-          setPillMessage({
-              id: pillMessageIdRef.current,
+          pendingPillRef.current = null;
+          enqueuePill({
               text: completionText,
               type: 'complete',
               holdMs: 1000
@@ -342,9 +348,10 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       }
 
       window.setTimeout(() => {
-          setPillQueue([]);
+          pendingPillRef.current = null;
+          pillMessageRef.current = null;
+          isPillExitingRef.current = false;
           setPillMessage(null);
-          setIsPillGapActive(false);
           setIsCompleted(true);
           onComplete();
       }, 1500);
@@ -865,34 +872,34 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
              transition={{ duration: 0.5, delay: 0.08, type: "spring", stiffness: 100, damping: 15 }}
              className="w-full flex justify-center relative overflow-visible"
          >
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait" onExitComplete={handlePillExitComplete}>
                 {pillMessage && (
                     <motion.div
                         key={pillMessage.id}
                         initial={{ y: 52, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 52, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        transition={{ duration: 0.15, ease: "easeInOut" }}
                         className="absolute inset-x-0 bottom-full h-8 z-0 pointer-events-none whitespace-nowrap flex items-center justify-center px-4"
                     >
-                        <span className="text-[11px] md:text-xs font-semibold text-stone-600 dark:text-stone-100 bg-stone-50 dark:bg-stone-800 border border-stone-200/80 dark:border-stone-700 px-4 py-1.5 rounded-full inline-flex items-center gap-1.5 leading-none shadow-md dark:shadow-black/30">
+                        <span className="text-[13px] md:text-[14px] font-semibold text-stone-600 dark:text-stone-100 bg-stone-50 dark:bg-stone-800 border border-stone-200/80 dark:border-stone-700 px-[19px] py-[7px] rounded-full inline-flex items-center gap-[7px] leading-none shadow-md dark:shadow-black/30">
                             {pillMessage.type === 'warning' ? (
                                 <>
-                                    <Icons.Info className="w-3.5 h-3.5 shrink-0 text-stone-500 dark:text-stone-300" />
+                                    <Icons.Info className="w-[17px] h-[17px] shrink-0 text-stone-500 dark:text-stone-300" />
                                     {pillMessage.text}
-                                    <span className="inline-flex items-center gap-1 text-red-500 font-bold">
-                                        <Icons.Scan className="w-3.5 h-3.5 shrink-0 text-red-500" />
+                                    <span className="inline-flex items-center gap-[5px] text-red-500 font-bold">
+                                        <Icons.Scan className="w-[17px] h-[17px] shrink-0 text-red-500" />
                                         Scan Recommended
                                     </span>
                                 </>
                             ) : (
                                 <>
                                     {pillMessage.type === 'scan-error' ? (
-                                        <Icons.Close className="w-3.5 h-3.5 shrink-0 text-red-500" />
+                                        <Icons.Close className="w-[17px] h-[17px] shrink-0 text-red-500" />
                                     ) : pillMessage.type === 'scan-clean' ? (
-                                        <Icons.Check className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+                                        <Icons.Check className="w-[17px] h-[17px] shrink-0 text-emerald-500" />
                                     ) : pillMessage.type === 'notes' ? (
-                                        <Icons.Info className="w-3.5 h-3.5 shrink-0 text-stone-500 dark:text-stone-300" />
+                                        <Icons.Info className="w-[17px] h-[17px] shrink-0 text-stone-500 dark:text-stone-300" />
                                     ) : null}
                                     {pillMessage.text}
                                 </>
@@ -1114,7 +1121,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
               generateReplayEnabled={settings.generateReplay}
               onReplay={(e) => {
                   e.stopPropagation();
-                  Storage.recordReplayWatch();
+                  Storage.recordReplayWatch(`${difficulty}-${levelId}`);
                   setShowReplay(true);
               }}
               onShareReplay={handleShareReplay}

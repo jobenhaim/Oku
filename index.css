@@ -795,20 +795,14 @@ html, body {
   to { background-position: 0 -30px; }
 }
 
-/* Faster cell selection and highlighting transitions (0.2 seconds) */
+/* Sudoku interaction feedback must follow every tap immediately. */
 .sudoku-cell {
-  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: none !important;
 }
 .sudoku-cell * {
   transition: none !important;
 }
 .sudoku-cell .sudoku-cell-bg {
-  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-
-/* Drag exploration follows the finger instantly; regular taps stay softened. */
-.sudoku-grid-dragging .sudoku-cell,
-.sudoku-grid-dragging .sudoku-cell .sudoku-cell-bg {
   transition: none !important;
 }
 
