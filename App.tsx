@@ -532,11 +532,9 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       if (!selectedDifficulty) return;
       const cost = getPackCost(selectedDifficulty, 2);
       if (points >= cost) {
-          sounds.playPop();
           if (Storage.unlockPack2(selectedDifficulty, cost)) {
               setPoints(Storage.getPoints());
               setUnlockedPacks2(Storage.getUnlockedPacks2());
-              sounds.playWin();
           }
       } else {
           sounds.playClick();
@@ -548,11 +546,9 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       if (!selectedDifficulty) return;
       const cost = getPackCost(selectedDifficulty, 3);
       if (points >= cost) {
-          sounds.playPop();
           if (Storage.unlockPack3(selectedDifficulty, cost)) {
               setPoints(Storage.getPoints());
               setUnlockedPacks3(Storage.getUnlockedPacks3());
-              sounds.playWin();
           }
       } else {
           sounds.playClick();
@@ -578,6 +574,14 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
           return true;
       }
 
+      if (lowerCode === 'haha10000') {
+          sounds.playWin();
+          handleEarnPoints(10000, 'coupons');
+          Storage.markCouponRedeemed(normalizedCode);
+          setRedeemedCoupons(Storage.getStoredData().redeemedCoupons || []);
+          return true;
+      }
+
       if (lowerCode === 'hahapepino') {
           sounds.playWin();
           Storage.unlockPepino();
@@ -597,9 +601,37 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
           return true;
       }
 
-      if (lowerCode === 'slvse100') {
+      const solveCouponDifficulties: Record<string, Difficulty> = {
+          slvse100: Difficulty.SuperEasy,
+          slve100: Difficulty.Easy,
+          slvn100: Difficulty.Normal,
+          slvh100: Difficulty.Hard,
+          slvin100: Difficulty.Intense,
+          slvim100: Difficulty.Impossible,
+      };
+
+      if (lowerCode === 'slvall100') {
           sounds.playWin();
-          Storage.completeSuperEasyLevels();
+          [
+              Difficulty.SuperEasy,
+              Difficulty.Easy,
+              Difficulty.Normal,
+              Difficulty.Hard,
+              Difficulty.Intense,
+              Difficulty.Impossible,
+          ].forEach(Storage.completeDifficultyLevels);
+          Storage.markCouponRedeemed(normalizedCode);
+          const updatedData = Storage.getStoredData();
+          setStats(updatedData.stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
+          setRedeemedCoupons(updatedData.redeemedCoupons || []);
+          return true;
+      }
+
+      const couponDifficulty = solveCouponDifficulties[lowerCode];
+
+      if (couponDifficulty) {
+          sounds.playWin();
+          Storage.completeDifficultyLevels(couponDifficulty);
           Storage.markCouponRedeemed(normalizedCode);
           const updatedData = Storage.getStoredData();
           setStats(updatedData.stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });

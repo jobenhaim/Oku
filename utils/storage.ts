@@ -910,12 +910,12 @@ export const Storage = {
   },
 
   // COUPONS
-  completeSuperEasyLevels: () => {
+  completeDifficultyLevels: (difficulty: Difficulty) => {
       const data = getStoredData();
       if (!data.stats) data.stats = { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 };
       
       for (let lvl = 1; lvl <= 100; lvl++) {
-          const key = `${Difficulty.SuperEasy}-${lvl}`;
+          const key = `${difficulty}-${lvl}`;
           const existing = data.progress[key];
           const wasAlreadyCompleted = existing?.status === 'completed' || existing?.bestTime !== undefined;
 
@@ -923,7 +923,7 @@ export const Storage = {
               data.progress[key] = {
                   ...existing,
                   levelId: lvl,
-                  difficulty: Difficulty.SuperEasy,
+                  difficulty,
                   status: 'completed',
                   timeElapsed: existing?.timeElapsed || 60,
                   bestTime: existing?.bestTime !== undefined ? Math.min(existing.bestTime, 60) : 60,
@@ -935,11 +935,15 @@ export const Storage = {
                   data.stats.totalGamesWon += 1;
                   ensureStatsBreakdowns(data);
                   const winBreakdown = data.stats.gamesWonByDifficulty!;
-                  winBreakdown[Difficulty.SuperEasy] = (winBreakdown[Difficulty.SuperEasy] || 0) + 1;
+                  winBreakdown[difficulty] = (winBreakdown[difficulty] || 0) + 1;
               }
           }
       }
       saveData(data);
+  },
+
+  completeSuperEasyLevels: () => {
+      Storage.completeDifficultyLevels(Difficulty.SuperEasy);
   },
 
   isCouponRedeemed: (code: string): boolean => {

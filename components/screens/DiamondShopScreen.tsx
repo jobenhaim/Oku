@@ -6,6 +6,7 @@ import { Storage } from '../../utils/storage';
 import { FishTank } from '../ui/FishTank';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
 import { IAP } from '../../utils/iap';
+import { useTactilePress } from '../../hooks/useTactilePress';
 
 interface DiamondShopScreenProps {
     points: number;
@@ -128,6 +129,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     starterPackPurchased
 }) => {
     const [localizedPrices, setLocalizedPrices] = useState<Record<string, string>>({});
+    const shopPress = useTactilePress<string>();
     const pepinoState = Storage.getPepinoState();
     const premiumOffer = DIAMOND_OFFERS.find(offer => offer.type === 'support');
     const starterOffer = DIAMOND_OFFERS.find(offer => offer.type === 'starter');
@@ -258,9 +260,12 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                         <section aria-labelledby="starter-heading">
                             <div className="oku-shop-card-shell rounded-3xl">
                                 <button
-                                    onClick={() => !starterPackPurchased && handleBuyOffer(starterOffer)}
+                                    onPointerDown={() => !starterPackPurchased && shopPress.beginPress(starterOffer.id)}
+                                    onPointerCancel={() => shopPress.cancelPress(starterOffer.id)}
+                                    onPointerLeave={() => shopPress.cancelPress(starterOffer.id)}
+                                    onClick={() => !starterPackPurchased && shopPress.runPressCycle(starterOffer.id, () => handleBuyOffer(starterOffer))}
                                     disabled={starterPackPurchased}
-                                    className={`oku-shop-card-face w-full bg-t-surface rounded-3xl border border-stone-200/80 dark:border-stone-800 text-left overflow-hidden relative ${starterPackPurchased ? 'opacity-60 cursor-default' : ''}`}
+                                    className={`oku-shop-card-face ${shopPress.pressedId === starterOffer.id ? 'oku-shop-card-face--pressed' : ''} w-full bg-t-surface rounded-3xl border border-stone-200/80 dark:border-stone-800 text-left overflow-hidden relative ${starterPackPurchased ? 'opacity-60 cursor-default' : ''}`}
                                 >
 
                                     <div className="p-4 pb-3">
@@ -357,8 +362,11 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                 return (
                                     <div key={offer.id} className="oku-shop-card-shell rounded-3xl">
                                         <button
-                                            onClick={() => handleBuyOffer(offer)}
-                                            className={`oku-shop-card-face relative w-full h-full overflow-hidden bg-t-surface rounded-3xl p-3.5 min-h-[148px] flex flex-col items-center justify-between text-center border ${isBestValue ? 'border-blue-300 dark:border-blue-800' : 'border-stone-200/80 dark:border-stone-800'}`}
+                                            onPointerDown={() => shopPress.beginPress(offer.id)}
+                                            onPointerCancel={() => shopPress.cancelPress(offer.id)}
+                                            onPointerLeave={() => shopPress.cancelPress(offer.id)}
+                                            onClick={() => shopPress.runPressCycle(offer.id, () => handleBuyOffer(offer))}
+                                            className={`oku-shop-card-face ${shopPress.pressedId === offer.id ? 'oku-shop-card-face--pressed' : ''} relative w-full h-full overflow-hidden bg-t-surface rounded-3xl p-3.5 min-h-[148px] flex flex-col items-center justify-between text-center border ${isBestValue ? 'border-blue-300 dark:border-blue-800' : 'border-stone-200/80 dark:border-stone-800'}`}
                                         >
                                             {isBestValue && (
                                                 <span className="absolute top-3 right-3 text-[8px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 px-2 py-1 rounded-full">Best value</span>

@@ -5,6 +5,7 @@ import { sounds } from '../../utils/sound';
 import { STATIC_BACKGROUNDS, NUMBER_COLORS, SKILLS, SOUND_PACKS } from '../../utils/constants';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTactilePress } from '../../hooks/useTactilePress';
 
 interface StoreScreenProps {
     points: number;
@@ -78,6 +79,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
     const [isClosing, setIsClosing] = useState(false);
     const [direction, setDirection] = useState(0);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const skillPress = useTactilePress<string>();
 
     const handleCloseInfo = () => {
         if (!activeInfoId) return;
@@ -128,7 +130,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
         }
     };
 
-    const handleSkillInteraction = (e: React.MouseEvent, skill: typeof SKILLS[0]) => {
+    const handleSkillInteraction = (skill: typeof SKILLS[0]) => {
         const isPurchased = purchasedSkills.includes(skill.id);
         if (!isPurchased) {
             onPurchase(skill, 'skill');
@@ -167,8 +169,11 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                         <StoreItemWrapper delay={delay} key={skill.id}>
                             <div className="oku-market-skill-shell w-full h-[74px] rounded-[1.25rem]">
                                 <button
-                                    onClick={(e) => handleSkillInteraction(e, skill)}
-                                    className="oku-market-skill-card w-full h-full px-3 py-2 rounded-[1.25rem] flex items-center gap-3 text-left bg-t-surface relative overflow-hidden group"
+                                    onPointerDown={() => skillPress.beginPress(skill.id)}
+                                    onPointerCancel={() => skillPress.cancelPress(skill.id)}
+                                    onPointerLeave={() => skillPress.cancelPress(skill.id)}
+                                    onClick={() => skillPress.runPressCycle(skill.id, () => handleSkillInteraction(skill))}
+                                    className={`oku-market-skill-card ${skillPress.pressedId === skill.id ? 'oku-market-skill-card--pressed' : ''} w-full h-full px-3 py-2 rounded-[1.25rem] flex items-center gap-3 text-left bg-t-surface relative overflow-hidden group`}
                                 >
                                     <div className="w-11 h-11 flex items-center justify-center shrink-0">
                                         <SkillIcon className={`w-[38px] h-[38px] ${skill.class}`} />

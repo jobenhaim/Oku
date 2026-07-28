@@ -5,6 +5,7 @@ import { sounds } from '../../utils/sound';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
 import { Icons } from '../ui/Icons';
 import { Difficulty } from '../../types';
+import { useTactilePress } from '../../hooks/useTactilePress';
 
 interface ProfileScreenProps {
     onClose: () => void;
@@ -62,6 +63,7 @@ const AchievementRow: React.FC<{
     const completionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pressStartedAt = useRef(0);
     const pressedWithPointer = useRef(false);
+    const interactionLockedRef = useRef(false);
 
     useEffect(() => () => {
         if (claimTimer.current) clearTimeout(claimTimer.current);
@@ -70,28 +72,29 @@ const AchievementRow: React.FC<{
     }, []);
 
     const handlePointerDown = () => {
-        if (!achievement.ready || isClaiming) return;
+        if (!achievement.ready || interactionLockedRef.current) return;
         pressedWithPointer.current = true;
         pressStartedAt.current = performance.now();
         setIsPressed(true);
     };
 
     const cancelPointerPress = () => {
-        if (isClaiming || !pressedWithPointer.current) return;
+        if (interactionLockedRef.current || !pressedWithPointer.current) return;
         pressedWithPointer.current = false;
         setIsPressed(false);
     };
 
     const handleClick = () => {
-        if (!achievement.ready || isClaiming) return;
+        if (!achievement.ready || interactionLockedRef.current) return;
+        interactionLockedRef.current = true;
 
         const startedWithPointer = pressedWithPointer.current;
         const elapsedPressTime = startedWithPointer
             ? performance.now() - pressStartedAt.current
             : 0;
         const releaseDelay = startedWithPointer
-            ? Math.max(0, 100 - elapsedPressTime)
-            : 100;
+            ? Math.max(0, 50 - elapsedPressTime)
+            : 50;
 
         sounds.playSelectionHaptic();
         setIsClaiming(true);
@@ -110,9 +113,10 @@ const AchievementRow: React.FC<{
             claimTimer.current = null;
             completionTimer.current = setTimeout(() => {
                 setIsCompleting(false);
+                interactionLockedRef.current = false;
                 completionTimer.current = null;
             }, 650);
-        }, releaseDelay + 100);
+        }, releaseDelay + 80);
     };
 
     return (
@@ -258,6 +262,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     const [enteringAchievementIds, setEnteringAchievementIds] = useState<Set<string>>(() => new Set());
     const statSwitchTimer = useRef<number | null>(null);
     const achievementEntranceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const statPress = useTactilePress<'games' | 'diamonds'>();
     const [profile, setProfile] = useState(() => {
         try {
             const stored = localStorage.getItem('zen_profile');
@@ -430,9 +435,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                             <div className="oku-profile-stat-shell rounded-[1.4rem]">
                                 <button
                                     type="button"
-                                    onClick={() => toggleStat('games', gamesWonBreakdown.length > 0)}
+                                    onPointerDown={() => gamesWonBreakdown.length > 0 && statPress.beginPress('games')}
+                                    onPointerCancel={() => statPress.cancelPress('games')}
+                                    onPointerLeave={() => statPress.cancelPress('games')}
+                                    onClick={() => gamesWonBreakdown.length > 0 && statPress.runPressCycle('games', () => toggleStat('games', true))}
                                     aria-expanded={expandedStat === 'games'}
-                                    className={`oku-profile-stat-card relative w-full min-h-[112px] overflow-hidden rounded-[1.4rem] border p-4 text-left bg-white dark:bg-stone-900 ${expandedStat === 'games' ? 'border-amber-300 dark:border-amber-700' : 'border-stone-200/80 dark:border-stone-800'}`}
+                                    className={`oku-profile-stat-card ${statPress.pressedId === 'games' ? 'oku-profile-stat-card--pressed' : ''} relative w-full min-h-[112px] overflow-hidden rounded-[1.4rem] border p-4 text-left bg-white dark:bg-stone-900 ${expandedStat === 'games' ? 'border-amber-300 dark:border-amber-700' : 'border-stone-200/80 dark:border-stone-800'}`}
                                 >
                                     <Icons.Trophy className="absolute -right-10 -bottom-16 w-48 h-48 opacity-[0.105] pointer-events-none" />
                                     {gamesWonBreakdown.length > 0 && (
@@ -451,9 +459,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                             <div className="oku-profile-stat-shell rounded-[1.4rem]">
                                 <button
                                     type="button"
-                                    onClick={() => toggleStat('diamonds', diamondBreakdown.length > 0)}
+                                    onPointerDown={() => diamondBreakdown.length > 0 && statPress.beginPress('diamonds')}
+                                    onPointerCancel={() => statPress.cancelPress('diamonds')}
+                                    onPointerLeave={() => statPress.cancelPress('diamonds')}
+                                    onClick={() => diamondBreakdown.length > 0 && statPress.runPressCycle('diamonds', () => toggleStat('diamonds', true))}
                                     aria-expanded={expandedStat === 'diamonds'}
-                                    className={`oku-profile-stat-card relative w-full min-h-[112px] overflow-hidden rounded-[1.4rem] border p-4 text-left bg-white dark:bg-stone-900 ${expandedStat === 'diamonds' ? 'border-blue-300 dark:border-blue-700' : 'border-stone-200/80 dark:border-stone-800'}`}
+                                    className={`oku-profile-stat-card ${statPress.pressedId === 'diamonds' ? 'oku-profile-stat-card--pressed' : ''} relative w-full min-h-[112px] overflow-hidden rounded-[1.4rem] border p-4 text-left bg-white dark:bg-stone-900 ${expandedStat === 'diamonds' ? 'border-blue-300 dark:border-blue-700' : 'border-stone-200/80 dark:border-stone-800'}`}
                                 >
                                     <Icons.Diamond className="absolute -right-8 -bottom-12 w-40 h-40 text-blue-500 fill-current opacity-[0.095] pointer-events-none" />
                                     {diamondBreakdown.length > 0 && (

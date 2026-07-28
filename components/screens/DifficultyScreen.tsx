@@ -256,8 +256,8 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
             ? performance.now() - mainMenuPressStartedAtRef.current
             : 0;
         const releaseDelay = startedWithPointer
-            ? Math.max(0, 100 - elapsedPressTime)
-            : 100;
+            ? Math.max(0, 50 - elapsedPressTime)
+            : 50;
 
         mainMenuInteractionLockedRef.current = true;
         setIsMainMenuInteractionLocked(true);
@@ -276,7 +276,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
             mainMenuInteractionLockedRef.current = false;
             setIsMainMenuInteractionLocked(false);
             action();
-        }, releaseDelay + 150);
+        }, releaseDelay + 80);
     };
 
     const handleDifficultyPress = (diff: Difficulty) => {

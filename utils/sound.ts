@@ -932,6 +932,23 @@ class SoundController {
         }
     }
 
+    playBookRowReveal(_rowIndex: number) {
+        if (!this.soundEnabled) return;
+
+        // Every row gets the same short tap from the selected sound pack.
+        // Keeping the pitch fixed prevents the cascade from sounding like a
+        // scale or crescendo while retaining the pack's instrument character.
+        const duration = Math.min(this.activeProfile.duration, 0.075);
+        this.playTone(
+            this.activeProfile.uiTapFreq,
+            duration,
+            0.28,
+            undefined,
+            undefined,
+            true,
+        );
+    }
+
     playPop() {
         this.playClick();
     }
@@ -1069,36 +1086,9 @@ class SoundController {
     }
 
     playUnlockReady() {
-        if (!this.soundEnabled) return;
-        const ctx = this.getCtx();
-        
-        // "Unlock Ready" Chime: Bright, Magical
-        // C6, E6, G6, C7
-        const notes = [1046.50, 1318.51, 1567.98, 2093.00];
-        
-        notes.forEach((freq, i) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, ctx.currentTime);
-            
-            const start = ctx.currentTime + (i * 0.08); // Slight stagger
-            
-            gain.gain.setValueAtTime(0, start);
-            gain.gain.linearRampToValueAtTime(0.1, start + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.001, start + 1.5);
-            
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            
-            osc.start(start);
-            osc.stop(start + 1.6);
-        });
-
-        if (this.vibrationEnabled) {
-             Haptics.notification({ type: NotificationType.Success });
-        }
+        // Opening the completed lock uses the exact victory sound belonging
+        // to the currently selected sound pack.
+        this.playWin();
     }
 
     playWin() {
