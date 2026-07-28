@@ -264,7 +264,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   };
 
   const handleDifficultySelect = (diff: Difficulty) => {
-    sounds.playClick();
     setSelectedDifficulty(diff);
     navigate('levels', 'forward');
   };

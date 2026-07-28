@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Difficulty } from '../../types';
 import { Storage } from '../../utils/storage';
 import { Icons } from '../ui/Icons';
@@ -83,7 +83,9 @@ const DifficultyCard: React.FC<{
     layoutStyle?: React.CSSProperties;
     celebrateProgress?: boolean;
     cascadeDelayMs?: number;
-}> = ({ diff, index, onSelect, isPyramidTop, contentScale = 'normal', layoutStyle, celebrateProgress = false, cascadeDelayMs = 0 }) => {
+    isPressed?: boolean;
+    isLocked?: boolean;
+}> = ({ diff, index, onSelect, isPyramidTop, contentScale = 'normal', layoutStyle, celebrateProgress = false, cascadeDelayMs = 0, isPressed = false, isLocked = false }) => {
     
     const completed = Storage.getCompletedCount(diff, 300);
     const isPack2Unlocked = Storage.isPack2Unlocked(diff);
@@ -123,8 +125,9 @@ const DifficultyCard: React.FC<{
             className="opacity-0 animate-slide-in-down"
         >
             <button 
-                onClick={() => { sounds.playClick(); onSelect(diff); }} 
-                className={`oku-difficulty-glass w-full h-full ${paddingClass} rounded-2xl flex flex-col justify-between transition-all active:scale-95 text-left relative group overflow-visible`}
+                onClick={() => onSelect(diff)}
+                disabled={isLocked}
+                className={`oku-difficulty-glass oku-difficulty-card-tactile ${isPressed ? 'oku-difficulty-card-tactile--pressed' : ''} w-full h-full ${paddingClass} rounded-2xl flex flex-col justify-between text-left relative group overflow-visible`}
             >
                 <div className="w-full flex items-center justify-center mb-1">
                     <span className={`w-full text-center font-bold text-stone-800 dark:text-white leading-none tracking-tight truncate ${titleClass}`}>{diff}</span>
@@ -172,8 +175,47 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     cascadeDelayMs = 0
 }) => {
     const [timeLeft, setTimeLeft] = useState<string>("");
+    const [pressedMainMenuAction, setPressedMainMenuAction] = useState<string | null>(null);
+    const [isMainMenuInteractionLocked, setIsMainMenuInteractionLocked] = useState(false);
+    const mainMenuInteractionLockedRef = useRef(false);
+    const mainMenuReleaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const mainMenuActionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     
     const lastPlayedGame = Storage.getLastPlayedGame();
+
+    useEffect(() => {
+        return () => {
+            if (mainMenuReleaseTimerRef.current) {
+                clearTimeout(mainMenuReleaseTimerRef.current);
+            }
+            if (mainMenuActionTimerRef.current) {
+                clearTimeout(mainMenuActionTimerRef.current);
+            }
+        };
+    }, []);
+
+    const runMainMenuPressCycle = (actionId: string, action: () => void, playPressSound = true) => {
+        if (mainMenuInteractionLockedRef.current) return;
+
+        mainMenuInteractionLockedRef.current = true;
+        setIsMainMenuInteractionLocked(true);
+        setPressedMainMenuAction(actionId);
+        if (playPressSound) sounds.playClick();
+
+        mainMenuReleaseTimerRef.current = setTimeout(() => {
+            setPressedMainMenuAction(null);
+        }, 75);
+
+        mainMenuActionTimerRef.current = setTimeout(() => {
+            mainMenuInteractionLockedRef.current = false;
+            setIsMainMenuInteractionLocked(false);
+            action();
+        }, 175);
+    };
+
+    const handleDifficultyPress = (diff: Difficulty) => {
+        runMainMenuPressCycle(`difficulty-${diff}`, () => onDifficultySelect(diff));
+    };
 
     useEffect(() => {
         const updateTimer = () => {
@@ -213,7 +255,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     // Common style without hover/active scales
     const BTN_BG_DEFAULT = "oku-difficulty-glass";
     const BTN_TEXT_DEFAULT = "text-stone-900 dark:text-white";
-    const COMMON_BTN_STYLE = `h-14 px-3 rounded-2xl flex items-center justify-center gap-2 transition-transform group whitespace-nowrap`;
+    const COMMON_BTN_STYLE = `oku-main-menu-tactile h-14 px-3 rounded-2xl flex items-center justify-center gap-2 group whitespace-nowrap`;
 
     return (
         <div 
@@ -252,12 +294,14 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                       <DifficultyCard 
                                           diff={diff}
                                           index={index}
-                                          onSelect={onDifficultySelect}
+                                          onSelect={handleDifficultyPress}
                                           isPyramidTop={true}
                                           contentScale={contentScale}
                                           layoutStyle={layoutStyle}
                                           celebrateProgress={diff === progressLeader}
                                           cascadeDelayMs={cascadeDelayMs}
+                                          isPressed={pressedMainMenuAction === `difficulty-${diff}`}
+                                          isLocked={isMainMenuInteractionLocked}
                                       />
                                   </div>
                               );
@@ -268,11 +312,13 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                   key={diff}
                                   diff={diff}
                                   index={index}
-                                  onSelect={onDifficultySelect}
+                                  onSelect={handleDifficultyPress}
                                   contentScale={contentScale}
                                   layoutStyle={layoutStyle}
                                   celebrateProgress={diff === progressLeader}
                                   cascadeDelayMs={cascadeDelayMs}
+                                  isPressed={pressedMainMenuAction === `difficulty-${diff}`}
+                                  isLocked={isMainMenuInteractionLocked}
                               />
                           );
                       })}
@@ -287,10 +333,12 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                       <button 
                         onClick={(e) => { 
                             e.stopPropagation(); 
-                            sounds.playClick(); 
-                            if (onContinue) onContinue(lastPlayedGame.difficulty, lastPlayedGame.levelId);
+                            runMainMenuPressCycle('continue', () => {
+                                if (onContinue) onContinue(lastPlayedGame.difficulty, lastPlayedGame.levelId);
+                            });
                         }}
-                        className="oku-difficulty-glass relative flex items-center justify-center gap-3 w-[55%] py-3 px-5 rounded-2xl text-blue-600 dark:text-blue-400 active:scale-95"
+                        disabled={isMainMenuInteractionLocked}
+                        className={`oku-difficulty-glass oku-main-menu-tactile ${pressedMainMenuAction === 'continue' ? 'oku-main-menu-tactile--pressed' : ''} relative flex items-center justify-center gap-3 w-[55%] py-3 px-5 rounded-2xl text-blue-600 dark:text-blue-400`}
                       >
                           <div className="flex flex-col items-center text-center">
                               <span className="text-sm font-bold leading-none">Continue Game</span>
@@ -310,18 +358,26 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                         style={{ animationDelay: `${250 + cascadeDelayMs}ms` }}
                       >
                           <button 
-                            onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenStore(); }} 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                runMainMenuPressCycle('market', onOpenStore);
+                            }}
+                            disabled={isMainMenuInteractionLocked}
                             style={{ width: '47.5%' }}
-                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} active:scale-95`}
+                            className={`${COMMON_BTN_STYLE} ${pressedMainMenuAction === 'market' ? 'oku-main-menu-tactile--pressed' : ''} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT}`}
                           >
                               <Icons.Store className="w-5 h-5" />
                               <span className="font-bold tracking-wide">Market</span>
                           </button>
                           
                           <button 
-                            onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenDiamondShop(); }} 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                runMainMenuPressCycle('oku-shop', onOpenDiamondShop);
+                            }}
+                            disabled={isMainMenuInteractionLocked}
                             style={{ width: '47.5%' }}
-                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} relative overflow-visible active:scale-95`}
+                            className={`${COMMON_BTN_STYLE} ${pressedMainMenuAction === 'oku-shop' ? 'oku-main-menu-tactile--pressed' : ''} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} relative overflow-visible`}
                           >
                               {hasPendingPepinoGift && (
                                 <div className="absolute -top-1.5 -right-1.5 z-50 animate-pop">
@@ -343,13 +399,16 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                         style={{ animationDelay: `${300 + cascadeDelayMs}ms` }}
                       >
                           <button 
-                              onClick={onClaimBonus}
-                              disabled={!!timeLeft}
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  runMainMenuPressCycle('daily-reward', () => onClaimBonus(e), false);
+                              }}
+                              disabled={!!timeLeft || isMainMenuInteractionLocked}
                               style={{ width: '47.5%' }}
-                              className={`${COMMON_BTN_STYLE} ${
+                              className={`${COMMON_BTN_STYLE} ${pressedMainMenuAction === 'daily-reward' ? 'oku-main-menu-tactile--pressed' : ''} ${
                                   !!timeLeft 
                                   ? 'oku-difficulty-glass text-stone-500 dark:text-stone-400 cursor-not-allowed opacity-60'
-                                  : `${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} active:scale-95 hover:brightness-105`
+                                  : `${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} hover:brightness-105`
                               }`}
                           >
                               {!!timeLeft ? (
@@ -369,9 +428,13 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                           </button>
 
                           <button 
-                            onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenStats(); }} 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                runMainMenuPressCycle('stats', onOpenStats);
+                            }}
+                            disabled={isMainMenuInteractionLocked}
                             style={{ width: '47.5%' }}
-                            className={`${COMMON_BTN_STYLE} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} active:scale-95`}
+                            className={`${COMMON_BTN_STYLE} ${pressedMainMenuAction === 'stats' ? 'oku-main-menu-tactile--pressed' : ''} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT}`}
                           >
                               <Icons.BarChart className="w-5 h-5" /> 
                               <span className="font-bold tracking-wide">Stats</span>
@@ -383,7 +446,15 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                     className="w-full max-w-md flex items-center justify-center gap-3 mt-6 mb-2 opacity-0 animate-slide-in-down shrink-0" 
                     style={{ animationDelay: `${350 + cascadeDelayMs}ms` }}
                   >
-                      <button onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenProfile(); }} aria-label={hasProfileAchievement ? 'Profile, achievement ready' : 'Profile'} className="oku-difficulty-glass relative p-1.5 rounded-full transition active:scale-95 text-t-icon overflow-visible">
+                      <button
+                          onClick={(e) => {
+                              e.stopPropagation();
+                              runMainMenuPressCycle('profile', onOpenProfile);
+                          }}
+                          disabled={isMainMenuInteractionLocked}
+                          aria-label={hasProfileAchievement ? 'Profile, achievement ready' : 'Profile'}
+                          className={`oku-difficulty-glass oku-main-menu-tactile ${pressedMainMenuAction === 'profile' ? 'oku-main-menu-tactile--pressed' : ''} relative p-1.5 rounded-full text-t-icon overflow-visible`}
+                      >
                           <Icons.User className="w-5 h-5" />
                           {hasProfileAchievement && (
                               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white dark:border-stone-900 shadow-sm" aria-hidden="true" />
@@ -397,7 +468,15 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                           <div className="text-blue-500"><Icons.Diamond className="w-3.5 h-3.5 fill-current" /></div>
                       </div>
                       
-                      <button onClick={(e) => { e.stopPropagation(); sounds.playClick(); onOpenSettings(); }} className="oku-difficulty-glass p-1.5 rounded-full transition active:scale-95 text-t-icon">
+                      <button
+                          onClick={(e) => {
+                              e.stopPropagation();
+                              runMainMenuPressCycle('settings', onOpenSettings);
+                          }}
+                          disabled={isMainMenuInteractionLocked}
+                          aria-label="Settings"
+                          className={`oku-difficulty-glass oku-main-menu-tactile ${pressedMainMenuAction === 'settings' ? 'oku-main-menu-tactile--pressed' : ''} p-1.5 rounded-full text-t-icon`}
+                      >
                           <Icons.Settings className="w-5 h-5" />
                       </button>
                   </div>
