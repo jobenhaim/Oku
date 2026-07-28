@@ -41,34 +41,34 @@
 .oku-main-glass {
   background: rgba(255, 255, 255, 0.68);
   border: 1px solid rgba(255, 255, 255, 0.46);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  box-shadow: none;
 }
 
 .dark .oku-main-glass {
   background: rgba(41, 37, 36, 0.82);
   border-color: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+  box-shadow: none;
 }
 
 /* Difficulty cards are solid: clearer and cheaper to composite during the cascade. */
 .oku-difficulty-glass {
   background: #ffffff;
   border: 1px solid #e7e5e4;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  box-shadow: none;
 }
 
 .dark .oku-difficulty-glass {
   background: #292524;
   border-color: #44403c;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+  box-shadow: none;
 }
 
 .oku-tactile-shell {
-  box-shadow: 3px 4px 1px rgba(20, 18, 18, 0.5);
+  box-shadow: none;
 }
 
 .dark .oku-tactile-shell {
-  box-shadow: 3px 4px 1px rgba(0, 0, 0, 0.5);
+  box-shadow: none;
 }
 
 .oku-tactile-shell-static,
@@ -80,32 +80,49 @@
   box-shadow: none;
   transform: translate3d(0, 0, 0);
   transition:
-    transform 50ms ease-out;
-  will-change: transform;
+    transform 100ms ease-out,
+    box-shadow 100ms ease-out,
+    border-color 100ms ease-out;
+  will-change: transform, box-shadow;
 }
 
 .oku-difficulty-card-tactile--pressed {
-  transform: translate3d(3px, 4px, 0);
+  transform: translate3d(2px, 2px, 0);
+  box-shadow: inset 5px 5px 4px rgba(20, 18, 18, 0.55);
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+}
+
+.dark .oku-difficulty-card-tactile--pressed {
+  box-shadow: inset 5px 5px 4px rgba(0, 0, 0, 0.85);
 }
 
 .oku-main-menu-tactile {
   box-shadow: none;
   transform: translate3d(0, 0, 0);
   transition:
-    transform 50ms ease-out,
-    filter 50ms ease-out;
-  will-change: transform;
+    transform 100ms ease-out,
+    box-shadow 100ms ease-out,
+    border-color 100ms ease-out;
+  will-change: transform, box-shadow;
 }
 
 .oku-main-menu-tactile--pressed {
-  transform: translate3d(3px, 4px, 0);
+  transform: translate3d(2px, 2px, 0);
+  box-shadow: inset 5px 5px 4px rgba(20, 18, 18, 0.55);
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+}
+
+.dark .oku-main-menu-tactile--pressed {
+  box-shadow: inset 5px 5px 4px rgba(0, 0, 0, 0.85);
 }
 
 .oku-main-menu-tactile-static {
   pointer-events: none;
-  transform: translate3d(3px, 4px, 0) !important;
+  transform: translate3d(0, 0, 0) !important;
+  box-shadow: none !important;
   transition: none !important;
-  filter: none !important;
 }
 
 .oku-main-glass.oku-store-selected {
@@ -191,28 +208,29 @@
 }
 
 .oku-level-shell::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: rgba(20, 18, 18, 0.5);
-  transform: translate3d(3px, 3px, 0);
-}
-
-.dark .oku-level-shell::before {
-  background: rgba(0, 0, 0, 0.5);
+  content: none;
 }
 
 .oku-level-tactile {
   display: block;
+  box-shadow: none;
   transform: translate3d(0, 0, 0);
-  transition: transform 50ms ease-out;
-  will-change: transform;
+  transition:
+    transform 50ms ease-out,
+    box-shadow 50ms ease-out,
+    border-color 50ms ease-out;
+  will-change: transform, box-shadow;
 }
 
 .oku-level-tactile--pressed {
-  transform: translate3d(3px, 3px, 0);
+  transform: translate3d(2px, 2px, 0);
+  box-shadow: inset 5px 5px 4px rgba(20, 18, 18, 0.55);
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+}
+
+.dark .oku-level-tactile--pressed {
+  box-shadow: inset 5px 5px 4px rgba(0, 0, 0, 0.85);
 }
 
 @keyframes oku-book-level-row-reveal {
@@ -1016,169 +1034,150 @@ html, body {
   position: relative;
   isolation: isolate;
   height: 86px;
-  padding-right: 4px;
-  padding-bottom: 4px;
+  padding: 0;
 }
 
-/* Profile stat buttons share the same fixed-shadow tactile treatment. */
+/* Tactile cards rest flat and create depth only while pressed. */
 .oku-profile-stat-shell {
   position: relative;
   isolation: isolate;
 }
 
 .oku-profile-stat-shell::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: 1.4rem;
-  background: rgba(20, 18, 18, 0.5);
-  transform: translate3d(3px, 4px, 0);
-}
-
-.dark .oku-profile-stat-shell::before {
-  background: rgba(0, 0, 0, 0.5);
+  content: none;
 }
 
 .oku-profile-stat-card {
   position: relative;
   z-index: 1;
+  box-shadow: none;
   transform: translate3d(0, 0, 0);
-  transition: transform 50ms ease-out;
-  will-change: transform;
+  transition:
+    transform 50ms ease-out,
+    box-shadow 50ms ease-out,
+    border-color 50ms ease-out;
+  will-change: transform, box-shadow;
 }
 
 .oku-profile-stat-card--pressed {
-  transform: translate3d(3px, 4px, 0);
+  transform: translate3d(2px, 2px, 0);
+  box-shadow: inset 5px 5px 4px rgba(20, 18, 18, 0.55);
+  border-right-color: transparent;
+  border-bottom-color: transparent;
 }
 
-/* Oku Shop cards use fixed tactile shadows; Pepino's tank intentionally does not. */
+.dark .oku-profile-stat-card--pressed {
+  box-shadow: inset 5px 5px 4px rgba(0, 0, 0, 0.85);
+}
+
+/* Pepino's tank intentionally remains outside this tactile card treatment. */
 .oku-shop-card-shell {
   position: relative;
   isolation: isolate;
 }
 
 .oku-shop-card-shell::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: 1.5rem;
-  background: rgba(20, 18, 18, 0.5);
-  transform: translate3d(3px, 4px, 0);
-}
-
-.dark .oku-shop-card-shell::before {
-  background: rgba(0, 0, 0, 0.5);
+  content: none;
 }
 
 .oku-shop-card-face {
   position: relative;
   z-index: 1;
+  box-shadow: none;
   transform: translate3d(0, 0, 0);
-  transition: transform 50ms ease-out;
-  will-change: transform;
+  transition:
+    transform 50ms ease-out,
+    box-shadow 50ms ease-out,
+    border-color 50ms ease-out;
+  will-change: transform, box-shadow;
 }
 
 .oku-shop-card-face--pressed {
-  transform: translate3d(3px, 4px, 0);
+  transform: translate3d(2px, 2px, 0);
+  box-shadow: inset 5px 5px 4px rgba(20, 18, 18, 0.55);
+  border-right-color: transparent;
+  border-bottom-color: transparent;
 }
 
-/* Only Market skill cards use the tactile treatment for now. */
+.dark .oku-shop-card-face--pressed {
+  box-shadow: inset 5px 5px 4px rgba(0, 0, 0, 0.85);
+}
+
+/* Only Market skill cards use this tactile treatment for now. */
 .oku-market-skill-shell {
   position: relative;
   isolation: isolate;
 }
 
 .oku-market-skill-shell::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: 1.25rem;
-  background: rgba(20, 18, 18, 0.5);
-  transform: translate3d(3px, 4px, 0);
-}
-
-.dark .oku-market-skill-shell::before {
-  background: rgba(0, 0, 0, 0.5);
+  content: none;
 }
 
 .oku-market-skill-card {
   position: relative;
   z-index: 1;
+  box-shadow: none;
   transform: translate3d(0, 0, 0);
-  transition: transform 50ms ease-out;
-  will-change: transform;
+  transition:
+    transform 50ms ease-out,
+    box-shadow 50ms ease-out,
+    border-color 50ms ease-out;
+  will-change: transform, box-shadow;
 }
 
 .oku-market-skill-card--pressed {
-  transform: translate3d(3px, 4px, 0);
+  transform: translate3d(2px, 2px, 0);
+  box-shadow: inset 5px 5px 4px rgba(20, 18, 18, 0.55);
+  border-right-color: transparent;
+  border-bottom-color: transparent;
 }
 
-/* The active Book stays physically pressed against its fixed shadow. */
+.dark .oku-market-skill-card--pressed {
+  box-shadow: inset 5px 5px 4px rgba(0, 0, 0, 0.85);
+}
+
+/* The active Book remains inset until a different Book is selected. */
 .oku-book-tab-shell {
   position: relative;
   isolation: isolate;
 }
 
 .oku-book-tab-shell::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: 9999px;
-  background: rgba(20, 18, 18, 0.5);
-  transform: translate3d(3px, 4px, 0);
-}
-
-.dark .oku-book-tab-shell::before {
-  background: rgba(0, 0, 0, 0.5);
+  content: none;
 }
 
 .oku-book-tab-face {
   position: relative;
   z-index: 1;
+  box-shadow: none;
   transform: translate3d(0, 0, 0);
   transition:
     transform 50ms ease-out,
+    box-shadow 50ms ease-out,
     border-color 150ms ease-in-out,
     color 150ms ease-in-out,
     background-color 150ms ease-in-out;
-  will-change: transform;
+  will-change: transform, box-shadow;
 }
 
-.oku-book-tab-face--pressed {
-  transform: translate3d(3px, 4px, 0);
-}
-
+.oku-book-tab-face--pressed,
 .oku-book-tab-face--selected {
-  transform: translate3d(3px, 4px, 0);
+  transform: translate3d(2px, 2px, 0);
+  box-shadow: inset 5px 5px 4px rgba(20, 18, 18, 0.55);
+}
+
+.dark .oku-book-tab-face--pressed,
+.dark .oku-book-tab-face--selected {
+  box-shadow: inset 5px 5px 4px rgba(0, 0, 0, 0.85);
 }
 
 .oku-achievement-tactile-shell::before {
-  content: "";
-  position: absolute;
-  inset: 0 4px 4px 0;
-  z-index: 0;
-  border-radius: 1.25rem;
-  background: rgba(20, 18, 18, 0.5);
-  transform: translate3d(3px, 3px, 0);
-  opacity: 1;
-  transition: opacity 650ms ease-in-out;
-}
-
-.dark .oku-achievement-tactile-shell::before {
-  background: rgba(0, 0, 0, 0.5);
+  content: none;
 }
 
 .oku-achievement-row-shell > button {
   position: relative;
   z-index: 1;
-}
-
-.oku-achievement-completing-shell::before {
-  opacity: 0;
 }
 
 @keyframes achievement-claimed-mark-enter {
@@ -1199,12 +1198,22 @@ html, body {
 .oku-achievement-tactile {
   box-shadow: none;
   transform: translate3d(0, 0, 0);
-  transition: transform 50ms ease-out;
-  will-change: transform;
+  transition:
+    transform 50ms ease-out,
+    box-shadow 50ms ease-out,
+    border-color 50ms ease-out;
+  will-change: transform, box-shadow;
 }
 
 .oku-achievement-tactile--pressed {
-  transform: translate3d(3px, 3px, 0);
+  transform: translate3d(2px, 2px, 0);
+  box-shadow: inset 5px 5px 4px rgba(20, 18, 18, 0.55);
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+}
+
+.dark .oku-achievement-tactile--pressed {
+  box-shadow: inset 5px 5px 4px rgba(0, 0, 0, 0.85);
 }
 
 @keyframes achievement-milestone-enter {

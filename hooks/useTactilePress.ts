@@ -6,20 +6,28 @@ export const useTactilePress = <T extends TactileId>() => {
     const [pressedId, setPressedId] = useState<T | null>(null);
     const lockedRef = useRef(false);
     const pressedIdRef = useRef<T | null>(null);
+    const pointerOriginIdRef = useRef<T | null>(null);
     const pressStartedAtRef = useRef(0);
     const releaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const actionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const unlockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pointerOriginExpiryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => () => {
         if (releaseTimerRef.current) clearTimeout(releaseTimerRef.current);
         if (actionTimerRef.current) clearTimeout(actionTimerRef.current);
         if (unlockTimerRef.current) clearTimeout(unlockTimerRef.current);
+        if (pointerOriginExpiryTimerRef.current) clearTimeout(pointerOriginExpiryTimerRef.current);
     }, []);
 
     const beginPress = useCallback((id: T) => {
         if (lockedRef.current) return;
 
+        if (pointerOriginExpiryTimerRef.current) {
+            clearTimeout(pointerOriginExpiryTimerRef.current);
+            pointerOriginExpiryTimerRef.current = null;
+        }
+        pointerOriginIdRef.current = id;
         pressedIdRef.current = id;
         pressStartedAtRef.current = performance.now();
         setPressedId(id);
@@ -30,6 +38,16 @@ export const useTactilePress = <T extends TactileId>() => {
 
         pressedIdRef.current = null;
         setPressedId(null);
+
+        // A transformed button can briefly leave the finger on iOS before its
+        // compatibility click arrives. Keep the pointer origin alive so that
+        // click completes this cycle instead of starting a second animation.
+        pointerOriginExpiryTimerRef.current = setTimeout(() => {
+            if (pointerOriginIdRef.current === id) {
+                pointerOriginIdRef.current = null;
+            }
+            pointerOriginExpiryTimerRef.current = null;
+        }, 750);
     }, []);
 
     const runPressCycle = useCallback((
@@ -42,7 +60,7 @@ export const useTactilePress = <T extends TactileId>() => {
     ) => {
         if (lockedRef.current) return;
 
-        const startedWithPointer = pressedIdRef.current === id;
+        const startedWithPointer = pointerOriginIdRef.current === id;
         const elapsedPressTime = startedWithPointer
             ? performance.now() - pressStartedAtRef.current
             : 0;
@@ -53,6 +71,11 @@ export const useTactilePress = <T extends TactileId>() => {
         // Lock synchronously so iOS's compatibility click cannot start a
         // second visual cycle before React has rendered the first one.
         lockedRef.current = true;
+        pointerOriginIdRef.current = null;
+        if (pointerOriginExpiryTimerRef.current) {
+            clearTimeout(pointerOriginExpiryTimerRef.current);
+            pointerOriginExpiryTimerRef.current = null;
+        }
         if (!startedWithPointer) {
             pressedIdRef.current = id;
             setPressedId(id);

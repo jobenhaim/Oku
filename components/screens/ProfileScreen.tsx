@@ -61,18 +61,26 @@ const AchievementRow: React.FC<{
     const claimTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const releaseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const completionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pointerOriginExpiryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pressStartedAt = useRef(0);
     const pressedWithPointer = useRef(false);
+    const pointerOrigin = useRef(false);
     const interactionLockedRef = useRef(false);
 
     useEffect(() => () => {
         if (claimTimer.current) clearTimeout(claimTimer.current);
         if (releaseTimer.current) clearTimeout(releaseTimer.current);
         if (completionTimer.current) clearTimeout(completionTimer.current);
+        if (pointerOriginExpiryTimer.current) clearTimeout(pointerOriginExpiryTimer.current);
     }, []);
 
     const handlePointerDown = () => {
         if (!achievement.ready || interactionLockedRef.current) return;
+        if (pointerOriginExpiryTimer.current) {
+            clearTimeout(pointerOriginExpiryTimer.current);
+            pointerOriginExpiryTimer.current = null;
+        }
+        pointerOrigin.current = true;
         pressedWithPointer.current = true;
         pressStartedAt.current = performance.now();
         setIsPressed(true);
@@ -82,13 +90,17 @@ const AchievementRow: React.FC<{
         if (interactionLockedRef.current || !pressedWithPointer.current) return;
         pressedWithPointer.current = false;
         setIsPressed(false);
+        pointerOriginExpiryTimer.current = setTimeout(() => {
+            pointerOrigin.current = false;
+            pointerOriginExpiryTimer.current = null;
+        }, 750);
     };
 
     const handleClick = () => {
         if (!achievement.ready || interactionLockedRef.current) return;
         interactionLockedRef.current = true;
 
-        const startedWithPointer = pressedWithPointer.current;
+        const startedWithPointer = pointerOrigin.current;
         const elapsedPressTime = startedWithPointer
             ? performance.now() - pressStartedAt.current
             : 0;
@@ -97,6 +109,11 @@ const AchievementRow: React.FC<{
             : 50;
 
         sounds.playSelectionHaptic();
+        pointerOrigin.current = false;
+        if (pointerOriginExpiryTimer.current) {
+            clearTimeout(pointerOriginExpiryTimer.current);
+            pointerOriginExpiryTimer.current = null;
+        }
         setIsClaiming(true);
         if (!startedWithPointer) setIsPressed(true);
 

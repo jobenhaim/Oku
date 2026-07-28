@@ -522,7 +522,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                                             oku-book-tab-face ${isActive ? 'oku-book-tab-face--selected' : ''} ${bookPress.pressedId === tabNum ? 'oku-book-tab-face--pressed' : ''} px-6 py-2.5 rounded-full text-xs font-bold flex items-center justify-center gap-2 whitespace-nowrap border-2
                                             ${isActive
                                                 ? 'bg-white border-stone-700 text-stone-900 dark:bg-stone-800 dark:border-stone-300 dark:text-white'
-                                                : 'bg-white border-stone-200 text-stone-500 dark:bg-stone-800 dark:border-stone-700 dark:text-stone-400 hover:border-stone-300 dark:hover:border-stone-600'
+                                                : 'bg-white border-stone-200 text-stone-500 dark:bg-stone-800 dark:border-stone-700 dark:text-stone-400'
                                             }
                                         `}
                                     >

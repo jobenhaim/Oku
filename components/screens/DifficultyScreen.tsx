@@ -256,8 +256,8 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
             ? performance.now() - mainMenuPressStartedAtRef.current
             : 0;
         const releaseDelay = startedWithPointer
-            ? Math.max(0, 50 - elapsedPressTime)
-            : 50;
+            ? Math.max(0, 100 - elapsedPressTime)
+            : 100;
 
         mainMenuInteractionLockedRef.current = true;
         setIsMainMenuInteractionLocked(true);
@@ -276,7 +276,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
             mainMenuInteractionLockedRef.current = false;
             setIsMainMenuInteractionLocked(false);
             action();
-        }, releaseDelay + 80);
+        }, releaseDelay + 175);
     };
 
     const handleDifficultyPress = (diff: Difficulty) => {
@@ -505,7 +505,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                   } ${timeLeft ? 'oku-main-menu-tactile-static' : ''} w-full ${
                                       !!timeLeft
                                       ? 'oku-difficulty-glass text-stone-500 dark:text-stone-400 cursor-not-allowed opacity-60'
-                                      : `${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} hover:brightness-105`
+                                      : `${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT}`
                                   }`}
                               >
                                   {!!timeLeft ? (
