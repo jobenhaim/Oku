@@ -122,7 +122,7 @@ const DifficultyCard: React.FC<{
     return (
         <div 
             style={finalStyle}
-            className="opacity-0 animate-slide-in-down"
+            className="oku-tactile-shell rounded-2xl opacity-0 animate-slide-in-down"
         >
             <button 
                 onClick={() => onSelect(diff)}
@@ -330,6 +330,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                     className="w-full max-w-md flex justify-center mb-7 opacity-0 animate-slide-in-down shrink-0" 
                     style={{ animationDelay: `${200 + cascadeDelayMs}ms` }}
                   >
+                    <div className="oku-tactile-shell rounded-2xl w-[55%]">
                       <button 
                         onClick={(e) => { 
                             e.stopPropagation(); 
@@ -338,7 +339,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                             });
                         }}
                         disabled={isMainMenuInteractionLocked}
-                        className={`oku-difficulty-glass oku-main-menu-tactile ${pressedMainMenuAction === 'continue' ? 'oku-main-menu-tactile--pressed' : ''} relative flex items-center justify-center gap-3 w-[55%] py-3 px-5 rounded-2xl text-blue-600 dark:text-blue-400`}
+                        className={`oku-difficulty-glass oku-main-menu-tactile ${pressedMainMenuAction === 'continue' ? 'oku-main-menu-tactile--pressed' : ''} relative flex items-center justify-center gap-3 w-full py-3 px-5 rounded-2xl text-blue-600 dark:text-blue-400`}
                       >
                           <div className="flex flex-col items-center text-center">
                               <span className="text-sm font-bold leading-none">Continue Game</span>
@@ -348,6 +349,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                           </div>
                           <Icons.Next className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-600 dark:text-blue-400" />
                       </button>
+                    </div>
                   </div>
                   )}
 
@@ -357,88 +359,92 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                         className="flex justify-center gap-3 opacity-0 animate-slide-in-down w-full" 
                         style={{ animationDelay: `${250 + cascadeDelayMs}ms` }}
                       >
-                          <button 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                runMainMenuPressCycle('market', onOpenStore);
-                            }}
-                            disabled={isMainMenuInteractionLocked}
-                            style={{ width: '47.5%' }}
-                            className={`${COMMON_BTN_STYLE} ${pressedMainMenuAction === 'market' ? 'oku-main-menu-tactile--pressed' : ''} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT}`}
-                          >
-                              <Icons.Store className="w-5 h-5" />
-                              <span className="font-bold tracking-wide">Market</span>
-                          </button>
+                          <div className="oku-tactile-shell rounded-2xl" style={{ width: '47.5%' }}>
+                              <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    runMainMenuPressCycle('market', onOpenStore);
+                                }}
+                                disabled={isMainMenuInteractionLocked}
+                                className={`${COMMON_BTN_STYLE} ${pressedMainMenuAction === 'market' ? 'oku-main-menu-tactile--pressed' : ''} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} w-full`}
+                              >
+                                  <Icons.Store className="w-5 h-5" />
+                                  <span className="font-bold tracking-wide">Market</span>
+                              </button>
+                          </div>
                           
-                          <button 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                runMainMenuPressCycle('oku-shop', onOpenDiamondShop);
-                            }}
-                            disabled={isMainMenuInteractionLocked}
-                            style={{ width: '47.5%' }}
-                            className={`${COMMON_BTN_STYLE} ${pressedMainMenuAction === 'oku-shop' ? 'oku-main-menu-tactile--pressed' : ''} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} relative overflow-visible`}
-                          >
-                              {hasPendingPepinoGift && (
-                                <div className="absolute -top-1.5 -right-1.5 z-50 animate-pop">
-                                    <div className="w-[22px] h-[22px] bg-red-500 rounded-full flex items-center justify-center shadow-md animate-bounce">
-                                        <Icons.Gift className="w-3.5 h-3.5 text-white" />
+                          <div className="oku-tactile-shell rounded-2xl" style={{ width: '47.5%' }}>
+                              <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    runMainMenuPressCycle('oku-shop', onOpenDiamondShop);
+                                }}
+                                disabled={isMainMenuInteractionLocked}
+                                className={`${COMMON_BTN_STYLE} ${pressedMainMenuAction === 'oku-shop' ? 'oku-main-menu-tactile--pressed' : ''} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} relative overflow-visible w-full`}
+                              >
+                                  {hasPendingPepinoGift && (
+                                    <div className="absolute -top-1.5 -right-1.5 z-50 animate-pop">
+                                        <div className="w-[22px] h-[22px] bg-red-500 rounded-full flex items-center justify-center shadow-md animate-bounce">
+                                            <Icons.Gift className="w-3.5 h-3.5 text-white" />
+                                        </div>
                                     </div>
-                                </div>
-                              )}
+                                  )}
 
-                              <div className="relative z-10 flex items-center gap-2">
-                                  <Icons.Star className="w-5 h-5" />
-                                  <span className="font-bold tracking-wide">Oku Shop</span>
-                              </div>
-                          </button>
+                                  <div className="relative z-10 flex items-center gap-2">
+                                      <Icons.Star className="w-5 h-5" />
+                                      <span className="font-bold tracking-wide">Oku Shop</span>
+                                  </div>
+                              </button>
+                          </div>
                       </div>
                       
                       <div 
                         className="flex justify-center gap-3 opacity-0 animate-slide-in-down w-full"
                         style={{ animationDelay: `${300 + cascadeDelayMs}ms` }}
                       >
-                          <button 
-                              onClick={(e) => {
-                                  e.stopPropagation();
-                                  runMainMenuPressCycle('daily-reward', () => onClaimBonus(e), false);
-                              }}
-                              disabled={!!timeLeft || isMainMenuInteractionLocked}
-                              style={{ width: '47.5%' }}
-                              className={`${COMMON_BTN_STYLE} ${pressedMainMenuAction === 'daily-reward' ? 'oku-main-menu-tactile--pressed' : ''} ${
-                                  !!timeLeft 
-                                  ? 'oku-difficulty-glass text-stone-500 dark:text-stone-400 cursor-not-allowed opacity-60'
-                                  : `${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} hover:brightness-105`
-                              }`}
-                          >
-                              {!!timeLeft ? (
-                                   <div className="flex items-center gap-2">
-                                      <Icons.Clock className="w-4 h-4" />
-                                      <span className="font-bold text-xs tracking-wide opacity-100">{timeLeft}</span>
-                                   </div>
-                              ) : (
-                                   <div className="flex items-center gap-1.5">
-                                      <Icons.Gift className="w-5 h-5 animate-bounce" />
-                                      <div className="flex items-center gap-[1px]">
-                                          <span className="font-bold tracking-wide">Claim +10</span>
-                                          <Icons.Diamond className="w-3.5 h-3.5 text-blue-600 fill-current" />
-                                      </div>
-                                   </div>
-                              )}
-                          </button>
+                          <div className="oku-tactile-shell rounded-2xl" style={{ width: '47.5%' }}>
+                              <button
+                                  onClick={(e) => {
+                                      e.stopPropagation();
+                                      runMainMenuPressCycle('daily-reward', () => onClaimBonus(e), false);
+                                  }}
+                                  disabled={!!timeLeft || isMainMenuInteractionLocked}
+                                  className={`${COMMON_BTN_STYLE} ${pressedMainMenuAction === 'daily-reward' ? 'oku-main-menu-tactile--pressed' : ''} w-full ${
+                                      !!timeLeft
+                                      ? 'oku-difficulty-glass text-stone-500 dark:text-stone-400 cursor-not-allowed opacity-60'
+                                      : `${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} hover:brightness-105`
+                                  }`}
+                              >
+                                  {!!timeLeft ? (
+                                       <div className="flex items-center gap-2">
+                                          <Icons.Clock className="w-4 h-4" />
+                                          <span className="font-bold text-xs tracking-wide opacity-100">{timeLeft}</span>
+                                       </div>
+                                  ) : (
+                                       <div className="flex items-center gap-1.5">
+                                          <Icons.Gift className="w-5 h-5 animate-bounce" />
+                                          <div className="flex items-center gap-[1px]">
+                                              <span className="font-bold tracking-wide">Claim +10</span>
+                                              <Icons.Diamond className="w-3.5 h-3.5 text-blue-600 fill-current" />
+                                          </div>
+                                       </div>
+                                  )}
+                              </button>
+                          </div>
 
-                          <button 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                runMainMenuPressCycle('stats', onOpenStats);
-                            }}
-                            disabled={isMainMenuInteractionLocked}
-                            style={{ width: '47.5%' }}
-                            className={`${COMMON_BTN_STYLE} ${pressedMainMenuAction === 'stats' ? 'oku-main-menu-tactile--pressed' : ''} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT}`}
-                          >
-                              <Icons.BarChart className="w-5 h-5" /> 
-                              <span className="font-bold tracking-wide">Stats</span>
-                          </button>
+                          <div className="oku-tactile-shell rounded-2xl" style={{ width: '47.5%' }}>
+                              <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    runMainMenuPressCycle('stats', onOpenStats);
+                                }}
+                                disabled={isMainMenuInteractionLocked}
+                                className={`${COMMON_BTN_STYLE} ${pressedMainMenuAction === 'stats' ? 'oku-main-menu-tactile--pressed' : ''} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} w-full`}
+                              >
+                                  <Icons.BarChart className="w-5 h-5" />
+                                  <span className="font-bold tracking-wide">Stats</span>
+                              </button>
+                          </div>
                       </div>
                   </div>
 
@@ -446,20 +452,22 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                     className="w-full max-w-md flex items-center justify-center gap-3 mt-6 mb-2 opacity-0 animate-slide-in-down shrink-0" 
                     style={{ animationDelay: `${350 + cascadeDelayMs}ms` }}
                   >
-                      <button
-                          onClick={(e) => {
-                              e.stopPropagation();
-                              runMainMenuPressCycle('profile', onOpenProfile);
-                          }}
-                          disabled={isMainMenuInteractionLocked}
-                          aria-label={hasProfileAchievement ? 'Profile, achievement ready' : 'Profile'}
-                          className={`oku-difficulty-glass oku-main-menu-tactile ${pressedMainMenuAction === 'profile' ? 'oku-main-menu-tactile--pressed' : ''} relative p-1.5 rounded-full text-t-icon overflow-visible`}
-                      >
-                          <Icons.User className="w-5 h-5" />
-                          {hasProfileAchievement && (
-                              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white dark:border-stone-900 shadow-sm" aria-hidden="true" />
-                          )}
-                      </button>
+                      <div className="oku-tactile-shell rounded-full">
+                          <button
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  runMainMenuPressCycle('profile', onOpenProfile);
+                              }}
+                              disabled={isMainMenuInteractionLocked}
+                              aria-label={hasProfileAchievement ? 'Profile, achievement ready' : 'Profile'}
+                              className={`oku-difficulty-glass oku-main-menu-tactile ${pressedMainMenuAction === 'profile' ? 'oku-main-menu-tactile--pressed' : ''} relative p-1.5 rounded-full text-t-icon overflow-visible`}
+                          >
+                              <Icons.User className="w-5 h-5" />
+                              {hasProfileAchievement && (
+                                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white dark:border-stone-900 shadow-sm" aria-hidden="true" />
+                              )}
+                          </button>
+                      </div>
 
                       <div 
                         className="oku-difficulty-glass flex items-center gap-1.5 px-3 py-1.5 rounded-full"
@@ -468,17 +476,19 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                           <div className="text-blue-500"><Icons.Diamond className="w-3.5 h-3.5 fill-current" /></div>
                       </div>
                       
-                      <button
-                          onClick={(e) => {
-                              e.stopPropagation();
-                              runMainMenuPressCycle('settings', onOpenSettings);
-                          }}
-                          disabled={isMainMenuInteractionLocked}
-                          aria-label="Settings"
-                          className={`oku-difficulty-glass oku-main-menu-tactile ${pressedMainMenuAction === 'settings' ? 'oku-main-menu-tactile--pressed' : ''} p-1.5 rounded-full text-t-icon`}
-                      >
-                          <Icons.Settings className="w-5 h-5" />
-                      </button>
+                      <div className="oku-tactile-shell rounded-full">
+                          <button
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  runMainMenuPressCycle('settings', onOpenSettings);
+                              }}
+                              disabled={isMainMenuInteractionLocked}
+                              aria-label="Settings"
+                              className={`oku-difficulty-glass oku-main-menu-tactile ${pressedMainMenuAction === 'settings' ? 'oku-main-menu-tactile--pressed' : ''} p-1.5 rounded-full text-t-icon`}
+                          >
+                              <Icons.Settings className="w-5 h-5" />
+                          </button>
+                      </div>
                   </div>
 
                   <div className="h-safe-bottom w-full shrink-0" />
