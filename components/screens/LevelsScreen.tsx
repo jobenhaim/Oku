@@ -385,20 +385,22 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                             const isLocked = (tabNum === 2 && !isPack2Unlocked) || (tabNum === 3 && !isPack3Unlocked);
                             
                             return (
-                                <button
-                                    key={tabNum}
-                                    onClick={() => handleTabChange(tabNum as 1|2|3)}
-                                    className={`
-                                        px-6 py-2.5 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap shadow-sm border
-                                        ${isActive 
-                                            ? 'bg-stone-800 border-stone-800 text-white dark:bg-stone-100 dark:border-stone-100 dark:text-stone-900 scale-105' 
-                                            : 'bg-white border-stone-200 text-stone-500 dark:bg-stone-800 dark:border-stone-700 dark:text-stone-400 hover:border-stone-300 dark:hover:border-stone-600'
-                                        }
-                                    `}
-                                >
-                                    {isLocked && <Icons.Lock className="w-3 h-3 opacity-60" />}
-                                    <span>Book {tabNum}</span>
-                                </button>
+                                <div key={tabNum} className="oku-book-tab-shell rounded-full">
+                                    <button
+                                        onClick={() => handleTabChange(tabNum as 1|2|3)}
+                                        aria-pressed={isActive}
+                                        className={`
+                                            oku-book-tab-face ${isActive ? 'oku-book-tab-face--selected' : ''} px-6 py-2.5 rounded-full text-xs font-bold flex items-center justify-center gap-2 whitespace-nowrap border-2
+                                            ${isActive
+                                                ? 'bg-white border-stone-700 text-stone-900 dark:bg-stone-800 dark:border-stone-300 dark:text-white'
+                                                : 'bg-white border-stone-200 text-stone-500 dark:bg-stone-800 dark:border-stone-700 dark:text-stone-400 hover:border-stone-300 dark:hover:border-stone-600'
+                                            }
+                                        `}
+                                    >
+                                        {isLocked && <Icons.Lock className="w-3 h-3 opacity-60" />}
+                                        <span>Book {tabNum}</span>
+                                    </button>
+                                </div>
                             );
                         })}
                     </div>

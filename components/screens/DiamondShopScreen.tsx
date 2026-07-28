@@ -256,90 +256,92 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
 
                     {starterOffer && (
                         <section aria-labelledby="starter-heading">
-                            <button
-                                onClick={() => !starterPackPurchased && handleBuyOffer(starterOffer)}
-                                disabled={starterPackPurchased}
-                                className={`w-full bg-t-surface rounded-3xl shadow-sm border border-stone-200/80 dark:border-stone-800 text-left transition-all overflow-hidden relative ${starterPackPurchased ? 'opacity-60 cursor-default' : 'active:scale-[0.99]'}`}
-                            >
+                            <div className="oku-shop-card-shell rounded-3xl">
+                                <button
+                                    onClick={() => !starterPackPurchased && handleBuyOffer(starterOffer)}
+                                    disabled={starterPackPurchased}
+                                    className={`oku-shop-card-face w-full bg-t-surface rounded-3xl border border-stone-200/80 dark:border-stone-800 text-left overflow-hidden relative ${starterPackPurchased ? 'opacity-60 cursor-default' : ''}`}
+                                >
 
-                                <div className="p-4 pb-3">
-                                    <div className="relative flex items-center justify-between gap-3 mb-4">
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <img
-                                                    src="/assets/starter-pack-icon.webp"
-                                                    alt=""
-                                                    aria-hidden="true"
-                                                    className="w-8 h-8 object-contain shrink-0 select-none pointer-events-none"
-                                                    draggable={false}
-                                                />
-                                                <h2 id="starter-heading" className="text-lg font-bold text-t-primary">Starter Pack</h2>
+                                    <div className="p-4 pb-3">
+                                        <div className="relative flex items-center justify-between gap-3 mb-4">
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <img
+                                                        src="/assets/starter-pack-icon.webp"
+                                                        alt=""
+                                                        aria-hidden="true"
+                                                        className="w-8 h-8 object-contain shrink-0 select-none pointer-events-none"
+                                                        draggable={false}
+                                                    />
+                                                    <h2 id="starter-heading" className="text-lg font-bold text-t-primary">Starter Pack</h2>
+                                                </div>
+                                                <p className="text-[13px] font-medium text-t-secondary">Six permanent rewards to begin your journey.</p>
                                             </div>
-                                            <p className="text-[13px] font-medium text-t-secondary">Six permanent rewards to begin your journey.</p>
+                                            {!starterPackPurchased && (
+                                                <span className="text-[8px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/40 px-2 py-1 rounded-full shrink-0">One time</span>
+                                            )}
                                         </div>
-                                        {!starterPackPurchased && (
-                                            <span className="text-[8px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/40 px-2 py-1 rounded-full shrink-0">One time</span>
-                                        )}
+
+                                        <div className="relative grid grid-cols-6 gap-1">
+                                            <div className="rounded-xl bg-violet-50 dark:bg-violet-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
+                                                <div className="h-8 flex items-center justify-center">
+                                                    <Icons.Diamond className="w-5 h-5 text-blue-500 fill-current" />
+                                                </div>
+                                                <div className="text-center">
+                                                    <span className="block text-[15px] font-bold text-t-primary leading-none">500</span>
+                                                </div>
+                                            </div>
+                                            <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
+                                                <div className="h-8 flex items-center justify-center">
+                                                    <Icons.Guard className="w-[30px] h-[30px]" />
+                                                </div>
+                                                <span className="text-[11px] font-bold text-t-primary">Guard</span>
+                                            </div>
+                                            <div className="rounded-xl bg-red-50 dark:bg-red-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
+                                                <div className="h-8 flex items-center justify-center">
+                                                    <Icons.Scan className="w-[30px] h-[30px] text-red-500 dark:text-red-400" />
+                                                </div>
+                                                <span className="text-[11px] font-bold text-t-primary">Scan</span>
+                                            </div>
+                                            <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
+                                                <div className="h-8 flex items-center justify-center">
+                                                    <Icons.Nudge className="w-8 h-8" />
+                                                </div>
+                                                <span className="text-[11px] font-bold text-t-primary">Light</span>
+                                            </div>
+                                            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
+                                                <div className="h-8 flex items-center justify-center">
+                                                    <img
+                                                        src="/assets/sound-pack-icons/piano_icon.webp"
+                                                        alt=""
+                                                        aria-hidden="true"
+                                                        className="block w-8 h-8 object-contain object-center select-none pointer-events-none"
+                                                        draggable={false}
+                                                    />
+                                                </div>
+                                                <span className="text-[11px] font-bold text-t-primary">Piano</span>
+                                            </div>
+                                            <div className="rounded-xl bg-cyan-50 dark:bg-cyan-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
+                                                <div className="h-8 flex items-center justify-center">
+                                                    <span className="text-[30px] font-semibold leading-none text-cyan-600 dark:text-cyan-400">5</span>
+                                                </div>
+                                                <span className="text-[11px] font-bold text-t-primary">Teal</span>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div className="relative grid grid-cols-6 gap-1">
-                                        <div className="rounded-xl bg-violet-50 dark:bg-violet-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
-                                            <div className="h-8 flex items-center justify-center">
-                                                <Icons.Diamond className="w-5 h-5 text-blue-500 fill-current" />
-                                            </div>
-                                            <div className="text-center">
-                                                <span className="block text-[15px] font-bold text-t-primary leading-none">500</span>
-                                            </div>
+                                    <div className="relative px-4 py-3 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between bg-stone-50 dark:bg-stone-900">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-sm font-bold text-t-primary">{starterPackPurchased ? 'Starter Pack' : 'Unlock Starter Pack'}</span>
+                                            {!starterPackPurchased && <Icons.Next className="w-4 h-4 text-t-secondary" />}
                                         </div>
-                                        <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
-                                            <div className="h-8 flex items-center justify-center">
-                                                <Icons.Guard className="w-[30px] h-[30px]" />
-                                            </div>
-                                            <span className="text-[11px] font-bold text-t-primary">Guard</span>
-                                        </div>
-                                        <div className="rounded-xl bg-red-50 dark:bg-red-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
-                                            <div className="h-8 flex items-center justify-center">
-                                                <Icons.Scan className="w-[30px] h-[30px] text-red-500 dark:text-red-400" />
-                                            </div>
-                                            <span className="text-[11px] font-bold text-t-primary">Scan</span>
-                                        </div>
-                                        <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
-                                            <div className="h-8 flex items-center justify-center">
-                                                <Icons.Nudge className="w-8 h-8" />
-                                            </div>
-                                            <span className="text-[11px] font-bold text-t-primary">Light</span>
-                                        </div>
-                                        <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
-                                            <div className="h-8 flex items-center justify-center">
-                                                <img
-                                                    src="/assets/sound-pack-icons/piano_icon.webp"
-                                                    alt=""
-                                                    aria-hidden="true"
-                                                    className="block w-8 h-8 object-contain object-center select-none pointer-events-none"
-                                                    draggable={false}
-                                                />
-                                            </div>
-                                            <span className="text-[11px] font-bold text-t-primary">Piano</span>
-                                        </div>
-                                        <div className="rounded-xl bg-cyan-50 dark:bg-cyan-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
-                                            <div className="h-8 flex items-center justify-center">
-                                                <span className="text-[30px] font-semibold leading-none text-cyan-600 dark:text-cyan-400">5</span>
-                                            </div>
-                                            <span className="text-[11px] font-bold text-t-primary">Teal</span>
-                                        </div>
+                                        <span className={`px-3 py-1.5 rounded-full text-sm font-bold ${starterPackPurchased ? 'bg-t-surface-sec text-t-secondary' : 'bg-blue-500 text-white shadow-sm shadow-blue-500/20'}`}>
+                                            {starterPackPurchased ? 'Owned' : getPriceLabel(starterOffer)}
+                                        </span>
                                     </div>
-                                </div>
-
-                                <div className="relative px-4 py-3 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between bg-stone-50 dark:bg-stone-900">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-sm font-bold text-t-primary">{starterPackPurchased ? 'Starter Pack' : 'Unlock Starter Pack'}</span>
-                                        {!starterPackPurchased && <Icons.Next className="w-4 h-4 text-t-secondary" />}
-                                    </div>
-                                    <span className={`px-3 py-1.5 rounded-full text-sm font-bold ${starterPackPurchased ? 'bg-t-surface-sec text-t-secondary' : 'bg-blue-500 text-white shadow-sm shadow-blue-500/20'}`}>
-                                        {starterPackPurchased ? 'Owned' : getPriceLabel(starterOffer)}
-                                    </span>
-                                </div>
-                            </button>
+                                </button>
+                            </div>
                         </section>
                     )}
 
@@ -353,23 +355,24 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                             {diamondPacks.map((offer, index) => {
                                 const isBestValue = index === diamondPacks.length - 1;
                                 return (
-                                    <button
-                                        key={offer.id}
-                                        onClick={() => handleBuyOffer(offer)}
-                                        className={`relative overflow-hidden bg-t-surface rounded-3xl p-3.5 min-h-[148px] flex flex-col items-center justify-between text-center shadow-sm border active:scale-[0.98] transition-transform ${isBestValue ? 'border-blue-300 dark:border-blue-800' : 'border-stone-200/80 dark:border-stone-800'}`}
-                                    >
-                                        {isBestValue && (
-                                            <span className="absolute top-3 right-3 text-[8px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 px-2 py-1 rounded-full">Best value</span>
-                                        )}
-                                        <div className="relative flex flex-col items-center pt-1">
-                                            <DiamondStack size={index + 1} />
-                                            <span className="text-2xl font-bold text-t-primary leading-none mt-1">{offer.diamonds.toLocaleString()}</span>
-                                            <span className="sr-only">diamonds</span>
-                                        </div>
-                                        <span className="relative px-3 py-1.5 rounded-full text-sm font-bold bg-blue-500 text-white shadow-sm shadow-blue-500/20">
-                                            {getPriceLabel(offer)}
-                                        </span>
-                                    </button>
+                                    <div key={offer.id} className="oku-shop-card-shell rounded-3xl">
+                                        <button
+                                            onClick={() => handleBuyOffer(offer)}
+                                            className={`oku-shop-card-face relative w-full h-full overflow-hidden bg-t-surface rounded-3xl p-3.5 min-h-[148px] flex flex-col items-center justify-between text-center border ${isBestValue ? 'border-blue-300 dark:border-blue-800' : 'border-stone-200/80 dark:border-stone-800'}`}
+                                        >
+                                            {isBestValue && (
+                                                <span className="absolute top-3 right-3 text-[8px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 px-2 py-1 rounded-full">Best value</span>
+                                            )}
+                                            <div className="relative flex flex-col items-center pt-1">
+                                                <DiamondStack size={index + 1} />
+                                                <span className="text-2xl font-bold text-t-primary leading-none mt-1">{offer.diamonds.toLocaleString()}</span>
+                                                <span className="sr-only">diamonds</span>
+                                            </div>
+                                            <span className="relative px-3 py-1.5 rounded-full text-sm font-bold bg-blue-500 text-white shadow-sm shadow-blue-500/20">
+                                                {getPriceLabel(offer)}
+                                            </span>
+                                        </button>
+                                    </div>
                                 );
                             })}
                         </div>

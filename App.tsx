@@ -414,7 +414,11 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   };
   
   const initiatePurchase = (item: any, type: 'bg' | 'num' | 'skill' | 'sound') => {
-      if (type !== 'sound') {
+      if (type === 'sound') {
+          // Sound cards already play their preview, so add haptics without
+          // layering the regular UI click sound over the sample.
+          sounds.playSelectionHaptic();
+      } else {
           sounds.playPop();
       }
       setPurchaseCandidate({ ...item, type });

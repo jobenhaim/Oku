@@ -487,15 +487,22 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                             animationDuration: `${MAIN_MENU_SLIDE_DURATION_MS}ms`,
                         }}
                       >
-                          <div className="oku-tactile-shell rounded-2xl" style={{ width: '47.5%' }}>
+                          <div
+                              className={`oku-tactile-shell ${timeLeft ? 'oku-tactile-shell-static' : ''} rounded-2xl`}
+                              style={{ width: '47.5%' }}
+                          >
                               <button
-                                  {...getMainMenuPressHandlers('daily-reward')}
+                                  {...(!timeLeft ? getMainMenuPressHandlers('daily-reward') : {})}
                                   onClick={(e) => {
                                       e.stopPropagation();
                                       runMainMenuPressCycle('daily-reward', () => onClaimBonus(e), false);
                                   }}
                                   disabled={!!timeLeft || isMainMenuInteractionLocked}
-                                  className={`${COMMON_BTN_STYLE} ${pressedMainMenuAction === 'daily-reward' ? 'oku-main-menu-tactile--pressed' : ''} w-full ${
+                                  className={`${COMMON_BTN_STYLE} ${
+                                      !timeLeft && pressedMainMenuAction === 'daily-reward'
+                                          ? 'oku-main-menu-tactile--pressed'
+                                          : ''
+                                  } ${timeLeft ? 'oku-main-menu-tactile-static' : ''} w-full ${
                                       !!timeLeft
                                       ? 'oku-difficulty-glass text-stone-500 dark:text-stone-400 cursor-not-allowed opacity-60'
                                       : `${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} hover:brightness-105`

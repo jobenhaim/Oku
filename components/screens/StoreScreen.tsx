@@ -165,32 +165,34 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                     
                     return (
                         <StoreItemWrapper delay={delay} key={skill.id}>
-                            <button 
-                                onClick={(e) => handleSkillInteraction(e, skill)}
-                                className="w-full h-[74px] px-3 py-2 rounded-[1.25rem] shadow-sm flex items-center gap-3 text-left active:scale-[0.98] transition-all bg-t-surface relative overflow-hidden group"
-                            >
-                                <div className="w-11 h-11 flex items-center justify-center shrink-0 transition-transform group-active:scale-95">
-                                    <SkillIcon className={`w-[38px] h-[38px] ${skill.class}`} />
-                                </div>
+                            <div className="oku-market-skill-shell w-full h-[74px] rounded-[1.25rem]">
+                                <button
+                                    onClick={(e) => handleSkillInteraction(e, skill)}
+                                    className="oku-market-skill-card w-full h-full px-3 py-2 rounded-[1.25rem] flex items-center gap-3 text-left bg-t-surface relative overflow-hidden group"
+                                >
+                                    <div className="w-11 h-11 flex items-center justify-center shrink-0">
+                                        <SkillIcon className={`w-[38px] h-[38px] ${skill.class}`} />
+                                    </div>
 
-                                <div className="flex-1 min-w-0 py-0.5">
-                                    <h3 className="text-[17px] font-bold text-t-primary leading-tight mb-0.5">{skill.name}</h3>
-                                    <p className="text-[12px] font-semibold text-stone-600 dark:text-stone-300 leading-[1.15] line-clamp-2">{skill.description}</p>
-                                </div>
+                                    <div className="flex-1 min-w-0 py-0.5">
+                                        <h3 className="text-[17px] font-bold text-t-primary leading-tight mb-0.5">{skill.name}</h3>
+                                        <p className="text-[12px] font-semibold text-stone-600 dark:text-stone-300 leading-[1.15] line-clamp-2">{skill.description}</p>
+                                    </div>
 
-                                <div className={`shrink-0 flex justify-end ${skill.cost >= 1000 ? 'w-[84px]' : 'w-[68px]'}`}>
-                                    {isPurchased ? (
-                                            <div className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ease-out ${isEnabled ? 'bg-stone-600 dark:bg-stone-400' : 'bg-stone-300 dark:bg-stone-700'}`}>
-                                                <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-transform duration-300 ease-out ${isEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
-                                            </div>
-                                    ) : (
-                                            <div className={`flex items-center justify-center bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 h-9 rounded-full gap-1.5 shadow-sm ${skill.cost >= 1000 ? 'min-w-[84px] px-3' : 'min-w-[72px] px-3.5'}`}>
-                                                <span className="text-[13px] font-bold text-t-primary leading-none pt-0.5">{skill.cost}</span>
-                                                <Icons.Diamond className="w-3 h-3 shrink-0 text-blue-500 fill-current" />
-                                            </div>
-                                    )}
-                                </div>
-                            </button>
+                                    <div className={`shrink-0 flex justify-end ${skill.cost >= 1000 ? 'w-[84px]' : 'w-[68px]'}`}>
+                                        {isPurchased ? (
+                                                <div className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ease-out ${isEnabled ? 'bg-stone-600 dark:bg-stone-400' : 'bg-stone-300 dark:bg-stone-700'}`}>
+                                                    <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-transform duration-300 ease-out ${isEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                                                </div>
+                                        ) : (
+                                                <div className={`flex items-center justify-center bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 h-9 rounded-full gap-1.5 shadow-sm ${skill.cost >= 1000 ? 'min-w-[84px] px-3' : 'min-w-[72px] px-3.5'}`}>
+                                                    <span className="text-[13px] font-bold text-t-primary leading-none pt-0.5">{skill.cost}</span>
+                                                    <Icons.Diamond className="w-3 h-3 shrink-0 text-blue-500 fill-current" />
+                                                </div>
+                                        )}
+                                    </div>
+                                </button>
+                            </div>
                         </StoreItemWrapper>
                     );
                 })}

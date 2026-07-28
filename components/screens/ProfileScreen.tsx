@@ -55,87 +55,139 @@ const AchievementRow: React.FC<{
     const progress = Math.min(100, (achievement.current / achievement.target) * 100);
     const showProgress = achievement.showProgress !== false && achievement.target > 1 && !achievement.claimed;
     const [isClaiming, setIsClaiming] = useState(false);
+    const [isCompleting, setIsCompleting] = useState(false);
+    const [isPressed, setIsPressed] = useState(false);
     const claimTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const releaseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const completionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pressStartedAt = useRef(0);
+    const pressedWithPointer = useRef(false);
 
     useEffect(() => () => {
         if (claimTimer.current) clearTimeout(claimTimer.current);
+        if (releaseTimer.current) clearTimeout(releaseTimer.current);
+        if (completionTimer.current) clearTimeout(completionTimer.current);
     }, []);
+
+    const handlePointerDown = () => {
+        if (!achievement.ready || isClaiming) return;
+        pressedWithPointer.current = true;
+        pressStartedAt.current = performance.now();
+        setIsPressed(true);
+    };
+
+    const cancelPointerPress = () => {
+        if (isClaiming || !pressedWithPointer.current) return;
+        pressedWithPointer.current = false;
+        setIsPressed(false);
+    };
 
     const handleClick = () => {
         if (!achievement.ready || isClaiming) return;
+
+        const startedWithPointer = pressedWithPointer.current;
+        const elapsedPressTime = startedWithPointer
+            ? performance.now() - pressStartedAt.current
+            : 0;
+        const releaseDelay = startedWithPointer
+            ? Math.max(0, 100 - elapsedPressTime)
+            : 100;
+
         sounds.playSelectionHaptic();
         setIsClaiming(true);
+        if (!startedWithPointer) setIsPressed(true);
+
+        releaseTimer.current = setTimeout(() => {
+            pressedWithPointer.current = false;
+            setIsPressed(false);
+            releaseTimer.current = null;
+        }, releaseDelay);
+
         claimTimer.current = setTimeout(() => {
+            setIsCompleting(true);
             onClaim(achievement);
             setIsClaiming(false);
             claimTimer.current = null;
-        }, 420);
+            completionTimer.current = setTimeout(() => {
+                setIsCompleting(false);
+                completionTimer.current = null;
+            }, 650);
+        }, releaseDelay + 100);
     };
 
     return (
-        <button
-            type="button"
-            onClick={handleClick}
-            disabled={!achievement.ready || isClaiming}
-            className={`relative w-full h-[82px] px-4 py-3 text-left rounded-[1.25rem] border transition-transform overflow-hidden focus:outline-none ${
-                achievement.claimed
-                    ? 'bg-stone-100/90 dark:bg-stone-900/70 border-stone-200/60 dark:border-stone-800/70 shadow-none'
-                    : 'bg-t-surface border-stone-200/80 dark:border-stone-800 shadow-sm'
-            } ${achievement.ready ? 'active:scale-[0.98]' : ''} ${
-                isClaiming ? 'achievement-claim-win' : ''
-            } ${isEntering ? 'achievement-milestone-enter' : ''}`}
-        >
-            {achievement.ready && (
-                <span
-                    aria-label="Ready to claim"
-                    className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_0_3px_rgba(239,68,68,0.12)]"
-                />
-            )}
-            <div className="flex items-center gap-3 h-full">
-                <div className="min-w-0 flex-1 flex flex-col justify-center">
-                    <div className="flex items-center gap-2">
-                        <span className={`text-[15px] font-bold leading-tight truncate ${achievement.claimed ? 'text-stone-500 dark:text-stone-500' : 'text-stone-900 dark:text-white'}`}>
-                            {achievement.title}
-                        </span>
-                        {achievement.claimed && (
-                            <span className="w-4 h-4 rounded-full bg-stone-300 dark:bg-stone-700 flex items-center justify-center shrink-0">
-                                <Icons.Check className="w-2.5 h-2.5 text-white" />
+        <div className={`oku-achievement-row-shell rounded-[1.25rem] ${
+            achievement.ready || isCompleting ? 'oku-achievement-tactile-shell' : ''
+        } ${
+            isCompleting ? 'oku-achievement-completing-shell' : ''
+        } ${isEntering ? 'achievement-milestone-enter' : ''}`}>
+            <button
+                type="button"
+                onPointerDown={handlePointerDown}
+                onPointerCancel={cancelPointerPress}
+                onPointerLeave={cancelPointerPress}
+                onClick={handleClick}
+                disabled={!achievement.ready || isClaiming}
+                className={`relative block w-full h-full px-4 py-3 text-left rounded-[1.25rem] border overflow-hidden focus:outline-none transition-colors duration-[650ms] ease-in-out ${
+                    achievement.claimed
+                        ? 'bg-stone-100/90 dark:bg-stone-900/70 border-stone-200/60 dark:border-stone-800/70 shadow-none'
+                        : achievement.ready
+                            ? 'oku-achievement-tactile bg-t-surface border-stone-200/80 dark:border-stone-800'
+                            : 'bg-t-surface border-stone-200/80 dark:border-stone-800 shadow-sm'
+                } ${isPressed ? 'oku-achievement-tactile--pressed' : ''}`}
+            >
+                {achievement.ready && (
+                    <span
+                        aria-label="Ready to claim"
+                        className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_0_3px_rgba(239,68,68,0.12)]"
+                    />
+                )}
+                <div className="flex items-center gap-3 h-full">
+                    <div className="min-w-0 flex-1 flex flex-col justify-center">
+                        <div className="flex items-center gap-2">
+                            <span className={`text-[15px] font-bold leading-tight truncate transition-colors duration-[650ms] ease-in-out ${achievement.claimed ? 'text-stone-500 dark:text-stone-500' : 'text-stone-900 dark:text-white'}`}>
+                                {achievement.title}
                             </span>
+                            {achievement.claimed && (
+                                <span className="achievement-claimed-mark-enter w-4 h-4 rounded-full bg-stone-300 dark:bg-stone-700 flex items-center justify-center shrink-0">
+                                    <Icons.Check className="w-2.5 h-2.5 text-white" />
+                                </span>
+                            )}
+                        </div>
+                        <span className="block text-[11px] font-medium text-stone-500 dark:text-stone-400 mt-1 leading-tight">
+                            {achievement.detail}
+                        </span>
+
+                        {showProgress && (
+                            <div className="h-2 mt-2 flex items-center gap-2.5">
+                                <div className="h-2 flex-1 rounded-full bg-stone-100 dark:bg-stone-700 overflow-hidden">
+                                    <div
+                                        className={`h-full rounded-full transition-[width] duration-700 ease-in-out ${achievement.ready ? 'bg-emerald-400 dark:bg-emerald-400' : 'bg-emerald-300 dark:bg-emerald-500/70'}`}
+                                        style={{ width: `${progress}%` }}
+                                    />
+                                </div>
+                                <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 tabular-nums shrink-0">
+                                    {Math.min(achievement.current, achievement.target)}/{achievement.target}
+                                </span>
+                            </div>
                         )}
                     </div>
-                    <span className="block text-[11px] font-medium text-stone-500 dark:text-stone-400 mt-1 leading-tight">
-                        {achievement.detail}
-                    </span>
 
-                    {showProgress && (
-                        <div className="h-2 mt-2 flex items-center gap-2.5">
-                            <div className="h-2 flex-1 rounded-full bg-stone-100 dark:bg-stone-700 overflow-hidden">
-                                <div
-                                    className={`h-full rounded-full transition-[width] duration-700 ease-in-out ${achievement.ready ? 'bg-emerald-400 dark:bg-emerald-400' : 'bg-emerald-300 dark:bg-emerald-500/70'}`}
-                                    style={{ width: `${progress}%` }}
-                                />
-                            </div>
-                            <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 tabular-nums shrink-0">
-                                {Math.min(achievement.current, achievement.target)}/{achievement.target}
-                            </span>
-                        </div>
-                    )}
+                    <div className={`min-w-[4.25rem] h-10 px-3 rounded-full flex items-center justify-center gap-1.5 shrink-0 transition-colors duration-[650ms] ease-in-out ${
+                        achievement.ready
+                            ? 'bg-blue-500 shadow-[0_4px_12px_rgba(59,130,246,0.28)]'
+                            : achievement.claimed
+                                ? 'bg-stone-100 dark:bg-stone-700'
+                                : 'bg-blue-50 dark:bg-blue-500/10'
+                    }`}>
+                        <span className={`text-sm font-bold tabular-nums transition-colors duration-[650ms] ease-in-out ${achievement.ready ? 'text-white' : achievement.claimed ? 'text-stone-400 dark:text-stone-500' : 'text-blue-600 dark:text-blue-400'}`}>
+                            {achievement.reward}
+                        </span>
+                        <Icons.Diamond className={`w-3.5 h-3.5 fill-current transition-colors duration-[650ms] ease-in-out ${achievement.ready ? 'text-white' : achievement.claimed ? 'text-stone-400 dark:text-stone-500' : 'text-blue-500'}`} />
+                    </div>
                 </div>
-
-                <div className={`min-w-[4.25rem] h-10 px-3 rounded-full flex items-center justify-center gap-1.5 shrink-0 ${
-                    achievement.ready
-                        ? 'bg-blue-500 shadow-[0_4px_12px_rgba(59,130,246,0.28)]'
-                        : achievement.claimed
-                            ? 'bg-stone-100 dark:bg-stone-700'
-                            : 'bg-blue-50 dark:bg-blue-500/10'
-                } ${isClaiming ? 'achievement-reward-pop' : ''}`}>
-                    <span className={`text-sm font-bold tabular-nums ${achievement.ready ? 'text-white' : achievement.claimed ? 'text-stone-400 dark:text-stone-500' : 'text-blue-600 dark:text-blue-400'}`}>
-                        {achievement.reward}
-                    </span>
-                    <Icons.Diamond className={`w-3.5 h-3.5 fill-current ${achievement.ready ? 'text-white' : achievement.claimed ? 'text-stone-400 dark:text-stone-500' : 'text-blue-500'}`} />
-                </div>
-            </div>
-        </button>
+            </button>
+        </div>
     );
 };
 
@@ -375,44 +427,48 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
                     <section className="space-y-2.5">
                         <div className="grid grid-cols-2 gap-3">
-                            <button
-                                type="button"
-                                onClick={() => toggleStat('games', gamesWonBreakdown.length > 0)}
-                                aria-expanded={expandedStat === 'games'}
-                                className={`relative min-h-[112px] overflow-hidden rounded-[1.4rem] border p-4 text-left shadow-sm active:scale-[0.98] transition-transform bg-white dark:bg-stone-900 ${expandedStat === 'games' ? 'border-amber-300 dark:border-amber-700' : 'border-stone-200/80 dark:border-stone-800'}`}
-                            >
-                                <Icons.Trophy className="absolute -right-10 -bottom-16 w-48 h-48 opacity-[0.105] pointer-events-none" />
-                                {gamesWonBreakdown.length > 0 && (
-                                    <span className="absolute z-20 right-4 top-4 w-8 h-8 rounded-full bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 flex items-center justify-center border border-stone-100 dark:border-stone-700">
-                                        <Icons.Down className={`w-4 h-4 transition-transform duration-200 ${expandedStat === 'games' ? 'rotate-180' : ''}`} />
-                                    </span>
-                                )}
-                                <div className="relative z-10 mt-5">
-                                    <span className="block text-[2.15rem] font-bold tracking-[0.035em] tabular-nums leading-none text-stone-900 dark:text-stone-50">
-                                        {storedData.stats?.totalGamesWon || 0}
-                                    </span>
-                                    <span className="block mt-1.5 text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.13em]">Games Won</span>
-                                </div>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => toggleStat('diamonds', diamondBreakdown.length > 0)}
-                                aria-expanded={expandedStat === 'diamonds'}
-                                className={`relative min-h-[112px] overflow-hidden rounded-[1.4rem] border p-4 text-left shadow-sm active:scale-[0.98] transition-transform bg-white dark:bg-stone-900 ${expandedStat === 'diamonds' ? 'border-blue-300 dark:border-blue-700' : 'border-stone-200/80 dark:border-stone-800'}`}
-                            >
-                                <Icons.Diamond className="absolute -right-8 -bottom-12 w-40 h-40 text-blue-500 fill-current opacity-[0.095] pointer-events-none" />
-                                {diamondBreakdown.length > 0 && (
-                                    <span className="absolute z-20 right-4 top-4 w-8 h-8 rounded-full bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 flex items-center justify-center border border-stone-100 dark:border-stone-700">
-                                        <Icons.Down className={`w-4 h-4 transition-transform duration-200 ${expandedStat === 'diamonds' ? 'rotate-180' : ''}`} />
-                                    </span>
-                                )}
-                                <div className="relative z-10 mt-5">
-                                    <span className="block text-[2.15rem] font-bold tracking-[0.035em] tabular-nums leading-none text-stone-900 dark:text-stone-50">
-                                        {storedData.stats?.totalDiamondsEarned || 0}
-                                    </span>
-                                    <span className="block mt-1.5 text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.13em]">Diamonds Earned</span>
-                                </div>
-                            </button>
+                            <div className="oku-profile-stat-shell rounded-[1.4rem]">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleStat('games', gamesWonBreakdown.length > 0)}
+                                    aria-expanded={expandedStat === 'games'}
+                                    className={`oku-profile-stat-card relative w-full min-h-[112px] overflow-hidden rounded-[1.4rem] border p-4 text-left bg-white dark:bg-stone-900 ${expandedStat === 'games' ? 'border-amber-300 dark:border-amber-700' : 'border-stone-200/80 dark:border-stone-800'}`}
+                                >
+                                    <Icons.Trophy className="absolute -right-10 -bottom-16 w-48 h-48 opacity-[0.105] pointer-events-none" />
+                                    {gamesWonBreakdown.length > 0 && (
+                                        <span className="absolute z-20 right-4 top-4 w-8 h-8 rounded-full bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 flex items-center justify-center border border-stone-100 dark:border-stone-700">
+                                            <Icons.Down className={`w-4 h-4 transition-transform duration-200 ${expandedStat === 'games' ? 'rotate-180' : ''}`} />
+                                        </span>
+                                    )}
+                                    <div className="relative z-10 mt-5">
+                                        <span className="block text-[2.15rem] font-bold tracking-[0.035em] tabular-nums leading-none text-stone-900 dark:text-stone-50">
+                                            {storedData.stats?.totalGamesWon || 0}
+                                        </span>
+                                        <span className="block mt-1.5 text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.13em]">Games Won</span>
+                                    </div>
+                                </button>
+                            </div>
+                            <div className="oku-profile-stat-shell rounded-[1.4rem]">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleStat('diamonds', diamondBreakdown.length > 0)}
+                                    aria-expanded={expandedStat === 'diamonds'}
+                                    className={`oku-profile-stat-card relative w-full min-h-[112px] overflow-hidden rounded-[1.4rem] border p-4 text-left bg-white dark:bg-stone-900 ${expandedStat === 'diamonds' ? 'border-blue-300 dark:border-blue-700' : 'border-stone-200/80 dark:border-stone-800'}`}
+                                >
+                                    <Icons.Diamond className="absolute -right-8 -bottom-12 w-40 h-40 text-blue-500 fill-current opacity-[0.095] pointer-events-none" />
+                                    {diamondBreakdown.length > 0 && (
+                                        <span className="absolute z-20 right-4 top-4 w-8 h-8 rounded-full bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 flex items-center justify-center border border-stone-100 dark:border-stone-700">
+                                            <Icons.Down className={`w-4 h-4 transition-transform duration-200 ${expandedStat === 'diamonds' ? 'rotate-180' : ''}`} />
+                                        </span>
+                                    )}
+                                    <div className="relative z-10 mt-5">
+                                        <span className="block text-[2.15rem] font-bold tracking-[0.035em] tabular-nums leading-none text-stone-900 dark:text-stone-50">
+                                            {storedData.stats?.totalDiamondsEarned || 0}
+                                        </span>
+                                        <span className="block mt-1.5 text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.13em]">Diamonds Earned</span>
+                                    </div>
+                                </button>
+                            </div>
                         </div>
                         <div
                             className={`grid transition-[grid-template-rows,opacity] duration-150 ease-in-out ${expandedStat ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}
