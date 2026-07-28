@@ -137,28 +137,26 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
                 } bg-white dark:bg-stone-800 border border-white/90 dark:border-stone-700 shadow-[0_8px_24px_rgba(41,37,36,0.10)]`}
             >
                 {showUnlockUI ? (
-                    <div className="h-full flex flex-col px-5 py-4 animate-fade-in-fast">
-                        <div className="flex-1 flex items-center justify-between gap-3 px-1 min-h-0">
-                            <div className="flex items-center gap-4 min-w-0">
-                                <div className="w-16 h-16 rounded-[1.35rem] bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center shrink-0">
-                                    <Icons.LockOpen className="w-9 h-9 text-blue-500" strokeWidth={2} />
-                                </div>
-                                <div className="min-w-0 text-left">
-                                    <span className="block text-[1.55rem] font-bold text-stone-900 dark:text-white leading-none whitespace-nowrap">
-                                        Book {packNumber}
-                                    </span>
-                                </div>
+                    <div className="h-full flex flex-col px-4 py-4 animate-fade-in-fast">
+                        <div className="flex-1 grid grid-cols-[3.75rem_minmax(0,1fr)] items-center gap-3 min-h-0">
+                            <div className="w-[3.75rem] h-[3.75rem] rounded-[1.25rem] bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center">
+                                <Icons.LockOpen className="w-8 h-8 text-blue-500" strokeWidth={2} />
                             </div>
 
-                            <div className="flex items-center gap-2 shrink-0" aria-live="polite">
-                                <span className="text-[2.55rem] font-bold text-stone-950 dark:text-white leading-none tabular-nums tracking-tight">
-                                    {animatedCost}
+                            <div className="min-w-0 flex items-center justify-between gap-2">
+                                <span className="min-w-0 text-[clamp(1.1rem,5.5vw,1.35rem)] font-bold text-stone-900 dark:text-white leading-none whitespace-nowrap">
+                                    Book {packNumber}
                                 </span>
-                                <Icons.Diamond className="w-7 h-7 text-blue-500 fill-current" />
+                                <div className="shrink-0 flex items-center gap-1.5" aria-live="polite">
+                                    <span className="text-[clamp(1.65rem,8vw,2rem)] font-bold text-stone-950 dark:text-white leading-none tabular-nums tracking-tight">
+                                        {animatedCost}
+                                    </span>
+                                    <Icons.Diamond className="w-6 h-6 text-blue-500 fill-current" />
+                                </div>
                             </div>
                         </div>
 
-                        <div className={`h-11 rounded-2xl flex items-center justify-between pl-5 pr-2.5 mt-2 transition-colors duration-300 ${
+                        <div className={`h-11 rounded-2xl flex items-center justify-between pl-5 pr-2.5 mt-2.5 transition-colors duration-300 ${
                             unlockReady ? 'bg-blue-500 shadow-[0_4px_10px_rgba(59,130,246,0.24)]' : 'bg-blue-400'
                         }`}>
                             <span className="text-base font-bold text-white">
@@ -172,29 +170,29 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
                         </div>
                     </div>
                 ) : (
-                    <div className="h-full flex flex-col px-5 py-4">
-                        <div className="flex-1 flex items-center justify-between gap-3 px-1 min-h-0">
-                            <div className="flex items-center gap-4 min-w-0">
-                                <div className="w-16 h-16 rounded-[1.35rem] bg-stone-100 dark:bg-stone-700 flex items-center justify-center shrink-0">
-                                    <Icons.Lock className="w-9 h-9 text-stone-500 dark:text-stone-400" strokeWidth={2} />
-                                </div>
-                                <div className="min-w-0 text-left">
-                                    <p className="text-[1.55rem] font-bold text-stone-900 dark:text-white leading-none whitespace-nowrap">
-                                        Book {packNumber}
-                                    </p>
-                                    <p className="text-[14px] font-semibold text-stone-500 dark:text-stone-400 mt-2 whitespace-nowrap">
-                                        Complete Book {previousPackNumber}
-                                    </p>
-                                </div>
+                    <div className="h-full flex flex-col px-4 py-4">
+                        <div className="flex-1 grid grid-cols-[3.75rem_minmax(0,1fr)] items-center gap-3 min-h-0">
+                            <div className="w-[3.75rem] h-[3.75rem] rounded-[1.25rem] bg-stone-100 dark:bg-stone-700 flex items-center justify-center">
+                                <Icons.Lock className="w-8 h-8 text-stone-500 dark:text-stone-400" strokeWidth={2} />
                             </div>
 
-                            <div className="flex items-baseline shrink-0 tabular-nums">
-                                <span className="text-[2.55rem] font-bold text-stone-900 dark:text-white leading-none">{animatedCount}</span>
-                                <span className="text-base font-bold text-stone-400 dark:text-stone-500">/{totalBaseLevels}</span>
+                            <div className="min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                    <p className="min-w-0 text-[clamp(1.1rem,5.5vw,1.35rem)] font-bold text-stone-900 dark:text-white leading-none whitespace-nowrap">
+                                        Book {packNumber}
+                                    </p>
+                                    <div className="shrink-0 flex items-baseline tabular-nums whitespace-nowrap">
+                                        <span className="text-[clamp(1.65rem,8vw,2rem)] font-bold text-stone-900 dark:text-white leading-none">{animatedCount}</span>
+                                        <span className="text-sm font-bold text-stone-400 dark:text-stone-500">/{totalBaseLevels}</span>
+                                    </div>
+                                </div>
+                                <p className="text-[13px] font-semibold text-stone-500 dark:text-stone-400 mt-1.5 leading-none whitespace-nowrap">
+                                    Complete Book {previousPackNumber}
+                                </p>
                             </div>
                         </div>
 
-                        <div className="w-full h-3 bg-stone-100 dark:bg-stone-700 rounded-full overflow-hidden mt-2">
+                        <div className="w-full h-3 bg-stone-100 dark:bg-stone-700 rounded-full overflow-hidden mt-2.5">
                             <div
                                 className={`h-full rounded-full bg-loading-blue ${animatedPercent > 0 ? 'min-w-[8px]' : 'opacity-0'}`}
                                 style={{ width: `${animatedPercent}%` }}
