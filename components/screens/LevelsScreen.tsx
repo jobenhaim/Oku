@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Difficulty, LevelProgress } from '../../types';
 import { Storage } from '../../utils/storage';
 import { Icons } from '../ui/Icons';
@@ -10,23 +10,22 @@ import { sounds } from '../../utils/sound';
 // --- OPTIMIZED LEVEL BUTTON COMPONENT ---
 interface LevelButtonProps {
     levelId: number;
-    index: number;
     status?: 'locked' | 'not-started' | 'in-progress' | 'completed';
     bestTime?: number;
     isGlobalBest: boolean;
     showTimer: boolean;
     onSelect: (levelId: number) => void;
+    isPressed: boolean;
+    isLocked: boolean;
+    onPressStart: (levelId: number) => void;
+    onPressCancel: (levelId: number) => void;
 }
 
-const LevelButton = React.memo(({ levelId, index, status, bestTime, isGlobalBest, showTimer, onSelect }: LevelButtonProps) => {
+const LevelButton = React.memo(({ levelId, status, bestTime, isGlobalBest, showTimer, onSelect, isPressed, isLocked, onPressStart, onPressCancel }: LevelButtonProps) => {
     const isSolved = bestTime !== undefined || status === 'completed';
     const isInProgress = status === 'in-progress';
 
-    const rowIndex = Math.floor(index / 5);
-    const colIndex = index % 5;
-    const delay = (rowIndex * 4) + (colIndex * 2);
-
-    let buttonClass = 'oku-level-surface aspect-square rounded-xl relative transition-all active:scale-90 ';
+    let buttonClass = `oku-level-surface oku-level-tactile ${isPressed ? 'oku-level-tactile--pressed' : ''} w-full h-full rounded-xl relative `;
     
     if (isSolved) {
         buttonClass += 'oku-level-surface-solved ';
@@ -40,28 +39,34 @@ const LevelButton = React.memo(({ levelId, index, status, bestTime, isGlobalBest
     }
 
     return (
-        <button 
-            onClick={() => onSelect(levelId)} 
-            className={buttonClass}
-        >
-            <div className="absolute inset-0 flex items-center justify-center"><span className="font-bold text-2xl leading-none">{levelId}</span></div>
-            {isSolved && showTimer ? (
-                isGlobalBest ? (
-                    <>
-                        <div className="absolute top-1.5 inset-x-0 flex justify-center">
-                            <span className="text-[8px] font-bold text-amber-500 tracking-widest opacity-90 animate-pulse">BEST</span>
+        <div className="oku-level-shell aspect-square rounded-xl">
+            <button
+                onPointerDown={() => onPressStart(levelId)}
+                onPointerCancel={() => onPressCancel(levelId)}
+                onPointerLeave={() => onPressCancel(levelId)}
+                onClick={() => onSelect(levelId)}
+                disabled={isLocked}
+                className={buttonClass}
+            >
+                <div className="absolute inset-0 flex items-center justify-center"><span className="font-bold text-2xl leading-none">{levelId}</span></div>
+                {isSolved && showTimer ? (
+                    isGlobalBest ? (
+                        <>
+                            <div className="absolute top-1.5 inset-x-0 flex justify-center">
+                                <span className="text-[8px] font-bold text-amber-500 tracking-widest opacity-90 animate-pulse">BEST</span>
+                            </div>
+                            <div className="absolute bottom-1.5 inset-x-0 flex justify-center">
+                                <span className="text-[10px] text-amber-500 font-bold tracking-tight block leading-none animate-pulse">{bestTime ? formatTimeShort(bestTime) : '--'}</span>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="absolute inset-x-0 bottom-1.5 text-center">
+                            {bestTime ? <span className="text-[10px] font-bold tracking-tight block text-t-secondary">{formatTimeShort(bestTime)}</span> : null}
                         </div>
-                        <div className="absolute bottom-1.5 inset-x-0 flex justify-center">
-                            <span className="text-[10px] text-amber-500 font-bold tracking-tight block leading-none animate-pulse">{bestTime ? formatTimeShort(bestTime) : '--'}</span>
-                        </div>
-                    </>
-                ) : (
-                    <div className="absolute inset-x-0 bottom-1.5 text-center">
-                        {bestTime ? <span className="text-[10px] font-bold tracking-tight block text-t-secondary">{formatTimeShort(bestTime)}</span> : null}
-                    </div>
-                )
-            ) : null}
-        </button>
+                    )
+                ) : null}
+            </button>
+        </div>
     );
 });
 
@@ -94,6 +99,68 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
     const [progressMap] = useState(() => Storage.getStoredData().progress);
     
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [pressedLevelId, setPressedLevelId] = useState<number | null>(null);
+    const [isLevelInteractionLocked, setIsLevelInteractionLocked] = useState(false);
+    const levelInteractionLockedRef = useRef(false);
+    const pressedLevelIdRef = useRef<number | null>(null);
+    const levelPressStartedAtRef = useRef(0);
+    const levelReleaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const levelActionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (levelReleaseTimerRef.current) clearTimeout(levelReleaseTimerRef.current);
+            if (levelActionTimerRef.current) clearTimeout(levelActionTimerRef.current);
+        };
+    }, []);
+
+    const beginLevelPress = useCallback((levelId: number) => {
+        if (levelInteractionLockedRef.current) return;
+
+        pressedLevelIdRef.current = levelId;
+        levelPressStartedAtRef.current = performance.now();
+        setPressedLevelId(levelId);
+    }, []);
+
+    const cancelLevelPress = useCallback((levelId: number) => {
+        if (
+            levelInteractionLockedRef.current ||
+            pressedLevelIdRef.current !== levelId
+        ) return;
+
+        pressedLevelIdRef.current = null;
+        setPressedLevelId(null);
+    }, []);
+
+    const runLevelPressCycle = useCallback((levelId: number) => {
+        if (levelInteractionLockedRef.current) return;
+
+        const startedWithPointer = pressedLevelIdRef.current === levelId;
+        const elapsedPressTime = startedWithPointer
+            ? performance.now() - levelPressStartedAtRef.current
+            : 0;
+        const releaseDelay = startedWithPointer
+            ? Math.max(0, 100 - elapsedPressTime)
+            : 100;
+
+        levelInteractionLockedRef.current = true;
+        setIsLevelInteractionLocked(true);
+        if (!startedWithPointer) {
+            pressedLevelIdRef.current = levelId;
+            setPressedLevelId(levelId);
+        }
+
+        levelReleaseTimerRef.current = setTimeout(() => {
+            pressedLevelIdRef.current = null;
+            setPressedLevelId(null);
+        }, releaseDelay);
+
+        levelActionTimerRef.current = setTimeout(() => {
+            levelInteractionLockedRef.current = false;
+            setIsLevelInteractionLocked(false);
+            onLevelSelect(levelId);
+        }, releaseDelay + 150);
+    }, [onLevelSelect]);
     
     // Helper to determine if a level should actually be shown as "in-progress"
     const getDisplayStatus = (progress?: LevelProgress) => {
@@ -172,19 +239,22 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
             return (
                 <div className="flex flex-col items-center w-full max-w-md">
                     <div className="w-full grid grid-cols-5 gap-3 pt-2 pb-6">
-                        {levels.map((lvl, idx) => {
+                        {levels.map((lvl) => {
                             const key = `${difficulty}-${lvl}`;
                             const progress = progressMap[key];
                             return (
                                 <LevelButton 
                                     key={lvl}
                                     levelId={lvl}
-                                    index={idx}
                                     status={getDisplayStatus(progress)}
                                     bestTime={progress?.bestTime}
                                     isGlobalBest={globalBest !== undefined && progress?.bestTime === globalBest}
                                     showTimer={showTimer}
-                                    onSelect={onLevelSelect}
+                                    onSelect={runLevelPressCycle}
+                                    isPressed={pressedLevelId === lvl}
+                                    isLocked={isLevelInteractionLocked}
+                                    onPressStart={beginLevelPress}
+                                    onPressCancel={cancelLevelPress}
                                 />
                             );
                         })}
@@ -212,19 +282,22 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
             return (
                 <div className="flex flex-col items-center w-full max-w-md">
                     <div className="w-full grid grid-cols-5 gap-3 pt-2 pb-6 animate-fade-in-fast">
-                        {levels.map((lvl, idx) => {
+                        {levels.map((lvl) => {
                             const key = `${difficulty}-${lvl}`;
                             const progress = progressMap[key];
                             return (
                                 <LevelButton 
                                     key={lvl}
                                     levelId={lvl}
-                                    index={idx}
                                     status={getDisplayStatus(progress)}
                                     bestTime={progress?.bestTime}
                                     isGlobalBest={globalBest !== undefined && progress?.bestTime === globalBest}
                                     showTimer={showTimer}
-                                    onSelect={onLevelSelect}
+                                    onSelect={runLevelPressCycle}
+                                    isPressed={pressedLevelId === lvl}
+                                    isLocked={isLevelInteractionLocked}
+                                    onPressStart={beginLevelPress}
+                                    onPressCancel={cancelLevelPress}
                                 />
                             );
                         })}
@@ -252,19 +325,22 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
             return (
                 <div className="flex flex-col items-center w-full max-w-md animate-fade-in-fast">
                     <div className="w-full grid grid-cols-5 gap-3 pt-2 pb-6">
-                        {levels.map((lvl, idx) => {
+                        {levels.map((lvl) => {
                             const key = `${difficulty}-${lvl}`;
                             const progress = progressMap[key];
                             return (
                                 <LevelButton 
                                     key={lvl}
                                     levelId={lvl}
-                                    index={idx}
                                     status={getDisplayStatus(progress)}
                                     bestTime={progress?.bestTime}
                                     isGlobalBest={globalBest !== undefined && progress?.bestTime === globalBest}
                                     showTimer={showTimer}
-                                    onSelect={onLevelSelect}
+                                    onSelect={runLevelPressCycle}
+                                    isPressed={pressedLevelId === lvl}
+                                    isLocked={isLevelInteractionLocked}
+                                    onPressStart={beginLevelPress}
+                                    onPressCancel={cancelLevelPress}
                                 />
                             );
                         })}

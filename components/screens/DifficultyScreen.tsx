@@ -25,6 +25,11 @@ interface DifficultyScreenProps {
     cascadeDelayMs?: number;
 }
 
+const MAIN_MENU_CASCADE_SPEED = 0.75;
+const MAIN_MENU_SLIDE_DURATION_MS = 300;
+const MAIN_MENU_FADE_DURATION_MS = 750;
+const mainMenuCascadeDelay = (delayMs: number) => Math.round(delayMs * MAIN_MENU_CASCADE_SPEED);
+
 // Internal Hook for Counting Animation (Progress Bars)
 const useAnimatedCounter = (target: number, duration: number = 500, delay: number = 200, enabled = true) => {
     const [count, setCount] = useState(enabled ? 0 : target);
@@ -99,7 +104,7 @@ const DifficultyCard: React.FC<{
 
     const diffPoints = getDifficultyPoints(diff);
     
-    const delay = 100 + (index * 50);
+    const delay = mainMenuCascadeDelay(100 + (index * 50));
 
     const baseZIndex = 30 - index;
     const finalZIndex = baseZIndex;
@@ -112,7 +117,13 @@ const DifficultyCard: React.FC<{
         aspectRatio: '1.91/1', 
     };
 
-    const finalStyle = { ...defaultStyle, ...layoutStyle, zIndex: finalZIndex, animationDelay: `${delay + cascadeDelayMs}ms` };
+    const finalStyle = {
+        ...defaultStyle,
+        ...layoutStyle,
+        zIndex: finalZIndex,
+        animationDelay: `${delay + cascadeDelayMs}ms`,
+        animationDuration: `${MAIN_MENU_SLIDE_DURATION_MS}ms`,
+    };
 
     const titleClass = contentScale === 'large' ? 'text-3xl' : (contentScale === 'medium' ? 'text-2xl' : 'text-lg');
     const iconSizeClass = contentScale === 'large' ? 'w-[13px] h-[13px]' : (contentScale === 'medium' ? 'w-[11px] h-[11px]' : 'w-[9px] h-[9px]');
@@ -181,17 +192,29 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
 }) => {
     const [timeLeft, setTimeLeft] = useState<string>("");
     const [pressedMainMenuAction, setPressedMainMenuAction] = useState<string | null>(null);
-    const [isMainMenuInteractionLocked, setIsMainMenuInteractionLocked] = useState(false);
-    const mainMenuInteractionLockedRef = useRef(false);
+    const [isMainMenuInteractionLocked, setIsMainMenuInteractionLocked] = useState(true);
+    const mainMenuInteractionLockedRef = useRef(true);
     const pressedMainMenuActionRef = useRef<string | null>(null);
     const mainMenuPressStartedAtRef = useRef(0);
+    const mainMenuCascadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const mainMenuReleaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const mainMenuActionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     
     const lastPlayedGame = Storage.getLastPlayedGame();
 
     useEffect(() => {
+        mainMenuInteractionLockedRef.current = true;
+        setIsMainMenuInteractionLocked(true);
+        mainMenuCascadeTimerRef.current = setTimeout(() => {
+            mainMenuInteractionLockedRef.current = false;
+            setIsMainMenuInteractionLocked(false);
+            mainMenuCascadeTimerRef.current = null;
+        }, MAIN_MENU_FADE_DURATION_MS + cascadeDelayMs);
+
         return () => {
+            if (mainMenuCascadeTimerRef.current) {
+                clearTimeout(mainMenuCascadeTimerRef.current);
+            }
             if (mainMenuReleaseTimerRef.current) {
                 clearTimeout(mainMenuReleaseTimerRef.current);
             }
@@ -199,7 +222,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                 clearTimeout(mainMenuActionTimerRef.current);
             }
         };
-    }, []);
+    }, [cascadeDelayMs]);
 
     const beginMainMenuPress = (actionId: string) => {
         if (mainMenuInteractionLockedRef.current) return;
@@ -253,7 +276,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
             mainMenuInteractionLockedRef.current = false;
             setIsMainMenuInteractionLocked(false);
             action();
-        }, releaseDelay + 200);
+        }, releaseDelay + 150);
     };
 
     const handleDifficultyPress = (diff: Difficulty) => {
@@ -308,7 +331,10 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                   
                   <div
                     className="flex flex-col items-center mb-8 shrink-0 pt-4 opacity-0 animate-fade-in-long"
-                    style={{ animationDelay: `${cascadeDelayMs}ms` }}
+                    style={{
+                        animationDelay: `${cascadeDelayMs}ms`,
+                        animationDuration: `${MAIN_MENU_FADE_DURATION_MS}ms`,
+                    }}
                   >
                       <h1 className="text-6xl font-bold text-stone-800 dark:text-stone-100 tracking-tight leading-none mb-1">Oku</h1>
                       <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.4em] ml-1">Sudoku</span>
@@ -375,7 +401,10 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                   {lastPlayedGame && (
                   <div 
                     className="w-full max-w-md flex justify-center mb-7 opacity-0 animate-slide-in-down shrink-0" 
-                    style={{ animationDelay: `${200 + cascadeDelayMs}ms` }}
+                    style={{
+                        animationDelay: `${mainMenuCascadeDelay(200) + cascadeDelayMs}ms`,
+                        animationDuration: `${MAIN_MENU_SLIDE_DURATION_MS}ms`,
+                    }}
                   >
                     <div className="oku-tactile-shell rounded-2xl w-[55%]">
                       <button 
@@ -405,7 +434,10 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                   <div className="w-full max-w-md flex flex-col gap-3 shrink-0">
                       <div 
                         className="flex justify-center gap-3 opacity-0 animate-slide-in-down w-full" 
-                        style={{ animationDelay: `${250 + cascadeDelayMs}ms` }}
+                        style={{
+                            animationDelay: `${mainMenuCascadeDelay(250) + cascadeDelayMs}ms`,
+                            animationDuration: `${MAIN_MENU_SLIDE_DURATION_MS}ms`,
+                        }}
                       >
                           <div className="oku-tactile-shell rounded-2xl" style={{ width: '47.5%' }}>
                               <button
@@ -450,7 +482,10 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                       
                       <div 
                         className="flex justify-center gap-3 opacity-0 animate-slide-in-down w-full"
-                        style={{ animationDelay: `${300 + cascadeDelayMs}ms` }}
+                        style={{
+                            animationDelay: `${mainMenuCascadeDelay(300) + cascadeDelayMs}ms`,
+                            animationDuration: `${MAIN_MENU_SLIDE_DURATION_MS}ms`,
+                        }}
                       >
                           <div className="oku-tactile-shell rounded-2xl" style={{ width: '47.5%' }}>
                               <button
@@ -502,7 +537,10 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
 
                   <div 
                     className="w-full max-w-md flex items-center justify-center gap-3 mt-6 mb-2 opacity-0 animate-slide-in-down shrink-0" 
-                    style={{ animationDelay: `${350 + cascadeDelayMs}ms` }}
+                    style={{
+                        animationDelay: `${mainMenuCascadeDelay(350) + cascadeDelayMs}ms`,
+                        animationDuration: `${MAIN_MENU_SLIDE_DURATION_MS}ms`,
+                    }}
                   >
                       <div className="oku-tactile-shell rounded-full">
                           <button

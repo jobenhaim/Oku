@@ -747,7 +747,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 key="diamondShop"
                                 custom={direction}
                                 variants={variants}
-                                initial="initial"
+                                initial={false}
                                 animate="animate"
                                 exit="exit"
                                 className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
@@ -768,7 +768,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 key="levels"
                                 custom={direction}
                                 variants={variants}
-                                initial="initial"
+                                initial={false}
                                 animate="animate"
                                 exit="exit"
                                 className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
@@ -793,7 +793,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 key="store"
                                 custom={direction}
                                 variants={variants}
-                                initial="initial"
+                                initial={false}
                                 animate="animate"
                                 exit="exit"
                                 className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
@@ -854,7 +854,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 key="stats"
                                 custom={direction}
                                 variants={variants}
-                                initial="initial"
+                                initial={false}
                                 animate="animate"
                                 exit="exit"
                                 className="absolute inset-0 z-20 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
@@ -872,7 +872,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 key="profile"
                                 custom={direction}
                                 variants={variants}
-                                initial="initial"
+                                initial={false}
                                 animate="animate"
                                 exit="exit"
                                 className="absolute inset-0 z-20 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
