@@ -85,7 +85,9 @@ const DifficultyCard: React.FC<{
     cascadeDelayMs?: number;
     isPressed?: boolean;
     isLocked?: boolean;
-}> = ({ diff, index, onSelect, isPyramidTop, contentScale = 'normal', layoutStyle, celebrateProgress = false, cascadeDelayMs = 0, isPressed = false, isLocked = false }) => {
+    onPressStart?: () => void;
+    onPressCancel?: () => void;
+}> = ({ diff, index, onSelect, isPyramidTop, contentScale = 'normal', layoutStyle, celebrateProgress = false, cascadeDelayMs = 0, isPressed = false, isLocked = false, onPressStart, onPressCancel }) => {
     
     const completed = Storage.getCompletedCount(diff, 300);
     const isPack2Unlocked = Storage.isPack2Unlocked(diff);
@@ -125,6 +127,9 @@ const DifficultyCard: React.FC<{
             className="oku-tactile-shell rounded-2xl opacity-0 animate-slide-in-down"
         >
             <button 
+                onPointerDown={onPressStart}
+                onPointerCancel={onPressCancel}
+                onPointerLeave={onPressCancel}
                 onClick={() => onSelect(diff)}
                 disabled={isLocked}
                 className={`oku-difficulty-glass oku-difficulty-card-tactile ${isPressed ? 'oku-difficulty-card-tactile--pressed' : ''} w-full h-full ${paddingClass} rounded-2xl flex flex-col justify-between text-left relative group overflow-visible`}
@@ -178,6 +183,8 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     const [pressedMainMenuAction, setPressedMainMenuAction] = useState<string | null>(null);
     const [isMainMenuInteractionLocked, setIsMainMenuInteractionLocked] = useState(false);
     const mainMenuInteractionLockedRef = useRef(false);
+    const pressedMainMenuActionRef = useRef<string | null>(null);
+    const mainMenuPressStartedAtRef = useRef(0);
     const mainMenuReleaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const mainMenuActionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     
@@ -194,23 +201,59 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
         };
     }, []);
 
+    const beginMainMenuPress = (actionId: string) => {
+        if (mainMenuInteractionLockedRef.current) return;
+
+        pressedMainMenuActionRef.current = actionId;
+        mainMenuPressStartedAtRef.current = performance.now();
+        setPressedMainMenuAction(actionId);
+    };
+
+    const cancelMainMenuPress = (actionId: string) => {
+        if (
+            mainMenuInteractionLockedRef.current ||
+            pressedMainMenuActionRef.current !== actionId
+        ) return;
+
+        pressedMainMenuActionRef.current = null;
+        setPressedMainMenuAction(null);
+    };
+
+    const getMainMenuPressHandlers = (actionId: string) => ({
+        onPointerDown: () => beginMainMenuPress(actionId),
+        onPointerCancel: () => cancelMainMenuPress(actionId),
+        onPointerLeave: () => cancelMainMenuPress(actionId),
+    });
+
     const runMainMenuPressCycle = (actionId: string, action: () => void, playPressSound = true) => {
         if (mainMenuInteractionLockedRef.current) return;
 
+        const startedWithPointer = pressedMainMenuActionRef.current === actionId;
+        const elapsedPressTime = startedWithPointer
+            ? performance.now() - mainMenuPressStartedAtRef.current
+            : 0;
+        const releaseDelay = startedWithPointer
+            ? Math.max(0, 100 - elapsedPressTime)
+            : 100;
+
         mainMenuInteractionLockedRef.current = true;
         setIsMainMenuInteractionLocked(true);
-        setPressedMainMenuAction(actionId);
+        if (!startedWithPointer) {
+            pressedMainMenuActionRef.current = actionId;
+            setPressedMainMenuAction(actionId);
+        }
         if (playPressSound) sounds.playClick();
 
         mainMenuReleaseTimerRef.current = setTimeout(() => {
+            pressedMainMenuActionRef.current = null;
             setPressedMainMenuAction(null);
-        }, 75);
+        }, releaseDelay);
 
         mainMenuActionTimerRef.current = setTimeout(() => {
             mainMenuInteractionLockedRef.current = false;
             setIsMainMenuInteractionLocked(false);
             action();
-        }, 175);
+        }, releaseDelay + 200);
     };
 
     const handleDifficultyPress = (diff: Difficulty) => {
@@ -302,6 +345,8 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                           cascadeDelayMs={cascadeDelayMs}
                                           isPressed={pressedMainMenuAction === `difficulty-${diff}`}
                                           isLocked={isMainMenuInteractionLocked}
+                                          onPressStart={() => beginMainMenuPress(`difficulty-${diff}`)}
+                                          onPressCancel={() => cancelMainMenuPress(`difficulty-${diff}`)}
                                       />
                                   </div>
                               );
@@ -319,6 +364,8 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                   cascadeDelayMs={cascadeDelayMs}
                                   isPressed={pressedMainMenuAction === `difficulty-${diff}`}
                                   isLocked={isMainMenuInteractionLocked}
+                                  onPressStart={() => beginMainMenuPress(`difficulty-${diff}`)}
+                                  onPressCancel={() => cancelMainMenuPress(`difficulty-${diff}`)}
                               />
                           );
                       })}
@@ -332,6 +379,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                   >
                     <div className="oku-tactile-shell rounded-2xl w-[55%]">
                       <button 
+                        {...getMainMenuPressHandlers('continue')}
                         onClick={(e) => { 
                             e.stopPropagation(); 
                             runMainMenuPressCycle('continue', () => {
@@ -361,6 +409,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                       >
                           <div className="oku-tactile-shell rounded-2xl" style={{ width: '47.5%' }}>
                               <button
+                                {...getMainMenuPressHandlers('market')}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     runMainMenuPressCycle('market', onOpenStore);
@@ -375,6 +424,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                           
                           <div className="oku-tactile-shell rounded-2xl" style={{ width: '47.5%' }}>
                               <button
+                                {...getMainMenuPressHandlers('oku-shop')}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     runMainMenuPressCycle('oku-shop', onOpenDiamondShop);
@@ -404,6 +454,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                       >
                           <div className="oku-tactile-shell rounded-2xl" style={{ width: '47.5%' }}>
                               <button
+                                  {...getMainMenuPressHandlers('daily-reward')}
                                   onClick={(e) => {
                                       e.stopPropagation();
                                       runMainMenuPressCycle('daily-reward', () => onClaimBonus(e), false);
@@ -434,6 +485,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
 
                           <div className="oku-tactile-shell rounded-2xl" style={{ width: '47.5%' }}>
                               <button
+                                {...getMainMenuPressHandlers('stats')}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     runMainMenuPressCycle('stats', onOpenStats);
@@ -454,6 +506,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                   >
                       <div className="oku-tactile-shell rounded-full">
                           <button
+                              {...getMainMenuPressHandlers('profile')}
                               onClick={(e) => {
                                   e.stopPropagation();
                                   runMainMenuPressCycle('profile', onOpenProfile);
@@ -478,6 +531,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                       
                       <div className="oku-tactile-shell rounded-full">
                           <button
+                              {...getMainMenuPressHandlers('settings')}
                               onClick={(e) => {
                                   e.stopPropagation();
                                   runMainMenuPressCycle('settings', onOpenSettings);

@@ -75,7 +75,7 @@
   box-shadow: none;
   transform: translate3d(0, 0, 0);
   transition:
-    transform 75ms ease-out;
+    transform 100ms ease-out;
   will-change: transform;
 }
 
@@ -87,12 +87,11 @@
   box-shadow: none;
   transform: translate3d(0, 0, 0);
   transition:
-    transform 75ms ease-out,
-    filter 75ms ease-out;
+    transform 100ms ease-out,
+    filter 100ms ease-out;
   will-change: transform;
 }
 
-.oku-main-menu-tactile:active:not(:disabled),
 .oku-main-menu-tactile--pressed {
   transform: translate3d(4px, 4px, 0);
 }
