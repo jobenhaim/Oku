@@ -127,7 +127,7 @@ All rights not expressly granted remain with the developer.
 
 3. In-App Purchases & Virtual Items
 
-The App may offer virtual items including, but not limited to, Diamonds, Themes, and Skills.
+The App may offer virtual items including, but not limited to, Diamonds, Scenes, and Skills.
 
 Virtual items have no real-world monetary value.
 They cannot be exchanged, transferred, refunded, or redeemed for cash.
@@ -357,7 +357,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
         }
         return (
             <span>
-                Instantly add <span className="font-bold">{offer.diamonds} Diamonds</span> to your balance to unlock themes, sounds, and skills.
+                Instantly add <span className="font-bold">{offer.diamonds} Diamonds</span> to your balance to unlock scenes, sounds, and skills.
             </span>
         );
     };

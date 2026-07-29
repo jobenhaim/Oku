@@ -299,13 +299,13 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                             </div>
                                             <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
                                                 <div className="h-8 flex items-center justify-center">
-                                                    <Icons.Guard className="w-[30px] h-[30px]" />
+                                                    <Icons.Guard className="w-[30px] h-[30px] translate-x-[2px]" />
                                                 </div>
                                                 <span className="text-[11px] font-bold text-t-primary">Guard</span>
                                             </div>
                                             <div className="rounded-xl bg-red-50 dark:bg-red-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
                                                 <div className="h-8 flex items-center justify-center">
-                                                    <Icons.Scan className="w-[30px] h-[30px] text-red-500 dark:text-red-400" />
+                                                    <Icons.Scan className="w-[26px] h-[26px] text-red-500 dark:text-red-400" />
                                                 </div>
                                                 <span className="text-[11px] font-bold text-t-primary">Scan</span>
                                             </div>
@@ -353,7 +353,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                     <section aria-labelledby="packs-heading">
                         <div className="px-1 mb-3">
                             <h2 id="packs-heading" className="text-xs font-bold text-t-secondary uppercase tracking-widest">Diamond Packs</h2>
-                            <p className="text-[13px] font-medium text-t-secondary mt-1">Use diamonds for skills, themes, sounds, and more.</p>
+                            <p className="text-[13px] font-medium text-t-secondary mt-1">Use diamonds for skills, scenes, sounds, and more.</p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">

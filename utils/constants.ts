@@ -138,11 +138,6 @@ export const STATIC_BACKGROUNDS = [
     { id: 'bg-mint', name: 'Mint', cost: 150, class: 'bg-gradient-to-br from-emerald-50 to-teal-100' },
     { id: 'bg-berry', name: 'Berry', cost: 150, class: 'bg-gradient-to-br from-pink-100 to-rose-100' },
     { id: 'bg-glacier', name: 'Glacier', cost: 150, class: 'bg-gradient-to-br from-cyan-50 to-sky-100' },
-    { id: 'bg-aurora', name: 'Aurora', cost: 250, class: 'bg-static-aurora' },
-    { id: 'bg-washi', name: 'Washi', cost: 250, class: 'bg-static-washi' },
-    { id: 'bg-sakura', name: 'Sakura', cost: 250, class: 'bg-static-sakura' },
-    { id: 'bg-lagoon', name: 'Lagoon', cost: 250, class: 'bg-static-lagoon' },
-    { id: 'bg-soft-prism', name: 'Prism', cost: 250, class: 'bg-static-soft-prism' },
 ];
 
 export const ALL_BACKGROUNDS = STATIC_BACKGROUNDS;

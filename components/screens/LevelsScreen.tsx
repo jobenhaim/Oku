@@ -167,7 +167,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
             levelInteractionLockedRef.current = false;
             setIsLevelInteractionLocked(false);
             onLevelSelect(levelId);
-        }, releaseDelay + 80);
+        }, releaseDelay + 50);
     }, [onLevelSelect]);
     
     // Helper to determine if a level should actually be shown as "in-progress"
@@ -510,10 +510,6 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                                                 bookPress.runPressCycle(
                                                     tabNum,
                                                     () => handleTabChange(tabNum as 1|2|3),
-                                                    {
-                                                        holdPressedThroughAction: true,
-                                                        actionDelayMs: 30,
-                                                    },
                                                 );
                                             }
                                         }}

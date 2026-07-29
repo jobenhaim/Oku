@@ -103,7 +103,7 @@ export const useTactilePress = <T extends TactileId>() => {
                 lockedRef.current = false;
                 unlockTimerRef.current = null;
             }, 300);
-        }, releaseDelay + (options?.actionDelayMs ?? 80));
+        }, releaseDelay + (options?.actionDelayMs ?? 50));
     }, []);
 
     return {

@@ -6,7 +6,7 @@ import { Icons } from '../ui/Icons';
 import { formatTimeShort, getDifficultyPoints } from '../../utils/constants';
 import { sounds } from '../../utils/sound';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { easeInOut, easeOut } from '../../utils/animation';
 
 interface StatsScreenProps {
@@ -178,6 +178,9 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
             x: dir > 0 ? '-100%' : '100%',
             opacity: 0,
             scale: 0.95,
+            position: 'absolute' as const,
+            inset: 0,
+            width: '100%',
             transition: {
                 x: { type: "spring", stiffness: 200, damping: 25 },
                 opacity: { duration: 0.2 },
@@ -286,22 +289,18 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                                     }
                                 }
                             }}
-                            className="w-full"
+                            className="w-full relative overflow-hidden"
                         >
-                            {/*
-                              Keep the selected tab's entrance, but do not run a
-                              nested exit animation. The app-level navigation has
-                              its own sequential exit; overlapping the two could
-                              leave iOS waiting on an invisible filtered panel.
-                            */}
-                            <motion.div
-                                key={selectedDiff}
-                                custom={direction}
-                                variants={tabContentVariants}
-                                initial="enter"
-                                animate="center"
-                                className="w-full space-y-4"
-                            >
+                            <AnimatePresence initial={false} custom={direction}>
+                                <motion.div
+                                    key={selectedDiff}
+                                    custom={direction}
+                                    variants={tabContentVariants}
+                                    initial="enter"
+                                    animate="center"
+                                    exit="exit"
+                                    className="w-full space-y-4"
+                                >
                                     {/* Big Stats Grid */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <motion.div variants={cardVariants} className="bg-t-surface p-6 rounded-3xl shadow-sm flex flex-col items-center text-center">
@@ -369,7 +368,8 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                                             </div>
                                         </div>
                                     </motion.div>
-                            </motion.div>
+                                </motion.div>
+                            </AnimatePresence>
                         </motion.div>
                     </motion.div>
 

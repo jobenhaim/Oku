@@ -30,7 +30,7 @@ type StoreTab = 'all' | 'skills' | 'bg' | 'sound' | 'num';
 const TABS = [
     { id: 'all', label: 'All' },
     { id: 'skills', label: 'Skills' },
-    { id: 'bg', label: 'Themes' },
+    { id: 'bg', label: 'Scenes' },
     { id: 'sound', label: 'Sounds' },
     { id: 'num', label: 'Numbers' }
 ];
@@ -164,6 +164,14 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                     const isEnabled = enabledSkills.includes(skill.id);
                     const SkillIcon = skill.icon;
                     const delay = idx * 5;
+                    const iconOpticalScale =
+                        skill.id === 'skill-focus'
+                            ? 'scale-[1.15]'
+                            : skill.id === 'skill-scribe'
+                                ? 'scale-[1.03] translate-x-[2px]'
+                                : skill.id === 'skill-scan'
+                                    ? 'scale-[0.91]'
+                                    : '';
                     
                     return (
                         <StoreItemWrapper delay={delay} key={skill.id}>
@@ -176,7 +184,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                     className={`oku-market-skill-card ${skillPress.pressedId === skill.id ? 'oku-market-skill-card--pressed' : ''} w-full h-full px-3 py-2 rounded-[1.25rem] flex items-center gap-3 text-left bg-t-surface relative overflow-hidden group`}
                                 >
                                     <div className="w-11 h-11 flex items-center justify-center shrink-0">
-                                        <SkillIcon className={`w-[38px] h-[38px] ${skill.class}`} />
+                                        <SkillIcon className={`w-[38px] h-[38px] ${iconOpticalScale} ${skill.class}`} />
                                     </div>
 
                                     <div className="flex-1 min-w-0 py-0.5">
@@ -207,7 +215,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
 
     const renderBackgrounds = () => (
         <div className="mb-8">
-            <h2 className="text-lg font-bold text-t-primary mb-3 ml-1">Backgrounds</h2>
+            <h2 className="text-lg font-bold text-t-primary mb-3 ml-1">Scenes</h2>
             <div className="mb-6">
                 <h3 className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-widest mb-3 ml-1">Static</h3>
                 <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{STATIC_BACKGROUNDS.map((bg, idx) => {

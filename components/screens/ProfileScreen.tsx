@@ -6,6 +6,7 @@ import { AnimatedNumber } from '../ui/AnimatedNumber';
 import { Icons } from '../ui/Icons';
 import { Difficulty } from '../../types';
 import { useTactilePress } from '../../hooks/useTactilePress';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface ProfileScreenProps {
     onClose: () => void;
@@ -18,6 +19,16 @@ interface ProfileScreenProps {
 export { MAX_PROFILE_RANK };
 
 type ProfileStatBreakdown = 'games' | 'diamonds' | null;
+type AchievementCategory = 'journey' | 'skills' | 'pepino' | 'collection' | 'books' | 'all';
+
+const ACHIEVEMENT_CATEGORIES: Array<{ id: AchievementCategory; label: string }> = [
+    { id: 'journey', label: 'Journey' },
+    { id: 'skills', label: 'Skills' },
+    { id: 'pepino', label: 'Pepino' },
+    { id: 'collection', label: 'Collection' },
+    { id: 'books', label: 'Books' },
+    { id: 'all', label: 'All' },
+];
 
 const DIAMOND_SOURCE_LABELS: Record<string, string> = {
     welcomeGift: 'Welcome gift',
@@ -133,7 +144,7 @@ const AchievementRow: React.FC<{
                 interactionLockedRef.current = false;
                 completionTimer.current = null;
             }, 650);
-        }, releaseDelay + 80);
+        }, releaseDelay + 50);
     };
 
     return (
@@ -212,56 +223,32 @@ const AchievementRow: React.FC<{
     );
 };
 
-const AchievementGroup: React.FC<{
-    title: string;
+const AchievementList: React.FC<{
     achievements: AchievementItem[];
     onClaim: (achievement: AchievementItem) => void;
     enteringAchievementIds: Set<string>;
-}> = ({ title, achievements, onClaim, enteringAchievementIds }) => {
-    const [isHidden, setIsHidden] = useState(false);
-
-    return achievements.length > 0 ? (
-        <section>
-            <div className="flex items-center justify-between mb-2 px-1">
-                <h2 className="text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.18em]">
-                    {title}
-                </h2>
-                <button
-                    type="button"
-                    onClick={() => { sounds.playClick(); setIsHidden((current) => !current); }}
-                    aria-label={`${isHidden ? 'Show' : 'Hide'} ${title} achievements`}
-                    aria-expanded={!isHidden}
-                    className="flex items-center gap-1 text-[9px] font-bold text-stone-400 dark:text-stone-500 active:scale-95 transition-transform"
-                >
-                    <span>{isHidden ? 'Show' : 'Hide'}</span>
-                    <Icons.Eye className={`w-3.5 h-3.5 transition-opacity duration-150 ${isHidden ? 'opacity-45' : 'opacity-80'}`} />
-                </button>
-            </div>
-            <div
-                aria-hidden={isHidden}
-                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
-                    isHidden
-                        ? 'grid-rows-[0fr] opacity-0 pointer-events-none'
-                        : 'grid-rows-[1fr] opacity-100'
-                }`}
-            >
-                <div className="min-h-0 overflow-hidden">
-                    <div className="flex flex-col gap-2.5">
-                        {achievements.map((achievement) => (
-                            <div key={achievement.id}>
-                                <AchievementRow
-                                    achievement={achievement}
-                                    onClaim={onClaim}
-                                    isEntering={enteringAchievementIds.has(achievement.id)}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </section>
-    ) : null;
-};
+    emptyTitle: string;
+    emptyDetail: string;
+}> = ({ achievements, onClaim, enteringAchievementIds, emptyTitle, emptyDetail }) => (
+    achievements.length > 0 ? (
+        <div className="flex flex-col gap-2.5 animate-fade-in-fast">
+            {achievements.map((achievement) => (
+                <AchievementRow
+                    key={achievement.id}
+                    achievement={achievement}
+                    onClaim={onClaim}
+                    isEntering={enteringAchievementIds.has(achievement.id)}
+                />
+            ))}
+        </div>
+    ) : (
+        <div className="animate-fade-in-fast rounded-[1.25rem] border border-stone-200/80 dark:border-stone-800 bg-white/75 dark:bg-stone-900/75 px-5 py-7 text-center">
+            <Icons.Check className="w-7 h-7 mx-auto text-emerald-400 mb-2" />
+            <span className="block text-sm font-bold text-stone-800 dark:text-stone-100">{emptyTitle}</span>
+            <span className="block mt-1 text-[11px] font-medium text-stone-500 dark:text-stone-400">{emptyDetail}</span>
+        </div>
+    )
+);
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     onClose,
@@ -271,9 +258,20 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     onClaimAchievement,
 }) => {
     const [storedData, setStoredData] = useState(() => Storage.getStoredData());
+    const [activeAchievementCategory, setActiveAchievementCategory] = useState<AchievementCategory>(() => {
+        const title = getTitleAchievement(storedData, claimedRank);
+        const achievements = getOtherAchievements(storedData);
+        const firstReadyCategory = ACHIEVEMENT_CATEGORIES.find((category) => {
+            if (category.id === 'all') return false;
+            if (category.id === 'journey' && title.ready) return true;
+            if (category.id === 'books') return getPackAchievements(storedData).some((achievement) => achievement.ready);
+            return achievements.some((achievement) => achievement.category === category.id && achievement.ready);
+        });
+        return firstReadyCategory?.id ?? 'journey';
+    });
+    const [achievementCategoryDirection, setAchievementCategoryDirection] = useState(0);
     const [isEditingName, setIsEditingName] = useState(false);
-    const [showCloudToast, setShowCloudToast] = useState(false);
-    const [hideCompleted, setHideCompleted] = useState(false);
+    const [hideCompleted, setHideCompleted] = useState(true);
     const [expandedStat, setExpandedStat] = useState<ProfileStatBreakdown>(null);
     const [visibleStatBreakdown, setVisibleStatBreakdown] = useState<Exclude<ProfileStatBreakdown, null>>('games');
     const [enteringAchievementIds, setEnteringAchievementIds] = useState<Set<string>>(() => new Set());
@@ -313,12 +311,58 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     const collectionAchievements = otherAchievements.filter((achievement) => achievement.category === 'collection');
     const skillAchievements = otherAchievements.filter((achievement) => achievement.category === 'skills');
     const pepinoAchievements = otherAchievements.filter((achievement) => achievement.category === 'pepino');
-    const visibleTitleAchievements = hideCompleted && titleAchievement.claimed ? [] : [titleAchievement];
-    const visiblePackAchievements = hideCompleted ? packAchievements.filter((achievement) => !achievement.claimed) : packAchievements;
-    const visibleJourneyAchievements = hideCompleted ? journeyAchievements.filter((achievement) => !achievement.claimed) : journeyAchievements;
-    const visibleCollectionAchievements = hideCompleted ? collectionAchievements.filter((achievement) => !achievement.claimed) : collectionAchievements;
-    const visibleSkillAchievements = hideCompleted ? skillAchievements.filter((achievement) => !achievement.claimed) : skillAchievements;
-    const visiblePepinoAchievements = hideCompleted ? pepinoAchievements.filter((achievement) => !achievement.claimed) : pepinoAchievements;
+    const allAchievements = [
+        titleAchievement,
+        ...journeyAchievements,
+        ...skillAchievements,
+        ...pepinoAchievements,
+        ...collectionAchievements,
+        ...packAchievements,
+    ];
+    const achievementsByCategory: Record<AchievementCategory, AchievementItem[]> = {
+        journey: [titleAchievement, ...journeyAchievements],
+        skills: skillAchievements,
+        pepino: pepinoAchievements,
+        collection: collectionAchievements,
+        books: packAchievements,
+        all: allAchievements,
+    };
+    const activeCategoryAchievements = achievementsByCategory[activeAchievementCategory];
+    const visibleAchievements = !hideCompleted
+        ? activeCategoryAchievements
+        : activeCategoryAchievements.filter((achievement) => !achievement.claimed);
+    const categoryHasReadyAchievement = (category: AchievementCategory) =>
+        achievementsByCategory[category].some((achievement) => achievement.ready);
+    const achievementContentVariants = {
+        enter: (direction: number) => ({
+            x: direction > 0 ? '100%' : '-100%',
+            opacity: 0,
+            scale: 0.95,
+        }),
+        center: {
+            x: 0,
+            opacity: 1,
+            scale: 1,
+            transition: {
+                x: { type: 'spring', stiffness: 200, damping: 25 },
+                opacity: { duration: 0.2 },
+                scale: { duration: 0.2 },
+            },
+        },
+        exit: (direction: number) => ({
+            x: direction > 0 ? '-100%' : '100%',
+            opacity: 0,
+            scale: 0.95,
+            position: 'absolute' as const,
+            inset: 0,
+            width: '100%',
+            transition: {
+                x: { type: 'spring', stiffness: 200, damping: 25 },
+                opacity: { duration: 0.2 },
+                scale: { duration: 0.2 },
+            },
+        }),
+    };
     const gamesWonBreakdown = useMemo(() => {
         const breakdown = storedData.stats?.gamesWonByDifficulty || {};
         return [
@@ -398,12 +442,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         }, 700);
     };
 
-    const handleCloudClick = () => {
-        sounds.playClick();
-        setShowCloudToast(true);
-        window.setTimeout(() => setShowCloudToast(false), 3000);
-    };
-
     return (
         <div className="w-full h-full bg-transparent flex flex-col font-sans text-t-primary">
             <header className="w-full max-w-md mx-auto flex items-center justify-between px-6 pt-4 pb-4 relative shrink-0 z-20">
@@ -442,7 +480,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                                 {profile.username || 'Anonymous'}
                             </button>
                         )}
-                        <span className="mt-3 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-500/10 text-sm font-bold text-blue-700 dark:text-blue-300">
+                        <span className="mt-3 px-4 py-2 rounded-full bg-white dark:bg-white border border-stone-800 dark:border-stone-800 text-sm font-bold text-blue-700 dark:text-blue-700">
                             {currentTitle}
                         </span>
                     </section>
@@ -541,33 +579,77 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                             </div>
                         </div>
 
-                        <div className="space-y-6">
-                            <AchievementGroup title="Next title" achievements={visibleTitleAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
-                            <AchievementGroup title="Journey" achievements={visibleJourneyAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
-                            <AchievementGroup title="Skills" achievements={visibleSkillAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
-                            <AchievementGroup title="Pepino" achievements={visiblePepinoAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
-                            <AchievementGroup title="Collection" achievements={visibleCollectionAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
-                            <AchievementGroup title="Books" achievements={visiblePackAchievements} onClaim={handleClaim} enteringAchievementIds={enteringAchievementIds} />
+                        <div
+                            role="tablist"
+                            aria-label="Achievement categories"
+                            className="oku-segmented-control w-full p-1 rounded-xl flex items-stretch relative min-h-[44px] mb-3"
+                        >
+                            {ACHIEVEMENT_CATEGORIES.map((category) => {
+                                const isActive = activeAchievementCategory === category.id;
+                                const hasReadyAchievement = categoryHasReadyAchievement(category.id);
+                                return (
+                                    <button
+                                        key={category.id}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={isActive}
+                                        aria-label={`${category.label}${hasReadyAchievement ? ', reward ready' : ''}`}
+                                        onClick={() => {
+                                            if (isActive) return;
+                                            sounds.playClick();
+                                            const currentIndex = ACHIEVEMENT_CATEGORIES.findIndex((item) => item.id === activeAchievementCategory);
+                                            const nextIndex = ACHIEVEMENT_CATEGORIES.findIndex((item) => item.id === category.id);
+                                            setAchievementCategoryDirection(nextIndex > currentIndex ? 1 : -1);
+                                            setActiveAchievementCategory(category.id);
+                                        }}
+                                        className={`flex-1 py-2 px-0.5 text-[10px] font-bold transition-all relative z-10 flex items-center justify-center ${
+                                            isActive
+                                                ? 'text-stone-900 dark:text-white'
+                                                : 'text-stone-400 dark:text-stone-400'
+                                        }`}
+                                    >
+                                        <span className="relative z-20 leading-none">{category.label}</span>
+                                        {hasReadyAchievement && (
+                                            <span className="absolute z-30 top-1 right-1 w-2 h-2 rounded-full bg-red-500" aria-hidden="true" />
+                                        )}
+                                        {isActive && (
+                                            <motion.div
+                                                layoutId="activeAchievementPill"
+                                                className="oku-segmented-pill absolute inset-0 rounded-lg z-10"
+                                                transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                                            />
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <div className="relative overflow-hidden">
+                            <AnimatePresence initial={false} custom={achievementCategoryDirection}>
+                                <motion.div
+                                    key={activeAchievementCategory}
+                                    custom={achievementCategoryDirection}
+                                    variants={achievementContentVariants}
+                                    initial="enter"
+                                    animate="center"
+                                    exit="exit"
+                                >
+                                    <AchievementList
+                                        achievements={visibleAchievements}
+                                        onClaim={handleClaim}
+                                        enteringAchievementIds={enteringAchievementIds}
+                                        emptyTitle="Nothing waiting here"
+                                        emptyDetail={
+                                            hideCompleted
+                                                ? 'Completed achievements are currently hidden.'
+                                                : 'There are no achievements in this category yet.'
+                                        }
+                                    />
+                                </motion.div>
+                            </AnimatePresence>
                         </div>
                     </div>
 
-                    <button onClick={handleCloudClick} className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-sm w-full p-4 rounded-2xl flex items-center justify-between active:scale-[0.99] transition-transform">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-stone-100 dark:bg-stone-700 flex items-center justify-center">
-                                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                                    <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/>
-                                    <path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 0 1-6.723-4.823l-4.04 3.067A11.965 11.965 0 0 0 12 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/>
-                                    <path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.62-5.096 3.62-9 0-.71-.109-1.473-.272-2.182H12v4.637h6.436c-.317 1.559-1.16 2.766-2.395 3.558L19.834 21Z"/>
-                                    <path fill="#FBBC05" d="M5.277 14.268A7.12 7.12 0 0 1 4.909 12c0-.782.125-1.533.357-2.235L1.24 6.65A11.934 11.934 0 0 0 0 12c0 1.92.445 3.73 1.237 5.335l4.04-3.067Z"/>
-                                </svg>
-                            </div>
-                            <div className="text-left">
-                                <span className="block text-sm font-bold">Sign in with Google</span>
-                                <span className="block text-[10px] font-semibold text-stone-500 dark:text-stone-400 mt-0.5">Cloud backup coming soon</span>
-                            </div>
-                        </div>
-                        {showCloudToast ? <span className="text-[10px] font-bold text-blue-500">Coming Soon</span> : <Icons.Next className="w-4 h-4 text-stone-400" />}
-                    </button>
                 </div>
                 <div className="h-safe-bottom w-full shrink-0" />
             </main>

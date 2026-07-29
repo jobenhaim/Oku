@@ -177,7 +177,7 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
         { id: 'guiding-light-100', title: 'Guiding Light', detail: 'Tap 100 Light-highlighted cells.', current: nudgeCellClicks, target: 100, reward: 50, category: 'skills' },
         { id: 'unlock-pepino', title: 'Nice to Meet You', detail: 'Unlock Pepino.', current: data.pepino?.unlocked ? 1 : 0, target: 1, reward: 10, category: 'pepino' },
         { id: 'pepino-best-friend-100', title: "Pepino's Best Friend", detail: 'Open 100 Pepino gifts.', current: pepinoGiftsOpened, target: 100, reward: 100, category: 'pepino' },
-        { id: 'eight-backgrounds', title: 'Scene Setter', detail: 'Get 8 backgrounds.', current: backgrounds, target: 8, reward: 50, category: 'collection' },
+        { id: 'eight-backgrounds', title: 'Scene Setter', detail: 'Get 8 scenes.', current: backgrounds, target: 8, reward: 50, category: 'collection' },
         { id: 'eight-number-styles', title: 'Number Wardrobe', detail: 'Get 8 number styles.', current: numberStyles, target: 8, reward: 50, category: 'collection' },
         { id: 'eight-sound-packs', title: 'Sound Library', detail: 'Get 8 sound packs.', current: soundPacks, target: 8, reward: 50, category: 'collection' },
         { id: 'all-skills', title: 'Complete Toolkit', detail: 'Unlock every skill.', current: skills, target: 4, reward: 50, category: 'collection' },

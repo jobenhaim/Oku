@@ -67,7 +67,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
                                 ? 'bg-blue-100 dark:bg-blue-900/50 shadow-[0_0_14px_rgba(59,130,246,0.45)]'
                                 : 'bg-white dark:bg-stone-800 shadow-sm'
                         }`}>
-                            <Icons.Focus className="w-5 h-5 scale-[1.32]" />
+                            <Icons.Focus className="w-5 h-5 scale-[1.61]" />
                         </div>
                         <span className="text-sm font-medium">Focus</span>
                     </button>
@@ -81,10 +81,10 @@ export const GameControls: React.FC<GameControlsProps> = ({
                             disabled={scanUses <= 0 || scanCooldown || isScanning}
                         >
                         <div className={`p-3 rounded-full shadow-sm transition-all duration-300 relative flex items-center justify-center ${getBaseContainerStyle(scanUses > 0 && !scanCooldown && !isScanning)}`}>
-                            <Icons.Scan className={`w-5 h-5 scale-[1.32] ${scanUses > 0 && !scanCooldown && !isScanning ? 'opacity-100' : 'opacity-30 grayscale'}`} />
+                            <Icons.Scan className={`w-5 h-5 scale-[1.16] ${scanUses > 0 && !scanCooldown && !isScanning ? 'opacity-100' : 'opacity-30 grayscale'}`} />
                             {/* Larger Badge for Scan - Moved to -top-4 -right-4 */}
                             {scanUses > 0 && (
-                                <div className={`absolute -top-4 -right-4 w-7 h-7 rounded-full flex items-center justify-center text-base font-bold leading-none shadow-sm z-10 ${scanUses > 0 ? 'bg-blue-600 text-white' : 'hidden'}`}>
+                                <div className={`absolute -top-4 -right-4 w-7 h-7 rounded-full flex items-center justify-center text-[19px] font-bold leading-none shadow-sm z-10 ${scanUses > 0 ? 'bg-blue-600 text-white' : 'hidden'}`}>
                                     {scanUses}
                                 </div>
                             )}

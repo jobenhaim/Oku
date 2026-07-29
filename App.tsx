@@ -44,7 +44,15 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const [points, setPoints] = useState<number>(Storage.getPoints());
   
   const [purchasedBackgrounds, setPurchasedBackgrounds] = useState<string[]>(Storage.getPurchasedBackgrounds());
-  const [selectedBackgroundId, setSelectedBackgroundId] = useState<string | null>(Storage.getSelectedBackground());
+  const [selectedBackgroundId, setSelectedBackgroundId] = useState<string | null>(() => {
+      const storedBackgroundId = Storage.getSelectedBackground();
+      if (!storedBackgroundId || ALL_BACKGROUNDS.some(background => background.id === storedBackgroundId)) {
+          return storedBackgroundId;
+      }
+
+      Storage.selectBackground('bg-default');
+      return 'bg-default';
+  });
   
   const [purchasedNumberColors, setPurchasedNumberColors] = useState<string[]>(Storage.getPurchasedNumberColors());
   const [selectedNumberColorId, setSelectedNumberColorId] = useState<string>(Storage.getSelectedNumberColor());

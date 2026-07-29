@@ -64,11 +64,11 @@
 }
 
 .oku-tactile-shell {
-  box-shadow: 2px 2px 0 rgba(20, 18, 18, 0.9);
+  box-shadow: none;
 }
 
 .dark .oku-tactile-shell {
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.9);
+  box-shadow: none;
 }
 
 .oku-tactile-shell-static,
@@ -84,7 +84,7 @@
 }
 
 .oku-difficulty-card-tactile--pressed {
-  transform: translate3d(2px, 2px, 0);
+  transform: scale(0.98);
 }
 
 .oku-main-menu-tactile {
@@ -95,7 +95,7 @@
 }
 
 .oku-main-menu-tactile--pressed {
-  transform: translate3d(2px, 2px, 0);
+  transform: scale(0.98);
 }
 
 .oku-main-menu-tactile-static {
@@ -188,17 +188,7 @@
 }
 
 .oku-level-shell::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: rgba(20, 18, 18, 0.9);
-  transform: translate3d(2px, 2px, 0);
-}
-
-.dark .oku-level-shell::before {
-  background: rgba(0, 0, 0, 0.9);
+  content: none;
 }
 
 .oku-level-tactile {
@@ -210,7 +200,7 @@
 }
 
 .oku-level-tactile--pressed {
-  transform: translate3d(2px, 2px, 0);
+  transform: scale(0.98);
 }
 
 @keyframes oku-book-level-row-reveal {
@@ -1009,24 +999,19 @@ html, body {
   pointer-events: none;
 }
 
-/* Achievement rows reserve room for the tactile shadow so section overflow never clips it. */
+/* Achievement rows return to their original size without a shadow track. */
 .oku-achievement-row-shell {
   position: relative;
   isolation: isolate;
-  height: 88px;
-  padding-right: 2px;
-  padding-bottom: 2px;
+  height: 86px;
+  padding: 0;
 }
 
-/* Tactile cards share one fixed, crisp 2px shadow and move onto it when pressed. */
+/* Tactile cards use a small scale response without positional movement. */
 .oku-profile-stat-shell {
   position: relative;
   isolation: isolate;
-  box-shadow: 2px 2px 0 rgba(20, 18, 18, 0.9);
-}
-
-.dark .oku-profile-stat-shell {
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.9);
+  box-shadow: none;
 }
 
 .oku-profile-stat-card {
@@ -1039,7 +1024,7 @@ html, body {
 }
 
 .oku-profile-stat-card--pressed {
-  transform: translate3d(2px, 2px, 0);
+  transform: scale(0.98);
 }
 
 /* Pepino's tank intentionally remains outside this tactile card treatment. */
@@ -1049,17 +1034,7 @@ html, body {
 }
 
 .oku-shop-card-shell::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: inherit;
-  background: rgba(20, 18, 18, 0.9);
-  transform: translate3d(2px, 2px, 0);
-}
-
-.dark .oku-shop-card-shell::before {
-  background: rgba(0, 0, 0, 0.9);
+  content: none;
 }
 
 .oku-shop-card-face {
@@ -1072,7 +1047,7 @@ html, body {
 }
 
 .oku-shop-card-face--pressed {
-  transform: translate3d(2px, 2px, 0);
+  transform: scale(0.98);
 }
 
 /* Only Market skill cards use this tactile treatment for now. */
@@ -1082,17 +1057,7 @@ html, body {
 }
 
 .oku-market-skill-shell::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: inherit;
-  background: rgba(20, 18, 18, 0.9);
-  transform: translate3d(2px, 2px, 0);
-}
-
-.dark .oku-market-skill-shell::before {
-  background: rgba(0, 0, 0, 0.9);
+  content: none;
 }
 
 .oku-market-skill-card {
@@ -1105,27 +1070,17 @@ html, body {
 }
 
 .oku-market-skill-card--pressed {
-  transform: translate3d(2px, 2px, 0);
+  transform: scale(0.98);
 }
 
-/* The active Book remains pressed against its shadow until another Book is selected. */
+/* The active Book remains subtly scaled until another Book is selected. */
 .oku-book-tab-shell {
   position: relative;
   isolation: isolate;
 }
 
 .oku-book-tab-shell::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: inherit;
-  background: rgba(20, 18, 18, 0.9);
-  transform: translate3d(2px, 2px, 0);
-}
-
-.dark .oku-book-tab-shell::before {
-  background: rgba(0, 0, 0, 0.9);
+  content: none;
 }
 
 .oku-book-tab-face {
@@ -1143,7 +1098,7 @@ html, body {
 
 .oku-book-tab-face--pressed,
 .oku-book-tab-face--selected {
-  transform: translate3d(2px, 2px, 0);
+  transform: scale(0.98);
 }
 
 .oku-achievement-tactile-shell {
@@ -1151,23 +1106,7 @@ html, body {
 }
 
 .oku-achievement-tactile-shell::before {
-  content: "";
-  position: absolute;
-  inset: 0 2px 2px 0;
-  z-index: 0;
-  border-radius: 1.25rem;
-  background: rgba(20, 18, 18, 0.9);
-  transform: translate3d(2px, 2px, 0);
-  opacity: 1;
-  transition: opacity 650ms ease-in-out;
-}
-
-.dark .oku-achievement-tactile-shell::before {
-  background: rgba(0, 0, 0, 0.9);
-}
-
-.oku-achievement-completing-shell::before {
-  opacity: 0;
+  content: none;
 }
 
 .oku-achievement-row-shell > button {
@@ -1198,7 +1137,7 @@ html, body {
 }
 
 .oku-achievement-tactile--pressed {
-  transform: translate3d(2px, 2px, 0);
+  transform: scale(0.98);
 }
 
 @keyframes achievement-milestone-enter {
@@ -1225,53 +1164,4 @@ html, body {
   .achievement-milestone-enter {
     animation-duration: 1ms !important;
   }
-}
-
-/*
- * Premium static backgrounds. These are intentionally built from composited
- * CSS gradients only: no animation, filters, blur, canvas, or image decoding.
- */
-.bg-static-aurora {
-  background-color: #eaf8f5;
-  background-image:
-    radial-gradient(ellipse at 18% 12%, rgba(126, 231, 202, 0.72) 0%, rgba(126, 231, 202, 0) 48%),
-    radial-gradient(ellipse at 82% 4%, rgba(170, 164, 242, 0.62) 0%, rgba(170, 164, 242, 0) 50%),
-    radial-gradient(ellipse at 52% 92%, rgba(248, 184, 211, 0.52) 0%, rgba(248, 184, 211, 0) 55%),
-    linear-gradient(150deg, #effcf9 0%, #e7f2ff 52%, #f8edf8 100%);
-}
-
-.bg-static-washi {
-  background-color: #f2eadf;
-  background-image:
-    repeating-linear-gradient(8deg, rgba(114, 91, 66, 0) 0 11px, rgba(114, 91, 66, 0.042) 12px, rgba(114, 91, 66, 0) 13px 25px),
-    repeating-linear-gradient(96deg, rgba(255, 255, 255, 0) 0 17px, rgba(255, 255, 255, 0.264) 18px, rgba(255, 255, 255, 0) 19px 37px),
-    radial-gradient(ellipse at 18% 20%, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0) 50%),
-    linear-gradient(145deg, #fcf9f2 0%, #efe7da 58%, #e9dfd1 100%);
-}
-
-.bg-static-sakura {
-  background-color: #fff4f4;
-  background-image:
-    radial-gradient(ellipse at 12% 16%, rgba(252, 190, 207, 0.68) 0%, rgba(252, 190, 207, 0) 40%),
-    radial-gradient(ellipse at 88% 30%, rgba(247, 206, 220, 0.62) 0%, rgba(247, 206, 220, 0) 44%),
-    radial-gradient(ellipse at 48% 96%, rgba(246, 214, 190, 0.55) 0%, rgba(246, 214, 190, 0) 50%),
-    linear-gradient(145deg, #fff9f6 0%, #fdecef 55%, #f7e2e8 100%);
-}
-
-.bg-static-lagoon {
-  background-color: #e5f7f4;
-  background-image:
-    radial-gradient(ellipse at 12% 78%, rgba(87, 205, 194, 0.52) 0%, rgba(87, 205, 194, 0) 48%),
-    radial-gradient(ellipse at 84% 20%, rgba(102, 190, 224, 0.54) 0%, rgba(102, 190, 224, 0) 52%),
-    radial-gradient(ellipse at 54% 52%, rgba(206, 246, 228, 0.76) 0%, rgba(206, 246, 228, 0) 46%),
-    linear-gradient(150deg, #eefbf8 0%, #d9f3ee 48%, #dceefa 100%);
-}
-
-.bg-static-soft-prism {
-  background-color: #f8f6fb;
-  background-image:
-    linear-gradient(128deg, rgba(255, 204, 218, 0.5) 0%, rgba(255, 204, 218, 0) 34%),
-    linear-gradient(232deg, rgba(192, 221, 255, 0.6) 0%, rgba(192, 221, 255, 0) 38%),
-    linear-gradient(34deg, rgba(255, 234, 173, 0.48) 0%, rgba(255, 234, 173, 0) 38%),
-    radial-gradient(ellipse at 50% 45%, #ffffff 0%, #f4effa 72%, #ecf3fa 100%);
 }

@@ -256,8 +256,8 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
             ? performance.now() - mainMenuPressStartedAtRef.current
             : 0;
         const releaseDelay = startedWithPointer
-            ? Math.max(0, 100 - elapsedPressTime)
-            : 100;
+            ? Math.max(0, 50 - elapsedPressTime)
+            : 50;
 
         mainMenuInteractionLockedRef.current = true;
         setIsMainMenuInteractionLocked(true);
@@ -276,7 +276,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
             mainMenuInteractionLockedRef.current = false;
             setIsMainMenuInteractionLocked(false);
             action();
-        }, releaseDelay + 175);
+        }, releaseDelay + 50);
     };
 
     const handleDifficultyPress = (diff: Difficulty) => {
@@ -562,7 +562,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                           >
                               <Icons.User className="w-5 h-5" />
                               {hasProfileAchievement && (
-                                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white dark:border-stone-900 shadow-sm" aria-hidden="true" />
+                                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500" aria-hidden="true" />
                               )}
                           </button>
                       </div>

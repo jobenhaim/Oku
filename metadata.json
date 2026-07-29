@@ -1,6 +1,6 @@
 {
   "name": "Oku: Sudoku",
-  "description": "A Zen-inspired, minimalist Sudoku application with persistent progress, themes, and a calm mobile-first design.",
+  "description": "A Zen-inspired, minimalist Sudoku application with persistent progress, scenes, and a calm mobile-first design.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
