@@ -7,7 +7,7 @@ import { sounds } from './utils/sound';
 import { getPackCost, NUMBER_COLORS, ALL_BACKGROUNDS } from './utils/constants';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
-import { IAP } from './utils/iap';
+import { BOOKS_2_ALL_PRODUCT_ID, IAP } from './utils/iap';
 import type { SuccessfulIAPPurchase } from './utils/iap';
 
 // UI Components
@@ -69,6 +69,9 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const [unlockedPacks3, setUnlockedPacks3] = useState<string[]>(Storage.getUnlockedPacks3());
   const [book2UnlockReady, setBook2UnlockReady] = useState<string[]>(Storage.getBook2UnlockReady());
   const [book3UnlockReady, setBook3UnlockReady] = useState<string[]>(Storage.getBook3UnlockReady());
+  const [books2AllOwned, setBooks2AllOwned] = useState<boolean>(Storage.isBooks2AllOwned());
+  const [book2BundlePrice, setBook2BundlePrice] = useState('$1.99');
+  const [isPurchasingBook2Bundle, setIsPurchasingBook2Bundle] = useState(false);
 
   const [pepinoState, setPepinoState] = useState<PepinoState>(Storage.getPepinoState());
   const [redeemedCoupons, setRedeemedCoupons] = useState<string[]>([]);
@@ -104,7 +107,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
         // RevenueCat remains the source of truth for permanent purchases.
         await IAP.initialize();
         const ownership = await IAP.getOwnership();
-        if (ownership && (ownership.premiumOwned || ownership.starterOwned || ownership.transactionIds.length > 0)) {
+        if (ownership && (ownership.premiumOwned || ownership.starterOwned || ownership.books2AllOwned || ownership.transactionIds.length > 0)) {
             Storage.restorePermanentPurchases(ownership);
         }
         
@@ -126,6 +129,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
         setUnlockedPacks3(data.unlockedPack3 || []);
         setBook2UnlockReady(data.book2UnlockReady || []);
         setBook3UnlockReady(data.book3UnlockReady || []);
+        setBooks2AllOwned(Boolean(data.books2AllOwned));
         setNextBonusClaimTime(data.nextBonusClaimTime || 0);
         setPepinoState(data.pepino || {
           unlocked: false,
@@ -179,6 +183,17 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
     return () => {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
+  }, []);
+
+  useEffect(() => {
+      let isActive = true;
+      IAP.getLocalizedPrices([BOOKS_2_ALL_PRODUCT_ID]).then(prices => {
+          const localizedPrice = prices[BOOKS_2_ALL_PRODUCT_ID];
+          if (isActive && localizedPrice) setBook2BundlePrice(localizedPrice);
+      });
+      return () => {
+          isActive = false;
+      };
   }, []);
 
   useEffect(() => {
@@ -249,6 +264,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
      setUnlockedPacks3(Storage.getUnlockedPacks3());
      setBook2UnlockReady(Storage.getBook2UnlockReady());
      setBook3UnlockReady(Storage.getBook3UnlockReady());
+     setBooks2AllOwned(Storage.isBooks2AllOwned());
      setNextBonusClaimTime(Storage.getNextBonusClaimTime());
      setPepinoState(Storage.getPepinoState());
      // We don't refresh redeemedCoupons here because it's updated via onRedeemCode
@@ -405,6 +421,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       setPurchasedNumberColors(data.purchasedNumberColors);
       setPurchasedBackgrounds(data.purchasedBackgrounds);
       setPurchasedSoundPacks(data.purchasedSoundPacks || ['snd-zen']);
+      setBooks2AllOwned(Boolean(data.books2AllOwned));
   };
 
   const handleClaimWelcomeGift = (amount: number) => {
@@ -515,6 +532,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
           Storage.restorePermanentPurchases({
               premiumOwned: purchase.ownership.premiumOwned,
               starterOwned: purchase.ownership.starterOwned,
+              books2AllOwned: purchase.ownership.books2AllOwned,
               transactionIds: purchase.transactionIdentifier
                   ? [...purchase.ownership.transactionIds, purchase.transactionIdentifier]
                   : purchase.ownership.transactionIds
@@ -535,12 +553,37 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       const ownership = await IAP.restore();
       if (!ownership) return 'failed';
 
-      const hasPermanentPurchase = ownership.premiumOwned || ownership.starterOwned;
+      const hasPermanentPurchase = ownership.premiumOwned || ownership.starterOwned || ownership.books2AllOwned;
       if (!hasPermanentPurchase) return 'none';
 
       Storage.restorePermanentPurchases(ownership);
       refreshCommerceState();
       return 'restored';
+  };
+
+  const handlePurchaseAllBooks2 = async () => {
+      if (isPurchasingBook2Bundle || books2AllOwned) return;
+
+      sounds.playClick();
+      setIsPurchasingBook2Bundle(true);
+      const purchase = await IAP.purchase(BOOKS_2_ALL_PRODUCT_ID);
+      setIsPurchasingBook2Bundle(false);
+
+      if (purchase.status === 'cancelled') return;
+      if (purchase.status === 'failed') {
+          alert(purchase.message || 'The purchase could not be completed.');
+          return;
+      }
+      if (purchase.status !== 'purchased' && purchase.status !== 'restored') return;
+
+      if (!purchase.ownership.books2AllOwned) {
+          console.error('IAP: Book 2 entitlement was missing after purchase', purchase);
+          alert('The Book 2 purchase could not be verified. Please try Restore Purchases.');
+          return;
+      }
+
+      Storage.restorePermanentPurchases(purchase.ownership);
+      refreshCommerceState();
   };
 
   const handleUnlockPack2 = () => {
@@ -584,7 +627,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   };
 
   const revealBook2 = () => {
-      if (!selectedDifficulty || !Storage.revealPack2(selectedDifficulty)) return;
+      if (!selectedDifficulty || !Storage.revealPack2(selectedDifficulty, books2AllOwned)) return;
       setBook2UnlockReady(Storage.getBook2UnlockReady());
       setUnlockedPacks2(Storage.getUnlockedPacks2());
   };
@@ -856,6 +899,9 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     unlockedPacks3={unlockedPacks3}
                                     book2UnlockReady={book2UnlockReady}
                                     book3UnlockReady={book3UnlockReady}
+                                    books2AllOwned={books2AllOwned}
+                                    book2BundlePrice={book2BundlePrice}
+                                    isPurchasingBook2Bundle={isPurchasingBook2Bundle}
                                     onBack={handleLevelBack}
                                     onLevelSelect={handleLevelSelect}
                                     onOpenSettings={() => setShowSettings(true)}
@@ -863,6 +909,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     onUnlockPack3={() => requestBookUnlock(3)}
                                     onRevealPack2={revealBook2}
                                     onRevealPack3={revealBook3}
+                                    onPurchaseAllBooks2={handlePurchaseAllBooks2}
                                 />
                             </motion.div>
                         )}

@@ -15,6 +15,7 @@ interface UnlockCardProps {
     onUnlockAllWithMoney?: () => void;
     accessGranted?: boolean;
     onReveal?: () => void;
+    moneyPurchasePending?: boolean;
 }
 
 export const UnlockCard: React.FC<UnlockCardProps> = ({
@@ -29,6 +30,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
     onUnlockAllWithMoney,
     accessGranted = false,
     onReveal,
+    moneyPurchasePending = false,
 }) => {
     const cardRef = useRef<HTMLDivElement>(null);
     const [isVisible, setIsVisible] = useState(false);
@@ -225,12 +227,12 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
                     <button
                         type="button"
                         onClick={onUnlockAllWithMoney}
-                        disabled={!unlockReady || !onUnlockAllWithMoney}
+                        disabled={!unlockReady || !onUnlockAllWithMoney || moneyPurchasePending}
                         aria-label={`Unlock Book ${packNumber} in every difficulty for ${moneyPriceLabel}`}
                         className="w-full min-h-[6.25rem] rounded-[1.4rem] border-2 border-blue-300 dark:border-blue-700 bg-white dark:bg-stone-800 px-3 py-3.5 text-center transition-[transform,border-color] duration-100 ease-out active:scale-[0.97] disabled:cursor-default"
                     >
                         <span className="block text-[1.65rem] font-bold leading-none text-stone-950 dark:text-white tabular-nums">
-                            {moneyPriceLabel}
+                            {moneyPurchasePending ? '…' : moneyPriceLabel}
                         </span>
                         <span className="block mt-2 text-[12px] font-semibold leading-tight text-stone-500 dark:text-stone-400">
                             Book {packNumber} in every difficulty

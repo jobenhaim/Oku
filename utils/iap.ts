@@ -7,9 +7,11 @@ const REVENUECAT_API_KEY = 'appl_flqGomKiQqiKEKJxfszjaPaRYnK';
 
 export const PREMIUM_PRODUCT_ID = 'com.oku.sudoku.iap.premiumpack';
 export const STARTER_PRODUCT_ID = 'com.oku.sudoku.iap.starterpack';
+export const BOOKS_2_ALL_PRODUCT_ID = 'oku_books_2_all';
 const PREMIUM_ENTITLEMENT_ID = 'Oku: Sudoku Pro';
 const STARTER_ENTITLEMENT_ID = 'Starter';
-const PERMANENT_PRODUCT_IDS = new Set([PREMIUM_PRODUCT_ID, STARTER_PRODUCT_ID]);
+const BOOKS_2_ALL_ENTITLEMENT_ID = 'books_2_all';
+const PERMANENT_PRODUCT_IDS = new Set([PREMIUM_PRODUCT_ID, STARTER_PRODUCT_ID, BOOKS_2_ALL_PRODUCT_ID]);
 
 export type SuccessfulIAPPurchase = {
     status: 'purchased';
@@ -40,6 +42,7 @@ const getPermanentOwnership = (customerInfo: CustomerInfo): PermanentPurchaseOwn
     return {
         premiumOwned: Boolean(activeEntitlements[PREMIUM_ENTITLEMENT_ID]?.isActive) || purchasedProducts.includes(PREMIUM_PRODUCT_ID),
         starterOwned: Boolean(activeEntitlements[STARTER_ENTITLEMENT_ID]?.isActive) || purchasedProducts.includes(STARTER_PRODUCT_ID),
+        books2AllOwned: Boolean(activeEntitlements[BOOKS_2_ALL_ENTITLEMENT_ID]?.isActive) || purchasedProducts.includes(BOOKS_2_ALL_PRODUCT_ID),
         transactionIds: permanentTransactions.map(transaction => transaction.transactionIdentifier).filter(Boolean)
     };
 };
@@ -47,6 +50,7 @@ const getPermanentOwnership = (customerInfo: CustomerInfo): PermanentPurchaseOwn
 const isProductOwned = (ownership: PermanentPurchaseOwnership, productId: string) => {
     if (productId === PREMIUM_PRODUCT_ID) return ownership.premiumOwned;
     if (productId === STARTER_PRODUCT_ID) return ownership.starterOwned;
+    if (productId === BOOKS_2_ALL_PRODUCT_ID) return ownership.books2AllOwned;
     return false;
 };
 
@@ -130,6 +134,7 @@ class IAPManager {
                         ownership: {
                             premiumOwned: productId === PREMIUM_PRODUCT_ID,
                             starterOwned: productId === STARTER_PRODUCT_ID,
+                            books2AllOwned: productId === BOOKS_2_ALL_PRODUCT_ID,
                             transactionIds: []
                         },
                         isMock: true
@@ -210,7 +215,7 @@ class IAPManager {
     async restore(): Promise<PermanentPurchaseOwnership | null> {
         if (!Capacitor.isNativePlatform()) {
             console.log('IAP: Mock restore has no store receipt');
-            return { premiumOwned: false, starterOwned: false, transactionIds: [] };
+            return { premiumOwned: false, starterOwned: false, books2AllOwned: false, transactionIds: [] };
         }
 
         if (!this.initialized) await this.initialize();

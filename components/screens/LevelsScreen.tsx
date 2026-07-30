@@ -85,6 +85,9 @@ interface LevelsScreenProps {
     unlockedPacks3: string[];
     book2UnlockReady: string[];
     book3UnlockReady: string[];
+    books2AllOwned: boolean;
+    book2BundlePrice: string;
+    isPurchasingBook2Bundle: boolean;
     onBack: () => void;
     onLevelSelect: (levelId: number) => void;
     onOpenSettings: () => void;
@@ -92,6 +95,7 @@ interface LevelsScreenProps {
     onUnlockPack3: () => void;
     onRevealPack2: () => void;
     onRevealPack3: () => void;
+    onPurchaseAllBooks2: () => void;
 }
 
 export const LevelsScreen: React.FC<LevelsScreenProps> = ({ 
@@ -102,6 +106,9 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
     unlockedPacks3, 
     book2UnlockReady,
     book3UnlockReady,
+    books2AllOwned,
+    book2BundlePrice,
+    isPurchasingBook2Bundle,
     onBack, 
     onLevelSelect, 
     onOpenSettings,
@@ -109,6 +116,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
     onUnlockPack3,
     onRevealPack2,
     onRevealPack3,
+    onPurchaseAllBooks2,
 }) => {
     // --- BATCH DATA LOADING ---
     const [progressMap] = useState(() => Storage.getStoredData().progress);
@@ -366,8 +374,15 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                             cost={getPackCost(difficulty, 2)}
                             difficultyLabel={difficulty}
                             onUnlock={onUnlockPack2}
-                            accessGranted={book2UnlockReady.includes(difficulty) || isBook2UnlockTransition}
+                            accessGranted={
+                                book2UnlockReady.includes(difficulty)
+                                || (books2AllOwned && completedRange1 >= 100)
+                                || isBook2UnlockTransition
+                            }
                             onReveal={onRevealPack2}
+                            moneyPriceLabel={book2BundlePrice}
+                            onUnlockAllWithMoney={onPurchaseAllBooks2}
+                            moneyPurchasePending={isPurchasingBook2Bundle}
                         />
                     </div>
                 );

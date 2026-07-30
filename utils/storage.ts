@@ -134,6 +134,7 @@ function getStoredData(): StoredData {
           bonusClaimed: false,
           nextBonusClaimTime: 0,
           starterPackPurchased: false,
+          books2AllOwned: false,
           unlockedPack2: [],
           unlockedPack3: [],
           book2UnlockReady: [],
@@ -214,6 +215,7 @@ function getStoredData(): StoredData {
     if (data.nextBonusClaimTime === undefined) data.nextBonusClaimTime = 0;
     
     if (data.starterPackPurchased === undefined) data.starterPackPurchased = false;
+    if (data.books2AllOwned === undefined) data.books2AllOwned = false;
     // Backfill rewards added to the Starter Pack without re-enabling skills
     // that an existing owner deliberately switched off.
     if (data.starterPackPurchased) {
@@ -352,6 +354,7 @@ function getStoredData(): StoredData {
         bonusClaimed: false,
         nextBonusClaimTime: 0,
         starterPackPurchased: false,
+        books2AllOwned: false,
         unlockedPack2: [],
         unlockedPack3: [],
         book2UnlockReady: [],
@@ -696,6 +699,7 @@ export const Storage = {
 
       if (ownership.premiumOwned) ensurePepinoUnlocked(data);
       if (ownership.starterOwned) ensureStarterPackUnlocked(data);
+      if (ownership.books2AllOwned) data.books2AllOwned = true;
 
       for (const transactionId of ownership.transactionIds) {
           if (transactionId && !data.processedPurchaseTransactions.includes(transactionId)) {
@@ -709,6 +713,10 @@ export const Storage = {
 
   getUnlockedPacks2: (): string[] => {
       return getStoredData().unlockedPack2 || [];
+  },
+
+  isBooks2AllOwned: (): boolean => {
+      return Boolean(getStoredData().books2AllOwned);
   },
 
   isPack2Unlocked: (difficulty: string): boolean => {
@@ -737,11 +745,12 @@ export const Storage = {
       return false;
   },
 
-  revealPack2: (difficulty: string): boolean => {
+  revealPack2: (difficulty: string, hasAllBooks2Access = false): boolean => {
       const data = getStoredData();
       if (!data.unlockedPack2) data.unlockedPack2 = [];
       if (!data.book2UnlockReady) data.book2UnlockReady = [];
-      if (!data.book2UnlockReady.includes(difficulty) || data.unlockedPack2.includes(difficulty)) return false;
+      const hasAccess = data.book2UnlockReady.includes(difficulty) || data.books2AllOwned || hasAllBooks2Access;
+      if (!hasAccess || data.unlockedPack2.includes(difficulty)) return false;
 
       data.book2UnlockReady = data.book2UnlockReady.filter(item => item !== difficulty);
       data.unlockedPack2.push(difficulty);

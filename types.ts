@@ -85,6 +85,7 @@ export interface StoredData {
   bonusClaimed?: boolean;
   nextBonusClaimTime?: number; // Timestamp for next daily bonus
   starterPackPurchased?: boolean;
+  books2AllOwned?: boolean;
   unlockedPack2?: string[]; // Array of difficulty names where Book 2 (levels 101-200) is unlocked
   unlockedPack3?: string[]; // Array of difficulty names where Book 3 (levels 201-300) is unlocked
   book2UnlockReady?: string[]; // Paid/granted, waiting for the player to trigger the reveal
@@ -134,6 +135,7 @@ export type DiamondOffer = {
 export type PermanentPurchaseOwnership = {
   premiumOwned: boolean;
   starterOwned: boolean;
+  books2AllOwned: boolean;
   transactionIds: string[];
 };
 
