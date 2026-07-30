@@ -877,6 +877,10 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     onEarnPoints={(amount) => handleEarnPoints(amount, 'pepino')}
                                     onRestorePurchases={handleRestorePurchases}
                                     starterPackPurchased={starterPackPurchased}
+                                    books2AllOwned={books2AllOwned}
+                                    book2BundlePrice={book2BundlePrice}
+                                    isPurchasingBook2Bundle={isPurchasingBook2Bundle}
+                                    onPurchaseAllBooks2={handlePurchaseAllBooks2}
                                 />
                             </motion.div>
                         )}

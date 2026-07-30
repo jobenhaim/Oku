@@ -15,6 +15,10 @@ interface DiamondShopScreenProps {
     onEarnPoints: (amount: number) => void;
     onRestorePurchases: () => Promise<'restored' | 'none' | 'failed'>;
     starterPackPurchased: boolean;
+    books2AllOwned: boolean;
+    book2BundlePrice: string;
+    isPurchasingBook2Bundle: boolean;
+    onPurchaseAllBooks2: () => void;
 }
 
 const FeatureRow = ({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
@@ -126,7 +130,11 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     onBuyOffer,
     onEarnPoints,
     onRestorePurchases,
-    starterPackPurchased
+    starterPackPurchased,
+    books2AllOwned,
+    book2BundlePrice,
+    isPurchasingBook2Bundle,
+    onPurchaseAllBooks2,
 }) => {
     const [localizedPrices, setLocalizedPrices] = useState<Record<string, string>>({});
     const shopPress = useTactilePress<string>();
@@ -349,6 +357,99 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                             </div>
                         </section>
                     )}
+
+                    <section aria-labelledby="books-heading">
+                        <div className="px-1 mb-3">
+                            <h2 id="books-heading" className="text-xs font-bold text-t-secondary uppercase tracking-widest">Book Collections</h2>
+                            <p className="text-[13px] font-medium text-t-secondary mt-1">Open more puzzles across every difficulty.</p>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <div className="oku-shop-card-shell rounded-3xl">
+                                <button
+                                    type="button"
+                                    onPointerDown={() => !books2AllOwned && !isPurchasingBook2Bundle && shopPress.beginPress('books-2-all')}
+                                    onPointerCancel={() => shopPress.cancelPress('books-2-all')}
+                                    onPointerLeave={() => shopPress.cancelPress('books-2-all')}
+                                    onClick={() => {
+                                        if (books2AllOwned || isPurchasingBook2Bundle) return;
+                                        shopPress.runPressCycle('books-2-all', onPurchaseAllBooks2);
+                                    }}
+                                    disabled={books2AllOwned || isPurchasingBook2Bundle}
+                                    className={`oku-shop-card-face ${shopPress.pressedId === 'books-2-all' ? 'oku-shop-card-face--pressed' : ''} relative w-full min-h-[5.75rem] rounded-3xl border-2 bg-white dark:bg-stone-800 px-4 py-1.5 text-left overflow-hidden flex items-center gap-2 ${
+                                        books2AllOwned
+                                            ? 'border-stone-200 dark:border-stone-700 opacity-60 cursor-default'
+                                            : 'border-blue-300 dark:border-blue-700'
+                                    }`}
+                                >
+                                    <img
+                                        src="/assets/oku-shop/book2.webp"
+                                        alt=""
+                                        className="w-20 h-20 object-contain shrink-0 -ml-2"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="text-base font-bold text-t-primary leading-tight">Complete Book 2</h3>
+                                        <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">600 puzzles · All difficulties</p>
+                                    </div>
+                                    <span className={`shrink-0 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap ${
+                                        books2AllOwned
+                                            ? 'bg-t-surface-sec text-t-secondary'
+                                            : 'bg-blue-500 text-white'
+                                    }`}>
+                                        {books2AllOwned ? 'Owned' : isPurchasingBook2Bundle ? '…' : book2BundlePrice}
+                                    </span>
+                                </button>
+                            </div>
+
+                            <div className="oku-shop-card-shell rounded-3xl">
+                                <button
+                                    type="button"
+                                    onPointerDown={() => shopPress.beginPress('books-3-all')}
+                                    onPointerCancel={() => shopPress.cancelPress('books-3-all')}
+                                    onPointerLeave={() => shopPress.cancelPress('books-3-all')}
+                                    onClick={() => shopPress.runPressCycle('books-3-all', () => {})}
+                                    className={`oku-shop-card-face ${shopPress.pressedId === 'books-3-all' ? 'oku-shop-card-face--pressed' : ''} relative w-full min-h-[5.75rem] rounded-3xl border-2 border-blue-200 dark:border-blue-800 bg-white dark:bg-stone-800 px-4 py-1.5 text-left overflow-hidden flex items-center gap-2`}
+                                >
+                                    <img
+                                        src="/assets/oku-shop/book3.webp"
+                                        alt=""
+                                        className="w-20 h-20 object-contain shrink-0 -ml-2"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="text-base font-bold text-t-primary leading-tight">Complete Book 3</h3>
+                                        <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">600 puzzles · All difficulties</p>
+                                    </div>
+                                    <span className="shrink-0 px-3.5 py-2 rounded-full bg-blue-500 text-white text-sm font-bold whitespace-nowrap">
+                                        $2.99
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="oku-shop-card-shell rounded-3xl mt-3">
+                            <button
+                                type="button"
+                                onPointerDown={() => shopPress.beginPress('books-forever')}
+                                onPointerCancel={() => shopPress.cancelPress('books-forever')}
+                                onPointerLeave={() => shopPress.cancelPress('books-forever')}
+                                onClick={() => shopPress.runPressCycle('books-forever', () => {})}
+                                className={`oku-shop-card-face ${shopPress.pressedId === 'books-forever' ? 'oku-shop-card-face--pressed' : ''} relative w-full min-h-[5.75rem] rounded-3xl border-2 border-blue-200 dark:border-blue-800 bg-white dark:bg-stone-800 px-4 py-1.5 text-left overflow-hidden flex items-center gap-2`}
+                            >
+                                <img
+                                    src="/assets/oku-shop/bookall.webp"
+                                    alt=""
+                                    className="w-20 h-20 object-contain shrink-0 -ml-2"
+                                />
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="text-base font-bold text-t-primary leading-tight">All Books Forever</h3>
+                                    <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">Every Book, current and future</p>
+                                </div>
+                                <span className="shrink-0 px-3.5 py-2 rounded-full bg-blue-500 text-white text-sm font-bold whitespace-nowrap">
+                                    $4.99
+                                </span>
+                            </button>
+                        </div>
+                    </section>
 
                     <section aria-labelledby="packs-heading">
                         <div className="px-1 mb-3">
