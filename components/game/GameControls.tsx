@@ -67,7 +67,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
                                 ? 'bg-blue-100 dark:bg-blue-900/50 shadow-[0_0_14px_rgba(59,130,246,0.45)]'
                                 : 'bg-white dark:bg-stone-800 shadow-sm'
                         }`}>
-                            <Icons.Focus className="w-5 h-5 scale-[1.61]" />
+                            <Icons.Focus className="w-5 h-5 scale-[1.85]" />
                         </div>
                         <span className="text-sm font-medium">Focus</span>
                     </button>
@@ -100,7 +100,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
                     className={`flex flex-col items-center gap-1 transition ${getBaseButtonStyle(canUndo)}`}
                 >
                     <div className={`p-3 rounded-full shadow-sm transition-colors ${getBaseContainerStyle(canUndo)}`}>
-                        <Icons.Undo className={`w-5 h-5 ${canUndo ? 'text-stone-700 dark:text-stone-300' : 'text-stone-300 dark:text-stone-600'}`} />
+                        <Icons.Undo className={`w-5 h-5 scale-125 ${canUndo ? 'text-stone-700 dark:text-stone-300' : 'text-stone-300 dark:text-stone-600'}`} />
                     </div>
                     <span className="text-sm font-medium">Undo</span>
                 </button>
@@ -116,7 +116,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
                         ? 'bg-blue-100 dark:bg-blue-900/40' 
                         : 'bg-white dark:bg-stone-800'
                     }`}>
-                        <Icons.Pencil className={`w-5 h-5 ${isPencilMode ? 'text-blue-600 dark:text-blue-400' : 'text-stone-700 dark:text-stone-300'}`} />
+                        <Icons.Pencil className={`w-5 h-5 scale-125 ${isPencilMode ? 'text-blue-600 dark:text-blue-400' : 'text-stone-700 dark:text-stone-300'}`} />
                     </div>
                     <span className="text-sm font-medium">Pencil</span>
                 </button>
@@ -132,7 +132,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
                             ? 'bg-blue-100 dark:bg-blue-900/40'
                             : getBaseContainerStyle(canErase)
                     }`}>
-                        <Icons.Erase className={`w-5 h-5 ${
+                        <Icons.Erase className={`w-5 h-5 scale-125 ${
                             isEraseMode
                                 ? 'text-blue-600 dark:text-blue-400'
                                 : canErase

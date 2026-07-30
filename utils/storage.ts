@@ -136,6 +136,8 @@ function getStoredData(): StoredData {
           starterPackPurchased: false,
           unlockedPack2: [],
           unlockedPack3: [],
+          book2UnlockReady: [],
+          book3UnlockReady: [],
           pepino: { unlocked: false, hasPendingGift: false, pendingGiftCount: 0, firstGiftClaimed: false, firstMessageShown: false },
           seenStrictModeWarnings: [],
           redeemedCoupons: [],
@@ -224,6 +226,8 @@ function getStoredData(): StoredData {
     
     if (!data.unlockedPack2) data.unlockedPack2 = [];
     if (!data.unlockedPack3) data.unlockedPack3 = [];
+    if (!data.book2UnlockReady) data.book2UnlockReady = [];
+    if (!data.book3UnlockReady) data.book3UnlockReady = [];
     
     if (!data.pepino) {
         data.pepino = { unlocked: false, hasPendingGift: false, pendingGiftCount: 0, firstGiftClaimed: false, firstMessageShown: false };
@@ -350,6 +354,8 @@ function getStoredData(): StoredData {
         starterPackPurchased: false,
         unlockedPack2: [],
         unlockedPack3: [],
+        book2UnlockReady: [],
+        book3UnlockReady: [],
         pepino: { unlocked: false, hasPendingGift: false, pendingGiftCount: 0, firstGiftClaimed: false, firstMessageShown: false },
         seenStrictModeWarnings: [],
         redeemedCoupons: [],
@@ -709,17 +715,38 @@ export const Storage = {
       return getStoredData().unlockedPack2?.includes(difficulty) ?? false;
   },
 
-  unlockPack2: (difficulty: string, cost: number): boolean => {
+  getBook2UnlockReady: (): string[] => {
+      return getStoredData().book2UnlockReady || [];
+  },
+
+  purchasePack2Unlock: (difficulty: string, cost: number): boolean => {
       const data = getStoredData();
       if (!data.unlockedPack2) data.unlockedPack2 = [];
+      if (!data.book2UnlockReady) data.book2UnlockReady = [];
       
-      if (data.points >= cost && !data.unlockedPack2.includes(difficulty)) {
+      if (
+          data.points >= cost
+          && !data.unlockedPack2.includes(difficulty)
+          && !data.book2UnlockReady.includes(difficulty)
+      ) {
           data.points -= cost;
-          data.unlockedPack2.push(difficulty);
+          data.book2UnlockReady.push(difficulty);
           saveData(data);
           return true;
       }
       return false;
+  },
+
+  revealPack2: (difficulty: string): boolean => {
+      const data = getStoredData();
+      if (!data.unlockedPack2) data.unlockedPack2 = [];
+      if (!data.book2UnlockReady) data.book2UnlockReady = [];
+      if (!data.book2UnlockReady.includes(difficulty) || data.unlockedPack2.includes(difficulty)) return false;
+
+      data.book2UnlockReady = data.book2UnlockReady.filter(item => item !== difficulty);
+      data.unlockedPack2.push(difficulty);
+      saveData(data);
+      return true;
   },
 
   getUnlockedPacks3: (): string[] => {
@@ -730,17 +757,38 @@ export const Storage = {
       return getStoredData().unlockedPack3?.includes(difficulty) ?? false;
   },
 
-  unlockPack3: (difficulty: string, cost: number): boolean => {
+  getBook3UnlockReady: (): string[] => {
+      return getStoredData().book3UnlockReady || [];
+  },
+
+  purchasePack3Unlock: (difficulty: string, cost: number): boolean => {
       const data = getStoredData();
       if (!data.unlockedPack3) data.unlockedPack3 = [];
+      if (!data.book3UnlockReady) data.book3UnlockReady = [];
       
-      if (data.points >= cost && !data.unlockedPack3.includes(difficulty)) {
+      if (
+          data.points >= cost
+          && !data.unlockedPack3.includes(difficulty)
+          && !data.book3UnlockReady.includes(difficulty)
+      ) {
           data.points -= cost;
-          data.unlockedPack3.push(difficulty);
+          data.book3UnlockReady.push(difficulty);
           saveData(data);
           return true;
       }
       return false;
+  },
+
+  revealPack3: (difficulty: string): boolean => {
+      const data = getStoredData();
+      if (!data.unlockedPack3) data.unlockedPack3 = [];
+      if (!data.book3UnlockReady) data.book3UnlockReady = [];
+      if (!data.book3UnlockReady.includes(difficulty) || data.unlockedPack3.includes(difficulty)) return false;
+
+      data.book3UnlockReady = data.book3UnlockReady.filter(item => item !== difficulty);
+      data.unlockedPack3.push(difficulty);
+      saveData(data);
+      return true;
   },
 
   getLastPlayedGame: (): LevelProgress | undefined => {

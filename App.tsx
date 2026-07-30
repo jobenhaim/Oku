@@ -11,7 +11,7 @@ import { IAP } from './utils/iap';
 import type { SuccessfulIAPPurchase } from './utils/iap';
 
 // UI Components
-import { PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal, ResetConfirmModal } from './components/ui/Modals';
+import { BookUnlockConfirmModal, PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal, ResetConfirmModal } from './components/ui/Modals';
 import { WelcomeGiftModal } from './components/ui/WelcomeGiftModal';
 import { getStoredClaimedProfileRank, MAX_PROFILE_RANK, ProfileScreen } from './components/screens/ProfileScreen';
 import { hasClaimableAchievement } from './utils/achievements';
@@ -67,6 +67,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   // Unlocked Packs State - For Immediate UI Reactivity
   const [unlockedPacks2, setUnlockedPacks2] = useState<string[]>(Storage.getUnlockedPacks2());
   const [unlockedPacks3, setUnlockedPacks3] = useState<string[]>(Storage.getUnlockedPacks3());
+  const [book2UnlockReady, setBook2UnlockReady] = useState<string[]>(Storage.getBook2UnlockReady());
+  const [book3UnlockReady, setBook3UnlockReady] = useState<string[]>(Storage.getBook3UnlockReady());
 
   const [pepinoState, setPepinoState] = useState<PepinoState>(Storage.getPepinoState());
   const [redeemedCoupons, setRedeemedCoupons] = useState<string[]>([]);
@@ -78,6 +80,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   
   const [purchaseCandidate, setPurchaseCandidate] = useState<{id: string, name: string, cost: number, type: 'bg' | 'num' | 'skill' | 'sound', description?: string} | null>(null);
   const [paymentOffer, setPaymentOffer] = useState<DiamondOffer | null>(null);
+  const [pendingBookUnlock, setPendingBookUnlock] = useState<2 | 3 | null>(null);
   
   const [showNotEnoughPoints, setShowNotEnoughPoints] = useState(false);
   
@@ -121,6 +124,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
         setStarterPackPurchased(data.starterPackPurchased || false);
         setUnlockedPacks2(data.unlockedPack2 || []);
         setUnlockedPacks3(data.unlockedPack3 || []);
+        setBook2UnlockReady(data.book2UnlockReady || []);
+        setBook3UnlockReady(data.book3UnlockReady || []);
         setNextBonusClaimTime(data.nextBonusClaimTime || 0);
         setPepinoState(data.pepino || {
           unlocked: false,
@@ -242,6 +247,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
      setStats(Storage.getStoredData().stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
      setUnlockedPacks2(Storage.getUnlockedPacks2());
      setUnlockedPacks3(Storage.getUnlockedPacks3());
+     setBook2UnlockReady(Storage.getBook2UnlockReady());
+     setBook3UnlockReady(Storage.getBook3UnlockReady());
      setNextBonusClaimTime(Storage.getNextBonusClaimTime());
      setPepinoState(Storage.getPepinoState());
      // We don't refresh redeemedCoupons here because it's updated via onRedeemCode
@@ -540,9 +547,9 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       if (!selectedDifficulty) return;
       const cost = getPackCost(selectedDifficulty, 2);
       if (points >= cost) {
-          if (Storage.unlockPack2(selectedDifficulty, cost)) {
+          if (Storage.purchasePack2Unlock(selectedDifficulty, cost)) {
               setPoints(Storage.getPoints());
-              setUnlockedPacks2(Storage.getUnlockedPacks2());
+              setBook2UnlockReady(Storage.getBook2UnlockReady());
           }
       } else {
           sounds.playClick();
@@ -554,14 +561,38 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       if (!selectedDifficulty) return;
       const cost = getPackCost(selectedDifficulty, 3);
       if (points >= cost) {
-          if (Storage.unlockPack3(selectedDifficulty, cost)) {
+          if (Storage.purchasePack3Unlock(selectedDifficulty, cost)) {
               setPoints(Storage.getPoints());
-              setUnlockedPacks3(Storage.getUnlockedPacks3());
+              setBook3UnlockReady(Storage.getBook3UnlockReady());
           }
       } else {
           sounds.playClick();
           setShowNotEnoughPoints(true);
       }
+  };
+
+  const requestBookUnlock = (bookNumber: 2 | 3) => {
+      sounds.playPop();
+      setPendingBookUnlock(bookNumber);
+  };
+
+  const confirmBookUnlock = () => {
+      const bookNumber = pendingBookUnlock;
+      setPendingBookUnlock(null);
+      if (bookNumber === 2) handleUnlockPack2();
+      if (bookNumber === 3) handleUnlockPack3();
+  };
+
+  const revealBook2 = () => {
+      if (!selectedDifficulty || !Storage.revealPack2(selectedDifficulty)) return;
+      setBook2UnlockReady(Storage.getBook2UnlockReady());
+      setUnlockedPacks2(Storage.getUnlockedPacks2());
+  };
+
+  const revealBook3 = () => {
+      if (!selectedDifficulty || !Storage.revealPack3(selectedDifficulty)) return;
+      setBook3UnlockReady(Storage.getBook3UnlockReady());
+      setUnlockedPacks3(Storage.getUnlockedPacks3());
   };
 
   const handleRedeemCode = (code: string): boolean => {
@@ -823,11 +854,15 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     showTimer={settings.showTimer}
                                     unlockedPacks2={unlockedPacks2}
                                     unlockedPacks3={unlockedPacks3}
+                                    book2UnlockReady={book2UnlockReady}
+                                    book3UnlockReady={book3UnlockReady}
                                     onBack={handleLevelBack}
                                     onLevelSelect={handleLevelSelect}
                                     onOpenSettings={() => setShowSettings(true)}
-                                    onUnlockPack2={handleUnlockPack2}
-                                    onUnlockPack3={handleUnlockPack3}
+                                    onUnlockPack2={() => requestBookUnlock(2)}
+                                    onUnlockPack3={() => requestBookUnlock(3)}
+                                    onRevealPack2={revealBook2}
+                                    onRevealPack3={revealBook3}
                                 />
                             </motion.div>
                         )}
@@ -958,6 +993,15 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                         item={purchaseCandidate} 
                         onConfirm={confirmPurchase} 
                         onCancel={() => setPurchaseCandidate(null)} 
+                    />
+                )}
+                {pendingBookUnlock !== null && selectedDifficulty && (
+                    <BookUnlockConfirmModal
+                        bookNumber={pendingBookUnlock}
+                        difficulty={selectedDifficulty}
+                        cost={getPackCost(selectedDifficulty, pendingBookUnlock)}
+                        onConfirm={confirmBookUnlock}
+                        onCancel={() => setPendingBookUnlock(null)}
                     />
                 )}
                 {paymentOffer && (

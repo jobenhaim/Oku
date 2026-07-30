@@ -87,6 +87,8 @@ export interface StoredData {
   starterPackPurchased?: boolean;
   unlockedPack2?: string[]; // Array of difficulty names where Book 2 (levels 101-200) is unlocked
   unlockedPack3?: string[]; // Array of difficulty names where Book 3 (levels 201-300) is unlocked
+  book2UnlockReady?: string[]; // Paid/granted, waiting for the player to trigger the reveal
+  book3UnlockReady?: string[]; // Paid/granted, waiting for the player to trigger the reveal
   pepino?: PepinoState;
   seenStrictModeWarnings?: string[]; // Track which difficulties the user has seen the hard mode warning for
   redeemedCoupons?: string[]; // Track redeemed coupon codes

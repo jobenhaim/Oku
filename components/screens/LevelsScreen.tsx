@@ -83,11 +83,15 @@ interface LevelsScreenProps {
     showTimer: boolean;
     unlockedPacks2: string[];
     unlockedPacks3: string[];
+    book2UnlockReady: string[];
+    book3UnlockReady: string[];
     onBack: () => void;
     onLevelSelect: (levelId: number) => void;
     onOpenSettings: () => void;
     onUnlockPack2: () => void;
     onUnlockPack3: () => void;
+    onRevealPack2: () => void;
+    onRevealPack3: () => void;
 }
 
 export const LevelsScreen: React.FC<LevelsScreenProps> = ({ 
@@ -96,11 +100,15 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
     showTimer,
     unlockedPacks2, 
     unlockedPacks3, 
+    book2UnlockReady,
+    book3UnlockReady,
     onBack, 
     onLevelSelect, 
     onOpenSettings,
     onUnlockPack2,
-    onUnlockPack3
+    onUnlockPack3,
+    onRevealPack2,
+    onRevealPack3,
 }) => {
     // --- BATCH DATA LOADING ---
     const [progressMap] = useState(() => Storage.getStoredData().progress);
@@ -356,7 +364,10 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                             completedCount={completedRange1}
                             totalBaseLevels={100}
                             cost={getPackCost(difficulty, 2)}
+                            difficultyLabel={difficulty}
                             onUnlock={onUnlockPack2}
+                            accessGranted={book2UnlockReady.includes(difficulty) || isBook2UnlockTransition}
+                            onReveal={onRevealPack2}
                         />
                     </div>
                 );
@@ -416,7 +427,10 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                             completedCount={completedRange2}
                             totalBaseLevels={100}
                             cost={getPackCost(difficulty, 3)}
+                            difficultyLabel={difficulty}
                             onUnlock={onUnlockPack3}
+                            accessGranted={book3UnlockReady.includes(difficulty) || isBook3UnlockTransition}
+                            onReveal={onRevealPack3}
                         />
                     </div>
                 );

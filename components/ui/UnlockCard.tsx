@@ -9,7 +9,12 @@ interface UnlockCardProps {
     completedCount: number;
     totalBaseLevels: number;
     cost: number;
+    difficultyLabel: string;
     onUnlock: () => void;
+    moneyPriceLabel?: string;
+    onUnlockAllWithMoney?: () => void;
+    accessGranted?: boolean;
+    onReveal?: () => void;
 }
 
 export const UnlockCard: React.FC<UnlockCardProps> = ({
@@ -18,7 +23,12 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
     completedCount,
     totalBaseLevels,
     cost,
+    difficultyLabel,
     onUnlock,
+    moneyPriceLabel = '$1.99',
+    onUnlockAllWithMoney,
+    accessGranted = false,
+    onReveal,
 }) => {
     const cardRef = useRef<HTMLDivElement>(null);
     const [isVisible, setIsVisible] = useState(false);
@@ -121,86 +131,113 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
         };
     }, [isVisible, rawPercent, completedCount, cost]);
 
-    const handleUnlockClick = () => {
+    const handleDiamondUnlock = () => {
         if (!unlockReady) return;
         onUnlock();
     };
 
+    const handleReveal = () => {
+        if (!onReveal) return;
+        sounds.playClick();
+        onReveal();
+    };
+
+    if (accessGranted) {
+        return (
+            <div ref={cardRef} className="w-full max-w-md mt-6 px-1">
+                <button
+                    type="button"
+                    onClick={handleReveal}
+                    className="w-full h-[8.25rem] rounded-[1.75rem] flex items-center justify-center gap-3 bg-white dark:bg-stone-800 border-2 border-blue-300 dark:border-blue-700 active:scale-[0.98] transition-transform duration-100 ease-out"
+                    aria-label={`Tap to unlock Book ${packNumber}`}
+                >
+                    <Icons.LockOpen className="w-8 h-8 text-blue-500" strokeWidth={2} />
+                    <span className="text-[1.35rem] font-bold text-stone-950 dark:text-white">
+                        Tap to unlock Book {packNumber}
+                    </span>
+                </button>
+            </div>
+        );
+    }
+
     return (
         <div ref={cardRef} className="w-full max-w-md mt-6 px-1">
-            <button
-                onClick={handleUnlockClick}
-                disabled={!unlockReady}
-                aria-label={showUnlockUI ? `Unlock levels ${startLevel} through ${endLevel} for ${cost} diamonds` : undefined}
-                className={`w-full h-[10.4rem] rounded-[1.75rem] relative overflow-hidden text-left transition-transform duration-200 ease-out ${
-                    unlockReady ? 'active:scale-[0.985] cursor-pointer' : 'cursor-default'
-                } bg-white dark:bg-stone-800 border border-white/90 dark:border-stone-700 shadow-[0_8px_24px_rgba(41,37,36,0.10)]`}
+            <div
+                className="w-full h-[8.25rem] rounded-[1.75rem] relative overflow-hidden text-left bg-white dark:bg-stone-800 border border-white/90 dark:border-stone-700 shadow-[0_8px_24px_rgba(41,37,36,0.10)]"
             >
-                {showUnlockUI ? (
-                    <div className="h-full flex flex-col px-4 py-4 animate-fade-in-fast">
-                        <div className="flex-1 grid grid-cols-[3.75rem_minmax(0,1fr)] items-center gap-3 min-h-0">
-                            <div className="w-[3.75rem] h-[3.75rem] rounded-[1.25rem] bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center">
-                                <Icons.LockOpen className="w-8 h-8 text-blue-500" strokeWidth={2} />
-                            </div>
-
-                            <div className="min-w-0 flex items-center justify-between gap-2">
-                                <span className="min-w-0 text-[clamp(1.1rem,5.5vw,1.35rem)] font-bold text-stone-900 dark:text-white leading-none whitespace-nowrap">
-                                    Book {packNumber}
-                                </span>
-                                <div className="shrink-0 flex items-center gap-1.5" aria-live="polite">
-                                    <span className="text-[clamp(1.65rem,8vw,2rem)] font-bold text-stone-950 dark:text-white leading-none tabular-nums tracking-tight">
-                                        {animatedCost}
-                                    </span>
-                                    <Icons.Diamond className="w-6 h-6 text-blue-500 fill-current" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className={`h-11 rounded-2xl flex items-center justify-between pl-5 pr-2.5 mt-2.5 transition-colors duration-300 ${
-                            unlockReady ? 'bg-blue-500 shadow-[0_4px_10px_rgba(59,130,246,0.24)]' : 'bg-blue-400'
+                <div className="h-full flex flex-col px-4 py-3.5">
+                    <div className="flex-1 grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-3 min-h-0">
+                        <div className={`w-14 h-14 rounded-[1.15rem] flex items-center justify-center transition-colors duration-300 ${
+                            showUnlockUI ? 'bg-blue-50 dark:bg-blue-950/60' : 'bg-stone-100 dark:bg-stone-700'
                         }`}>
-                            <span className="text-base font-bold text-white">
-                                {unlockReady ? 'Unlock' : 'Preparing…'}
-                            </span>
-                            <span className={`w-7 h-7 rounded-xl bg-white/20 flex items-center justify-center transition-all duration-300 ${
-                                unlockReady ? 'translate-x-0 opacity-100' : '-translate-x-1 opacity-0'
-                            }`}>
-                                <Icons.Next className="w-4.5 h-4.5 text-white" strokeWidth={2.5} />
-                            </span>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="h-full flex flex-col px-4 py-4">
-                        <div className="flex-1 grid grid-cols-[3.75rem_minmax(0,1fr)] items-center gap-3 min-h-0">
-                            <div className="w-[3.75rem] h-[3.75rem] rounded-[1.25rem] bg-stone-100 dark:bg-stone-700 flex items-center justify-center">
+                            {showUnlockUI ? (
+                                <Icons.LockOpen className="w-8 h-8 text-blue-500" strokeWidth={2} />
+                            ) : (
                                 <Icons.Lock className="w-8 h-8 text-stone-500 dark:text-stone-400" strokeWidth={2} />
-                            </div>
-
-                            <div className="min-w-0">
-                                <div className="flex items-center justify-between gap-2">
-                                    <p className="min-w-0 text-[clamp(1.1rem,5.5vw,1.35rem)] font-bold text-stone-900 dark:text-white leading-none whitespace-nowrap">
-                                        Book {packNumber}
-                                    </p>
-                                    <div className="shrink-0 flex items-baseline tabular-nums whitespace-nowrap">
-                                        <span className="text-[clamp(1.65rem,8vw,2rem)] font-bold text-stone-900 dark:text-white leading-none">{animatedCount}</span>
-                                        <span className="text-sm font-bold text-stone-400 dark:text-stone-500">/{totalBaseLevels}</span>
-                                    </div>
-                                </div>
-                                <p className="text-[13px] font-semibold text-stone-500 dark:text-stone-400 mt-1.5 leading-none whitespace-nowrap">
-                                    Complete Book {previousPackNumber}
-                                </p>
-                            </div>
+                            )}
                         </div>
 
-                        <div className="w-full h-3 bg-stone-100 dark:bg-stone-700 rounded-full overflow-hidden mt-2.5">
-                            <div
-                                className={`h-full rounded-full bg-loading-blue ${animatedPercent > 0 ? 'min-w-[8px]' : 'opacity-0'}`}
-                                style={{ width: `${animatedPercent}%` }}
-                            />
+                        <div className="min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                                <p className="min-w-0 text-[clamp(1.1rem,5.5vw,1.35rem)] font-bold text-stone-900 dark:text-white leading-none whitespace-nowrap">
+                                    Book {packNumber}
+                                </p>
+                                <div className="shrink-0 flex items-baseline tabular-nums whitespace-nowrap">
+                                    <span className="text-[clamp(1.65rem,8vw,2rem)] font-bold text-stone-900 dark:text-white leading-none">{animatedCount}</span>
+                                    <span className="text-sm font-bold text-stone-400 dark:text-stone-500">/{totalBaseLevels}</span>
+                                </div>
+                            </div>
+                            <p className={`text-[13px] font-semibold mt-1.5 leading-none whitespace-nowrap transition-colors duration-300 ${
+                                showUnlockUI ? 'text-blue-500' : 'text-stone-500 dark:text-stone-400'
+                            }`}>
+                                {showUnlockUI ? 'Ready to unlock' : `Complete Book ${previousPackNumber}`}
+                            </p>
                         </div>
                     </div>
-                )}
-            </button>
+
+                    <div className="w-full h-3 bg-stone-100 dark:bg-stone-700 rounded-full overflow-hidden mt-2">
+                        <div
+                            className={`h-full rounded-full bg-loading-blue ${animatedPercent > 0 ? 'min-w-[8px]' : 'opacity-0'}`}
+                            style={{ width: `${animatedPercent}%` }}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {showUnlockUI && (
+                <div className="mt-3 grid grid-cols-2 gap-3 animate-fade-in-fast">
+                    <button
+                        type="button"
+                        onClick={handleDiamondUnlock}
+                        disabled={!unlockReady}
+                        aria-label={`Unlock levels ${startLevel} through ${endLevel} in ${difficultyLabel} for ${cost} diamonds`}
+                        className="w-full min-h-[6.25rem] rounded-[1.4rem] border-2 border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 px-3 py-3.5 text-center transition-[transform,border-color] duration-100 ease-out active:scale-[0.97] disabled:cursor-default"
+                    >
+                        <span className="flex items-center justify-center gap-2 text-[1.65rem] font-bold leading-none text-stone-950 dark:text-white tabular-nums" aria-live="polite">
+                            {animatedCost}
+                            <Icons.Diamond className="w-[1.65rem] h-[1.65rem] text-blue-500 fill-current" />
+                        </span>
+                        <span className="block mt-2 text-[12px] font-semibold leading-tight text-stone-500 dark:text-stone-400">
+                            Book {packNumber} for {difficultyLabel} only
+                        </span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={onUnlockAllWithMoney}
+                        disabled={!unlockReady || !onUnlockAllWithMoney}
+                        aria-label={`Unlock Book ${packNumber} in every difficulty for ${moneyPriceLabel}`}
+                        className="w-full min-h-[6.25rem] rounded-[1.4rem] border-2 border-blue-300 dark:border-blue-700 bg-white dark:bg-stone-800 px-3 py-3.5 text-center transition-[transform,border-color] duration-100 ease-out active:scale-[0.97] disabled:cursor-default"
+                    >
+                        <span className="block text-[1.65rem] font-bold leading-none text-stone-950 dark:text-white tabular-nums">
+                            {moneyPriceLabel}
+                        </span>
+                        <span className="block mt-2 text-[12px] font-semibold leading-tight text-stone-500 dark:text-stone-400">
+                            Book {packNumber} in every difficulty
+                        </span>
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

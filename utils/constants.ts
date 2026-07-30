@@ -89,23 +89,32 @@ export const DIFFICULTY_DESCRIPTIONS = {
     ],
 };
 
-const PACK_BASE_COST = {
-    [Difficulty.SuperEasy]: 500,
-    [Difficulty.Easy]: 1000,
-    [Difficulty.Normal]: 1500,
-    [Difficulty.Hard]: 2000,
-    [Difficulty.Intense]: 3000,
-    [Difficulty.Impossible]: 5000,
+const BOOK_2_COST = {
+    [Difficulty.SuperEasy]: 750,
+    [Difficulty.Easy]: 1250,
+    [Difficulty.Normal]: 2000,
+    [Difficulty.Hard]: 2750,
+    [Difficulty.Intense]: 4000,
+    [Difficulty.Impossible]: 6500,
+};
+
+const BOOK_3_COST = {
+    [Difficulty.SuperEasy]: 1000,
+    [Difficulty.Easy]: 1750,
+    [Difficulty.Normal]: 2750,
+    [Difficulty.Hard]: 3750,
+    [Difficulty.Intense]: 5500,
+    [Difficulty.Impossible]: 8500,
 };
 
 export const getPackCost = (difficulty: Difficulty, packIndex: number): number => {
-    let cost = PACK_BASE_COST[difficulty] || 0;
-    
-    // Book 2 is the base (Levels 101-200). Book 1 is included.
-    if (packIndex <= 2) return cost;
+    // Book 1 is included. Books 2 and 3 use deliberately balanced prices.
+    if (packIndex <= 2) return BOOK_2_COST[difficulty] || 0;
+    if (packIndex === 3) return BOOK_3_COST[difficulty] || 0;
 
-    // Calculate cost for Book 3+ iteratively
-    for (let i = 3; i <= packIndex; i++) {
+    // Future books increase gradually from Book 3.
+    let cost = BOOK_3_COST[difficulty] || 0;
+    for (let i = 4; i <= packIndex; i++) {
         // Increase by 15%
         const increased = cost * 1.15;
         // Round to nearest multiple of 10

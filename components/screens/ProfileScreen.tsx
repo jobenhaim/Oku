@@ -205,17 +205,17 @@ const AchievementRow: React.FC<{
                         )}
                     </div>
 
-                    <div className={`min-w-[4.25rem] h-10 px-3 rounded-full flex items-center justify-center gap-1.5 shrink-0 transition-colors duration-[650ms] ease-in-out ${
-                        achievement.ready
-                            ? 'bg-blue-500 shadow-[0_4px_12px_rgba(59,130,246,0.28)]'
-                            : achievement.claimed
-                                ? 'bg-stone-100 dark:bg-stone-700'
-                                : 'bg-blue-50 dark:bg-blue-500/10'
+                    <div className={`min-w-[4.25rem] h-10 px-3 rounded-full flex items-center justify-center gap-1.5 shrink-0 bg-white dark:bg-white border transition-colors duration-[650ms] ease-in-out ${
+                        achievement.claimed ? 'border-stone-300' : 'border-stone-800'
                     }`}>
-                        <span className={`text-sm font-bold tabular-nums transition-colors duration-[650ms] ease-in-out ${achievement.ready ? 'text-white' : achievement.claimed ? 'text-stone-400 dark:text-stone-500' : 'text-blue-600 dark:text-blue-400'}`}>
+                        <span className={`text-sm font-bold tabular-nums transition-colors duration-[650ms] ease-in-out ${
+                            achievement.claimed ? 'text-stone-400' : 'text-stone-900'
+                        }`}>
                             {achievement.reward}
                         </span>
-                        <Icons.Diamond className={`w-3.5 h-3.5 fill-current transition-colors duration-[650ms] ease-in-out ${achievement.ready ? 'text-white' : achievement.claimed ? 'text-stone-400 dark:text-stone-500' : 'text-blue-500'}`} />
+                        <Icons.Diamond className={`w-3.5 h-3.5 fill-current transition-colors duration-[650ms] ease-in-out ${
+                            achievement.claimed ? 'text-stone-400' : 'text-blue-500'
+                        }`} />
                     </div>
                 </div>
             </button>

@@ -291,6 +291,76 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ item, onConfirm, o
     );
 };
 
+interface BookUnlockConfirmModalProps {
+    bookNumber: number;
+    difficulty: Difficulty;
+    cost: number;
+    onConfirm: () => void;
+    onCancel: () => void;
+}
+
+export const BookUnlockConfirmModal: React.FC<BookUnlockConfirmModalProps> = ({
+    bookNumber,
+    difficulty,
+    cost,
+    onConfirm,
+    onCancel,
+}) => {
+    const [isClosing, setIsClosing] = useState(false);
+
+    const handleAction = (action: () => void) => {
+        if (isClosing) return;
+        sounds.playClick();
+        setIsClosing(true);
+        setTimeout(action, 220);
+    };
+
+    return (
+        <div
+            className={`fixed inset-0 z-[1000] flex items-center justify-center bg-black/30 backdrop-blur-sm px-4 ${
+                isClosing ? 'animate-fade-out' : 'animate-fade-in'
+            }`}
+            onClick={() => handleAction(onCancel)}
+        >
+            <div
+                className={`w-full max-w-xs rounded-[1.75rem] border border-stone-100 dark:border-stone-700 bg-t-surface p-6 text-center shadow-2xl ${
+                    isClosing ? '' : 'animate-pop'
+                }`}
+                onClick={event => event.stopPropagation()}
+            >
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-blue-50 text-blue-500 dark:bg-blue-950/50">
+                    <Icons.LockOpen className="h-8 w-8" strokeWidth={2} />
+                </div>
+
+                <h3 className="text-[1.45rem] font-bold leading-tight text-t-primary">
+                    Unlock Book {bookNumber}?
+                </h3>
+                <p className="mt-2 text-sm font-medium leading-relaxed text-t-secondary">
+                    Buy Book {bookNumber} for {difficulty} only?
+                </p>
+
+                <div className="mt-6 space-y-2.5">
+                    <button
+                        type="button"
+                        onClick={() => handleAction(onConfirm)}
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-500 py-3.5 text-[1.05rem] font-bold text-white transition-transform duration-100 active:scale-[0.97]"
+                    >
+                        Buy for {cost}
+                        <Icons.Diamond className="h-[1.05rem] w-[1.05rem] fill-current" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handleAction(onCancel)}
+                        className="w-full rounded-2xl bg-t-surface-sec py-3.5 text-base font-bold text-t-secondary transition-transform duration-100 active:scale-[0.97]"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 interface PaymentModalProps {
     offer: DiamondOffer;
     onComplete: (purchase: SuccessfulIAPPurchase) => void;
