@@ -405,7 +405,8 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     />
                                     <div className="min-w-0 flex-1">
                                         <h3 className="text-base font-bold text-t-primary leading-tight">Oku Book 2</h3>
-                                        <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">600 puzzles · All difficulties</p>
+                                        <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">600 puzzles.</p>
+                                        <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-0.5">All difficulties.</p>
                                     </div>
                                     <span className={`shrink-0 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap ${
                                         books2AllOwned
@@ -442,7 +443,8 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         />
                                         <div className="min-w-0 flex-1">
                                             <h3 className="text-base font-bold text-t-primary leading-tight">Oku Book 3</h3>
-                                            <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">600 puzzles · All difficulties</p>
+                                            <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">600 puzzles.</p>
+                                            <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-0.5">All difficulties.</p>
                                         </div>
                                         <span className={`shrink-0 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap ${
                                             books3AllOwned
