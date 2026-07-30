@@ -86,8 +86,11 @@ interface LevelsScreenProps {
     book2UnlockReady: string[];
     book3UnlockReady: string[];
     books2AllOwned: boolean;
+    books3AllOwned: boolean;
     book2BundlePrice: string;
+    book3BundlePrice: string;
     isPurchasingBook2Bundle: boolean;
+    isPurchasingBook3Bundle: boolean;
     onBack: () => void;
     onLevelSelect: (levelId: number) => void;
     onOpenSettings: () => void;
@@ -96,6 +99,7 @@ interface LevelsScreenProps {
     onRevealPack2: () => void;
     onRevealPack3: () => void;
     onPurchaseAllBooks2: () => void;
+    onPurchaseAllBooks3: () => void;
 }
 
 export const LevelsScreen: React.FC<LevelsScreenProps> = ({ 
@@ -107,8 +111,11 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
     book2UnlockReady,
     book3UnlockReady,
     books2AllOwned,
+    books3AllOwned,
     book2BundlePrice,
+    book3BundlePrice,
     isPurchasingBook2Bundle,
+    isPurchasingBook3Bundle,
     onBack, 
     onLevelSelect, 
     onOpenSettings,
@@ -117,6 +124,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
     onRevealPack2,
     onRevealPack3,
     onPurchaseAllBooks2,
+    onPurchaseAllBooks3,
 }) => {
     // --- BATCH DATA LOADING ---
     const [progressMap] = useState(() => Storage.getStoredData().progress);
@@ -444,8 +452,15 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                             cost={getPackCost(difficulty, 3)}
                             difficultyLabel={difficulty}
                             onUnlock={onUnlockPack3}
-                            accessGranted={book3UnlockReady.includes(difficulty) || isBook3UnlockTransition}
+                            accessGranted={
+                                book3UnlockReady.includes(difficulty)
+                                || (books3AllOwned && completedRange2 >= 100)
+                                || isBook3UnlockTransition
+                            }
                             onReveal={onRevealPack3}
+                            moneyPriceLabel={book3BundlePrice}
+                            onUnlockAllWithMoney={onPurchaseAllBooks3}
+                            moneyPurchasePending={isPurchasingBook3Bundle}
                         />
                     </div>
                 );
