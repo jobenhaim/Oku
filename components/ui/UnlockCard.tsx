@@ -232,7 +232,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
                         className="w-full min-h-[6.25rem] rounded-[1.4rem] border-2 border-blue-300 dark:border-blue-700 bg-white dark:bg-stone-800 px-3 py-3.5 text-center transition-[transform,border-color] duration-100 ease-out active:scale-[0.97] disabled:cursor-default"
                     >
                         <span className="block text-[1.65rem] font-bold leading-none text-stone-950 dark:text-white tabular-nums">
-                            {moneyPurchasePending ? '…' : moneyPriceLabel}
+                            {moneyPriceLabel}
                         </span>
                         <span className="block mt-2 text-[12px] font-semibold leading-tight text-stone-500 dark:text-stone-400">
                             Book {packNumber} in every difficulty

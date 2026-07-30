@@ -404,7 +404,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         className="w-20 h-20 object-contain shrink-0 -ml-2"
                                     />
                                     <div className="min-w-0 flex-1">
-                                        <h3 className="text-base font-bold text-t-primary leading-tight">Complete Book 2</h3>
+                                        <h3 className="text-base font-bold text-t-primary leading-tight">Oku Book 2</h3>
                                         <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">600 puzzles · All difficulties</p>
                                     </div>
                                     <span className={`shrink-0 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap ${
@@ -412,46 +412,48 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                             ? 'bg-t-surface-sec text-t-secondary'
                                             : 'bg-blue-500 text-white'
                                     }`}>
-                                        {books2AllOwned ? 'Owned' : isPurchasingBook2Bundle ? '…' : book2BundlePrice}
+                                        {books2AllOwned ? 'Owned' : book2BundlePrice}
                                     </span>
                                 </button>
                             </div>
 
-                            <div className="oku-shop-card-shell rounded-3xl">
-                                <button
-                                    type="button"
-                                    onPointerDown={() => !books3AllOwned && !isPurchasingBook3Bundle && shopPress.beginPress('books-3-all')}
-                                    onPointerCancel={() => shopPress.cancelPress('books-3-all')}
-                                    onPointerLeave={() => shopPress.cancelPress('books-3-all')}
-                                    onClick={() => {
-                                        if (books3AllOwned || isPurchasingBook3Bundle) return;
-                                        shopPress.runPressCycle('books-3-all', onPurchaseAllBooks3);
-                                    }}
-                                    disabled={books3AllOwned || isPurchasingBook3Bundle}
-                                    className={`oku-shop-card-face ${shopPress.pressedId === 'books-3-all' ? 'oku-shop-card-face--pressed' : ''} relative w-full min-h-[5.75rem] rounded-3xl border-2 bg-white dark:bg-stone-800 px-4 py-1.5 text-left overflow-hidden flex items-center gap-2 ${
-                                        books3AllOwned
-                                            ? 'border-stone-200 dark:border-stone-700 opacity-60 cursor-default'
-                                            : 'border-blue-300 dark:border-blue-700'
-                                    }`}
-                                >
-                                    <img
-                                        src="/assets/oku-shop/book3.webp"
-                                        alt=""
-                                        className="w-20 h-20 object-contain shrink-0 -ml-2"
-                                    />
-                                    <div className="min-w-0 flex-1">
-                                        <h3 className="text-base font-bold text-t-primary leading-tight">Complete Book 3</h3>
-                                        <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">600 puzzles · All difficulties</p>
-                                    </div>
-                                    <span className={`shrink-0 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap ${
-                                        books3AllOwned
-                                            ? 'bg-t-surface-sec text-t-secondary'
-                                            : 'bg-blue-500 text-white'
-                                    }`}>
-                                        {books3AllOwned ? 'Owned' : isPurchasingBook3Bundle ? '…' : book3BundlePrice}
-                                    </span>
-                                </button>
-                            </div>
+                            {books2AllOwned && (
+                                <div className="oku-shop-card-shell rounded-3xl">
+                                    <button
+                                        type="button"
+                                        onPointerDown={() => !books3AllOwned && !isPurchasingBook3Bundle && shopPress.beginPress('books-3-all')}
+                                        onPointerCancel={() => shopPress.cancelPress('books-3-all')}
+                                        onPointerLeave={() => shopPress.cancelPress('books-3-all')}
+                                        onClick={() => {
+                                            if (books3AllOwned || isPurchasingBook3Bundle) return;
+                                            shopPress.runPressCycle('books-3-all', onPurchaseAllBooks3);
+                                        }}
+                                        disabled={books3AllOwned || isPurchasingBook3Bundle}
+                                        className={`oku-shop-card-face ${shopPress.pressedId === 'books-3-all' ? 'oku-shop-card-face--pressed' : ''} relative w-full min-h-[5.75rem] rounded-3xl border-2 bg-white dark:bg-stone-800 px-4 py-1.5 text-left overflow-hidden flex items-center gap-2 ${
+                                            books3AllOwned
+                                                ? 'border-stone-200 dark:border-stone-700 opacity-60 cursor-default'
+                                                : 'border-blue-300 dark:border-blue-700'
+                                        }`}
+                                    >
+                                        <img
+                                            src="/assets/oku-shop/book3.webp"
+                                            alt=""
+                                            className="w-20 h-20 object-contain shrink-0 -ml-2"
+                                        />
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="text-base font-bold text-t-primary leading-tight">Oku Book 3</h3>
+                                            <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">600 puzzles · All difficulties</p>
+                                        </div>
+                                        <span className={`shrink-0 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap ${
+                                            books3AllOwned
+                                                ? 'bg-t-surface-sec text-t-secondary'
+                                                : 'bg-blue-500 text-white'
+                                        }`}>
+                                            {books3AllOwned ? 'Owned' : book3BundlePrice}
+                                        </span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="oku-shop-card-shell rounded-3xl mt-3">
@@ -478,14 +480,15 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                 />
                                 <div className="min-w-0 flex-1">
                                     <h3 className="text-base font-bold text-t-primary leading-tight">All Books Forever</h3>
-                                    <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">Every Book, current and future</p>
+                                    <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">Every Book. Every difficulty. Forever.</p>
+                                    <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-0.5">Books open as you progress.</p>
                                 </div>
                                 <span className={`shrink-0 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap ${
                                     booksForeverOwned
                                         ? 'bg-t-surface-sec text-t-secondary'
                                         : 'bg-blue-500 text-white'
                                 }`}>
-                                    {booksForeverOwned ? 'Owned' : isPurchasingBooksForever ? '…' : booksForeverPrice}
+                                    {booksForeverOwned ? 'Owned' : booksForeverPrice}
                                 </span>
                             </button>
                         </div>

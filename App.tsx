@@ -73,7 +73,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const [books3AllOwned, setBooks3AllOwned] = useState<boolean>(Storage.isBooks3AllOwned());
   const [booksForeverOwned, setBooksForeverOwned] = useState<boolean>(Storage.isBooksForeverOwned());
   const [book2BundlePrice, setBook2BundlePrice] = useState('$1.99');
-  const [book3BundlePrice, setBook3BundlePrice] = useState('$2.99');
+  const [book3BundlePrice, setBook3BundlePrice] = useState('$1.99');
   const [booksForeverPrice, setBooksForeverPrice] = useState('$4.99');
   const [isPurchasingBook2Bundle, setIsPurchasingBook2Bundle] = useState(false);
   const [isPurchasingBook3Bundle, setIsPurchasingBook3Bundle] = useState(false);
@@ -603,6 +603,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   };
 
   const handlePurchaseAllBooks3 = async () => {
+      // The shop controls when this offer is visible. Keep the handler available
+      // from Book 3's progression screen for players who unlocked Book 2 with diamonds.
       if (isPurchasingBook3Bundle || books3AllOwned) return;
 
       sounds.playClick();
