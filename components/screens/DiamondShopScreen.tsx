@@ -7,6 +7,7 @@ import { FishTank } from '../ui/FishTank';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
 import { IAP } from '../../utils/iap';
 import { useTactilePress } from '../../hooks/useTactilePress';
+import { sounds } from '../../utils/sound';
 
 interface DiamondShopScreenProps {
     points: number;
@@ -153,6 +154,8 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     onPurchaseBooksForever,
 }) => {
     const [localizedPrices, setLocalizedPrices] = useState<Record<string, string>>({});
+    const [showBooksForeverInfo, setShowBooksForeverInfo] = useState(false);
+    const [isClosingBooksForeverInfo, setIsClosingBooksForeverInfo] = useState(false);
     const shopPress = useTactilePress<string>();
     const pepinoState = Storage.getPepinoState();
     const premiumOffer = DIAMOND_OFFERS.find(offer => offer.type === 'support');
@@ -178,6 +181,26 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
             ...offer,
             priceLabel: getPriceLabel(offer)
         });
+    };
+
+    const closeBooksForeverInfo = () => {
+        if (!showBooksForeverInfo || isClosingBooksForeverInfo) return;
+        setIsClosingBooksForeverInfo(true);
+        window.setTimeout(() => {
+            setShowBooksForeverInfo(false);
+            setIsClosingBooksForeverInfo(false);
+        }, 150);
+    };
+
+    const toggleBooksForeverInfo = (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        sounds.playClick();
+        if (showBooksForeverInfo) {
+            closeBooksForeverInfo();
+            return;
+        }
+        setIsClosingBooksForeverInfo(false);
+        setShowBooksForeverInfo(true);
     };
 
     const shouldShowIntro = () => {
@@ -208,7 +231,10 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     };
 
     return (
-        <div className="diamond-shop-screen flex-1 w-full flex flex-col items-center overflow-hidden relative">
+        <div
+            className="diamond-shop-screen flex-1 w-full flex flex-col items-center overflow-hidden relative"
+            onClick={closeBooksForeverInfo}
+        >
             <div className="w-full max-w-md flex items-center justify-between px-6 pt-4 pb-4 relative shrink-0 z-20 mx-auto">
                 <button onClick={onBack} aria-label="Back" className="p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-90 transition-transform">
                     <Icons.Back className="w-6 h-6 text-t-icon" />
@@ -458,7 +484,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                             )}
                         </div>
 
-                        <div className="oku-shop-card-shell rounded-3xl mt-3">
+                        <div className={`oku-shop-card-shell rounded-3xl mt-3 ${showBooksForeverInfo ? 'z-50' : ''}`}>
                             <button
                                 type="button"
                                 onPointerDown={() => !booksForeverOwned && !isPurchasingBooksForever && shopPress.beginPress('books-forever')}
@@ -482,10 +508,11 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                 />
                                 <div className="min-w-0 flex-1">
                                     <h3 className="text-base font-bold text-t-primary leading-tight">All Books Forever</h3>
-                                    <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">Every Book. Every difficulty. Forever.</p>
-                                    <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-0.5">Books open as you progress.</p>
+                                    <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">Every Book.</p>
+                                    <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-0.5">Every difficulty.</p>
+                                    <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-0.5">Forever.</p>
                                 </div>
-                                <span className={`shrink-0 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap ${
+                                <span className={`shrink-0 self-start mt-2 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap ${
                                     booksForeverOwned
                                         ? 'bg-t-surface-sec text-t-secondary'
                                         : 'bg-blue-500 text-white'
@@ -493,6 +520,27 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     {booksForeverOwned ? 'Owned' : booksForeverPrice}
                                 </span>
                             </button>
+
+                            <button
+                                type="button"
+                                onClick={toggleBooksForeverInfo}
+                                aria-label="How All Books Forever works"
+                                aria-expanded={showBooksForeverInfo}
+                                className="absolute right-3 bottom-2.5 z-20 w-5 h-5 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-500 dark:text-stone-300 flex items-center justify-center active:scale-90 transition-transform"
+                            >
+                                <Icons.Info className="w-3.5 h-3.5" />
+                            </button>
+
+                            {showBooksForeverInfo && (
+                                <div className="absolute right-0 top-full mt-2 w-52 pointer-events-none z-50">
+                                    <div className={`origin-top ${isClosingBooksForeverInfo ? 'animate-tooltip-exit' : 'animate-tooltip-enter'}`}>
+                                        <div className="bg-stone-800 text-white dark:bg-white dark:text-stone-900 text-[11px] p-3 rounded-xl shadow-xl font-medium leading-snug relative border border-stone-600/30">
+                                            Unlocks every current and future Oku book across all difficulties. New books open when you complete the previous book, so your journey still unfolds in order.
+                                            <div className="absolute bottom-full right-4 w-0 h-0 border-4 border-transparent border-b-stone-800 dark:border-b-white" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </section>
 

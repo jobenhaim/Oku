@@ -7,7 +7,14 @@ interface UseGameSkillsProps {
     board: Board;
     setBoard: Dispatch<SetStateAction<Board>>;
     moveLog: React.MutableRefObject<MoveLogEntry[]>;
-    onSaveProgress: (board: Board, scanUses?: number, revealUses?: number, moveLog?: MoveLogEntry[]) => void;
+    onSaveProgress: (
+        board: Board,
+        scanUses?: number,
+        revealUses?: number,
+        moveLog?: MoveLogEntry[],
+        hasMadeMistake?: boolean,
+        scanRefillsPurchased?: number
+    ) => void;
     onScanResult?: (hasErrors: boolean) => void;
     solvedBoard: number[][];
     elapsedSeconds: number;
@@ -25,12 +32,19 @@ export const useGameSkills = ({
     isGameLocked,
 }: UseGameSkillsProps) => {
     const [scanUses, setScanUses] = useState(3);
+    const [scanRefillsPurchased, setScanRefillsPurchased] = useState(0);
     const [isScanning, setIsScanning] = useState(false);
     const [scanCooldown, setScanCooldown] = useState(false);
     const [isScanSuccess, setIsScanSuccess] = useState(false);
 
-    const handleScan = (isPaused: boolean, isCompleted: boolean) => {
-        if (scanUses <= 0 || isScanning || scanCooldown || isPaused || isCompleted || isGameLocked?.()) return;
+    const handleScan = (
+        isPaused: boolean,
+        isCompleted: boolean,
+        availableUsesOverride?: number,
+        refillCountOverride?: number
+    ) => {
+        const availableUses = availableUsesOverride ?? scanUses;
+        if (availableUses <= 0 || isScanning || scanCooldown || isPaused || isCompleted || isGameLocked?.()) return;
         const scanAchievementTime = elapsedSeconds;
         setIsScanning(true);
         setScanCooldown(true);
@@ -56,11 +70,13 @@ export const useGameSkills = ({
                 return cell;
             }));
             setBoard(newBoard);
-            const nextScanUses = Math.max(0, scanUses - 1);
+            const nextScanUses = Math.max(0, availableUses - 1);
+            const currentRefillCount = refillCountOverride ?? scanRefillsPurchased;
             setIsScanning(false);
             setScanUses(nextScanUses);
+            setScanRefillsPurchased(currentRefillCount);
             Storage.recordScanUse(scanAchievementTime);
-            onSaveProgress(newBoard, nextScanUses, undefined, moveLog.current);
+            onSaveProgress(newBoard, nextScanUses, undefined, moveLog.current, undefined, currentRefillCount);
             setScanCooldown(false);
             onScanResult?.(hasErrors);
 
@@ -75,6 +91,8 @@ export const useGameSkills = ({
     return {
         scanUses,
         setScanUses,
+        scanRefillsPurchased,
+        setScanRefillsPurchased,
         isScanning,
         isScanSuccess,
         scanCooldown,

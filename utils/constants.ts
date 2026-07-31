@@ -124,6 +124,15 @@ export const getPackCost = (difficulty: Difficulty, packIndex: number): number =
     return cost;
 };
 
+export const SCAN_REFILL_PRICES = [5, 10, 20, 40] as const;
+
+export const getScanRefillCost = (refillsPurchased: number): number => (
+    SCAN_REFILL_PRICES[Math.min(
+        Math.max(0, Math.floor(refillsPurchased)),
+        SCAN_REFILL_PRICES.length - 1
+    )]
+);
+
 export const getDifficultyPoints = (diff: Difficulty) => {
     switch(diff) {
         case Difficulty.SuperEasy: return 5;
@@ -272,7 +281,7 @@ export const SKILLS = [
     { id: 'skill-nudge', name: 'Light', cost: 100, icon: Icons.Nudge, class: 'text-amber-500', bgClass: 'bg-amber-50/60 dark:bg-amber-900/10', description: 'Passive skill. Highlights a helpful last empty cell based on your inputs.' },
     { id: 'skill-focus', name: 'Focus', cost: 200, icon: Icons.Focus, class: '', bgClass: 'bg-blue-50/60 dark:bg-blue-900/10', description: 'Active skill. Temporarily hides every note for a clearer view.' },
     { id: 'skill-scribe', name: 'Guard', cost: 300, icon: Icons.Guard, class: '', bgClass: 'bg-blue-50/60 dark:bg-blue-900/10', description: 'Passive skill. Blocks notes that conflict with your current board.' },
-    { id: 'skill-scan', name: 'Scan', cost: 750, icon: Icons.Scan, class: 'text-red-500', bgClass: 'bg-red-50/60 dark:bg-red-900/10', description: "Spot errors instantly. Essential for Hard, Intense, and Impossible modes." },
+    { id: 'skill-scan', name: 'Scan', cost: 400, icon: Icons.Scan, class: 'text-red-500', bgClass: 'bg-red-50/60 dark:bg-red-900/10', description: 'Spot errors instantly. Includes 3 free uses per puzzle.' },
 ];
 
 export const DIAMOND_OFFERS: DiamondOffer[] = [

@@ -40,6 +40,7 @@ export interface LevelProgress {
   moveLog?: MoveLogEntry[]; // History of moves for replay
   bestTime?: number; // Personal best time in seconds
   scanUses?: number; // Remaining scan uses
+  scanRefillsPurchased?: number; // Extra Scan uses bought during this puzzle attempt
   revealUses?: number; // Legacy saved-game compatibility
   scribeUses?: number; // Legacy saved-game compatibility
   hasMadeMistake?: boolean; // Preserve flawless-run eligibility across resumes

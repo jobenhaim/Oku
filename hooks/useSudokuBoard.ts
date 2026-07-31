@@ -25,7 +25,10 @@ const cloneBoard = (board: Board): Board => (
 
 const checkSectionCompletion = (board: Board, solvedBoard: number[][], r: number, c: number, difficulty: Difficulty) => {
     const sections: string[] = [];
-    const isStrictMode = difficulty === Difficulty.Hard || difficulty === Difficulty.Intense || difficulty === Difficulty.Impossible;
+    const isStrictMode = difficulty === Difficulty.Normal
+        || difficulty === Difficulty.Hard
+        || difficulty === Difficulty.Intense
+        || difficulty === Difficulty.Impossible;
     const isCompleteCell = (value: CellValue, expected: number) => value !== null && (isStrictMode || value === expected);
 
     // Row
@@ -113,6 +116,7 @@ export const useSudokuBoard = ({
   const guardFeedbackTimerRef = useRef<number | null>(null);
   const showGuardRejection = useCallback((row: number, col: number) => {
       if (guardFeedbackTimerRef.current !== null) window.clearTimeout(guardFeedbackTimerRef.current);
+      sounds.playGuardBlocked();
       sounds.playSelectionHaptic();
       setGuardRejectedCell({ row, col, key: Date.now() });
       guardFeedbackTimerRef.current = window.setTimeout(() => {
@@ -252,10 +256,13 @@ export const useSudokuBoard = ({
                      newCell.value = currentActiveNumber as any;
                      newCell.notes = [];
                      
-                     const isHarderDifficulty = difficulty === Difficulty.Hard || difficulty === Difficulty.Intense || difficulty === Difficulty.Impossible;
+                     const hidesMistakes = difficulty === Difficulty.Normal
+                         || difficulty === Difficulty.Hard
+                         || difficulty === Difficulty.Intense
+                         || difficulty === Difficulty.Impossible;
                      const isError = currentActiveNumber !== solvedBoard[row][col];
                      
-                     if (!isHarderDifficulty) newCell.isError = isError;
+                     if (!hidesMistakes) newCell.isError = isError;
                      else newCell.isError = false;
                      
                      if (isError) {
@@ -364,10 +371,13 @@ export const useSudokuBoard = ({
         const hasImmediateConflict = hasPeerConflict(currentBoard, r, c, num);
         newCell.value = num as any;
         newCell.notes = [];
-        const isHarderDifficulty = difficulty === Difficulty.Hard || difficulty === Difficulty.Intense || difficulty === Difficulty.Impossible;
+        const hidesMistakes = difficulty === Difficulty.Normal
+            || difficulty === Difficulty.Hard
+            || difficulty === Difficulty.Intense
+            || difficulty === Difficulty.Impossible;
         const isError = num !== solvedBoard[r][c];
         
-        if (!isHarderDifficulty) newCell.isError = isError;
+        if (!hidesMistakes) newCell.isError = isError;
         else newCell.isError = false; 
         
         if (isError) {

@@ -25,7 +25,7 @@ const ACHIEVEMENT_CATEGORIES: Array<{ id: AchievementCategory; label: string }> 
     { id: 'journey', label: 'Journey' },
     { id: 'skills', label: 'Skills' },
     { id: 'pepino', label: 'Pepino' },
-    { id: 'collection', label: 'Collection' },
+    { id: 'collection', label: 'Market' },
     { id: 'books', label: 'Books' },
     { id: 'all', label: 'All' },
 ];
@@ -271,7 +271,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     });
     const [achievementCategoryDirection, setAchievementCategoryDirection] = useState(0);
     const [isEditingName, setIsEditingName] = useState(false);
-    const [hideCompleted, setHideCompleted] = useState(true);
+    const [hideCompleted, setHideCompleted] = useState(false);
     const [expandedStat, setExpandedStat] = useState<ProfileStatBreakdown>(null);
     const [visibleStatBreakdown, setVisibleStatBreakdown] = useState<Exclude<ProfileStatBreakdown, null>>('games');
     const [enteringAchievementIds, setEnteringAchievementIds] = useState<Set<string>>(() => new Set());

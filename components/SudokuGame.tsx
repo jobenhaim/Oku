@@ -12,7 +12,8 @@ import { generateReplayVideo, ReplayMove } from '../utils/replay';
 import { hasPlayerBoardInput, Storage } from '../utils/storage';
 import { sounds } from '../utils/sound';
 import { Icons } from './ui/Icons';
-import { formatTimeShort } from '../utils/constants';
+import { AnimatedNumber } from './ui/AnimatedNumber';
+import { formatTimeShort, getScanRefillCost } from '../utils/constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { App as CapacitorApp } from '@capacitor/app';
 
@@ -25,6 +26,7 @@ interface SudokuGameProps {
   onSettingsOpen: () => void;
   settings: AppSettings;
   onEarnPoints: (amount: number) => void;
+  onPointsChanged: (points: number) => void;
   currentPoints: number;
   isSettingsOpen: boolean;
   backgroundClass: string;
@@ -98,6 +100,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   onSettingsOpen,
   settings,
   onEarnPoints,
+  onPointsChanged,
   currentPoints,
   isSettingsOpen,
   backgroundClass,
@@ -155,14 +158,28 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       0
   );
 
-  const saveProgress = (currentBoard: Board, scanUsesVal?: number, _revealUsesVal?: number, moveLog?: MoveLogEntry[], hasMadeMistake?: boolean) => {
+  const saveProgress = (
+      currentBoard: Board,
+      scanUsesVal?: number,
+      _revealUsesVal?: number,
+      moveLog?: MoveLogEntry[],
+      hasMadeMistake?: boolean,
+      scanRefillsPurchasedVal?: number
+  ) => {
       if (gameFinishedRef.current || isCompleted || isEnding) return;
       // A fresh or fully reset board is not a resumable game. Avoid creating
       // Continue Game entries for merely opening a puzzle, and remove an old
       // in-progress snapshot when the player returns the board to its start.
       if (currentBoard.length !== 9) return;
       if (!hasPlayerBoardInput(currentBoard)) {
-          Storage.clearLevelProgress(difficulty, levelId);
+          Storage.saveLevelScanEconomy(
+              difficulty,
+              levelId,
+              scanUsesVal !== undefined ? scanUsesVal : scanUses,
+              scanRefillsPurchasedVal !== undefined
+                  ? scanRefillsPurchasedVal
+                  : scanRefillsPurchased
+          );
           return;
       }
       Storage.saveLevelProgress({
@@ -174,6 +191,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           moveLog: moveLog,
           lastPlayed: Date.now(),
           scanUses: scanUsesVal !== undefined ? scanUsesVal : scanUses,
+          scanRefillsPurchased: scanRefillsPurchasedVal !== undefined
+              ? scanRefillsPurchasedVal
+              : scanRefillsPurchased,
           hasMadeMistake: hasMadeMistake ?? hasMadeMistakeRef.current(),
           hasUsedNotes: hasUsedNotesRef.current,
       });
@@ -278,7 +298,10 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           enqueuePill({ text, type: 'start', holdMs: 1000 });
       }, 500);
 
-      const isStrictMode = difficulty === Difficulty.Hard || difficulty === Difficulty.Intense || difficulty === Difficulty.Impossible;
+      const isStrictMode = difficulty === Difficulty.Normal
+          || difficulty === Difficulty.Hard
+          || difficulty === Difficulty.Intense
+          || difficulty === Difficulty.Impossible;
       const warningTimer = isStrictMode ? window.setTimeout(() => {
           enqueuePill({ text: 'Mistakes stay hidden.', type: 'warning', holdMs: 3000 });
       }, 2100) : null;
@@ -323,6 +346,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           moveLog: completedMoveLog,
           lastPlayed: Date.now(),
           scanUses,
+          scanRefillsPurchased,
           hasUsedNotes: hasUsedNotesRef.current,
       }, isPerfect);
       
@@ -408,6 +432,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const {
       scanUses,
       setScanUses,
+      scanRefillsPurchased,
+      setScanRefillsPurchased,
       isScanning,
       isScanSuccess,
       scanCooldown,
@@ -417,7 +443,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setBoard,
       solvedBoard,
       moveLog,
-      onSaveProgress: (b, s, r, ml) => saveProgress(b, s, r, ml),
+      onSaveProgress: (b, s, r, ml, mistake, refills) => (
+          saveProgress(b, s, r, ml, mistake, refills)
+      ),
       onScanResult: handleScanResult,
       elapsedSeconds: timer,
       isGameLocked: () => gameFinishedRef.current,
@@ -427,7 +455,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   // board, timer, move log, and remaining skill uses.
   saveCurrentProgressRef.current = () => {
       if (gameFinishedRef.current) return;
-      saveProgress(board, scanUses, undefined, moveLog.current);
+      saveProgress(board, scanUses, undefined, moveLog.current, undefined, scanRefillsPurchased);
   };
 
   useEffect(() => {
@@ -475,18 +503,16 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           initializeBoard(progress.boardState, progress.moveLog, progress.hasMadeMistake);
           setTimer(progress.timeElapsed);
           
-          // Restore skills
-          if (progress.scanUses !== undefined) setScanUses(progress.scanUses);
-          else setScanUses(3);
-
       } else {
           hasUsedNotesRef.current = false;
           initializeBoard();
           setTimer(0);
           
-          // Reset skills
-          setScanUses(3);
       }
+      // Scan economy belongs to this puzzle attempt even when its board was
+      // reset and therefore has no resumable board snapshot.
+      setScanUses(progress?.scanUses ?? 3);
+      setScanRefillsPurchased(progress?.scanRefillsPurchased ?? 0);
       setIsCompleted(false);
       setIsEnding(false);
       setIsPaused(false);
@@ -510,7 +536,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           clearTimeout(hintTimer);
           clearTimeout(trackingTimer);
       };
-  }, [difficulty, levelId, initializeBoard, setTimer, setScanUses]);
+  }, [difficulty, levelId, initializeBoard, setTimer, setScanUses, setScanRefillsPurchased]);
 
   useEffect(() => {
       if (!halfwayTrackingReadyRef.current || halfwayShownRef.current || board.length === 0) return;
@@ -705,7 +731,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       Storage.clearLevelProgress(difficulty, levelId); 
       initializeBoard(); 
       setTimer(0); 
-      setScanUses(3); 
       setShowRestartConfirm(false); 
       setIsPaused(false);
       setIsFocusMode(false);
@@ -813,6 +838,18 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
               <button onClick={handleBackToLevels} aria-label="Back to levels" className="p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
                   <Icons.Back className="w-6 h-6" />
               </button>
+              <div
+                  className="absolute left-8 z-30 inline-flex h-8 items-center gap-1 rounded-full border border-stone-200 dark:border-stone-700 bg-white/95 dark:bg-stone-800/95 px-2.5 text-[13px] font-bold text-t-primary shadow-sm"
+                  aria-label={`${currentPoints} diamonds`}
+              >
+                  <AnimatedNumber
+                      value={currentPoints}
+                      easing="easeOut"
+                      durationMs={1000}
+                      className="tabular-nums"
+                  />
+                  <Icons.Diamond className="h-3.5 w-3.5 text-blue-500 fill-current" />
+              </div>
 
               {/* Center Column: Title & Timer - Absolute Centered */}
               <div className="flex flex-col items-center absolute left-0 right-0 pointer-events-none z-20">
@@ -876,30 +913,30 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                 {pillMessage && (
                     <motion.div
                         key={pillMessage.id}
-                        initial={{ y: 52, opacity: 0 }}
+                        initial={{ y: 44, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 52, opacity: 0 }}
+                        exit={{ y: 44, opacity: 0 }}
                         transition={{ duration: 0.15, ease: "easeInOut" }}
-                        className="absolute inset-x-0 bottom-full h-8 z-0 pointer-events-none whitespace-nowrap flex items-center justify-center px-4"
+                        className="absolute inset-x-0 bottom-full h-7 z-0 pointer-events-none whitespace-nowrap flex items-center justify-center px-4"
                     >
-                        <span className="text-[13px] md:text-[14px] font-semibold text-stone-600 dark:text-stone-100 bg-stone-50 dark:bg-stone-800 border border-stone-200/80 dark:border-stone-700 px-[19px] py-[7px] rounded-full inline-flex items-center gap-[7px] leading-none shadow-md dark:shadow-black/30">
+                        <span className="text-[11px] md:text-[12px] font-semibold text-stone-600 dark:text-stone-100 bg-stone-50 dark:bg-stone-800 border border-stone-200/80 dark:border-stone-700 px-4 py-1.5 rounded-full inline-flex items-center gap-1.5 leading-none shadow-md dark:shadow-black/30">
                             {pillMessage.type === 'warning' ? (
                                 <>
-                                    <Icons.Info className="w-[17px] h-[17px] shrink-0 text-stone-500 dark:text-stone-300" />
+                                    <Icons.Info className="w-[14px] h-[14px] shrink-0 text-stone-500 dark:text-stone-300" />
                                     {pillMessage.text}
-                                    <span className="inline-flex items-center gap-[5px] text-red-500 font-bold">
-                                        <Icons.Scan className="w-[17px] h-[17px] shrink-0 text-red-500" />
+                                    <span className="inline-flex items-center gap-1 text-red-500 font-bold">
+                                        <Icons.Scan className="w-[14px] h-[14px] shrink-0 text-red-500" />
                                         Scan Recommended
                                     </span>
                                 </>
                             ) : (
                                 <>
                                     {pillMessage.type === 'scan-error' ? (
-                                        <Icons.Close className="w-[17px] h-[17px] shrink-0 text-red-500" />
+                                        <Icons.Close className="w-[14px] h-[14px] shrink-0 text-red-500" />
                                     ) : pillMessage.type === 'scan-clean' ? (
-                                        <Icons.Check className="w-[17px] h-[17px] shrink-0 text-emerald-500" />
+                                        <Icons.Check className="w-[14px] h-[14px] shrink-0 text-emerald-500" />
                                     ) : pillMessage.type === 'notes' ? (
-                                        <Icons.Info className="w-[17px] h-[17px] shrink-0 text-stone-500 dark:text-stone-300" />
+                                        <Icons.Info className="w-[14px] h-[14px] shrink-0 text-stone-500 dark:text-stone-300" />
                                     ) : null}
                                     {pillMessage.text}
                                 </>
@@ -1020,11 +1057,29 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                  }}
                  purchasedSkills={purchasedSkills}
                  scanUses={scanUses}
+                 scanRefillCost={getScanRefillCost(scanRefillsPurchased)}
+                 currentPoints={currentPoints}
                  isScanning={isScanning}
                  scanCooldown={scanCooldown}
                  onScan={() => {
                      if (gameFinishedRef.current) return;
                      handleScan(isPaused, isCompleted || isEnding);
+                 }}
+                 onPurchaseScanRefill={() => {
+                     if (gameFinishedRef.current || isPaused || isCompleted || isEnding || scanUses > 0) return false;
+                     const result = Storage.purchaseScanRefill(difficulty, levelId);
+                     if (!result.success) return false;
+
+                     onPointsChanged(result.points);
+                     setScanRefillsPurchased(result.scanRefillsPurchased);
+                     sounds.playSelectionHaptic();
+                     handleScan(
+                         isPaused,
+                         isCompleted || isEnding,
+                         result.scanUses,
+                         result.scanRefillsPurchased
+                     );
+                     return true;
                  }}
                  onDevSolve={settings.devAutoSolve ? handleDevSolve : undefined}
              />

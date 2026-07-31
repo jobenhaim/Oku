@@ -1,6 +1,7 @@
 
 import { AppSettings, Board, LevelProgress, StoredData, PepinoState, Difficulty, PermanentPurchaseOwnership, StorePurchaseUnlock, DiamondEarnSource } from '../types';
 import { Preferences } from '@capacitor/preferences';
+import { getScanRefillCost } from './constants';
 
 const STORAGE_KEY = 'oku_data_v1';
 const LEGACY_STORAGE_KEY = 'minimal_sudoku_data_v1';
@@ -210,6 +211,8 @@ function getStoredData(): StoredData {
         if (progress.scribeUses === undefined && progress.autoUses !== undefined) {
             progress.scribeUses = Math.min(progress.autoUses, 4);
         }
+        progress.scanUses = Math.max(0, Math.floor(progress.scanUses ?? 3));
+        progress.scanRefillsPurchased = Math.max(0, Math.floor(progress.scanRefillsPurchased ?? 0));
         delete progress.autoUses;
     }
     
@@ -328,6 +331,7 @@ function getStoredData(): StoredData {
             progress.timeElapsed = 0;
             progress.lastPlayed = undefined;
             progress.scanUses = 3;
+            progress.scanRefillsPurchased = 0;
             progress.revealUses = undefined;
             progress.scribeUses = 4;
         }
@@ -507,6 +511,46 @@ export const Storage = {
       data.achievementCounters.scansUsed += 1;
       saveData(data);
       return true;
+  },
+
+  purchaseScanRefill: (difficulty: Difficulty, levelId: number) => {
+      const data = getStoredData();
+      const key = `${difficulty}-${levelId}`;
+      const existing = data.progress[key];
+      const refillsPurchased = Math.max(0, Math.floor(existing?.scanRefillsPurchased ?? 0));
+      const cost = getScanRefillCost(refillsPurchased);
+
+      if (data.points < cost) {
+          return {
+              success: false,
+              points: data.points,
+              scanUses: Math.max(0, Math.floor(existing?.scanUses ?? 3)),
+              scanRefillsPurchased: refillsPurchased,
+              cost,
+          };
+      }
+
+      data.points -= cost;
+      const scanUses = Math.max(0, Math.floor(existing?.scanUses ?? 0)) + 1;
+      const nextRefillCount = refillsPurchased + 1;
+      data.progress[key] = {
+          ...existing,
+          levelId,
+          difficulty,
+          status: existing?.status ?? 'not-started',
+          timeElapsed: existing?.timeElapsed ?? 0,
+          scanUses,
+          scanRefillsPurchased: nextRefillCount,
+      };
+      saveData(data);
+
+      return {
+          success: true,
+          points: data.points,
+          scanUses,
+          scanRefillsPurchased: nextRefillCount,
+          cost,
+      };
   },
 
   recordNudgeCellClick: () => {
@@ -834,6 +878,27 @@ export const Storage = {
     return getStoredData().progress[key];
   },
 
+  saveLevelScanEconomy: (
+    difficulty: Difficulty,
+    levelId: number,
+    scanUses: number,
+    scanRefillsPurchased: number
+  ) => {
+    const data = getStoredData();
+    const key = `${difficulty}-${levelId}`;
+    const existing = data.progress[key];
+    data.progress[key] = {
+        levelId,
+        difficulty,
+        status: existing?.status === 'completed' ? 'completed' : 'not-started',
+        timeElapsed: existing?.status === 'completed' ? existing.timeElapsed : 0,
+        bestTime: existing?.bestTime,
+        scanUses: Math.max(0, Math.floor(scanUses)),
+        scanRefillsPurchased: Math.max(0, Math.floor(scanRefillsPurchased)),
+    };
+    saveData(data);
+  },
+
   saveLevelProgress: (
     progress: LevelProgress,
     isPerfectGame: boolean = false
@@ -881,11 +946,11 @@ export const Storage = {
     saveData(data);
   },
   
-  clearLevelProgress: (difficulty: string, levelId: number) => {
+  clearLevelProgress: (difficulty: string, levelId: number, resetScanEconomy = false) => {
       const data = getStoredData();
       const key = `${difficulty}-${levelId}`;
       if (data.progress[key]) {
-           const { bestTime } = data.progress[key];
+           const { bestTime, scanUses, scanRefillsPurchased } = data.progress[key];
            data.progress[key] = {
                levelId,
                difficulty: difficulty as any,
@@ -893,7 +958,10 @@ export const Storage = {
                boardState: undefined,
                timeElapsed: 0,
                bestTime: bestTime,
-               scanUses: 3,
+               scanUses: resetScanEconomy ? 3 : Math.max(0, Math.floor(scanUses ?? 3)),
+               scanRefillsPurchased: resetScanEconomy
+                   ? 0
+                   : Math.max(0, Math.floor(scanRefillsPurchased ?? 0)),
                scribeUses: 4,
            };
            saveData(data);

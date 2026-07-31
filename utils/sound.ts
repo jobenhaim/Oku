@@ -1361,6 +1361,44 @@ class SoundController {
         }
     }
 
+    /**
+     * A shared, deliberately tiny rejection cue for Guard. It bypasses the
+     * active sound profile so the feedback stays identical in every pack.
+     */
+    playGuardBlocked() {
+        if (!this.soundEnabled) return;
+
+        const ctx = this.getCtx();
+        const now = ctx.currentTime;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(560, now);
+        filter.Q.setValueAtTime(0.7, now);
+        filter.connect(ctx.destination);
+
+        const playSoftErrorTone = (frequency: number, startOffset: number, duration: number, volume: number) => {
+            const oscillator = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const start = now + startOffset;
+
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(frequency, start);
+            oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.88, start + duration);
+
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.linearRampToValueAtTime(volume, start + 0.006);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+            oscillator.connect(gain);
+            gain.connect(filter);
+            oscillator.start(start);
+            oscillator.stop(start + duration + 0.01);
+        };
+
+        playSoftErrorTone(360, 0, 0.065, 0.05);
+        playSoftErrorTone(245, 0.055, 0.09, 0.055);
+    }
+
     playCheck() {
         if (!this.soundEnabled) return;
         const profile = this.activeProfile;

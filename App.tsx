@@ -334,7 +334,9 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const confirmReplay = () => {
       sounds.playLevelEnter();
       if (selectedDifficulty && replayLevelId) {
-          Storage.clearLevelProgress(selectedDifficulty, replayLevelId);
+          // A replay is a genuinely new attempt, unlike restarting or reopening
+          // an unfinished puzzle, so its free Scan allowance starts fresh.
+          Storage.clearLevelProgress(selectedDifficulty, replayLevelId, true);
           setReplayLevelId(null);
           setSelectedLevel(replayLevelId);
           navigate('game', 'forward');
@@ -1050,6 +1052,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     onSettingsOpen={() => setShowSettings(true)}
                                     settings={settings}
                                     onEarnPoints={(amount) => handleEarnPoints(amount, 'sudoku')}
+                                    onPointsChanged={setPoints}
                                     currentPoints={points}
                                     isSettingsOpen={showSettings}
                                     backgroundClass={activeBackgroundClass}

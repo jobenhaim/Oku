@@ -1,6 +1,6 @@
 {
   "name": "oku",
-  "version": "3.9.15",
+  "version": "3.9.16",
   "type": "module",
   "scripts": {
     "dev": "vite",
