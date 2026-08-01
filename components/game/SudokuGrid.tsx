@@ -129,8 +129,8 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
         e.stopPropagation();
     };
 
-    // iPad Fix: Clamp max size to 500px so font calc stops growing when container stops growing
-    const squareSize = 'min(96vw, 53dvh, 500px)';
+    // Phones remain width-limited while tablets can use a little more of their canvas.
+    const squareSize = 'min(96vw, 53dvh, 560px)';
     const mainFontSize = `calc(${squareSize} / 9 * 0.6)`;
     const noteFontSize = `calc(${squareSize} / 9 * 0.22)`;
     const noteLineHeight = `calc(${squareSize} / 9 * 0.25)`;
@@ -196,8 +196,8 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                 style={{ 
                     width: squareSize, 
                     height: squareSize, 
-                    maxWidth: '500px', 
-                    maxHeight: '500px',
+                    maxWidth: '560px',
+                    maxHeight: '560px',
                     clipPath: 'inset(0 round 8px)',
                     WebkitClipPath: 'inset(0 round 8px)',
                     transform: 'translateZ(0)',

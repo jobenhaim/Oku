@@ -67,7 +67,7 @@ export const WelcomeGiftModal: React.FC<WelcomeGiftModalProps> = ({ onClose }) =
             className={`fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}
         >
             <div 
-                className={`bg-t-surface p-8 rounded-3xl shadow-2xl w-full max-w-xs text-center border border-stone-100 dark:border-stone-900 transition-colors duration-300 relative ${isClosing ? 'animate-fade-out' : 'animate-pop'}`}
+                className={`bg-t-surface p-8 md:p-10 rounded-3xl shadow-2xl w-full max-w-xs md:max-w-sm text-center border border-stone-100 dark:border-stone-900 transition-colors duration-300 relative ${isClosing ? 'animate-fade-out' : 'animate-pop'}`}
                 onClick={e => e.stopPropagation()}
             >
                 {/* Gift Icon Box */}

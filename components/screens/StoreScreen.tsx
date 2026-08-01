@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Icons } from '../ui/Icons';
 import { sounds } from '../../utils/sound';
 import { STATIC_BACKGROUNDS, NUMBER_COLORS, SKILLS, SOUND_PACKS } from '../../utils/constants';
-import { AnimatedNumber } from '../ui/AnimatedNumber';
+import { DiamondBalancePill } from '../ui/DiamondBalancePill';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTactilePress } from '../../hooks/useTactilePress';
 
@@ -156,9 +156,9 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
     };
 
     const renderSkills = () => (
-        <div className="mb-8">
-            <h2 className="text-lg font-bold text-t-primary mb-3 ml-1">Skills</h2>
-            <div className="flex flex-col gap-4">
+        <div className="mb-8 md:mb-10">
+            <h2 className="text-lg md:text-xl font-bold text-t-primary mb-3 md:mb-4 ml-1">Skills</h2>
+            <div className="flex flex-col gap-4 md:gap-5">
                 {SKILLS.map((skill, idx) => {
                     const isPurchased = purchasedSkills.includes(skill.id);
                     const isEnabled = enabledSkills.includes(skill.id);
@@ -175,21 +175,21 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                     
                     return (
                         <StoreItemWrapper delay={delay} key={skill.id}>
-                            <div className="oku-market-skill-shell w-full h-[74px] rounded-[1.25rem]">
+                            <div className="oku-market-skill-shell w-full h-[74px] md:h-[84px] rounded-[1.25rem]">
                                 <button
                                     onPointerDown={() => skillPress.beginPress(skill.id)}
                                     onPointerCancel={() => skillPress.cancelPress(skill.id)}
                                     onPointerLeave={() => skillPress.cancelPress(skill.id)}
                                     onClick={() => skillPress.runPressCycle(skill.id, () => handleSkillInteraction(skill))}
-                                    className={`oku-market-skill-card ${skillPress.pressedId === skill.id ? 'oku-market-skill-card--pressed' : ''} w-full h-full px-3 py-2 rounded-[1.25rem] flex items-center gap-3 text-left bg-t-surface relative overflow-hidden group`}
+                                    className={`oku-market-skill-card ${skillPress.pressedId === skill.id ? 'oku-market-skill-card--pressed' : ''} w-full h-full px-3 md:px-4 py-2 rounded-[1.25rem] flex items-center gap-3 md:gap-4 text-left bg-t-surface relative overflow-hidden group`}
                                 >
-                                    <div className="w-11 h-11 flex items-center justify-center shrink-0">
-                                        <SkillIcon className={`w-[38px] h-[38px] ${iconOpticalScale} ${skill.class}`} />
+                                    <div className="w-11 h-11 md:w-14 md:h-14 flex items-center justify-center shrink-0">
+                                        <SkillIcon className={`w-[38px] h-[38px] md:w-[44px] md:h-[44px] ${iconOpticalScale} ${skill.class}`} />
                                     </div>
 
                                     <div className="flex-1 min-w-0 py-0.5">
-                                        <h3 className="text-[17px] font-bold text-t-primary leading-tight mb-0.5">{skill.name}</h3>
-                                        <p className="text-[12px] font-semibold text-stone-600 dark:text-stone-300 leading-[1.15] line-clamp-2">{skill.description}</p>
+                                        <h3 className="text-[17px] md:text-[19px] font-bold text-t-primary leading-tight mb-0.5">{skill.name}</h3>
+                                        <p className="text-[12px] md:text-[13px] font-semibold text-stone-600 dark:text-stone-300 leading-[1.15] line-clamp-2">{skill.description}</p>
                                     </div>
 
                                     <div className={`shrink-0 flex justify-end ${skill.cost >= 1000 ? 'w-[84px]' : 'w-[68px]'}`}>
@@ -214,11 +214,11 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
     );
 
     const renderBackgrounds = () => (
-        <div className="mb-8">
-            <h2 className="text-lg font-bold text-t-primary mb-3 ml-1">Scenes</h2>
-            <div className="mb-6">
-                <h3 className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-widest mb-3 ml-1">Static</h3>
-                <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{STATIC_BACKGROUNDS.map((bg, idx) => {
+        <div className="mb-8 md:mb-10">
+            <h2 className="text-lg md:text-xl font-bold text-t-primary mb-3 md:mb-4 ml-1">Scenes</h2>
+            <div className="mb-6 md:mb-8">
+                <h3 className="text-xs md:text-sm font-bold text-stone-600 dark:text-stone-300 uppercase tracking-widest mb-3 ml-1">Static</h3>
+                <div className="grid grid-cols-5 md:grid-cols-6 gap-x-2 md:gap-x-3 gap-y-6 md:gap-y-7 items-start">{STATIC_BACKGROUNDS.map((bg, idx) => {
                     const isPurchased = purchasedBackgrounds.includes(bg.id);
                     const isSelected = selectedBackgroundId === bg.id;
                     const delay = activeTab === 'all' ? (3 + idx) * 5 : idx * 5;
@@ -234,7 +234,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                     </div>
                                     <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={bg.cost} />
                                 </button>
-                                <span className={`text-[12px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{bg.name}</span>
+                                <span className={`text-[12px] md:text-[13px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{bg.name}</span>
                             </div>
                         </StoreItemWrapper>
                     );
@@ -244,9 +244,9 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
     );
 
     const renderSoundPacks = () => (
-        <div className="mb-8">
-            <h2 className="text-lg font-bold text-t-primary mb-3 ml-1">Sound Packs</h2>
-            <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{SOUND_PACKS.map((pack, idx) => {
+        <div className="mb-8 md:mb-10">
+            <h2 className="text-lg md:text-xl font-bold text-t-primary mb-3 md:mb-4 ml-1">Sound Packs</h2>
+            <div className="grid grid-cols-5 md:grid-cols-6 gap-x-2 md:gap-x-3 gap-y-6 md:gap-y-7 items-start">{SOUND_PACKS.map((pack, idx) => {
                 const isPurchased = purchasedSoundPacks.includes(pack.id);
                 const isSelected = selectedSoundPackId === pack.id;
                 const isInfoActive = activeInfoId === pack.id;
@@ -291,7 +291,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={pack.cost} />
                             </button>
                             
-                            <span className={`text-[12px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{pack.name}</span>
+                            <span className={`text-[12px] md:text-[13px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{pack.name}</span>
                         </div>
                     </StoreItemWrapper>
                 );
@@ -300,9 +300,9 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
     );
 
     const renderNumbers = () => (
-        <div className="mb-8">
-            <h2 className="text-lg font-bold text-t-primary mb-3 ml-1">Number Styles</h2>
-            <div className="grid grid-cols-5 gap-x-2 gap-y-6 items-start">{NUMBER_COLORS.map((num, idx) => {
+        <div className="mb-8 md:mb-10">
+            <h2 className="text-lg md:text-xl font-bold text-t-primary mb-3 md:mb-4 ml-1">Number Styles</h2>
+            <div className="grid grid-cols-5 md:grid-cols-6 gap-x-2 md:gap-x-3 gap-y-6 md:gap-y-7 items-start">{NUMBER_COLORS.map((num, idx) => {
                 const isPurchased = purchasedNumberColors.includes(num.id);
                 const isSelected = selectedNumberColorId === num.id;
                 
@@ -319,7 +319,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                             >
                                 <div className={`flex-1 flex items-center justify-center w-full`}>
                                     <span
-                                        className={`text-3xl font-bold ${num.uiClass}`}
+                                        className={`text-3xl md:text-4xl font-bold ${num.uiClass}`}
                                         style={{ transform: `scale(${isPurchased ? 1.15 : 1})` }}
                                     >
                                         5
@@ -327,7 +327,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 </div>
                                 <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={num.cost} />
                             </button>
-                            <span className={`text-[12px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{num.name}</span>
+                            <span className={`text-[12px] md:text-[13px] font-bold text-center truncate w-full ${isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-700 dark:text-stone-300'}`}>{num.name}</span>
                         </div>
                     </StoreItemWrapper>
                 );
@@ -362,24 +362,21 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
             onClick={handleCloseInfo}
         >
              {/* Header */}
-             <div className="w-full max-w-md flex flex-col px-6 pt-4 pb-2 relative shrink-0 z-20 gap-4">
+             <div className="w-full max-w-md md:max-w-[700px] flex flex-col px-6 md:px-0 pt-4 md:pt-7 pb-2 relative shrink-0 z-20 gap-4">
                 <div className="flex items-center justify-between w-full mb-2">
-                    <button onClick={onBack} aria-label="Back to menu" className="p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
-                        <Icons.Back className="w-6 h-6 text-t-icon" />
+                    <button onClick={onBack} aria-label="Back to menu" className="p-2 md:p-2.5 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
+                        <Icons.Back className="w-6 h-6 md:w-7 md:h-7 text-t-icon" />
                     </button>
                     
                     <div className="flex flex-col items-center absolute left-0 right-0 pointer-events-none z-20">
-                        <h1 className="text-xl font-bold text-t-primary leading-none">Market</h1>
+                        <h1 className="text-xl md:text-2xl font-bold text-t-primary leading-none">Market</h1>
                     </div>
 
-                    <div className="flex items-center gap-1 bg-t-surface px-3 py-2 rounded-full shadow-sm relative z-30">
-                          <AnimatedNumber value={points} easing="easeOut" durationMs={1000} className="text-sm font-bold text-t-primary tabular-nums" />
-                          <div className="text-blue-500"><Icons.Diamond className="w-3 h-3 fill-current" /></div>
-                    </div>
+                    <DiamondBalancePill points={points} />
                 </div>
 
                 {/* Cleaner Category Tabs (Segmented Control Style) */}
-                <div className="oku-segmented-control w-full p-1 rounded-xl flex items-center mt-2 relative">
+                <div className="oku-segmented-control w-full md:max-w-[620px] md:mx-auto p-1 rounded-xl flex items-center mt-2 relative">
                     {TABS.map((tab) => {
                         const isActive = activeTab === tab.id;
                         return (
@@ -387,7 +384,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 key={tab.id}
                                 onClick={() => handleTabChange(tab.id as StoreTab)}
                                 className={`
-                                    flex-1 py-2 text-[11px] font-bold transition-all relative z-10
+                                    flex-1 py-2 md:py-2.5 text-[11px] md:text-[13px] font-bold transition-all relative z-10
                                     ${isActive 
                                         ? 'text-stone-900 dark:text-white'
                                         : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'
@@ -410,9 +407,9 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
 
              <div 
                 ref={scrollContainerRef}
-                className="scroll-edge-fade flex-1 w-full overflow-y-auto overflow-x-hidden px-6 pb-6 hide-scrollbar flex flex-col items-center relative"
+                className="scroll-edge-fade flex-1 w-full overflow-y-auto overflow-x-hidden px-6 md:px-0 pb-6 hide-scrollbar flex flex-col items-center relative"
             >
-                  <div className="w-full max-w-md pt-6">
+                  <div className="w-full max-w-md md:max-w-[620px] pt-6 md:pt-8">
                       <AnimatePresence initial={false} custom={direction} mode="popLayout">
                           {activeTab === 'all' && (
                               <motion.div

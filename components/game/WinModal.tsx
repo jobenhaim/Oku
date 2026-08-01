@@ -257,7 +257,7 @@ export const WinModal: React.FC<WinModalProps> = ({
 
     return (
         <div className="fixed inset-0 w-full h-full bg-stone-950/40 dark:bg-black/60 backdrop-blur-sm z-[140] flex flex-col items-center justify-center animate-fade-in touch-none">
-            <div className="bg-white dark:bg-stone-900/95 border border-stone-200 dark:border-white/10 text-stone-800 dark:text-white p-5 rounded-[26px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[300px] max-w-[calc(100vw-32px)] text-center relative overflow-hidden transform transition-all duration-300 z-10">
+            <div className="bg-white dark:bg-stone-900/95 border border-stone-200 dark:border-white/10 text-stone-800 dark:text-white p-5 md:p-7 rounded-[26px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[300px] md:w-[380px] max-w-[calc(100vw-32px)] text-center relative overflow-hidden transform transition-all duration-300 z-10">
                 <style>{`
                     @keyframes letter-pop {
                         0% {
@@ -295,7 +295,7 @@ export const WinModal: React.FC<WinModalProps> = ({
                 <div 
                     className={`flex flex-col gap-1 mb-2 relative z-10 transition-all duration-300 ${step >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
                 >
-                    <div className="text-[15px] font-bold text-black dark:text-white uppercase tracking-[0.12em]">{difficulty} &bull; Level {levelId}</div>
+                    <div className="text-[15px] md:text-[17px] font-bold text-black dark:text-white uppercase tracking-[0.12em]">{difficulty} &bull; Level {levelId}</div>
                 </div>
 
                 {/* Step 3: Solved Title (Letter by Letter All-Caps Celebratory Pop) */}
@@ -315,7 +315,7 @@ export const WinModal: React.FC<WinModalProps> = ({
                                 <span 
                                     key={i}
                                     style={{ '--start-color': startColors[i] } as React.CSSProperties}
-                                    className={`text-[34px] font-black leading-none inline-block opacity-0 ${
+                                    className={`text-[34px] md:text-[40px] font-black leading-none inline-block opacity-0 ${
                                         revealedLetters > i 
                                         ? 'letter-animate' 
                                         : ''

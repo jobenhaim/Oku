@@ -199,9 +199,9 @@ export const ReplayModal: React.FC<ReplayModalProps> = ({ levelId, onConfirm, on
             className={`fixed inset-0 z-[130] flex items-center justify-center bg-black/20 backdrop-blur-sm px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} 
             onClick={() => handleAction(onCancel)}
         >
-            <div className={`bg-t-surface p-6 rounded-3xl shadow-2xl w-full max-w-xs text-center transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} onClick={e => e.stopPropagation()}>
-                <h3 className="text-xl font-bold text-t-primary mb-2 transition-colors duration-300">Replay Level {levelId}?</h3>
-                <p className="text-sm text-t-secondary font-medium mb-6 leading-relaxed transition-colors duration-300">
+            <div className={`bg-t-surface p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-xs md:max-w-sm text-center transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} onClick={e => e.stopPropagation()}>
+                <h3 className="text-xl md:text-2xl font-bold text-t-primary mb-2 transition-colors duration-300">Replay Level {levelId}?</h3>
+                <p className="text-sm md:text-base text-t-secondary font-medium mb-6 leading-relaxed transition-colors duration-300">
                     This will reset your current progress. Your best time will be preserved.
                 </p>
                 <div className="flex gap-3">
@@ -231,12 +231,12 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ onConfirm,
             className={`fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} 
             onClick={() => handleAction(onCancel)}
         >
-            <div className={`bg-t-surface p-6 rounded-3xl shadow-2xl w-full max-w-xs text-center border border-red-100 dark:border-red-900/30 transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} onClick={e => e.stopPropagation()}>
-                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
-                    <Icons.Trash className="w-8 h-8" />
+            <div className={`bg-t-surface p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-xs md:max-w-sm text-center border border-red-100 dark:border-red-900/30 transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} onClick={e => e.stopPropagation()}>
+                <div className="w-16 h-16 md:w-20 md:h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                    <Icons.Trash className="w-8 h-8 md:w-10 md:h-10" />
                 </div>
-                <h3 className="text-xl font-bold text-t-primary mb-2">Reset Progress?</h3>
-                <p className="text-sm text-t-secondary font-medium mb-6 leading-relaxed">
+                <h3 className="text-xl md:text-2xl font-bold text-t-primary mb-2">Reset Progress?</h3>
+                <p className="text-sm md:text-base text-t-secondary font-medium mb-6 leading-relaxed">
                     This will permanently delete all your progress, unlocks, and stats. This cannot be undone.
                 </p>
                 <div className="flex flex-col gap-3">
@@ -270,9 +270,9 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ item, onConfirm, o
             className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/20 backdrop-blur-sm px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} 
             onClick={() => handleAction(onCancel)}
         >
-            <div className={`bg-t-surface p-6 rounded-3xl shadow-2xl w-full max-w-xs text-center transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} onClick={e => e.stopPropagation()}>
-                <h3 className="text-xl font-bold text-t-primary mb-2 transition-colors duration-300">Unlock {item.name}?</h3>
-                <div className="text-t-secondary font-medium mb-1 flex items-center justify-center gap-1 transition-colors duration-300">
+            <div className={`bg-t-surface p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-xs md:max-w-sm text-center transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} onClick={e => e.stopPropagation()}>
+                <h3 className="text-xl md:text-2xl font-bold text-t-primary mb-2 transition-colors duration-300">Unlock {item.name}?</h3>
+                <div className="text-sm md:text-base text-t-secondary font-medium mb-1 flex items-center justify-center gap-1 transition-colors duration-300">
                     Buy this item for <span className="text-t-primary font-bold transition-colors duration-300">{item.cost}</span> <span className="text-blue-500"><Icons.Diamond className="w-4 h-4 fill-current" /></span>?
                 </div>
                 {item.description && (
@@ -323,7 +323,7 @@ export const BookUnlockConfirmModal: React.FC<BookUnlockConfirmModalProps> = ({
             onClick={() => handleAction(onCancel)}
         >
             <div
-                className={`w-full max-w-xs rounded-[1.75rem] border border-stone-100 dark:border-stone-700 bg-t-surface p-6 text-center shadow-2xl ${
+                className={`w-full max-w-xs md:max-w-sm rounded-[1.75rem] border border-stone-100 dark:border-stone-700 bg-t-surface p-6 md:p-8 text-center shadow-2xl ${
                     isClosing ? '' : 'animate-pop'
                 }`}
                 onClick={event => event.stopPropagation()}
@@ -438,7 +438,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
             onClick={handleCancel}
         >
             <div 
-                className={`bg-t-surface p-6 rounded-3xl shadow-2xl w-full max-w-xs text-center relative overflow-hidden transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} 
+                className={`bg-t-surface p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-xs md:max-w-sm text-center relative overflow-hidden transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`}
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header Icon */}
@@ -514,7 +514,7 @@ export const NotEnoughPointsModal: React.FC<NotEnoughPointsModalProps> = ({ onCl
 
     return (
         <div className={`fixed inset-0 z-[120] flex items-center justify-center bg-black/20 backdrop-blur-sm px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={() => handleAction(onClose)}>
-            <div className={`bg-t-surface p-6 rounded-3xl shadow-2xl w-full max-w-xs text-center relative transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} onClick={e => e.stopPropagation()}>
+            <div className={`bg-t-surface p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-xs md:max-w-sm text-center relative transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} onClick={e => e.stopPropagation()}>
                 <button onClick={() => handleAction(onClose)} className="absolute right-4 top-4 p-2 bg-t-surface-sec rounded-full hover:bg-stone-200 text-t-secondary active:scale-95 transition-all duration-300">
                     <Icons.Close className="w-4 h-4" />
                 </button>
@@ -574,14 +574,14 @@ const SettingRow = ({
     settings: AppSettings,
     onToggle: (key: keyof AppSettings) => void
 }) => (
-    <div className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-t-surface-sec transition-colors duration-300">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="w-8 h-8 rounded-lg bg-t-surface flex items-center justify-center flex-none text-stone-900 dark:text-stone-100 transition-colors duration-300">
-                <Icon className="w-[18px] h-[18px]" />
+    <div className="flex items-center justify-between gap-3 md:gap-4 px-3 md:px-4 py-2.5 md:py-3.5 rounded-xl bg-t-surface-sec transition-colors duration-300">
+        <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-t-surface flex items-center justify-center flex-none text-stone-900 dark:text-stone-100 transition-colors duration-300">
+                <Icon className="w-[18px] h-[18px] md:w-5 md:h-5" />
             </div>
             <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-sm font-bold text-t-primary leading-tight transition-colors duration-300">{title}</span>
-                <span className="text-[13px] font-medium text-t-secondary leading-snug transition-colors duration-300">{desc}</span>
+                <span className="text-sm md:text-base font-bold text-t-primary leading-tight transition-colors duration-300">{title}</span>
+                <span className="text-[13px] md:text-[15px] font-medium text-t-secondary leading-snug transition-colors duration-300">{desc}</span>
             </div>
         </div>
         <button onClick={() => onToggle(sKey)} className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-300 flex-none ${settings[sKey] ? 'bg-green-500' : 'bg-stone-300 dark:bg-stone-600'}`}>
@@ -668,12 +668,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
             </AnimatePresence>
 
             {/* Added pb-safe to allow bottom sheet to respect home indicator */}
-            <div className={`bg-t-surface w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transition-colors duration-300 pb-safe ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} onClick={e => e.stopPropagation()}>
+            <div className={`bg-t-surface w-full max-w-md md:max-w-[620px] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[90vh] md:max-h-[86vh] overflow-hidden transition-colors duration-300 pb-safe ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} onClick={e => e.stopPropagation()}>
                 
                 {/* Header */}
-                <div className="flex justify-between items-center px-5 pt-4 pb-2 shrink-0 bg-t-surface z-10 transition-colors duration-300">
-                    <h3 className="text-xl font-bold text-t-primary transition-colors duration-300">Settings</h3>
-                    <button onClick={handleClose} className="p-1.5 bg-t-surface-sec rounded-full text-t-primary transition-colors duration-300"><Icons.Close className="w-5 h-5" /></button>
+                <div className="flex justify-between items-center px-5 md:px-7 pt-4 md:pt-6 pb-2 md:pb-3 shrink-0 bg-t-surface z-10 transition-colors duration-300">
+                    <h3 className="text-xl md:text-2xl font-bold text-t-primary transition-colors duration-300">Settings</h3>
+                    <button onClick={handleClose} className="p-1.5 md:p-2 bg-t-surface-sec rounded-full text-t-primary transition-colors duration-300"><Icons.Close className="w-5 h-5 md:w-6 md:h-6" /></button>
                 </div>
                 
                 {/* Content Container - Flex-1 allows it to take space, relative for conditional rendering */}
@@ -681,11 +681,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                     
                     {/* Render MAIN LIST if no doc active */}
                     {!activeDoc && (
-                        <div className="scroll-edge-fade flex-1 overflow-y-auto px-5 pt-3 pb-5 hide-scrollbar animate-fade-in min-h-0">
+                        <div className="scroll-edge-fade flex-1 overflow-y-auto px-5 md:px-7 pt-3 md:pt-4 pb-5 md:pb-7 hide-scrollbar animate-fade-in min-h-0">
                             {/* Appearance */}
                             <div className="mb-4">
-                                <label className="block text-[10px] font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Theme</label>
-                                <div className="bg-t-surface-sec p-1 rounded-xl flex transition-colors duration-300">
+                                <label className="block text-[10px] md:text-xs font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Theme</label>
+                                <div className="bg-t-surface-sec p-1 rounded-xl flex min-h-[44px] md:min-h-[52px] transition-colors duration-300">
                                     {(['system', 'light', 'dark'] as const).map((opt) => (
                                         <button 
                                             key={opt}
@@ -697,7 +697,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                                     setTimeout(() => setShowDarkToast(false), 3000);
                                                 }
                                             }}
-                                            className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors duration-300 ${settings.appearance === opt ? 'bg-t-surface text-t-primary shadow-sm' : 'text-t-secondary'}`}
+                                            className={`flex-1 py-2 rounded-lg text-xs md:text-sm font-bold flex items-center justify-center gap-1.5 md:gap-2 transition-colors duration-300 ${settings.appearance === opt ? 'bg-t-surface text-t-primary shadow-sm' : 'text-t-secondary'}`}
                                         >
                                             {opt === 'system' && <Icons.System className="w-4 h-4 text-stone-900 dark:text-stone-100" />}
                                             {opt === 'light' && <Icons.Sun className="w-4 h-4 text-stone-900 dark:text-stone-100" />}
@@ -710,19 +710,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
 
                             {/* Content / Active Difficulties */}
                             <div className="mb-4">
-                                <label className="block text-[10px] font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Content</label>
+                                <label className="block text-[10px] md:text-xs font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Content</label>
                                 <div className="bg-t-surface-sec rounded-xl overflow-hidden transition-colors duration-300">
                                     <button 
                                         onClick={() => { sounds.playClick(); setIsDifficultyExpanded(!isDifficultyExpanded); }}
-                                        className="w-full flex items-center justify-between px-3 py-2.5"
+                                        className="w-full flex items-center justify-between px-3 md:px-4 py-2.5 md:py-3.5"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-t-surface flex items-center justify-center text-stone-900 dark:text-stone-100 transition-colors duration-300">
-                                                <Icons.BarChart className="w-[18px] h-[18px]" />
+                                        <div className="flex items-center gap-3 md:gap-4">
+                                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-t-surface flex items-center justify-center text-stone-900 dark:text-stone-100 transition-colors duration-300">
+                                                <Icons.BarChart className="w-[18px] h-[18px] md:w-5 md:h-5" />
                                             </div>
                                             <div className="text-left flex flex-col gap-0.5">
-                                                <span className="text-sm font-bold text-t-primary leading-tight transition-colors duration-300">Active Difficulties</span>
-                                                <span className="text-[13px] font-medium text-t-secondary leading-tight transition-colors duration-300">
+                                                <span className="text-sm md:text-base font-bold text-t-primary leading-tight transition-colors duration-300">Active Difficulties</span>
+                                                <span className="text-[13px] md:text-[15px] font-medium text-t-secondary leading-tight transition-colors duration-300">
                                                     {Object.values(Difficulty).length - (settings.hiddenDifficulties?.length || 0)} Visible
                                                 </span>
                                             </div>
@@ -733,7 +733,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     <div className={`grid transition-[grid-template-rows,opacity] duration-200 ease-in-out ${isDifficultyExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}>
                                         <div className="min-h-0 overflow-hidden">
                                             <div className="px-2 pb-2 border-t border-t-border">
-                                                <p className="px-2.5 py-2 text-[12px] text-t-secondary leading-relaxed font-medium transition-colors duration-300">
+                                                <p className="px-2.5 md:px-3 py-2 md:py-3 text-[12px] md:text-sm text-t-secondary leading-relaxed font-medium transition-colors duration-300">
                                                     Hide difficulties you don't play. At least one must remain visible.
                                                 </p>
                                                 <div className="divide-y divide-stone-200/60 dark:divide-white/5">
@@ -743,10 +743,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                                             <button
                                                                 key={diff}
                                                                 onClick={() => onToggleDifficulty(diff)}
-                                                                className="oku-difficulty-visibility-option w-full flex items-center justify-between px-2.5 py-2.5"
+                                                                className="oku-difficulty-visibility-option w-full flex items-center justify-between px-2.5 md:px-3 py-2.5 md:py-3"
                                                             >
-                                                                <span className={`text-xs font-bold ${isHidden ? 'text-t-secondary' : 'text-t-primary'}`}>{diff}</span>
-                                                                <Icons.Eye className={`w-4 h-4 ${isHidden ? 'text-t-secondary opacity-50' : 'text-stone-900 dark:text-stone-100'}`} />
+                                                                <span className={`text-xs md:text-sm font-bold ${isHidden ? 'text-t-secondary' : 'text-t-primary'}`}>{diff}</span>
+                                                                <Icons.Eye className={`w-4 h-4 md:w-5 md:h-5 ${isHidden ? 'text-t-secondary opacity-50' : 'text-stone-900 dark:text-stone-100'}`} />
                                                             </button>
                                                         )
                                                     })}
@@ -759,8 +759,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
 
                             {/* Gameplay */}
                             <div className="mb-4">
-                                <label className="block text-[10px] font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Gameplay</label>
-                                <div className="flex flex-col gap-2">
+                                <label className="block text-[10px] md:text-xs font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Gameplay</label>
+                                <div className="flex flex-col gap-2 md:gap-3">
                                 <SettingRow
                                     sKey="autoEraseNotes" 
                                     icon={Icons.Note}
@@ -792,8 +792,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
 
                             {/* Interface */}
                             <div className="mb-4">
-                                <label className="block text-[10px] font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Interface</label>
-                                <div className="flex flex-col gap-2">
+                                <label className="block text-[10px] md:text-xs font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Interface</label>
+                                <div className="flex flex-col gap-2 md:gap-3">
 
                                 <SettingRow 
                                     sKey="showTimer" 
@@ -864,10 +864,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
 
                                 {/* Coupon Row */}
                                 {showCouponInput ? (
-                                    <div className="mt-2 px-3 py-3 rounded-xl bg-t-surface-sec transition-colors duration-300 flex flex-col gap-2.5 animate-fade-in">
+                                    <div className="mt-2 md:mt-3 px-3 md:px-4 py-3 md:py-4 rounded-xl bg-t-surface-sec transition-colors duration-300 flex flex-col gap-2.5 md:gap-3 animate-fade-in">
                                         <div className="flex items-center gap-2 mb-1">
                                             <Icons.Ticket className="w-5 h-5 text-stone-900 dark:text-stone-100" />
-                                            <span className="text-sm font-bold text-t-primary">Enter Code</span>
+                                            <span className="text-sm md:text-base font-bold text-t-primary">Enter Code</span>
                                         </div>
                                         
                                         <input 
@@ -905,15 +905,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                 ) : (
                                     <button 
                                         onClick={handleCouponClick}
-                                        className="mt-2 w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-t-surface-sec transition-transform duration-300 active:scale-[0.98]"
+                                        className="mt-2 md:mt-3 w-full flex items-center justify-between px-3 md:px-4 py-2.5 md:py-3.5 rounded-xl bg-t-surface-sec transition-transform duration-300 active:scale-[0.98]"
                                     >
-                                        <div className="flex items-center gap-3 flex-1 pr-2">
-                                            <div className="w-8 h-8 rounded-lg bg-t-surface flex items-center justify-center text-stone-900 dark:text-stone-100 transition-colors duration-300">
-                                                <Icons.Ticket className="w-[18px] h-[18px]" />
+                                        <div className="flex items-center gap-3 md:gap-4 flex-1 pr-2">
+                                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-t-surface flex items-center justify-center text-stone-900 dark:text-stone-100 transition-colors duration-300">
+                                                <Icons.Ticket className="w-[18px] h-[18px] md:w-5 md:h-5" />
                                             </div>
                                             <div className="flex flex-col gap-0.5 text-left">
-                                                <span className="text-sm font-bold text-t-primary leading-tight transition-colors duration-300">Redeem Coupon</span>
-                                                <span className="text-[13px] font-medium text-t-secondary leading-tight transition-colors duration-300">Enter code for rewards</span>
+                                                <span className="text-sm md:text-base font-bold text-t-primary leading-tight transition-colors duration-300">Redeem Coupon</span>
+                                                <span className="text-[13px] md:text-[15px] font-medium text-t-secondary leading-tight transition-colors duration-300">Enter code for rewards</span>
                                             </div>
                                         </div>
                                         <div className="bg-t-surface p-1.5 rounded-full text-stone-900 dark:text-stone-100 transition-colors">
@@ -925,22 +925,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
 
                             {/* Danger Zone */}
                             <div className="pt-3 border-t border-t-border flex flex-col gap-2 transition-colors duration-300">
-                                <button onClick={() => { sounds.playClick(); setShowResetPreConfirm(true); }} className="w-full py-2.5 flex items-center justify-center gap-2 text-red-500 rounded-xl transition-colors duration-300 font-bold text-sm">
-                                    <Icons.Trash className="w-4 h-4 text-stone-900 dark:text-stone-100" /> Reset All Progress
+                                <button onClick={() => { sounds.playClick(); setShowResetPreConfirm(true); }} className="w-full py-2.5 md:py-3 flex items-center justify-center gap-2 text-red-500 rounded-xl transition-colors duration-300 font-bold text-sm md:text-base">
+                                    <Icons.Trash className="w-4 h-4 md:w-5 md:h-5 text-stone-900 dark:text-stone-100" /> Reset All Progress
                                 </button>
-                                <p className="text-[11px] text-center text-t-secondary font-medium px-4 leading-relaxed transition-colors duration-300">
+                                <p className="text-[11px] md:text-[13px] text-center text-t-secondary font-medium px-4 leading-relaxed transition-colors duration-300">
                                     Your progress is saved in your device's Cloud Backup.<br/>We cannot access your data.
                                 </p>
                             </div>
 
                             {/* Legal Links */}
                             <div className="flex flex-col items-center gap-3 py-5">
-                                <div className="flex items-center gap-4 text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest transition-colors duration-300">
+                                <div className="flex items-center gap-4 md:gap-5 text-[10px] md:text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest transition-colors duration-300">
                                     <button onClick={() => { sounds.playClick(); setActiveDoc('privacy'); }} className="transition-colors duration-300 px-2 py-1">Privacy Policy</button>
                                     <div className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700 transition-colors duration-300" />
                                     <button onClick={() => { sounds.playClick(); setActiveDoc('terms'); }} className="transition-colors duration-300 px-2 py-1">Terms of Service</button>
                                 </div>
-                                <span className="text-[9px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.9.12</span>
+                                <span className="text-[9px] md:text-[11px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.9.17</span>
                             </div>
                         </div>
                     )}

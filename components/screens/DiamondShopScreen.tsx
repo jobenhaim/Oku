@@ -4,7 +4,7 @@ import { DIAMOND_OFFERS } from '../../utils/constants';
 import { DiamondOffer } from '../../types';
 import { Storage } from '../../utils/storage';
 import { FishTank } from '../ui/FishTank';
-import { AnimatedNumber } from '../ui/AnimatedNumber';
+import { DiamondBalancePill } from '../ui/DiamondBalancePill';
 import { IAP } from '../../utils/iap';
 import { useTactilePress } from '../../hooks/useTactilePress';
 import { sounds } from '../../utils/sound';
@@ -235,23 +235,20 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
             className="diamond-shop-screen flex-1 w-full flex flex-col items-center overflow-hidden relative"
             onClick={closeBooksForeverInfo}
         >
-            <div className="w-full max-w-md flex items-center justify-between px-6 pt-4 pb-4 relative shrink-0 z-20 mx-auto">
-                <button onClick={onBack} aria-label="Back" className="p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-90 transition-transform">
-                    <Icons.Back className="w-6 h-6 text-t-icon" />
+            <div className="w-full max-w-md md:max-w-[700px] flex items-center justify-between px-6 md:px-0 pt-4 md:pt-7 pb-4 relative shrink-0 z-20 mx-auto">
+                <button onClick={onBack} aria-label="Back" className="p-2 md:p-2.5 rounded-full -ml-2 text-t-icon relative z-30 active:scale-90 transition-transform">
+                    <Icons.Back className="w-6 h-6 md:w-7 md:h-7 text-t-icon" />
                 </button>
 
                 <div className="flex flex-col items-center absolute left-0 right-0 pointer-events-none z-20">
-                    <h1 className="text-xl font-bold text-t-primary leading-none">Oku Shop</h1>
+                    <h1 className="text-xl md:text-2xl font-bold text-t-primary leading-none">Oku Shop</h1>
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-t-surface px-3 py-2 rounded-full shadow-sm relative z-30 border border-stone-200/60 dark:border-stone-800">
-                    <AnimatedNumber value={points} easing="easeOut" durationMs={1000} className="text-sm font-bold text-t-primary tabular-nums" />
-                    <Icons.Diamond className="w-3 h-3 text-blue-500 fill-current" />
-                </div>
+                <DiamondBalancePill points={points} />
             </div>
 
-            <div className="scroll-edge-fade flex-1 w-full overflow-y-auto px-6 pb-6 hide-scrollbar flex flex-col items-center relative z-10">
-                <div className="w-full max-w-md pt-2 mx-auto space-y-6">
+            <div className="scroll-edge-fade flex-1 w-full overflow-y-auto px-6 md:px-0 pb-6 hide-scrollbar flex flex-col items-center relative z-10">
+                <div className="w-full max-w-md md:max-w-[620px] pt-2 md:pt-4 mx-auto space-y-6 md:space-y-8">
                     {pepinoState.unlocked ? (
                         <FishTank onRewardClaim={handleRewardClaim} showIntro={shouldShowIntro()} />
                     ) : premiumOffer ? (
@@ -262,20 +259,20 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                             >
                                 <PremiumPepinoBackdrop />
 
-                                <div className="p-4 pb-3 relative z-10">
+                                <div className="p-4 md:p-6 pb-3 md:pb-5 relative z-10">
                                     <div className="mb-3">
                                         <div className="min-w-0">
                                             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-white/95 via-violet-50/95 to-sky-50/95 border border-white/90 text-[#5f5872] mb-1.5 shadow-[0_0_12px_rgba(255,255,255,0.95),0_0_26px_rgba(139,92,246,0.32)]">
                                                 <Icons.Star className="w-3 h-3 text-violet-500 drop-shadow-[0_0_4px_rgba(139,92,246,0.7)]" />
                                                 <span className="text-[10px] font-bold uppercase tracking-[0.16em]">Oku Premium</span>
                                             </div>
-                                            <h2 id="premium-heading" className="text-xl font-bold text-t-primary leading-tight">Meet Pepino</h2>
-                                            <p className="text-[13px] font-medium text-t-secondary mt-0.5">A little companion for your Sudoku journey.</p>
+                                            <h2 id="premium-heading" className="text-xl md:text-2xl font-bold text-t-primary leading-tight">Meet Pepino</h2>
+                                            <p className="text-[13px] md:text-sm font-medium text-t-secondary mt-0.5">A little companion for your Sudoku journey.</p>
                                         </div>
                                     </div>
 
-                                    <div className="rounded-xl bg-white/80 dark:bg-slate-950/35 px-3.5 py-3 mb-3">
-                                        <p className="text-[13px] font-medium text-stone-600 dark:text-stone-300 leading-relaxed">
+                                    <div className="rounded-xl bg-white/80 dark:bg-slate-950/35 px-3.5 md:px-4 py-3 md:py-3.5 mb-3 md:mb-4">
+                                        <p className="text-[13px] md:text-sm font-medium text-stone-600 dark:text-stone-300 leading-relaxed">
                                             Pepino lives in a peaceful aquarium, grows with you, and brings you a diamond gift after every completed game.
                                         </p>
                                     </div>
@@ -318,7 +315,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     className={`oku-shop-card-face ${shopPress.pressedId === starterOffer.id ? 'oku-shop-card-face--pressed' : ''} w-full bg-t-surface rounded-3xl border border-stone-200/80 dark:border-stone-800 text-left overflow-hidden relative ${starterPackPurchased ? 'opacity-60 cursor-default' : ''}`}
                                 >
 
-                                    <div className="p-4 pb-3">
+                                    <div className="p-4 md:p-5 pb-3 md:pb-4">
                                         <div className="relative flex items-center justify-between gap-3 mb-4">
                                             <div>
                                                 <div className="flex items-center gap-2 mb-1">
@@ -329,16 +326,16 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                                         className="w-8 h-8 object-contain shrink-0 select-none pointer-events-none"
                                                         draggable={false}
                                                     />
-                                                    <h2 id="starter-heading" className="text-lg font-bold text-t-primary">Starter Pack</h2>
+                                                    <h2 id="starter-heading" className="text-lg md:text-xl font-bold text-t-primary">Starter Pack</h2>
                                                 </div>
-                                                <p className="text-[13px] font-medium text-t-secondary">Six permanent rewards to begin your journey.</p>
+                                                <p className="text-[13px] md:text-sm font-medium text-t-secondary">Six permanent rewards to begin your journey.</p>
                                             </div>
                                             {!starterPackPurchased && (
                                                 <span className="text-[8px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/40 px-2 py-1 rounded-full shrink-0">One time</span>
                                             )}
                                         </div>
 
-                                        <div className="relative grid grid-cols-6 gap-1">
+                                        <div className="relative grid grid-cols-6 gap-1 md:gap-2">
                                             <div className="rounded-xl bg-violet-50 dark:bg-violet-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
                                                 <div className="h-8 flex items-center justify-center">
                                                     <Icons.Diamond className="w-5 h-5 text-blue-500 fill-current" />
@@ -402,8 +399,8 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
 
                     <section aria-labelledby="books-heading">
                         <div className="px-1 mb-3">
-                            <h2 id="books-heading" className="text-xs font-bold text-t-secondary uppercase tracking-widest">Book Collections</h2>
-                            <p className="text-[13px] font-medium text-t-secondary mt-1">Open more puzzles across every difficulty.</p>
+                            <h2 id="books-heading" className="text-xs md:text-sm font-bold text-t-secondary uppercase tracking-widest">Book Collections</h2>
+                            <p className="text-[13px] md:text-sm font-medium text-t-secondary mt-1">Open more puzzles across every difficulty.</p>
                         </div>
 
                         <div className="flex flex-col gap-3">
@@ -418,7 +415,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         shopPress.runPressCycle('books-2-all', onPurchaseAllBooks2);
                                     }}
                                     disabled={books2AllOwned || isPurchasingBook2Bundle}
-                                    className={`oku-shop-card-face ${shopPress.pressedId === 'books-2-all' ? 'oku-shop-card-face--pressed' : ''} relative w-full min-h-[5.75rem] rounded-3xl border-2 bg-white dark:bg-stone-800 px-4 py-1.5 text-left overflow-hidden flex items-center gap-2 ${
+                                    className={`oku-shop-card-face ${shopPress.pressedId === 'books-2-all' ? 'oku-shop-card-face--pressed' : ''} relative w-full min-h-[5.75rem] md:min-h-[7rem] rounded-3xl border-2 bg-white dark:bg-stone-800 px-4 md:px-5 py-1.5 text-left overflow-hidden flex items-center gap-2 md:gap-4 ${
                                         books2AllOwned
                                             ? 'border-stone-200 dark:border-stone-700 opacity-60 cursor-default'
                                             : 'border-blue-300 dark:border-blue-700'
@@ -427,12 +424,12 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     <img
                                         src="/assets/oku-shop/book2.webp"
                                         alt=""
-                                        className="w-20 h-20 object-contain shrink-0 -ml-2"
+                                        className="w-20 h-20 md:w-24 md:h-24 object-contain shrink-0 -ml-2"
                                     />
                                     <div className="min-w-0 flex-1">
-                                        <h3 className="text-base font-bold text-t-primary leading-tight">Oku Book 2</h3>
-                                        <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">600 puzzles.</p>
-                                        <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-0.5">All difficulties.</p>
+                                        <h3 className="text-base md:text-lg font-bold text-t-primary leading-tight">Oku Book 2</h3>
+                                        <p className="text-[13px] md:text-sm font-semibold text-t-secondary leading-tight mt-1">600 puzzles.</p>
+                                        <p className="text-[13px] md:text-sm font-semibold text-t-secondary leading-tight mt-0.5">All difficulties.</p>
                                     </div>
                                     <span className={`shrink-0 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap ${
                                         books2AllOwned
@@ -456,7 +453,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                             shopPress.runPressCycle('books-3-all', onPurchaseAllBooks3);
                                         }}
                                         disabled={books3AllOwned || isPurchasingBook3Bundle}
-                                        className={`oku-shop-card-face ${shopPress.pressedId === 'books-3-all' ? 'oku-shop-card-face--pressed' : ''} relative w-full min-h-[5.75rem] rounded-3xl border-2 bg-white dark:bg-stone-800 px-4 py-1.5 text-left overflow-hidden flex items-center gap-2 ${
+                                        className={`oku-shop-card-face ${shopPress.pressedId === 'books-3-all' ? 'oku-shop-card-face--pressed' : ''} relative w-full min-h-[5.75rem] md:min-h-[7rem] rounded-3xl border-2 bg-white dark:bg-stone-800 px-4 md:px-5 py-1.5 text-left overflow-hidden flex items-center gap-2 md:gap-4 ${
                                             books3AllOwned
                                                 ? 'border-stone-200 dark:border-stone-700 opacity-60 cursor-default'
                                                 : 'border-blue-300 dark:border-blue-700'
@@ -465,12 +462,12 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         <img
                                             src="/assets/oku-shop/book3.webp"
                                             alt=""
-                                            className="w-20 h-20 object-contain shrink-0 -ml-2"
+                                            className="w-20 h-20 md:w-24 md:h-24 object-contain shrink-0 -ml-2"
                                         />
                                         <div className="min-w-0 flex-1">
-                                            <h3 className="text-base font-bold text-t-primary leading-tight">Oku Book 3</h3>
-                                            <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">600 puzzles.</p>
-                                            <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-0.5">All difficulties.</p>
+                                            <h3 className="text-base md:text-lg font-bold text-t-primary leading-tight">Oku Book 3</h3>
+                                            <p className="text-[13px] md:text-sm font-semibold text-t-secondary leading-tight mt-1">600 puzzles.</p>
+                                            <p className="text-[13px] md:text-sm font-semibold text-t-secondary leading-tight mt-0.5">All difficulties.</p>
                                         </div>
                                         <span className={`shrink-0 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap ${
                                             books3AllOwned
@@ -495,7 +492,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     shopPress.runPressCycle('books-forever', onPurchaseBooksForever);
                                 }}
                                 disabled={booksForeverOwned || isPurchasingBooksForever}
-                                className={`oku-shop-card-face ${shopPress.pressedId === 'books-forever' ? 'oku-shop-card-face--pressed' : ''} relative w-full min-h-[5.75rem] rounded-3xl border-2 bg-white dark:bg-stone-800 px-4 py-1.5 text-left overflow-hidden flex items-center gap-2 ${
+                                className={`oku-shop-card-face ${shopPress.pressedId === 'books-forever' ? 'oku-shop-card-face--pressed' : ''} relative w-full min-h-[5.75rem] md:min-h-[7rem] rounded-3xl border-2 bg-white dark:bg-stone-800 px-4 md:px-5 py-1.5 text-left overflow-hidden flex items-center gap-2 md:gap-4 ${
                                     booksForeverOwned
                                         ? 'border-stone-200 dark:border-stone-700 opacity-60 cursor-default'
                                         : 'border-blue-300 dark:border-blue-700'
@@ -504,13 +501,13 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                 <img
                                     src="/assets/oku-shop/bookall.webp"
                                     alt=""
-                                    className="w-20 h-20 object-contain shrink-0 -ml-2"
+                                    className="w-20 h-20 md:w-24 md:h-24 object-contain shrink-0 -ml-2"
                                 />
                                 <div className="min-w-0 flex-1">
-                                    <h3 className="text-base font-bold text-t-primary leading-tight">All Books Forever</h3>
-                                    <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-1">Every Book.</p>
-                                    <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-0.5">Every difficulty.</p>
-                                    <p className="text-[13px] font-semibold text-t-secondary leading-tight mt-0.5">Forever.</p>
+                                    <h3 className="text-base md:text-lg font-bold text-t-primary leading-tight">All Books Forever</h3>
+                                    <p className="text-[13px] md:text-sm font-semibold text-t-secondary leading-tight mt-1">Every Book.</p>
+                                    <p className="text-[13px] md:text-sm font-semibold text-t-secondary leading-tight mt-0.5">Every difficulty.</p>
+                                    <p className="text-[13px] md:text-sm font-semibold text-t-secondary leading-tight mt-0.5">Forever.</p>
                                 </div>
                                 <span className={`shrink-0 self-start mt-2 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap ${
                                     booksForeverOwned
@@ -546,8 +543,8 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
 
                     <section aria-labelledby="packs-heading">
                         <div className="px-1 mb-3">
-                            <h2 id="packs-heading" className="text-xs font-bold text-t-secondary uppercase tracking-widest">Diamond Packs</h2>
-                            <p className="text-[13px] font-medium text-t-secondary mt-1">Use diamonds for skills, scenes, sounds, and more.</p>
+                            <h2 id="packs-heading" className="text-xs md:text-sm font-bold text-t-secondary uppercase tracking-widest">Diamond Packs</h2>
+                            <p className="text-[13px] md:text-sm font-medium text-t-secondary mt-1">Use diamonds for skills, scenes, sounds, and more.</p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">

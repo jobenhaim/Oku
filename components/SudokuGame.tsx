@@ -12,7 +12,7 @@ import { generateReplayVideo, ReplayMove } from '../utils/replay';
 import { hasPlayerBoardInput, Storage } from '../utils/storage';
 import { sounds } from '../utils/sound';
 import { Icons } from './ui/Icons';
-import { AnimatedNumber } from './ui/AnimatedNumber';
+import { DiamondBalancePill } from './ui/DiamondBalancePill';
 import { formatTimeShort, getScanRefillCost } from '../utils/constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -831,34 +831,25 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full flex justify-center px-6 pt-4 pb-4 relative z-40 shrink-0"
+          className="w-full flex justify-center px-6 md:px-0 pt-4 md:pt-7 pb-4 md:pb-5 relative z-40 shrink-0"
       >
-          <div className="w-full max-w-md flex items-center justify-between relative">
+          <div className="w-full max-w-md md:max-w-[700px] flex items-center justify-between relative">
               {/* Left Column: Back Button */}
-              <button onClick={handleBackToLevels} aria-label="Back to levels" className="p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
-                  <Icons.Back className="w-6 h-6" />
+              <button onClick={handleBackToLevels} aria-label="Back to levels" className="p-2 md:p-2.5 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
+                  <Icons.Back className="w-6 h-6 md:w-7 md:h-7" />
               </button>
-              <div
-                  className="absolute left-8 z-30 inline-flex h-8 items-center gap-1 rounded-full border border-stone-200 dark:border-stone-700 bg-white/95 dark:bg-stone-800/95 px-2.5 text-[13px] font-bold text-t-primary shadow-sm"
-                  aria-label={`${currentPoints} diamonds`}
-              >
-                  <AnimatedNumber
-                      value={currentPoints}
-                      easing="easeOut"
-                      durationMs={1000}
-                      className="tabular-nums"
-                  />
-                  <Icons.Diamond className="h-3.5 w-3.5 text-blue-500 fill-current" />
+              <div className="absolute left-8 md:left-10 z-30">
+                  <DiamondBalancePill points={currentPoints} className="h-8 md:h-10 min-w-[68px] md:min-w-[76px] px-2.5 md:px-3" />
               </div>
 
               {/* Center Column: Title & Timer - Absolute Centered */}
               <div className="flex flex-col items-center absolute left-0 right-0 pointer-events-none z-20">
                   {settings.showTimer ? (
-                      <span className="text-xl font-bold text-t-primary tabular-nums leading-none">{formatTimeShort(timer)}</span>
+                      <span className="text-xl md:text-2xl font-bold text-t-primary tabular-nums leading-none">{formatTimeShort(timer)}</span>
                   ) : (
-                      <span className="text-xl font-bold text-t-primary leading-none">Level {levelId}</span>
+                      <span className="text-xl md:text-2xl font-bold text-t-primary leading-none">Level {levelId}</span>
                   )}
-                  <span className="text-[10px] font-bold text-stone-600 dark:text-stone-400 uppercase tracking-widest mt-1">
+                  <span className="text-[10px] md:text-[11px] font-bold text-stone-600 dark:text-stone-400 uppercase tracking-widest mt-1 md:mt-1.5">
                     {difficulty} {settings.showTimer && `• ${levelId}`}
                   </span>
               </div>
@@ -872,25 +863,25 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                               sounds.playClick();
                               handleDevSolve();
                           }}
-                          className="p-2 rounded-full transition text-red-600 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 active:scale-90"
+                          className="p-2 md:p-2.5 rounded-full transition text-red-600 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 active:scale-90"
                           title="Dev Auto Solve"
                       >
-                          <Icons.Dev className="w-6 h-6" />
+                          <Icons.Dev className="w-6 h-6 md:w-7 md:h-7" />
                       </button>
                   )}
                   <button onClick={() => {
                       if (gameFinishedRef.current) return;
                       sounds.playClick();
                       setIsPaused(true);
-                  }} aria-label="Pause game" className="p-2 rounded-full transition text-t-icon active:scale-95">
-                      <Icons.Pause className="w-6 h-6" />
+                  }} aria-label="Pause game" className="p-2 md:p-2.5 rounded-full transition text-t-icon active:scale-95">
+                      <Icons.Pause className="w-6 h-6 md:w-7 md:h-7" />
                   </button>
                   <button onClick={() => {
                       if (gameFinishedRef.current) return;
                       sounds.playClick();
                       onSettingsOpen();
-                  }} aria-label="Game settings" className="p-2 rounded-full transition text-t-icon active:scale-95">
-                      <Icons.Settings className="w-6 h-6" />
+                  }} aria-label="Game settings" className="p-2 md:p-2.5 rounded-full transition text-t-icon active:scale-95">
+                      <Icons.Settings className="w-6 h-6 md:w-7 md:h-7" />
                   </button>
               </div>
           </div>
@@ -901,7 +892,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           onClick={handleBackgroundClick}
       >
          {/* Fixed notification slot prevents the Sudoku grid from shifting. */}
-         <div className="w-full h-8 relative z-20" />
+         <div className="w-full h-8 md:h-10 relative z-20" />
 
          <motion.div 
              initial={{ opacity: 0, scale: 0.96 }}
@@ -917,26 +908,26 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 44, opacity: 0 }}
                         transition={{ duration: 0.15, ease: "easeInOut" }}
-                        className="absolute inset-x-0 bottom-full h-7 z-0 pointer-events-none whitespace-nowrap flex items-center justify-center px-4"
+                        className="absolute inset-x-0 bottom-full h-7 md:h-9 z-0 pointer-events-none whitespace-nowrap flex items-center justify-center px-4"
                     >
-                        <span className="text-[11px] md:text-[12px] font-semibold text-stone-600 dark:text-stone-100 bg-stone-50 dark:bg-stone-800 border border-stone-200/80 dark:border-stone-700 px-4 py-1.5 rounded-full inline-flex items-center gap-1.5 leading-none shadow-md dark:shadow-black/30">
+                        <span className="text-[11px] md:text-[14px] font-semibold text-stone-600 dark:text-stone-100 bg-stone-50 dark:bg-stone-800 border border-stone-200/80 dark:border-stone-700 px-4 md:px-5 py-1.5 md:py-2 rounded-full inline-flex items-center gap-1.5 md:gap-2 leading-none shadow-md dark:shadow-black/30">
                             {pillMessage.type === 'warning' ? (
                                 <>
-                                    <Icons.Info className="w-[14px] h-[14px] shrink-0 text-stone-500 dark:text-stone-300" />
+                                    <Icons.Info className="w-[14px] h-[14px] md:w-4 md:h-4 shrink-0 text-stone-500 dark:text-stone-300" />
                                     {pillMessage.text}
                                     <span className="inline-flex items-center gap-1 text-red-500 font-bold">
-                                        <Icons.Scan className="w-[14px] h-[14px] shrink-0 text-red-500" />
+                                        <Icons.Scan className="w-[14px] h-[14px] md:w-4 md:h-4 shrink-0 text-red-500" />
                                         Scan Recommended
                                     </span>
                                 </>
                             ) : (
                                 <>
                                     {pillMessage.type === 'scan-error' ? (
-                                        <Icons.Close className="w-[14px] h-[14px] shrink-0 text-red-500" />
+                                        <Icons.Close className="w-[14px] h-[14px] md:w-4 md:h-4 shrink-0 text-red-500" />
                                     ) : pillMessage.type === 'scan-clean' ? (
-                                        <Icons.Check className="w-[14px] h-[14px] shrink-0 text-emerald-500" />
+                                        <Icons.Check className="w-[14px] h-[14px] md:w-4 md:h-4 shrink-0 text-emerald-500" />
                                     ) : pillMessage.type === 'notes' ? (
-                                        <Icons.Info className="w-[14px] h-[14px] shrink-0 text-stone-500 dark:text-stone-300" />
+                                        <Icons.Info className="w-[14px] h-[14px] md:w-4 md:h-4 shrink-0 text-stone-500 dark:text-stone-300" />
                                     ) : null}
                                     {pillMessage.text}
                                 </>
@@ -974,7 +965,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
              initial={{ opacity: 0, y: 15 }}
              animate={{ opacity: 1, y: 0 }}
              transition={{ duration: 0.45, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
-             className="w-full max-w-[500px] px-2 mt-4 relative z-[100]" 
+             className="w-full max-w-[500px] md:max-w-[560px] px-2 md:px-0 mt-4 md:mt-5 relative z-[100]"
              onClick={(e) => e.stopPropagation()}
          >
              <NumberPad 
@@ -992,7 +983,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
              initial={{ opacity: 0, y: 15 }}
              animate={{ opacity: 1, y: 0 }}
              transition={{ duration: 0.45, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
-             className="w-full max-w-md px-6 mt-10 relative z-[100]" 
+             className="w-full max-w-md md:max-w-[540px] px-6 md:px-0 mt-10 md:mt-8 relative z-[100]"
              onClick={(e) => e.stopPropagation()}
          >
              <GameControls 
@@ -1105,7 +1096,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-stone-200/90 dark:bg-stone-950/95 backdrop-blur-sm"
           >
-              <div className="w-full max-w-[240px] flex flex-col items-center text-center relative z-10">
+              <div className="w-full max-w-[240px] md:max-w-[300px] flex flex-col items-center text-center relative z-10">
                   <AnimatePresence mode="wait">
                       {!showRestartConfirm ? (
                           <motion.div 
@@ -1114,10 +1105,10 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className="w-[240px] flex flex-col items-center rounded-[2rem] px-5 py-6 bg-white dark:bg-stone-900 shadow-xl"
+                            className="w-[240px] md:w-[300px] flex flex-col items-center rounded-[2rem] px-5 md:px-7 py-6 md:py-8 bg-white dark:bg-stone-900 shadow-xl"
                           >
                             {/* Smaller, cleaner title */}
-                            <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-6 tracking-tight">Paused</h2>
+                            <h2 className="text-2xl md:text-3xl font-bold text-stone-800 dark:text-stone-100 mb-6 md:mb-7 tracking-tight">Paused</h2>
                             
                             <div className="flex flex-col gap-3 w-full">
                                 {/* Resume - Primary */}
@@ -1138,7 +1129,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className="w-[240px] flex flex-col items-center rounded-[2rem] px-5 py-6 bg-white dark:bg-stone-900 shadow-xl"
+                            className="w-[240px] md:w-[300px] flex flex-col items-center rounded-[2rem] px-5 md:px-7 py-6 md:py-8 bg-white dark:bg-stone-900 shadow-xl"
                           >
                              <div className="space-y-1 mb-5 w-full">
                                 <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 leading-tight">Restart Level?</h3>

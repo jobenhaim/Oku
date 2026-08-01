@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AchievementItem, getOtherAchievements, getPackAchievements, getProfileTitle, getTitleAchievement, MAX_PROFILE_RANK } from '../../utils/achievements';
 import { Storage } from '../../utils/storage';
 import { sounds } from '../../utils/sound';
-import { AnimatedNumber } from '../ui/AnimatedNumber';
+import { DiamondBalancePill } from '../ui/DiamondBalancePill';
 import { Icons } from '../ui/Icons';
 import { Difficulty } from '../../types';
 import { useTactilePress } from '../../hooks/useTactilePress';
@@ -160,7 +160,7 @@ const AchievementRow: React.FC<{
                 onPointerLeave={cancelPointerPress}
                 onClick={handleClick}
                 disabled={!achievement.ready || isClaiming}
-                className={`relative block w-full h-full px-4 py-3 text-left rounded-[1.25rem] border overflow-hidden focus:outline-none transition-colors duration-[650ms] ease-in-out ${
+                className={`relative block w-full h-full px-4 md:px-5 py-3 md:py-4 text-left rounded-[1.25rem] border overflow-hidden focus:outline-none transition-colors duration-[650ms] ease-in-out ${
                     achievement.claimed
                         ? 'bg-stone-100/90 dark:bg-stone-900/70 border-stone-200/60 dark:border-stone-800/70 shadow-none'
                         : achievement.ready
@@ -171,13 +171,13 @@ const AchievementRow: React.FC<{
                 {achievement.ready && (
                     <span
                         aria-label="Ready to claim"
-                        className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_0_3px_rgba(239,68,68,0.12)]"
+                        className="absolute top-2.5 md:top-3.5 right-2.5 md:right-3.5 w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-red-500 shadow-[0_0_0_3px_rgba(239,68,68,0.12)]"
                     />
                 )}
-                <div className="flex items-center gap-3 h-full">
+                <div className="flex items-center gap-3 md:gap-4 h-full">
                     <div className="min-w-0 flex-1 flex flex-col justify-center">
                         <div className="flex items-center gap-2">
-                            <span className={`text-[15px] font-bold leading-tight truncate transition-colors duration-[650ms] ease-in-out ${achievement.claimed ? 'text-stone-500 dark:text-stone-500' : 'text-stone-900 dark:text-white'}`}>
+                            <span className={`text-[15px] md:text-[18px] font-bold leading-tight truncate transition-colors duration-[650ms] ease-in-out ${achievement.claimed ? 'text-stone-500 dark:text-stone-500' : 'text-stone-900 dark:text-white'}`}>
                                 {achievement.title}
                             </span>
                             {achievement.claimed && (
@@ -186,34 +186,34 @@ const AchievementRow: React.FC<{
                                 </span>
                             )}
                         </div>
-                        <span className="block text-[11px] font-medium text-stone-500 dark:text-stone-400 mt-1 leading-tight">
+                        <span className="block text-[11px] md:text-[13px] font-medium text-stone-500 dark:text-stone-400 mt-1 leading-tight">
                             {achievement.detail}
                         </span>
 
                         {showProgress && (
-                            <div className="h-2 mt-2 flex items-center gap-2.5">
-                                <div className="h-2 flex-1 rounded-full bg-stone-100 dark:bg-stone-700 overflow-hidden">
+                            <div className="h-2 md:h-2.5 mt-2 md:mt-2.5 flex items-center gap-2.5 md:gap-3">
+                                <div className="h-2 md:h-2.5 flex-1 rounded-full bg-stone-100 dark:bg-stone-700 overflow-hidden">
                                     <div
                                         className={`h-full rounded-full transition-[width] duration-700 ease-in-out ${achievement.ready ? 'bg-emerald-400 dark:bg-emerald-400' : 'bg-emerald-300 dark:bg-emerald-500/70'}`}
                                         style={{ width: `${progress}%` }}
                                     />
                                 </div>
-                                <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 tabular-nums shrink-0">
+                                <span className="text-[10px] md:text-[12px] font-bold text-stone-500 dark:text-stone-400 tabular-nums shrink-0">
                                     {Math.min(achievement.current, achievement.target)}/{achievement.target}
                                 </span>
                             </div>
                         )}
                     </div>
 
-                    <div className={`min-w-[4.25rem] h-10 px-3 rounded-full flex items-center justify-center gap-1.5 shrink-0 bg-white dark:bg-white border transition-colors duration-[650ms] ease-in-out ${
+                    <div className={`min-w-[4.25rem] md:min-w-[5.5rem] h-10 md:h-12 px-3 md:px-4 rounded-full flex items-center justify-center gap-1.5 md:gap-2 shrink-0 bg-white dark:bg-white border transition-colors duration-[650ms] ease-in-out ${
                         achievement.claimed ? 'border-stone-300' : 'border-stone-800'
                     }`}>
-                        <span className={`text-sm font-bold tabular-nums transition-colors duration-[650ms] ease-in-out ${
+                        <span className={`text-sm md:text-base font-bold tabular-nums transition-colors duration-[650ms] ease-in-out ${
                             achievement.claimed ? 'text-stone-400' : 'text-stone-900'
                         }`}>
                             {achievement.reward}
                         </span>
-                        <Icons.Diamond className={`w-3.5 h-3.5 fill-current transition-colors duration-[650ms] ease-in-out ${
+                        <Icons.Diamond className={`w-3.5 h-3.5 md:w-4 md:h-4 fill-current transition-colors duration-[650ms] ease-in-out ${
                             achievement.claimed ? 'text-stone-400' : 'text-blue-500'
                         }`} />
                     </div>
@@ -231,7 +231,7 @@ const AchievementList: React.FC<{
     emptyDetail: string;
 }> = ({ achievements, onClaim, enteringAchievementIds, emptyTitle, emptyDetail }) => (
     achievements.length > 0 ? (
-        <div className="flex flex-col gap-2.5 animate-fade-in-fast">
+        <div className="flex flex-col gap-2.5 md:gap-3.5 animate-fade-in-fast">
             {achievements.map((achievement) => (
                 <AchievementRow
                     key={achievement.id}
@@ -242,10 +242,10 @@ const AchievementList: React.FC<{
             ))}
         </div>
     ) : (
-        <div className="animate-fade-in-fast rounded-[1.25rem] border border-stone-200/80 dark:border-stone-800 bg-white/75 dark:bg-stone-900/75 px-5 py-7 text-center">
-            <Icons.Check className="w-7 h-7 mx-auto text-emerald-400 mb-2" />
-            <span className="block text-sm font-bold text-stone-800 dark:text-stone-100">{emptyTitle}</span>
-            <span className="block mt-1 text-[11px] font-medium text-stone-500 dark:text-stone-400">{emptyDetail}</span>
+        <div className="animate-fade-in-fast rounded-[1.25rem] border border-stone-200/80 dark:border-stone-800 bg-white/75 dark:bg-stone-900/75 px-5 md:px-7 py-7 md:py-9 text-center">
+            <Icons.Check className="w-7 h-7 md:w-8 md:h-8 mx-auto text-emerald-400 mb-2" />
+            <span className="block text-sm md:text-base font-bold text-stone-800 dark:text-stone-100">{emptyTitle}</span>
+            <span className="block mt-1 text-[11px] md:text-[13px] font-medium text-stone-500 dark:text-stone-400">{emptyDetail}</span>
         </div>
     )
 );
@@ -444,24 +444,21 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
     return (
         <div className="w-full h-full bg-transparent flex flex-col font-sans text-t-primary">
-            <header className="w-full max-w-md mx-auto flex items-center justify-between px-6 pt-4 pb-4 relative shrink-0 z-20">
-                <button onClick={onClose} aria-label="Back to menu" className="p-2 rounded-full -ml-2 text-t-icon active:scale-95 transition-transform relative z-30">
-                    <Icons.Back className="w-6 h-6 text-t-icon" />
+            <header className="w-full max-w-md md:max-w-[700px] mx-auto flex items-center justify-between px-6 md:px-0 pt-4 md:pt-7 pb-4 relative shrink-0 z-20">
+                <button onClick={onClose} aria-label="Back to menu" className="p-2 md:p-2.5 rounded-full -ml-2 text-t-icon active:scale-95 transition-transform relative z-30">
+                    <Icons.Back className="w-6 h-6 md:w-7 md:h-7 text-t-icon" />
                 </button>
 
                 <div className="flex flex-col items-center absolute left-0 right-0 pointer-events-none z-20">
-                    <h1 className="text-xl font-bold text-t-primary leading-none">Profile</h1>
+                    <h1 className="text-xl md:text-2xl font-bold text-t-primary leading-none">Profile</h1>
                 </div>
 
-                <div className="flex items-center gap-1 bg-t-surface px-3 py-2 rounded-full shadow-sm relative z-30 border border-stone-200/60 dark:border-stone-800">
-                    <AnimatedNumber value={points} easing="easeOut" durationMs={1000} className="text-sm font-bold text-t-primary tabular-nums" />
-                    <Icons.Diamond className="w-3 h-3 text-blue-500 fill-current" />
-                </div>
+                <DiamondBalancePill points={points} />
             </header>
 
-            <main className="scroll-edge-fade flex-1 overflow-y-auto hide-scrollbar px-6 pb-8">
-                <div className="w-full max-w-md mx-auto space-y-6">
-                    <section className="flex flex-col items-center text-center pt-3">
+            <main className="scroll-edge-fade flex-1 overflow-y-auto hide-scrollbar px-6 md:px-0 pb-8">
+                <div className="w-full max-w-md md:max-w-[620px] mx-auto space-y-6 md:space-y-8">
+                    <section className="flex flex-col items-center text-center pt-3 md:pt-5">
                         {!profile.hasEditedName && !isEditingName && (
                             <span className="text-[9px] font-bold text-stone-400 dark:text-stone-500 tracking-[0.18em] mb-1.5">TAP TO EDIT</span>
                         )}
@@ -473,20 +470,20 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                                 onBlur={() => setIsEditingName(false)}
                                 onKeyDown={(event) => event.key === 'Enter' && setIsEditingName(false)}
                                 maxLength={20}
-                                className="text-3xl font-bold bg-transparent border-b border-stone-300 dark:border-stone-600 text-center focus:outline-none w-full"
+                                className="text-3xl md:text-4xl font-bold bg-transparent border-b border-stone-300 dark:border-stone-600 text-center focus:outline-none w-full"
                             />
                         ) : (
-                            <button type="button" onClick={() => { sounds.playClick(); setIsEditingName(true); }} className="max-w-full text-3xl font-bold leading-tight truncate active:scale-[0.98] transition-transform">
+                            <button type="button" onClick={() => { sounds.playClick(); setIsEditingName(true); }} className="max-w-full text-3xl md:text-4xl font-bold leading-tight truncate active:scale-[0.98] transition-transform">
                                 {profile.username || 'Anonymous'}
                             </button>
                         )}
-                        <span className="mt-3 px-4 py-2 rounded-full bg-white dark:bg-white border border-stone-800 dark:border-stone-800 text-sm font-bold text-blue-700 dark:text-blue-700">
+                        <span className="mt-3 md:mt-4 px-4 md:px-5 py-2 md:py-2.5 rounded-full bg-white dark:bg-white border border-stone-800 dark:border-stone-800 text-sm md:text-base font-bold text-blue-700 dark:text-blue-700">
                             {currentTitle}
                         </span>
                     </section>
 
                     <section className="space-y-2.5">
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-3 md:gap-4">
                             <div className="oku-profile-stat-shell rounded-[1.4rem]">
                                 <button
                                     type="button"
@@ -495,19 +492,19 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                                     onPointerLeave={() => statPress.cancelPress('games')}
                                     onClick={() => gamesWonBreakdown.length > 0 && statPress.runPressCycle('games', () => toggleStat('games', true))}
                                     aria-expanded={expandedStat === 'games'}
-                                    className={`oku-profile-stat-card ${statPress.pressedId === 'games' ? 'oku-profile-stat-card--pressed' : ''} relative w-full min-h-[112px] overflow-hidden rounded-[1.4rem] border p-4 text-left bg-white dark:bg-stone-900 ${expandedStat === 'games' ? 'border-amber-300 dark:border-amber-700' : 'border-stone-200/80 dark:border-stone-800'}`}
+                                    className={`oku-profile-stat-card ${statPress.pressedId === 'games' ? 'oku-profile-stat-card--pressed' : ''} relative w-full min-h-[112px] md:min-h-[140px] overflow-hidden rounded-[1.4rem] border p-4 md:p-5 text-left bg-white dark:bg-stone-900 ${expandedStat === 'games' ? 'border-amber-300 dark:border-amber-700' : 'border-stone-200/80 dark:border-stone-800'}`}
                                 >
                                     <Icons.Trophy className="absolute -right-10 -bottom-16 w-48 h-48 opacity-[0.105] pointer-events-none" />
                                     {gamesWonBreakdown.length > 0 && (
-                                        <span className="absolute z-20 right-4 top-4 w-8 h-8 rounded-full bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 flex items-center justify-center border border-stone-100 dark:border-stone-700">
-                                            <Icons.Down className={`w-4 h-4 transition-transform duration-200 ${expandedStat === 'games' ? 'rotate-180' : ''}`} />
+                                        <span className="absolute z-20 right-4 md:right-5 top-4 md:top-5 w-8 h-8 md:w-10 md:h-10 rounded-full bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 flex items-center justify-center border border-stone-100 dark:border-stone-700">
+                                            <Icons.Down className={`w-4 h-4 md:w-5 md:h-5 transition-transform duration-200 ${expandedStat === 'games' ? 'rotate-180' : ''}`} />
                                         </span>
                                     )}
-                                    <div className="relative z-10 mt-5">
-                                        <span className="block text-[2.15rem] font-bold tracking-[0.035em] tabular-nums leading-none text-stone-900 dark:text-stone-50">
+                                    <div className="relative z-10 mt-5 md:mt-7">
+                                        <span className="block text-[2.15rem] md:text-[2.6rem] font-bold tracking-[0.035em] tabular-nums leading-none text-stone-900 dark:text-stone-50">
                                             {storedData.stats?.totalGamesWon || 0}
                                         </span>
-                                        <span className="block mt-1.5 text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.13em]">Games Won</span>
+                                        <span className="block mt-1.5 md:mt-2 text-[11px] md:text-[13px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.13em]">Games Won</span>
                                     </div>
                                 </button>
                             </div>
@@ -519,19 +516,19 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                                     onPointerLeave={() => statPress.cancelPress('diamonds')}
                                     onClick={() => diamondBreakdown.length > 0 && statPress.runPressCycle('diamonds', () => toggleStat('diamonds', true))}
                                     aria-expanded={expandedStat === 'diamonds'}
-                                    className={`oku-profile-stat-card ${statPress.pressedId === 'diamonds' ? 'oku-profile-stat-card--pressed' : ''} relative w-full min-h-[112px] overflow-hidden rounded-[1.4rem] border p-4 text-left bg-white dark:bg-stone-900 ${expandedStat === 'diamonds' ? 'border-blue-300 dark:border-blue-700' : 'border-stone-200/80 dark:border-stone-800'}`}
+                                    className={`oku-profile-stat-card ${statPress.pressedId === 'diamonds' ? 'oku-profile-stat-card--pressed' : ''} relative w-full min-h-[112px] md:min-h-[140px] overflow-hidden rounded-[1.4rem] border p-4 md:p-5 text-left bg-white dark:bg-stone-900 ${expandedStat === 'diamonds' ? 'border-blue-300 dark:border-blue-700' : 'border-stone-200/80 dark:border-stone-800'}`}
                                 >
                                     <Icons.Diamond className="absolute -right-8 -bottom-12 w-40 h-40 text-blue-500 fill-current opacity-[0.095] pointer-events-none" />
                                     {diamondBreakdown.length > 0 && (
-                                        <span className="absolute z-20 right-4 top-4 w-8 h-8 rounded-full bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 flex items-center justify-center border border-stone-100 dark:border-stone-700">
-                                            <Icons.Down className={`w-4 h-4 transition-transform duration-200 ${expandedStat === 'diamonds' ? 'rotate-180' : ''}`} />
+                                        <span className="absolute z-20 right-4 md:right-5 top-4 md:top-5 w-8 h-8 md:w-10 md:h-10 rounded-full bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 flex items-center justify-center border border-stone-100 dark:border-stone-700">
+                                            <Icons.Down className={`w-4 h-4 md:w-5 md:h-5 transition-transform duration-200 ${expandedStat === 'diamonds' ? 'rotate-180' : ''}`} />
                                         </span>
                                     )}
-                                    <div className="relative z-10 mt-5">
-                                        <span className="block text-[2.15rem] font-bold tracking-[0.035em] tabular-nums leading-none text-stone-900 dark:text-stone-50">
+                                    <div className="relative z-10 mt-5 md:mt-7">
+                                        <span className="block text-[2.15rem] md:text-[2.6rem] font-bold tracking-[0.035em] tabular-nums leading-none text-stone-900 dark:text-stone-50">
                                             {storedData.stats?.totalDiamondsEarned || 0}
                                         </span>
-                                        <span className="block mt-1.5 text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.13em]">Diamonds Earned</span>
+                                        <span className="block mt-1.5 md:mt-2 text-[11px] md:text-[13px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.13em]">Diamonds Earned</span>
                                     </div>
                                 </button>
                             </div>
@@ -542,9 +539,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         >
                             <div className="overflow-hidden">
                                 <div className="rounded-[1.25rem] border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm">
-                                    <div className="px-4 py-3.5 space-y-3">
+                                    <div className="px-4 md:px-5 py-3.5 md:py-4 space-y-3 md:space-y-3.5">
                                         {(visibleStatBreakdown === 'games' ? gamesWonBreakdown : diamondBreakdown).map((item) => (
-                                            <div key={item.label} className="flex items-center justify-between text-sm font-semibold">
+                                            <div key={item.label} className="flex items-center justify-between text-sm md:text-base font-semibold">
                                                 <span className="flex items-center gap-2 text-stone-600 dark:text-stone-300">
                                                     <span className={`w-1.5 h-1.5 rounded-full ${visibleStatBreakdown === 'games' ? 'bg-amber-400' : 'bg-blue-400'}`} />
                                                     {item.label}
@@ -563,15 +560,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
                     <div>
                         <div className="flex items-center justify-between mb-3 px-1 gap-3">
-                            <h2 className="text-2xl font-bold">Achievements</h2>
+                            <h2 className="text-2xl md:text-3xl font-bold">Achievements</h2>
                             <div className="flex items-center gap-2.5 shrink-0">
                                 <button
                                     type="button"
                                     onClick={() => { sounds.playClick(); setHideCompleted((current) => !current); }}
                                     aria-pressed={hideCompleted}
-                                    className="h-8 pl-2.5 pr-2 rounded-full bg-t-surface border border-stone-200/80 dark:border-stone-800 shadow-sm flex items-center gap-2 active:scale-95 transition-transform"
+                                    className="h-8 md:h-10 pl-2.5 md:pl-3.5 pr-2 md:pr-2.5 rounded-full bg-t-surface border border-stone-200/80 dark:border-stone-800 shadow-sm flex items-center gap-2 md:gap-2.5 active:scale-95 transition-transform"
                                 >
-                                    <span className="text-[9px] font-bold text-stone-600 dark:text-stone-300 whitespace-nowrap">Hide completed</span>
+                                    <span className="text-[9px] md:text-[11px] font-bold text-stone-600 dark:text-stone-300 whitespace-nowrap">Hide completed</span>
                                     <span className={`inline-block w-7 h-4 rounded-full p-0.5 transition-colors duration-200 ${hideCompleted ? 'bg-blue-500' : 'bg-stone-300 dark:bg-stone-600'}`}>
                                         <span className={`block w-3 h-3 rounded-full bg-white shadow-sm transition-transform duration-200 ${hideCompleted ? 'translate-x-3' : 'translate-x-0'}`} />
                                     </span>
@@ -582,7 +579,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         <div
                             role="tablist"
                             aria-label="Achievement categories"
-                            className="oku-segmented-control w-full p-1 rounded-xl flex items-stretch relative min-h-[44px] mb-3"
+                            className="oku-segmented-control w-full p-1 rounded-xl flex items-stretch relative min-h-[44px] md:min-h-[52px] mb-3 md:mb-4"
                         >
                             {ACHIEVEMENT_CATEGORIES.map((category) => {
                                 const isActive = activeAchievementCategory === category.id;
@@ -602,7 +599,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                                             setAchievementCategoryDirection(nextIndex > currentIndex ? 1 : -1);
                                             setActiveAchievementCategory(category.id);
                                         }}
-                                        className={`flex-1 py-2 px-0.5 text-[10px] font-bold transition-all relative z-10 flex items-center justify-center ${
+                                        className={`flex-1 py-2 px-0.5 text-[10px] md:text-[12px] font-bold transition-all relative z-10 flex items-center justify-center ${
                                             isActive
                                                 ? 'text-stone-900 dark:text-white'
                                                 : 'text-stone-400 dark:text-stone-400'

@@ -4,13 +4,12 @@ import { Storage } from '../../utils/storage';
 import { Icons } from '../ui/Icons';
 import { UnlockCard } from '../ui/UnlockCard';
 import { getPackCost, formatTimeShort } from '../../utils/constants';
-import { AnimatedNumber } from '../ui/AnimatedNumber';
+import { DiamondBalancePill } from '../ui/DiamondBalancePill';
 import { sounds } from '../../utils/sound';
 import { useTactilePress } from '../../hooks/useTactilePress';
 
 const BOOK_REVEAL_ROW_GAP_MS = 126;
 const BOOK_REVEAL_ROW_DURATION_MS = 360;
-const BOOK_REVEAL_ROW_COUNT = 20;
 const BOOK_UNLOCK_CARD_FADE_MS = 1500;
 const BOOK_LEVELS_AFTER_FADE_DELAY_MS = 100;
 
@@ -26,9 +25,11 @@ interface LevelButtonProps {
     isLocked: boolean;
     onPressStart: (levelId: number) => void;
     onPressCancel: (levelId: number) => void;
+    isRevealing?: boolean;
+    revealDelayMs?: number;
 }
 
-const LevelButton = React.memo(({ levelId, status, bestTime, isGlobalBest, showTimer, onSelect, isPressed, isLocked, onPressStart, onPressCancel }: LevelButtonProps) => {
+const LevelButton = React.memo(({ levelId, status, bestTime, isGlobalBest, showTimer, onSelect, isPressed, isLocked, onPressStart, onPressCancel, isRevealing = false, revealDelayMs = 0 }: LevelButtonProps) => {
     const isSolved = bestTime !== undefined || status === 'completed';
     const isInProgress = status === 'in-progress';
 
@@ -46,7 +47,10 @@ const LevelButton = React.memo(({ levelId, status, bestTime, isGlobalBest, showT
     }
 
     return (
-        <div className="oku-level-shell aspect-square rounded-xl">
+        <div
+            className={`oku-level-shell aspect-square rounded-xl md:rounded-2xl ${isRevealing ? 'oku-book-level-row-reveal' : ''}`}
+            style={isRevealing ? { animationDelay: `${revealDelayMs}ms` } : undefined}
+        >
             <button
                 onPointerDown={() => onPressStart(levelId)}
                 onPointerCancel={() => onPressCancel(levelId)}
@@ -138,6 +142,17 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
     const levelReleaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const levelActionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const bookPress = useTactilePress<number>();
+    const [isTabletLayout, setIsTabletLayout] = useState(() => (
+        typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
+    ));
+
+    useEffect(() => {
+        const tabletQuery = window.matchMedia('(min-width: 768px)');
+        const updateTabletLayout = () => setIsTabletLayout(tabletQuery.matches);
+        updateTabletLayout();
+        tabletQuery.addEventListener('change', updateTabletLayout);
+        return () => tabletQuery.removeEventListener('change', updateTabletLayout);
+    }, []);
 
     useEffect(() => {
         return () => {
@@ -288,14 +303,18 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
             setFadingUnlockedBook(null);
             setRevealingBook(newlyUnlockedBook);
 
-            for (let rowIndex = 0; rowIndex < BOOK_REVEAL_ROW_COUNT; rowIndex++) {
+            const revealRowCount = window.matchMedia('(min-width: 768px)').matches
+                ? Math.ceil(100 / 8)
+                : Math.ceil(100 / 5);
+
+            for (let rowIndex = 0; rowIndex < revealRowCount; rowIndex++) {
                 bookRevealTimersRef.current.push(setTimeout(() => {
                     sounds.playBookRowReveal(rowIndex);
                 }, 35 + rowIndex * BOOK_REVEAL_ROW_GAP_MS));
             }
 
             const revealDuration = (
-                (BOOK_REVEAL_ROW_COUNT - 1) * BOOK_REVEAL_ROW_GAP_MS
+                (revealRowCount - 1) * BOOK_REVEAL_ROW_GAP_MS
                 + BOOK_REVEAL_ROW_DURATION_MS
             );
             bookRevealTimersRef.current.push(setTimeout(() => {
@@ -342,8 +361,8 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
         if (activeTab === 1) {
             const levels = Array.from({ length: 100 }, (_, i) => i + 1);
             return (
-                <div className="flex flex-col items-center w-full max-w-md">
-                    <div className="w-full grid grid-cols-5 gap-3 pt-2 pb-6">
+                <div className="flex flex-col items-center w-full max-w-md md:max-w-[700px]">
+                    <div className="w-full grid grid-cols-5 md:grid-cols-8 gap-3 pt-2 md:pt-4 pb-6 md:pb-8">
                         {levels.map((lvl) => {
                             const key = `${difficulty}-${lvl}`;
                             const progress = progressMap[key];
@@ -371,7 +390,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
         if (activeTab === 2) {
             if (!isPack2Unlocked || isBook2UnlockTransition) {
                 return (
-                    <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-md pb-20 animate-fade-in-fast ${
+                    <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-md md:max-w-[700px] pb-20 md:pb-24 animate-fade-in-fast ${
                         isBook2UnlockTransition ? 'oku-book-unlock-card-fade-out pointer-events-none' : ''
                     }`}>
                         <UnlockCard 
@@ -396,43 +415,31 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                 );
             }
             const levels = Array.from({ length: 100 }, (_, i) => i + 101);
-            const rows = Array.from({ length: BOOK_REVEAL_ROW_COUNT }, (_, rowIndex) =>
-                levels.slice(rowIndex * 5, rowIndex * 5 + 5)
-            );
             return (
-                <div className="flex flex-col items-center w-full max-w-md">
-                    <div className="w-full flex flex-col gap-3 pt-2 pb-6">
-                        {rows.map((row, rowIndex) => (
-                            <div
-                                key={`book-2-row-${rowIndex}`}
-                                className={`grid grid-cols-5 gap-3 ${
-                                    revealingBook === 2 ? 'oku-book-level-row-reveal' : ''
-                                }`}
-                                style={revealingBook === 2
-                                    ? { animationDelay: `${rowIndex * BOOK_REVEAL_ROW_GAP_MS}ms` }
-                                    : undefined}
-                            >
-                                {row.map((lvl) => {
-                                    const key = `${difficulty}-${lvl}`;
-                                    const progress = progressMap[key];
-                                    return (
-                                        <LevelButton
-                                            key={lvl}
-                                            levelId={lvl}
-                                            status={getDisplayStatus(progress)}
-                                            bestTime={progress?.bestTime}
-                                            isGlobalBest={globalBest !== undefined && progress?.bestTime === globalBest}
-                                            showTimer={showTimer}
-                                            onSelect={runLevelPressCycle}
-                                            isPressed={pressedLevelId === lvl}
-                                            isLocked={isLevelInteractionLocked || revealingBook === 2}
-                                            onPressStart={beginLevelPress}
-                                            onPressCancel={cancelLevelPress}
-                                        />
-                                    );
-                                })}
-                            </div>
-                        ))}
+                <div className="flex flex-col items-center w-full max-w-md md:max-w-[700px]">
+                    <div className="w-full grid grid-cols-5 md:grid-cols-8 gap-3 pt-2 md:pt-4 pb-6 md:pb-8">
+                        {levels.map((lvl, levelIndex) => {
+                            const key = `${difficulty}-${lvl}`;
+                            const progress = progressMap[key];
+                            const revealRowIndex = Math.floor(levelIndex / (isTabletLayout ? 8 : 5));
+                            return (
+                                <LevelButton
+                                    key={lvl}
+                                    levelId={lvl}
+                                    status={getDisplayStatus(progress)}
+                                    bestTime={progress?.bestTime}
+                                    isGlobalBest={globalBest !== undefined && progress?.bestTime === globalBest}
+                                    showTimer={showTimer}
+                                    onSelect={runLevelPressCycle}
+                                    isPressed={pressedLevelId === lvl}
+                                    isLocked={isLevelInteractionLocked || revealingBook === 2}
+                                    onPressStart={beginLevelPress}
+                                    onPressCancel={cancelLevelPress}
+                                    isRevealing={revealingBook === 2}
+                                    revealDelayMs={revealRowIndex * BOOK_REVEAL_ROW_GAP_MS}
+                                />
+                            );
+                        })}
                     </div>
                 </div>
             );
@@ -441,7 +448,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
         if (activeTab === 3) {
             if (!isPack3Unlocked || isBook3UnlockTransition) {
                 return (
-                    <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-md pb-20 animate-fade-in-fast ${
+                    <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-md md:max-w-[700px] pb-20 md:pb-24 animate-fade-in-fast ${
                         isBook3UnlockTransition ? 'oku-book-unlock-card-fade-out pointer-events-none' : ''
                     }`}>
                         <UnlockCard 
@@ -466,43 +473,31 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                 );
             }
             const levels = Array.from({ length: 100 }, (_, i) => i + 201);
-            const rows = Array.from({ length: BOOK_REVEAL_ROW_COUNT }, (_, rowIndex) =>
-                levels.slice(rowIndex * 5, rowIndex * 5 + 5)
-            );
             return (
-                <div className="flex flex-col items-center w-full max-w-md">
-                    <div className="w-full flex flex-col gap-3 pt-2 pb-6">
-                        {rows.map((row, rowIndex) => (
-                            <div
-                                key={`book-3-row-${rowIndex}`}
-                                className={`grid grid-cols-5 gap-3 ${
-                                    revealingBook === 3 ? 'oku-book-level-row-reveal' : ''
-                                }`}
-                                style={revealingBook === 3
-                                    ? { animationDelay: `${rowIndex * BOOK_REVEAL_ROW_GAP_MS}ms` }
-                                    : undefined}
-                            >
-                                {row.map((lvl) => {
-                                    const key = `${difficulty}-${lvl}`;
-                                    const progress = progressMap[key];
-                                    return (
-                                        <LevelButton
-                                            key={lvl}
-                                            levelId={lvl}
-                                            status={getDisplayStatus(progress)}
-                                            bestTime={progress?.bestTime}
-                                            isGlobalBest={globalBest !== undefined && progress?.bestTime === globalBest}
-                                            showTimer={showTimer}
-                                            onSelect={runLevelPressCycle}
-                                            isPressed={pressedLevelId === lvl}
-                                            isLocked={isLevelInteractionLocked || revealingBook === 3}
-                                            onPressStart={beginLevelPress}
-                                            onPressCancel={cancelLevelPress}
-                                        />
-                                    );
-                                })}
-                            </div>
-                        ))}
+                <div className="flex flex-col items-center w-full max-w-md md:max-w-[700px]">
+                    <div className="w-full grid grid-cols-5 md:grid-cols-8 gap-3 pt-2 md:pt-4 pb-6 md:pb-8">
+                        {levels.map((lvl, levelIndex) => {
+                            const key = `${difficulty}-${lvl}`;
+                            const progress = progressMap[key];
+                            const revealRowIndex = Math.floor(levelIndex / (isTabletLayout ? 8 : 5));
+                            return (
+                                <LevelButton
+                                    key={lvl}
+                                    levelId={lvl}
+                                    status={getDisplayStatus(progress)}
+                                    bestTime={progress?.bestTime}
+                                    isGlobalBest={globalBest !== undefined && progress?.bestTime === globalBest}
+                                    showTimer={showTimer}
+                                    onSelect={runLevelPressCycle}
+                                    isPressed={pressedLevelId === lvl}
+                                    isLocked={isLevelInteractionLocked || revealingBook === 3}
+                                    onPressStart={beginLevelPress}
+                                    onPressCancel={cancelLevelPress}
+                                    isRevealing={revealingBook === 3}
+                                    revealDelayMs={revealRowIndex * BOOK_REVEAL_ROW_GAP_MS}
+                                />
+                            );
+                        })}
                     </div>
                 </div>
             );
@@ -511,17 +506,17 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
 
     return (
         <div className="flex-1 w-full flex flex-col items-center overflow-hidden relative">
-            <div className="w-full max-w-md flex flex-col items-center px-6 pt-4 shrink-0 z-20 gap-4">
+            <div className="w-full max-w-md md:max-w-[700px] flex flex-col items-center px-6 md:px-0 pt-4 md:pt-7 shrink-0 z-20 gap-4 md:gap-6">
                 
                 {/* Header Row */}
                 <div className="w-full flex items-center justify-between relative">
-                    <button onClick={onBack} aria-label="Back to difficulties" className="p-2 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
-                        <Icons.Back className="w-6 h-6 text-t-icon" />
+                    <button onClick={onBack} aria-label="Back to difficulties" className="p-2 md:p-2.5 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
+                        <Icons.Back className="w-6 h-6 md:w-7 md:h-7 text-t-icon" />
                     </button>
                     
                     <div className="flex flex-col items-center absolute left-0 right-0 pointer-events-none z-20">
-                        <h1 className="text-xl font-bold leading-none">{difficulty}</h1>
-                        <p className="text-xs font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-[0.2em] mt-1">Select Level</p>
+                        <h1 className="text-xl md:text-2xl font-bold leading-none">{difficulty}</h1>
+                        <p className="text-xs md:text-sm font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-[0.2em] mt-1 md:mt-1.5">Select Level</p>
                         {showTimer && globalBest !== undefined && (
                             <div className="flex flex-col items-center animate-fade-in-fast mt-1">
                                 <span className="text-[10px] font-bold text-amber-500 tracking-widest uppercase mb-px opacity-90">Best: {formatTimeShort(globalBest)}</span>
@@ -529,15 +524,12 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                         )}
                     </div>
 
-                    <div className="flex items-center gap-1.5 bg-t-surface px-3 py-1.5 rounded-full shadow-sm relative z-30">
-                        <AnimatedNumber value={points} easing="easeOut" durationMs={1500} className="text-sm font-semibold text-t-primary tabular-nums leading-none pt-0.5" />
-                        <div className="text-blue-500"><Icons.Diamond className="w-3.5 h-3.5 fill-current" /></div>
-                    </div>
+                    <DiamondBalancePill points={points} />
                 </div>
 
                 {/* Tab Navigation (Scrollable Pills) */}
-                <div className="w-full overflow-x-auto hide-scrollbar touch-pan-x pb-2 pt-1 -mx-6 px-6">
-                    <div className="flex gap-3 min-w-min mx-auto md:mx-0">
+                <div className="w-full overflow-x-auto hide-scrollbar touch-pan-x pb-2 md:pb-3 pt-1 -mx-6 md:mx-0 px-6 md:px-0">
+                    <div className="flex w-max gap-3 md:gap-4 min-w-min mx-auto">
                         {visibleTabs.map((tabNum) => {
                             const isActive = activeTab === tabNum;
                             // Only confirm lock if it's strictly the next unavailable one
@@ -559,14 +551,14 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                                         }}
                                         aria-pressed={isActive}
                                         className={`
-                                            oku-book-tab-face ${isActive ? 'oku-book-tab-face--selected' : ''} ${bookPress.pressedId === tabNum ? 'oku-book-tab-face--pressed' : ''} px-6 py-2.5 rounded-full text-xs font-bold flex items-center justify-center gap-2 whitespace-nowrap border-2
+                                            oku-book-tab-face ${isActive ? 'oku-book-tab-face--selected' : ''} ${bookPress.pressedId === tabNum ? 'oku-book-tab-face--pressed' : ''} px-6 md:px-8 py-2.5 md:py-3 rounded-full text-xs md:text-sm font-bold flex items-center justify-center gap-2 whitespace-nowrap border-2
                                             ${isActive
                                                 ? 'bg-white border-stone-700 text-stone-900 dark:bg-stone-800 dark:border-stone-300 dark:text-white'
                                                 : 'bg-white border-stone-200 text-stone-500 dark:bg-stone-800 dark:border-stone-700 dark:text-stone-400'
                                             }
                                         `}
                                     >
-                                        {isLocked && <Icons.Lock className="w-3 h-3 opacity-60" />}
+                                        {isLocked && <Icons.Lock className="w-3 h-3 md:w-3.5 md:h-3.5 opacity-60" />}
                                         <span>Book {tabNum}</span>
                                     </button>
                                 </div>
@@ -579,7 +571,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
             {/* Scrollable Content Area */}
             <div 
                 ref={scrollContainerRef}
-                className="scroll-edge-fade flex-1 w-full overflow-y-auto px-6 pb-6 hide-scrollbar flex flex-col items-center relative"
+                className="scroll-edge-fade flex-1 w-full overflow-y-auto px-6 md:px-10 pb-6 md:pb-8 hide-scrollbar flex flex-col items-center relative"
             >
                 {renderContent()}
                 <div className="h-safe-bottom w-full shrink-0" />

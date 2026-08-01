@@ -5,7 +5,7 @@ import { Storage } from '../../utils/storage';
 import { Icons } from '../ui/Icons';
 import { sounds } from '../../utils/sound';
 import { getDifficultyPoints, DIFFICULTY_DESCRIPTIONS } from '../../utils/constants';
-import { AnimatedNumber } from '../ui/AnimatedNumber';
+import { DiamondBalancePill } from '../ui/DiamondBalancePill';
 import { easeInOut } from '../../utils/animation';
 
 interface DifficultyScreenProps {
@@ -129,13 +129,13 @@ const DifficultyCard: React.FC<{
     const iconSizeClass = contentScale === 'large' ? 'w-[13px] h-[13px]' : (contentScale === 'medium' ? 'w-[11px] h-[11px]' : 'w-[9px] h-[9px]');
     const progressTextClass = contentScale === 'large' ? 'text-[13px]' : (contentScale === 'medium' ? 'text-[11px]' : 'text-[9px]');
     const pointsTextClass = progressTextClass;
-    const progressBarHeight = contentScale === 'large' ? 'h-3' : (contentScale === 'medium' ? 'h-2.5' : 'h-1.5');
-    const paddingClass = contentScale === 'large' ? 'p-6' : (contentScale === 'medium' ? 'p-5' : 'p-3.5');
+    const progressBarHeight = contentScale === 'large' ? 'h-3' : (contentScale === 'medium' ? 'h-2.5' : 'h-1.5 md:h-2');
+    const paddingClass = contentScale === 'large' ? 'p-6' : (contentScale === 'medium' ? 'p-5' : 'p-3.5 md:p-5');
 
     return (
         <div 
             style={finalStyle}
-            className="oku-tactile-shell rounded-2xl opacity-0 animate-slide-in-down"
+            className="oku-tactile-shell rounded-2xl md:rounded-[22px] opacity-0 animate-slide-in-down"
         >
             <button 
                 onPointerDown={onPressStart}
@@ -143,20 +143,20 @@ const DifficultyCard: React.FC<{
                 onPointerLeave={onPressCancel}
                 onClick={() => onSelect(diff)}
                 disabled={isLocked}
-                className={`oku-difficulty-glass oku-difficulty-card-tactile ${isPressed ? 'oku-difficulty-card-tactile--pressed' : ''} w-full h-full ${paddingClass} rounded-2xl flex flex-col justify-between text-left relative group overflow-visible`}
+                className={`oku-difficulty-glass oku-difficulty-card-tactile ${isPressed ? 'oku-difficulty-card-tactile--pressed' : ''} w-full h-full ${paddingClass} rounded-2xl md:rounded-[22px] flex flex-col justify-between text-left relative group overflow-visible`}
             >
                 <div className="w-full flex items-center justify-center mb-1">
-                    <span className={`w-full text-center font-bold text-stone-800 dark:text-white leading-none tracking-tight truncate ${titleClass}`}>{diff}</span>
+                    <span className={`w-full text-center font-bold text-stone-800 dark:text-white leading-none tracking-tight truncate md:text-2xl ${titleClass}`}>{diff}</span>
                 </div>
                 
                 <div className="w-full flex justify-between items-end mb-1 mt-auto">
-                    <span className={`${progressTextClass} text-stone-800 dark:text-stone-200 font-bold tracking-wide font-sans leading-none`}>
+                    <span className={`${progressTextClass} md:text-xs text-stone-800 dark:text-stone-200 font-bold tracking-wide font-sans leading-none`}>
                         {animatedCompleted} / {maxLevels}
                     </span>
 
                     <div className="flex items-center gap-0.5 shrink-0 relative z-50">
-                        <span className={`${pointsTextClass} font-bold text-stone-900 dark:text-stone-100 leading-none`}>+{diffPoints}</span>
-                        <Icons.Diamond className={`${iconSizeClass} text-blue-500 fill-current`} />
+                        <span className={`${pointsTextClass} md:text-xs font-bold text-stone-900 dark:text-stone-100 leading-none`}>+{diffPoints}</span>
+                        <Icons.Diamond className={`${iconSizeClass} md:w-3 md:h-3 text-blue-500 fill-current`} />
                     </div>
                 </div>
                 
@@ -321,26 +321,26 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     // Common style without hover/active scales
     const BTN_BG_DEFAULT = "oku-difficulty-glass";
     const BTN_TEXT_DEFAULT = "text-stone-900 dark:text-white";
-    const COMMON_BTN_STYLE = `oku-main-menu-tactile h-14 px-3 rounded-2xl flex items-center justify-center gap-2 group whitespace-nowrap`;
+    const COMMON_BTN_STYLE = `oku-main-menu-tactile h-14 md:h-16 px-3 md:px-5 rounded-2xl md:rounded-[22px] flex items-center justify-center gap-2 md:gap-2.5 group whitespace-nowrap`;
 
     return (
         <div 
             className="flex-1 w-full flex flex-col items-center overflow-hidden" 
         >
-             <div className="flex-1 w-full overflow-hidden px-6 pb-6 pt-4 flex flex-col items-center min-h-0">
+             <div className="flex-1 w-full overflow-hidden px-6 md:px-10 lg:px-14 pb-6 md:pb-8 pt-4 md:pt-6 flex flex-col items-center min-h-0">
                   
                   <div
-                    className="flex flex-col items-center mb-8 shrink-0 pt-4 opacity-0 animate-fade-in-long"
+                    className="flex flex-col items-center mb-8 md:mb-10 shrink-0 pt-4 md:pt-6 opacity-0 animate-fade-in-long"
                     style={{
                         animationDelay: `${cascadeDelayMs}ms`,
                         animationDuration: `${MAIN_MENU_FADE_DURATION_MS}ms`,
                     }}
                   >
-                      <h1 className="text-6xl font-bold text-stone-800 dark:text-stone-100 tracking-tight leading-none mb-1">Oku</h1>
-                      <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.4em] ml-1">Sudoku</span>
+                      <h1 className="text-6xl md:text-7xl font-bold text-stone-800 dark:text-stone-100 tracking-tight leading-none mb-1 md:mb-2">Oku</h1>
+                      <span className="text-xs md:text-sm font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.4em] ml-1">Sudoku</span>
                   </div>
 
-                  <div className={`w-full max-w-md aspect-[1.15/1] flex flex-wrap content-center justify-center gap-3 shrink-0 ${lastPlayedGame ? 'mb-1' : 'mb-8'}`}>
+                  <div className={`w-full max-w-md md:max-w-[620px] aspect-[1.15/1] flex flex-wrap content-center justify-center gap-3 md:gap-4 shrink-0 ${lastPlayedGame ? 'mb-1 md:mb-4' : 'mb-8 md:mb-10'}`}>
                       {visibleDifficulties.map((diff, index) => {
                           const isPyramidTop = isOddCount && index === 0 && !isOneVisible;
                           
@@ -400,13 +400,13 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                   {/* Continue Button */}
                   {lastPlayedGame && (
                   <div 
-                    className="w-full max-w-md flex justify-center mb-7 opacity-0 animate-slide-in-down shrink-0" 
+                    className="w-full max-w-md md:max-w-[620px] flex justify-center mb-7 md:mb-8 opacity-0 animate-slide-in-down shrink-0"
                     style={{
                         animationDelay: `${mainMenuCascadeDelay(200) + cascadeDelayMs}ms`,
                         animationDuration: `${MAIN_MENU_SLIDE_DURATION_MS}ms`,
                     }}
                   >
-                    <div className="oku-tactile-shell rounded-2xl w-[55%]">
+                    <div className="oku-tactile-shell rounded-2xl md:rounded-[22px] w-[55%]">
                       <button 
                         {...getMainMenuPressHandlers('continue')}
                         onClick={(e) => { 
@@ -416,24 +416,24 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                             });
                         }}
                         disabled={isMainMenuInteractionLocked}
-                        className={`oku-difficulty-glass oku-main-menu-tactile ${pressedMainMenuAction === 'continue' ? 'oku-main-menu-tactile--pressed' : ''} relative flex items-center justify-center gap-3 w-full py-3 px-5 rounded-2xl text-blue-600 dark:text-blue-400`}
+                        className={`oku-difficulty-glass oku-main-menu-tactile ${pressedMainMenuAction === 'continue' ? 'oku-main-menu-tactile--pressed' : ''} relative flex items-center justify-center gap-3 w-full py-3 md:py-4 px-5 rounded-2xl md:rounded-[22px] text-blue-600 dark:text-blue-400`}
                       >
                           <div className="flex flex-col items-center text-center">
-                              <span className="text-sm font-bold leading-none">Continue Game</span>
-                              <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 leading-none mt-1.5">
+                              <span className="text-sm md:text-base font-bold leading-none">Continue Game</span>
+                              <span className="text-xs md:text-sm font-semibold text-stone-500 dark:text-stone-400 leading-none mt-1.5">
                                   {lastPlayedGame.difficulty} - {lastPlayedGame.levelId}
                               </span>
                           </div>
-                          <Icons.Next className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          <Icons.Next className="absolute right-5 md:right-6 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-blue-600 dark:text-blue-400" />
                       </button>
                     </div>
                   </div>
                   )}
 
                   {/* Footer Actions */}
-                  <div className="w-full max-w-md flex flex-col gap-3 shrink-0">
+                  <div className="w-full max-w-md md:max-w-[620px] flex flex-col gap-3 md:gap-4 shrink-0">
                       <div 
-                        className="flex justify-center gap-3 opacity-0 animate-slide-in-down w-full" 
+                        className="flex justify-center gap-3 md:gap-4 opacity-0 animate-slide-in-down w-full"
                         style={{
                             animationDelay: `${mainMenuCascadeDelay(250) + cascadeDelayMs}ms`,
                             animationDuration: `${MAIN_MENU_SLIDE_DURATION_MS}ms`,
@@ -449,8 +449,8 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                 disabled={isMainMenuInteractionLocked}
                                 className={`${COMMON_BTN_STYLE} ${pressedMainMenuAction === 'market' ? 'oku-main-menu-tactile--pressed' : ''} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} w-full`}
                               >
-                                  <Icons.Store className="w-5 h-5" />
-                                  <span className="font-bold tracking-wide">Market</span>
+                                  <Icons.Store className="w-5 h-5 md:w-6 md:h-6" />
+                                  <span className="font-bold md:text-lg tracking-wide">Market</span>
                               </button>
                           </div>
                           
@@ -473,15 +473,15 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                   )}
 
                                   <div className="relative z-10 flex items-center gap-2">
-                                      <Icons.Star className="w-5 h-5" />
-                                      <span className="font-bold tracking-wide">Oku Shop</span>
+                                      <Icons.Star className="w-5 h-5 md:w-6 md:h-6" />
+                                      <span className="font-bold md:text-lg tracking-wide">Oku Shop</span>
                                   </div>
                               </button>
                           </div>
                       </div>
                       
                       <div 
-                        className="flex justify-center gap-3 opacity-0 animate-slide-in-down w-full"
+                        className="flex justify-center gap-3 md:gap-4 opacity-0 animate-slide-in-down w-full"
                         style={{
                             animationDelay: `${mainMenuCascadeDelay(300) + cascadeDelayMs}ms`,
                             animationDuration: `${MAIN_MENU_SLIDE_DURATION_MS}ms`,
@@ -510,15 +510,15 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                               >
                                   {!!timeLeft ? (
                                        <div className="flex items-center gap-2">
-                                          <Icons.Clock className="w-4 h-4" />
-                                          <span className="font-bold text-xs tracking-wide opacity-100">{timeLeft}</span>
+                                          <Icons.Clock className="w-4 h-4 md:w-5 md:h-5" />
+                                          <span className="font-bold text-xs md:text-sm tracking-wide opacity-100">{timeLeft}</span>
                                        </div>
                                   ) : (
                                        <div className="flex items-center gap-1.5">
-                                          <Icons.Gift className="w-5 h-5 animate-bounce" />
+                                          <Icons.Gift className="w-5 h-5 md:w-6 md:h-6 animate-bounce" />
                                           <div className="flex items-center gap-[1px]">
-                                              <span className="font-bold tracking-wide">Claim +10</span>
-                                              <Icons.Diamond className="w-3.5 h-3.5 text-blue-600 fill-current" />
+                                              <span className="font-bold md:text-lg tracking-wide">Claim +10</span>
+                                              <Icons.Diamond className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-600 fill-current" />
                                           </div>
                                        </div>
                                   )}
@@ -535,15 +535,15 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                 disabled={isMainMenuInteractionLocked}
                                 className={`${COMMON_BTN_STYLE} ${pressedMainMenuAction === 'stats' ? 'oku-main-menu-tactile--pressed' : ''} ${BTN_BG_DEFAULT} ${BTN_TEXT_DEFAULT} w-full`}
                               >
-                                  <Icons.BarChart className="w-5 h-5" />
-                                  <span className="font-bold tracking-wide">Stats</span>
+                                  <Icons.BarChart className="w-5 h-5 md:w-6 md:h-6" />
+                                  <span className="font-bold md:text-lg tracking-wide">Stats</span>
                               </button>
                           </div>
                       </div>
                   </div>
 
                   <div 
-                    className="w-full max-w-md flex items-center justify-center gap-3 mt-6 mb-2 opacity-0 animate-slide-in-down shrink-0" 
+                    className="w-full max-w-md md:max-w-[620px] flex items-center justify-center gap-3 md:gap-4 mt-6 md:mt-8 mb-2 opacity-0 animate-slide-in-down shrink-0"
                     style={{
                         animationDelay: `${mainMenuCascadeDelay(350) + cascadeDelayMs}ms`,
                         animationDuration: `${MAIN_MENU_SLIDE_DURATION_MS}ms`,
@@ -558,21 +558,16 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                               }}
                               disabled={isMainMenuInteractionLocked}
                               aria-label={hasProfileAchievement ? 'Profile, achievement ready' : 'Profile'}
-                              className={`oku-difficulty-glass oku-main-menu-tactile ${pressedMainMenuAction === 'profile' ? 'oku-main-menu-tactile--pressed' : ''} relative p-1.5 rounded-full text-t-icon overflow-visible`}
+                              className={`oku-difficulty-glass oku-main-menu-tactile ${pressedMainMenuAction === 'profile' ? 'oku-main-menu-tactile--pressed' : ''} relative p-1.5 md:p-2 rounded-full text-t-icon overflow-visible`}
                           >
-                              <Icons.User className="w-5 h-5" />
+                              <Icons.User className="w-5 h-5 md:w-6 md:h-6" />
                               {hasProfileAchievement && (
                                   <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500" aria-hidden="true" />
                               )}
                           </button>
                       </div>
 
-                      <div 
-                        className="oku-difficulty-glass flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-                      >
-                          <AnimatedNumber value={points} easing="easeOut" durationMs={1000} className="text-sm font-semibold text-t-primary tabular-nums leading-none pt-0.5" />
-                          <div className="text-blue-500"><Icons.Diamond className="w-3.5 h-3.5 fill-current" /></div>
-                      </div>
+                      <DiamondBalancePill points={points} className="md:h-12 md:min-w-[92px] md:px-4" />
                       
                       <div className="oku-tactile-shell rounded-full">
                           <button
@@ -583,9 +578,9 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                               }}
                               disabled={isMainMenuInteractionLocked}
                               aria-label="Settings"
-                              className={`oku-difficulty-glass oku-main-menu-tactile ${pressedMainMenuAction === 'settings' ? 'oku-main-menu-tactile--pressed' : ''} p-1.5 rounded-full text-t-icon`}
+                              className={`oku-difficulty-glass oku-main-menu-tactile ${pressedMainMenuAction === 'settings' ? 'oku-main-menu-tactile--pressed' : ''} p-1.5 md:p-2 rounded-full text-t-icon`}
                           >
-                              <Icons.Settings className="w-5 h-5" />
+                              <Icons.Settings className="w-5 h-5 md:w-6 md:h-6" />
                           </button>
                       </div>
                   </div>
