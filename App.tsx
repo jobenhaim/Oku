@@ -113,7 +113,11 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
         // RevenueCat remains the source of truth for permanent purchases.
         await IAP.initialize();
         const ownership = await IAP.getOwnership();
-        if (ownership && (ownership.premiumOwned || ownership.starterOwned || ownership.books2AllOwned || ownership.books3AllOwned || ownership.booksForeverOwned || ownership.transactionIds.length > 0)) {
+        // A successful CustomerInfo response is authoritative even when it
+        // contains no active purchases, so stale local book flags are cleared.
+        // Keep local access untouched only when RevenueCat itself failed and
+        // returned null (for example, a temporary offline launch).
+        if (ownership) {
             Storage.restorePermanentPurchases(ownership);
         }
         
@@ -571,10 +575,13 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       const ownership = await IAP.restore();
       if (!ownership) return 'failed';
 
+      // Reconcile even when no permanent entitlement remains. This clears
+      // stale local flags after a sandbox history reset or refund.
+      Storage.restorePermanentPurchases(ownership);
+
       const hasPermanentPurchase = ownership.premiumOwned || ownership.starterOwned || ownership.books2AllOwned || ownership.books3AllOwned || ownership.booksForeverOwned;
       if (!hasPermanentPurchase) return 'none';
 
-      Storage.restorePermanentPurchases(ownership);
       refreshCommerceState();
       return 'restored';
   };

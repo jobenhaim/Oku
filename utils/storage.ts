@@ -749,9 +749,12 @@ export const Storage = {
 
       if (ownership.premiumOwned) ensurePepinoUnlocked(data);
       if (ownership.starterOwned) ensureStarterPackUnlocked(data);
-      if (ownership.books2AllOwned) data.books2AllOwned = true;
-      if (ownership.books3AllOwned) data.books3AllOwned = true;
-      if (ownership.booksForeverOwned) data.booksForeverOwned = true;
+      // Reconcile book access in both directions. Previously this method only
+      // ever set flags to true, so a refund or cleared sandbox history could
+      // never remove stale local ownership.
+      data.books2AllOwned = ownership.books2AllOwned;
+      data.books3AllOwned = ownership.books3AllOwned;
+      data.booksForeverOwned = ownership.booksForeverOwned;
 
       for (const transactionId of ownership.transactionIds) {
           if (transactionId && !data.processedPurchaseTransactions.includes(transactionId)) {

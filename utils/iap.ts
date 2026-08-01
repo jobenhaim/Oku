@@ -44,17 +44,19 @@ export type IAPPurchaseResult = SuccessfulIAPPurchase | {
 
 const getPermanentOwnership = (customerInfo: CustomerInfo): PermanentPurchaseOwnership => {
     const activeEntitlements = customerInfo.entitlements.active || {};
-    const purchasedProducts = customerInfo.allPurchasedProductIdentifiers || [];
     const permanentTransactions = (customerInfo.nonSubscriptionTransactions || []).filter(transaction =>
         PERMANENT_PRODUCT_IDS.has(transaction.productIdentifier)
     );
 
     return {
-        premiumOwned: Boolean(activeEntitlements[PREMIUM_ENTITLEMENT_ID]?.isActive) || purchasedProducts.includes(PREMIUM_PRODUCT_ID),
-        starterOwned: Boolean(activeEntitlements[STARTER_ENTITLEMENT_ID]?.isActive) || purchasedProducts.includes(STARTER_PRODUCT_ID),
-        books2AllOwned: Boolean(activeEntitlements[BOOKS_2_ALL_ENTITLEMENT_ID]?.isActive) || purchasedProducts.includes(BOOKS_2_ALL_PRODUCT_ID),
-        books3AllOwned: Boolean(activeEntitlements[BOOKS_3_ALL_ENTITLEMENT_ID]?.isActive) || purchasedProducts.includes(BOOKS_3_ALL_PRODUCT_ID),
-        booksForeverOwned: Boolean(activeEntitlements[BOOKS_FOREVER_ENTITLEMENT_ID]?.isActive) || purchasedProducts.includes(BOOKS_FOREVER_PRODUCT_ID),
+        // `allPurchasedProductIdentifiers` contains historical purchases. It is
+        // not an access check and can keep refunded products looking owned.
+        // RevenueCat's active entitlements are the current source of truth.
+        premiumOwned: Boolean(activeEntitlements[PREMIUM_ENTITLEMENT_ID]?.isActive),
+        starterOwned: Boolean(activeEntitlements[STARTER_ENTITLEMENT_ID]?.isActive),
+        books2AllOwned: Boolean(activeEntitlements[BOOKS_2_ALL_ENTITLEMENT_ID]?.isActive),
+        books3AllOwned: Boolean(activeEntitlements[BOOKS_3_ALL_ENTITLEMENT_ID]?.isActive),
+        booksForeverOwned: Boolean(activeEntitlements[BOOKS_FOREVER_ENTITLEMENT_ID]?.isActive),
         transactionIds: permanentTransactions.map(transaction => transaction.transactionIdentifier).filter(Boolean)
     };
 };
