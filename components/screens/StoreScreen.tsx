@@ -217,7 +217,6 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
         <div className="mb-8 md:mb-10">
             <h2 className="text-lg md:text-xl font-bold text-t-primary mb-3 md:mb-4 ml-1">Scenes</h2>
             <div className="mb-6 md:mb-8">
-                <h3 className="text-xs md:text-sm font-bold text-stone-600 dark:text-stone-300 uppercase tracking-widest mb-3 ml-1">Static</h3>
                 <div className="grid grid-cols-5 md:grid-cols-6 gap-x-2 md:gap-x-3 gap-y-6 md:gap-y-7 items-start">{STATIC_BACKGROUNDS.map((bg, idx) => {
                     const isPurchased = purchasedBackgrounds.includes(bg.id);
                     const isSelected = selectedBackgroundId === bg.id;
@@ -319,7 +318,8 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                             >
                                 <div className={`flex-1 flex items-center justify-center w-full`}>
                                     <span
-                                        className={`text-3xl md:text-4xl font-bold ${num.uiClass}`}
+                                        data-premium-number="5"
+                                        className={`number-style-preview text-3xl md:text-4xl font-bold ${num.uiClass} ${num.id === 'num-rainbow' ? 'rainbow-number-style-preview' : ''}`}
                                         style={{ transform: `scale(${isPurchased ? 1.15 : 1})` }}
                                     >
                                         5

@@ -148,7 +148,12 @@ export const NumberPad: React.FC<NumberPadProps> = ({
                         onClick={(event) => handleMouseClick(event, num)}
                         className={`aspect-[4/5] flex items-center justify-center text-3xl md:text-4xl font-medium rounded-lg md:rounded-xl shadow-sm active:shadow-none active:translate-y-[2px] transition-all ${isActive ? 'bg-blue-500 text-white' : 'bg-t-surface'} ${isFullyPlaced && !isActive ? 'opacity-25' : 'opacity-100'}`}
                     >
-                        <span className={`pointer-events-none ${isPencilMode && !isActive ? 'text-stone-500' : (isActive ? 'text-white' : numberColor)}`}>{num}</span>
+                        <span
+                            data-premium-number={num}
+                            className={`pointer-events-none ${isPencilMode && !isActive ? 'text-stone-500' : (isActive ? 'text-white' : numberColor)}`}
+                        >
+                            {num}
+                        </span>
                     </button>
                 );
             })}

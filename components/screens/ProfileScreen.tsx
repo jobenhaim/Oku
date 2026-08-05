@@ -160,11 +160,11 @@ const AchievementRow: React.FC<{
                 onPointerLeave={cancelPointerPress}
                 onClick={handleClick}
                 disabled={!achievement.ready || isClaiming}
-                className={`relative block w-full h-full px-4 md:px-5 py-3 md:py-4 text-left rounded-[1.25rem] border overflow-hidden focus:outline-none transition-colors duration-[650ms] ease-in-out ${
+                className={`relative block w-full h-full px-4 md:px-5 py-3 md:py-4 text-left rounded-[1.25rem] ${achievement.ready ? 'border-2' : 'border'} overflow-hidden focus:outline-none transition-colors duration-[650ms] ease-in-out ${
                     achievement.claimed
                         ? 'bg-stone-100/90 dark:bg-stone-900/70 border-stone-200/60 dark:border-stone-800/70 shadow-none'
                         : achievement.ready
-                            ? 'oku-achievement-tactile bg-t-surface border-stone-200/80 dark:border-stone-800'
+                            ? 'oku-achievement-tactile bg-blue-50/50 dark:bg-blue-950/20 border-blue-400 dark:border-blue-500'
                             : 'bg-t-surface border-stone-200/80 dark:border-stone-800 shadow-sm'
                 } ${isPressed ? 'oku-achievement-tactile--pressed' : ''}`}
             >

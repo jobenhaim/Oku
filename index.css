@@ -397,74 +397,147 @@ html, body {
 
 /* TEXT EFFECTS */
 
-/* 1. ELEGANT GOLD - REIMAGINED */
+/* Premium number styles use three-color gradients that remain static during
+   gameplay. The colors stay readable without a bright band sitting inside
+   the number. */
 .text-shine-gold {
-  background-image: linear-gradient(
-    110deg,
-    #854d0e 15%,   /* Yellow 800 */
-    #ca8a04 35%,   /* Yellow 600 */
-    #fde047 50%,   /* Yellow 300 */
-    #ca8a04 65%,   /* Yellow 600 */
-    #854d0e 85%    /* Yellow 800 */
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: flow-light 4s linear infinite; 
-  filter: drop-shadow(0px 1px 1px rgba(113, 63, 18, 0.25));
+  --premium-color-1: #854d0e;
+  --premium-color-2: #d19a08;
+  --premium-color-3: #facc15;
 }
 
-/* 2. REIMAGINED DIAMOND - PRISMATIC CRYSTAL */
 .text-shine-diamond {
-  background-image: linear-gradient(
-    110deg,
-    #0369a1 15%,   /* Sky 700 */
-    #0ea5e9 35%,   /* Sky 500 */
-    #e0f2fe 50%,   /* Sky 100 */
-    #0ea5e9 65%,   /* Sky 500 */
-    #0369a1 85%    /* Sky 700 */
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: flow-light 4s linear infinite; 
-  filter: drop-shadow(0px 1px 1px rgba(3, 105, 161, 0.25));
+  --premium-color-1: #0369a1;
+  --premium-color-2: #0ea5e9;
+  --premium-color-3: #67d3f5;
 }
 
-/* 3. REIMAGINED RUBY - PREMIUM RED */
 .text-shine-ruby {
-  background-image: linear-gradient(
-    110deg,
-    #be123c 15%,   /* Rose 700 */
-    #f43f5e 35%,   /* Rose 500 */
-    #ffe4e6 50%,   /* Rose 100 */
-    #f43f5e 65%,   /* Rose 500 */
-    #be123c 85%    /* Rose 700 */
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: flow-light 4s linear infinite;
-  filter: drop-shadow(0px 1px 1px rgba(190, 18, 60, 0.25));
+  --premium-color-1: #9f1239;
+  --premium-color-2: #e11d48;
+  --premium-color-3: #fb7185;
 }
 
-/* 4. NEW RGB RAINBOW - PREMIUM LOOP */
 .text-shine-rainbow {
-  background-image: linear-gradient(90deg, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #a855f7, #ec4899, #ef4444);
-  background-size: 200% 100%;
+  --premium-color-1: #0f766e;
+  --premium-color-2: #14b8a6;
+  --premium-color-3: #5eead4;
+}
+
+/* Rainbow is a complete color set rather than one moving rainbow texture.
+   Each digit has a distinct, readable three-shade identity. */
+.text-shine-rainbow[data-premium-number="1"] {
+  --premium-color-1: #b91c1c;
+  --premium-color-2: #ef4444;
+  --premium-color-3: #fca5a5;
+}
+
+.text-shine-rainbow[data-premium-number="2"] {
+  --premium-color-1: #c2410c;
+  --premium-color-2: #f97316;
+  --premium-color-3: #fdba74;
+}
+
+.text-shine-rainbow[data-premium-number="3"] {
+  --premium-color-1: #a16207;
+  --premium-color-2: #eab308;
+  --premium-color-3: #fde047;
+}
+
+.text-shine-rainbow[data-premium-number="4"] {
+  --premium-color-1: #15803d;
+  --premium-color-2: #22c55e;
+  --premium-color-3: #86efac;
+}
+
+.text-shine-rainbow[data-premium-number="5"] {
+  --premium-color-1: #0f766e;
+  --premium-color-2: #14b8a6;
+  --premium-color-3: #5eead4;
+}
+
+.text-shine-rainbow[data-premium-number="6"] {
+  --premium-color-1: #1d4ed8;
+  --premium-color-2: #3b82f6;
+  --premium-color-3: #93c5fd;
+}
+
+.text-shine-rainbow[data-premium-number="7"] {
+  --premium-color-1: #4338ca;
+  --premium-color-2: #6366f1;
+  --premium-color-3: #a5b4fc;
+}
+
+.text-shine-rainbow[data-premium-number="8"] {
+  --premium-color-1: #7e22ce;
+  --premium-color-2: #a855f7;
+  --premium-color-3: #d8b4fe;
+}
+
+.text-shine-rainbow[data-premium-number="9"] {
+  --premium-color-1: #be185d;
+  --premium-color-2: #ec4899;
+  --premium-color-3: #f9a8d4;
+}
+
+.text-shine-gold,
+.text-shine-diamond,
+.text-shine-ruby,
+.text-shine-rainbow {
+  background-image: linear-gradient(
+    135deg,
+    var(--premium-color-1) 0%,
+    var(--premium-color-2) 52%,
+    var(--premium-color-3) 100%
+  );
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.1));
-  animation: rainbow-anim 6s linear infinite;
 }
 
-@keyframes rainbow-anim {
-  0% { background-position: 0% 0; }
-  100% { background-position: 200% 0; }
+/* The single Market sample can keep a gentle white shine without putting a
+   continuous animation on every gameplay number. */
+.number-style-preview.text-shine-gold,
+.number-style-preview.text-shine-diamond,
+.number-style-preview.text-shine-ruby,
+.number-style-preview.text-shine-rainbow {
+  background-image:
+    linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.95) 50%, transparent 62%),
+    linear-gradient(135deg, var(--premium-color-1) 0%, var(--premium-color-2) 52%, var(--premium-color-3) 100%);
+  background-size: 250% 100%, 100% 100%;
+  animation: premium-preview-shine 3.2s ease-in-out infinite;
+}
+
+/* The Market sample shows the entire spectrum at once so the Rainbow set is
+   immediately understandable. Gameplay still gives each digit one color. */
+.number-style-preview.rainbow-number-style-preview {
+  background-image: linear-gradient(90deg, #ef4444 0%, #f97316 17%, #eab308 33%, #22c55e 49%, #3b82f6 66%, #8b5cf6 83%, #ec4899 100%);
+  background-size: 100% 100%;
+  background-position: center;
+  animation: none;
+}
+
+/* A separate white wipe crosses only the newly placed number. The underlying
+   three-color gradient does not move and is restored at the end. */
+.premium-number-placement-shine {
+  background-image:
+    linear-gradient(105deg, transparent 33%, rgba(255, 255, 255, 0.98) 50%, transparent 67%),
+    linear-gradient(135deg, var(--premium-color-1) 0%, var(--premium-color-2) 52%, var(--premium-color-3) 100%);
+  background-size: 250% 100%, 100% 100%;
+  animation: premium-number-placement-shine 0.55s ease-out 1 forwards;
+}
+
+@keyframes premium-number-placement-shine {
+  0% { background-position: 160% center, center; }
+  100% { background-position: -160% center, center; }
+}
+
+@keyframes premium-preview-shine {
+  0%, 58% { background-position: 160% center, center; }
+  100% { background-position: -160% center, center; }
 }
 
 /* 3. PREMIUM GET MORE BUTTON */

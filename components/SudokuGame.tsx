@@ -111,6 +111,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const [isEraseMode, setIsEraseMode] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+  const [isRestarting, setIsRestarting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [earnedPoints, setEarnedPoints] = useState(0);
@@ -121,6 +122,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   const [animatingSections, setAnimatingSections] = useState<Set<string>>(new Set());
   const [nudgeCue, setNudgeCue] = useState<{r: number, c: number, key: number} | null>(null);
+  const [placementShine, setPlacementShine] = useState<{r: number, c: number, key: number} | null>(null);
   const [showStartHint, setShowStartHint] = useState(false);
   const [pillMessage, setPillMessage] = useState<PillMessage | null>(null);
   const scanErrorDeckRef = useRef(shuffledCopy(SCAN_ERROR_MESSAGES));
@@ -146,6 +148,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const hasMadeMistakeRef = useRef<() => boolean>(() => false);
   const lastLifecycleSaveAtRef = useRef(0);
   const gameFinishedRef = useRef(false);
+  const restartTimerRef = useRef<number | null>(null);
+  const placementShineTimerRef = useRef<number | null>(null);
   const isGuardActive = purchasedSkills.includes('skill-scribe');
   
   // Timer hook
@@ -221,6 +225,18 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           }, 2000);
       }
   }, []);
+
+  const handleNumberPlaced = useCallback((row: number, col: number) => {
+      if (!numberColor.includes('text-shine-') || numberColor.includes('text-shine-rainbow')) return;
+      if (placementShineTimerRef.current !== null) {
+          window.clearTimeout(placementShineTimerRef.current);
+      }
+      setPlacementShine({ r: row, c: col, key: Date.now() });
+      placementShineTimerRef.current = window.setTimeout(() => {
+          setPlacementShine(null);
+          placementShineTimerRef.current = null;
+      }, 650);
+  }, [numberColor]);
 
   const dismissCurrentPill = useCallback(() => {
       if (!pillMessageRef.current) return;
@@ -418,6 +434,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           saveProgress(newBoard, undefined, undefined, currentMoveLog, hasMadeMistake);
       },
       onSectionComplete: handleSectionComplete,
+      onNumberPlaced: handleNumberPlaced,
   });
   hasMadeMistakeRef.current = hasMadeMistake;
 
@@ -727,22 +744,54 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   };
 
   const handleRestart = () => {
+      if (isRestarting) return;
       sounds.playClick();
-      Storage.clearLevelProgress(difficulty, levelId); 
-      initializeBoard(); 
-      setTimer(0); 
-      setShowRestartConfirm(false); 
-      setIsPaused(false);
-      setIsFocusMode(false);
-      setAnimatingSections(new Set());
-      gameFinishedRef.current = false;
-      notesReadyShownRef.current = false;
-      hasUsedNotesRef.current = false;
-      countedNudgeCuesRef.current.clear();
-      
-      setShowStartHint(true);
-      setTimeout(() => setShowStartHint(false), 5000);
+      setIsRestarting(true);
+
+      // Let the current attempt fade away before rebuilding the puzzle. A
+      // manual restart is a completely fresh attempt, including its Scan
+      // allowance and refill-price ladder. Previously spent diamonds remain
+      // spent and are never refunded here.
+      restartTimerRef.current = window.setTimeout(() => {
+          Storage.clearLevelProgress(difficulty, levelId, true);
+          initializeBoard();
+          setTimer(0);
+          setScanUses(3);
+          setScanRefillsPurchased(0);
+          setShowRestartConfirm(false);
+          setIsPaused(false);
+          setIsFocusMode(false);
+          setIsEraseMode(false);
+          setAnimatingSections(new Set());
+          setNudgeCue(null);
+          setPlacementShine(null);
+          gameFinishedRef.current = false;
+          notesReadyShownRef.current = false;
+          hasUsedNotesRef.current = false;
+          shownNudgeStatesRef.current.clear();
+          countedNudgeCuesRef.current.clear();
+          halfwayShownRef.current = false;
+          halfwayTrackingReadyRef.current = true;
+          pendingPillRef.current = null;
+          pillMessageRef.current = null;
+          isPillExitingRef.current = false;
+          setPillMessage(null);
+
+          setShowStartHint(true);
+          window.setTimeout(() => setShowStartHint(false), 5000);
+          restartTimerRef.current = null;
+          setIsRestarting(false);
+      }, 800);
   };
+
+  useEffect(() => () => {
+      if (restartTimerRef.current !== null) {
+          window.clearTimeout(restartTimerRef.current);
+      }
+      if (placementShineTimerRef.current !== null) {
+          window.clearTimeout(placementShineTimerRef.current);
+      }
+  }, []);
   
   const handleDevSolve = () => {
       if (gameFinishedRef.current || isCompleted || isEnding) return;
@@ -908,26 +957,26 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 44, opacity: 0 }}
                         transition={{ duration: 0.15, ease: "easeInOut" }}
-                        className="absolute inset-x-0 bottom-full h-7 md:h-9 z-0 pointer-events-none whitespace-nowrap flex items-center justify-center px-4"
+                        className="absolute inset-x-0 bottom-full h-[31px] md:h-10 z-0 pointer-events-none whitespace-nowrap flex items-center justify-center px-4"
                     >
-                        <span className="text-[11px] md:text-[14px] font-semibold text-stone-600 dark:text-stone-100 bg-stone-50 dark:bg-stone-800 border border-stone-200/80 dark:border-stone-700 px-4 md:px-5 py-1.5 md:py-2 rounded-full inline-flex items-center gap-1.5 md:gap-2 leading-none shadow-md dark:shadow-black/30">
+                        <span className="text-[12px] md:text-[15px] font-semibold text-stone-600 dark:text-stone-100 bg-stone-50 dark:bg-stone-800 border border-stone-200/80 dark:border-stone-700 px-[18px] md:px-[22px] py-[7px] md:py-[9px] rounded-full inline-flex items-center gap-[7px] md:gap-[9px] leading-none shadow-md dark:shadow-black/30">
                             {pillMessage.type === 'warning' ? (
                                 <>
-                                    <Icons.Info className="w-[14px] h-[14px] md:w-4 md:h-4 shrink-0 text-stone-500 dark:text-stone-300" />
+                                    <Icons.Info className="w-[15px] h-[15px] md:w-[18px] md:h-[18px] shrink-0 text-stone-500 dark:text-stone-300" />
                                     {pillMessage.text}
                                     <span className="inline-flex items-center gap-1 text-red-500 font-bold">
-                                        <Icons.Scan className="w-[14px] h-[14px] md:w-4 md:h-4 shrink-0 text-red-500" />
+                                        <Icons.Scan className="w-[15px] h-[15px] md:w-[18px] md:h-[18px] shrink-0 text-red-500" />
                                         Scan Recommended
                                     </span>
                                 </>
                             ) : (
                                 <>
                                     {pillMessage.type === 'scan-error' ? (
-                                        <Icons.Close className="w-[14px] h-[14px] md:w-4 md:h-4 shrink-0 text-red-500" />
+                                        <Icons.Close className="w-[15px] h-[15px] md:w-[18px] md:h-[18px] shrink-0 text-red-500" />
                                     ) : pillMessage.type === 'scan-clean' ? (
-                                        <Icons.Check className="w-[14px] h-[14px] md:w-4 md:h-4 shrink-0 text-emerald-500" />
+                                        <Icons.Check className="w-[15px] h-[15px] md:w-[18px] md:h-[18px] shrink-0 text-emerald-500" />
                                     ) : pillMessage.type === 'notes' ? (
-                                        <Icons.Info className="w-[14px] h-[14px] md:w-4 md:h-4 shrink-0 text-stone-500 dark:text-stone-300" />
+                                        <Icons.Info className="w-[15px] h-[15px] md:w-[18px] md:h-[18px] shrink-0 text-stone-500 dark:text-stone-300" />
                                     ) : null}
                                     {pillMessage.text}
                                 </>
@@ -948,6 +997,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                     isScanning={isScanning}
                     isScanSuccess={isScanSuccess}
                     animatingSections={animatingSections}
+                    placementShine={placementShine}
                     settings={settings}
                     numberColor={numberColor}
                     onCellClick={onCellClickWrapper}
@@ -1088,6 +1138,20 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       </div>
 
       <AnimatePresence>
+          {isRestarting && (
+              <motion.div
+                  key="restart-fade"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.8, ease: 'easeInOut' }}
+                  className="fixed inset-0 z-[220] bg-t-bg"
+                  aria-hidden="true"
+              />
+          )}
+      </AnimatePresence>
+
+      <AnimatePresence>
       {(isPaused || showRestartConfirm) && (
           <motion.div 
             initial={{ opacity: 0 }}
@@ -1133,12 +1197,12 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                           >
                              <div className="space-y-1 mb-5 w-full">
                                 <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 leading-tight">Restart Level?</h3>
-                                <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">Progress will be lost.</p>
+                                <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">Progress in this level will be lost.</p>
                              </div>
                              
                              <div className="flex flex-col gap-3 w-full">
                                  {/* Restart - Destructive */}
-                                 <button onClick={handleRestart} className="w-full h-14 bg-red-500 text-white rounded-2xl font-bold text-base shadow-xl active:scale-95 transition-all flex items-center justify-center">
+                                 <button disabled={isRestarting} onClick={handleRestart} className="w-full h-14 bg-red-500 text-white rounded-2xl font-bold text-base shadow-xl active:scale-95 transition-all flex items-center justify-center disabled:pointer-events-none">
                                     Restart
                                  </button>
                                  {/* Cancel */}

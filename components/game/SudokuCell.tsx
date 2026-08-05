@@ -18,6 +18,7 @@ interface SudokuCellProps {
     isNudgeCue?: boolean;
     settings: AppSettings;
     numberColor: string;
+    placementShineKey?: number;
     onCellClick: (e: React.MouseEvent, r: number, c: number) => void;
     onCellLongPress?: (r: number, c: number) => void;
     enableLongPress?: boolean;
@@ -45,6 +46,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     isNudgeCue = false,
     settings,
     numberColor,
+    placementShineKey,
     onCellClick,
     onCellLongPress,
     enableLongPress = false,
@@ -192,7 +194,11 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
         {/* Cell Content Layer */}
         {!onlyBackground && (
             cell.value ? (
-                <span className={`leading-none pt-[0.1em] relative z-20 ${!cell.isFixed && !isError && !isConflict && !isMarkedWrong && !isRevealed ? numberColor : ''}`}>
+                <span
+                    key={`value-${cell.value}-${placementShineKey ?? 0}`}
+                    data-premium-number={cell.value}
+                    className={`leading-none pt-[0.1em] relative z-20 ${!cell.isFixed && !isError && !isConflict && !isMarkedWrong && !isRevealed ? numberColor : ''} ${placementShineKey !== undefined ? 'premium-number-placement-shine' : ''}`}
+                >
                     {cell.value}
                 </span>
             ) : cell.notes.length > 0 ? (

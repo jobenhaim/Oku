@@ -12,6 +12,7 @@ interface UseSudokuBoardProps {
   onBoardChange?: (board: Board, moveLog: MoveLogEntry[], hasMadeMistake: boolean) => void;
   onComplete?: (completedBoard: Board, moveLog: MoveLogEntry[], isPerfect: boolean) => void;
   onSectionComplete?: (sections: string[]) => void;
+  onNumberPlaced?: (row: number, col: number) => void;
 }
 
 const UNDO_HISTORY_LIMIT = 100;
@@ -78,7 +79,8 @@ export const useSudokuBoard = ({
   guardEnabled = false,
   onBoardChange,
   onComplete,
-  onSectionComplete
+  onSectionComplete,
+  onNumberPlaced
 }: UseSudokuBoardProps) => {
   const [board, setBoard] = useState<Board>([]);
   const [solvedBoard, setSolvedBoard] = useState<number[][]>([]);
@@ -270,6 +272,7 @@ export const useSudokuBoard = ({
                      }
 
                      newBoard[row][col] = newCell;
+                     onNumberPlaced?.(row, col);
 
                      if (newCell.value) {
                         moveLog.current.push({ r: row, c: col, v: newCell.value, t: Date.now() });
@@ -311,7 +314,7 @@ export const useSudokuBoard = ({
             setSelectedCell([row, col]);
         }
     }
-  }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete, showGuardRejection, rememberBoardForUndo]);
+  }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, onNumberPlaced, removeNotesFromPeers, checkCompletion, isBoardComplete, showGuardRejection, rememberBoardForUndo]);
 
   const handleNumberInput = useCallback((num: number, isPaused: boolean, isCompleted: boolean, forcePlace: boolean = false) => {
     if (isPaused || isCompleted) return;
@@ -323,7 +326,9 @@ export const useSudokuBoard = ({
     const currentSettings = settingsRef.current;
 
     if (currentSettings.digitFirst && !forcePlace) {
-        sounds.playClick();
+        // Selecting a digit is the primary number action in digit-first mode,
+        // so use the active sound pack's note for that digit as well.
+        sounds.playNumber(num);
         if (currentActiveNumber === num) {
             setActiveNumber(null);
         } else {
@@ -385,6 +390,7 @@ export const useSudokuBoard = ({
         }
         
         newBoard[r][c] = newCell;
+        onNumberPlaced?.(r, c);
 
         if (newCell.value) {
             moveLog.current.push({ r, c, v: newCell.value, t: Date.now() });
@@ -411,7 +417,7 @@ export const useSudokuBoard = ({
     setBoard(newBoard);
     if (onBoardChange) onBoardChange(newBoard, moveLog.current, errorCountRef.current > 0);
     if (!shouldUsePencil && newCell.value) checkCompletion(newBoard);
-  }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, removeNotesFromPeers, checkCompletion, isBoardComplete, showGuardRejection, rememberBoardForUndo]);
+  }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, onNumberPlaced, removeNotesFromPeers, checkCompletion, isBoardComplete, showGuardRejection, rememberBoardForUndo]);
 
   const handleUndo = useCallback((isPaused: boolean, isCompleted: boolean) => {
     if (isPaused || isCompleted) return;

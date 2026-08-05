@@ -928,9 +928,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                 <button onClick={() => { sounds.playClick(); setShowResetPreConfirm(true); }} className="w-full py-2.5 md:py-3 flex items-center justify-center gap-2 text-red-500 rounded-xl transition-colors duration-300 font-bold text-sm md:text-base">
                                     <Icons.Trash className="w-4 h-4 md:w-5 md:h-5 text-stone-900 dark:text-stone-100" /> Reset All Progress
                                 </button>
-                                <p className="text-[11px] md:text-[13px] text-center text-t-secondary font-medium px-4 leading-relaxed transition-colors duration-300">
-                                    Your progress is saved in your device's Cloud Backup.<br/>We cannot access your data.
-                                </p>
                             </div>
 
                             {/* Legal Links */}
@@ -940,7 +937,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     <div className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700 transition-colors duration-300" />
                                     <button onClick={() => { sounds.playClick(); setActiveDoc('terms'); }} className="transition-colors duration-300 px-2 py-1">Terms of Service</button>
                                 </div>
-                                <span className="text-[9px] md:text-[11px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.9.17</span>
+                                <span className="text-[9px] md:text-[11px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.9.18</span>
                             </div>
                         </div>
                     )}

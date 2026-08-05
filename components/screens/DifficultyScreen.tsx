@@ -31,20 +31,21 @@ const MAIN_MENU_FADE_DURATION_MS = 750;
 const mainMenuCascadeDelay = (delayMs: number) => Math.round(delayMs * MAIN_MENU_CASCADE_SPEED);
 
 // Internal Hook for Counting Animation (Progress Bars)
-const useAnimatedCounter = (target: number, duration: number = 500, delay: number = 200, enabled = true) => {
-    const [count, setCount] = useState(enabled ? 0 : target);
+const useAnimatedCounter = (target: number, start: number = 0, duration: number = 500, delay: number = 200) => {
+    const safeStart = Math.min(start, target);
+    const [count, setCount] = useState(safeStart);
 
     useEffect(() => {
         let startTime: number | null = null;
         let animationFrameId: number;
         let timeoutId: any;
 
-        if (!enabled) {
+        if (safeStart === target) {
             setCount(target);
             return;
         }
 
-        setCount(0);
+        setCount(safeStart);
 
         const startAnimation = () => {
             const animate = (currentTime: number) => {
@@ -52,7 +53,7 @@ const useAnimatedCounter = (target: number, duration: number = 500, delay: numbe
                 const progress = Math.min((currentTime - startTime) / duration, 1);
                 const ease = easeInOut(progress);
                 
-                setCount(Math.floor(target * ease));
+                setCount(Math.floor(safeStart + ((target - safeStart) * ease)));
 
                 if (progress < 1) {
                     animationFrameId = requestAnimationFrame(animate);
@@ -73,7 +74,7 @@ const useAnimatedCounter = (target: number, duration: number = 500, delay: numbe
             if (timeoutId) clearTimeout(timeoutId);
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
         };
-    }, [target, duration, delay, enabled]);
+    }, [target, safeStart, duration, delay]);
 
     return count;
 };
@@ -86,13 +87,12 @@ const DifficultyCard: React.FC<{
     isPyramidTop?: boolean;
     contentScale?: 'normal' | 'medium' | 'large';
     layoutStyle?: React.CSSProperties;
-    celebrateProgress?: boolean;
     cascadeDelayMs?: number;
     isPressed?: boolean;
     isLocked?: boolean;
     onPressStart?: () => void;
     onPressCancel?: () => void;
-}> = ({ diff, index, onSelect, isPyramidTop, contentScale = 'normal', layoutStyle, celebrateProgress = false, cascadeDelayMs = 0, isPressed = false, isLocked = false, onPressStart, onPressCancel }) => {
+}> = ({ diff, index, onSelect, isPyramidTop, contentScale = 'normal', layoutStyle, cascadeDelayMs = 0, isPressed = false, isLocked = false, onPressStart, onPressCancel }) => {
     
     const completed = Storage.getCompletedCount(diff, 300);
     const isPack2Unlocked = Storage.isPack2Unlocked(diff);
@@ -109,7 +109,9 @@ const DifficultyCard: React.FC<{
     const baseZIndex = 30 - index;
     const finalZIndex = baseZIndex;
 
-    const animatedCompleted = useAnimatedCounter(completed, 1500, 200, celebrateProgress);
+    const currentBookStart = Math.max(0, maxLevels - 100);
+    const progressAnimationDelay = cascadeDelayMs + delay + Math.round(MAIN_MENU_SLIDE_DURATION_MS * 0.5);
+    const animatedCompleted = useAnimatedCounter(completed, currentBookStart, 750, progressAnimationDelay);
     const progressPercent = Math.min((animatedCompleted / maxLevels) * 100, 100);
 
     const defaultStyle: React.CSSProperties = {
@@ -299,21 +301,6 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     }, [nextBonusClaimTime]);
 
     const visibleDifficulties = Object.values(Difficulty).filter(d => !hiddenDifficulties.includes(d));
-    const progressLeader = visibleDifficulties.reduce<Difficulty | null>((leader, diff) => {
-        const getProgressRatio = (difficulty: Difficulty) => {
-            const maxLevels = Storage.isPack3Unlocked(difficulty)
-                ? 300
-                : Storage.isPack2Unlocked(difficulty)
-                    ? 200
-                    : 100;
-            return Storage.getCompletedCount(difficulty, 300) / maxLevels;
-        };
-
-        const progress = getProgressRatio(diff);
-        if (progress <= 0) return leader;
-        if (!leader) return diff;
-        return progress > getProgressRatio(leader) ? diff : leader;
-    }, null);
     const isOddCount = visibleDifficulties.length % 2 !== 0;
     const isVerticalStack = visibleDifficulties.length === 2;
     const isOneVisible = visibleDifficulties.length === 1;
@@ -367,7 +354,6 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                           isPyramidTop={true}
                                           contentScale={contentScale}
                                           layoutStyle={layoutStyle}
-                                          celebrateProgress={diff === progressLeader}
                                           cascadeDelayMs={cascadeDelayMs}
                                           isPressed={pressedMainMenuAction === `difficulty-${diff}`}
                                           isLocked={isMainMenuInteractionLocked}
@@ -386,7 +372,6 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                   onSelect={handleDifficultyPress}
                                   contentScale={contentScale}
                                   layoutStyle={layoutStyle}
-                                  celebrateProgress={diff === progressLeader}
                                   cascadeDelayMs={cascadeDelayMs}
                                   isPressed={pressedMainMenuAction === `difficulty-${diff}`}
                                   isLocked={isMainMenuInteractionLocked}

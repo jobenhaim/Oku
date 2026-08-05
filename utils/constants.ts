@@ -162,16 +162,16 @@ export const ALL_BACKGROUNDS = STATIC_BACKGROUNDS;
 
 export const NUMBER_COLORS = [
     { id: 'num-default', name: 'Default', cost: 0, class: 'text-blue-600 dark:text-blue-400', uiClass: 'text-blue-600 dark:text-blue-400', bgClass: 'bg-blue-50/50 dark:bg-blue-900/10' },
-    { id: 'num-purple', name: 'Purple', cost: 125, class: 'text-purple-600 dark:text-purple-400', uiClass: 'text-purple-600 dark:text-purple-400', bgClass: 'bg-purple-50/50 dark:bg-purple-900/10' },
-    { id: 'num-teal', name: 'Teal', cost: 125, class: 'text-cyan-600 dark:text-cyan-400', uiClass: 'text-cyan-600 dark:text-cyan-400', bgClass: 'bg-cyan-50/50 dark:bg-cyan-900/10' },
-    { id: 'num-fuchsia', name: 'Fuchsia', cost: 125, class: 'text-pink-600 dark:text-pink-400', uiClass: 'text-pink-600 dark:text-pink-400', bgClass: 'bg-pink-50/50 dark:bg-pink-900/10' },
-    { id: 'num-orange', name: 'Orange', cost: 125, class: 'text-orange-600 dark:text-orange-400', uiClass: 'text-orange-600 dark:text-orange-400', bgClass: 'bg-orange-50/50 dark:bg-orange-900/10' },
-    { id: 'num-emerald', name: 'Emerald', cost: 125, class: 'text-emerald-600 dark:text-emerald-400', uiClass: 'text-emerald-600 dark:text-emerald-400', bgClass: 'bg-emerald-50/50 dark:bg-emerald-900/10' },
-    { id: 'num-rainbow', name: 'Rainbow', cost: 400, class: 'text-shine-rainbow', uiClass: 'text-shine-rainbow', bgClass: 'bg-stone-100/50 dark:bg-stone-800/50' },
+    { id: 'num-purple', name: 'Purple', cost: 100, class: 'text-purple-600 dark:text-purple-400', uiClass: 'text-purple-600 dark:text-purple-400', bgClass: 'bg-purple-50/50 dark:bg-purple-900/10' },
+    { id: 'num-teal', name: 'Teal', cost: 100, class: 'text-cyan-600 dark:text-cyan-400', uiClass: 'text-cyan-600 dark:text-cyan-400', bgClass: 'bg-cyan-50/50 dark:bg-cyan-900/10' },
+    { id: 'num-fuchsia', name: 'Fuchsia', cost: 100, class: 'text-pink-600 dark:text-pink-400', uiClass: 'text-pink-600 dark:text-pink-400', bgClass: 'bg-pink-50/50 dark:bg-pink-900/10' },
+    { id: 'num-orange', name: 'Orange', cost: 100, class: 'text-orange-600 dark:text-orange-400', uiClass: 'text-orange-600 dark:text-orange-400', bgClass: 'bg-orange-50/50 dark:bg-orange-900/10' },
+    { id: 'num-emerald', name: 'Emerald', cost: 100, class: 'text-emerald-600 dark:text-emerald-400', uiClass: 'text-emerald-600 dark:text-emerald-400', bgClass: 'bg-emerald-50/50 dark:bg-emerald-900/10' },
+    { id: 'num-rainbow', name: 'Rainbow', cost: 250, class: 'text-shine-rainbow', uiClass: 'text-shine-rainbow', bgClass: 'bg-stone-100/50 dark:bg-stone-800/50' },
     // Premium last
-    { id: 'num-shine', name: 'Gold', cost: 600, class: 'text-shine-gold', uiClass: 'text-shine-gold', bgClass: 'bg-yellow-50/60 dark:bg-yellow-900/10' },
-    { id: 'num-rgb', name: 'Diamond', cost: 600, class: 'text-shine-diamond', uiClass: 'text-shine-diamond', bgClass: 'bg-cyan-50/60 dark:bg-cyan-900/10' },
-    { id: 'num-ruby', name: 'Ruby', cost: 600, class: 'text-shine-ruby', uiClass: 'text-shine-ruby', bgClass: 'bg-rose-50/60 dark:bg-rose-900/10' },
+    { id: 'num-shine', name: 'Gold', cost: 350, class: 'text-shine-gold', uiClass: 'text-shine-gold', bgClass: 'bg-yellow-50/60 dark:bg-yellow-900/10' },
+    { id: 'num-rgb', name: 'Diamond', cost: 350, class: 'text-shine-diamond', uiClass: 'text-shine-diamond', bgClass: 'bg-cyan-50/60 dark:bg-cyan-900/10' },
+    { id: 'num-ruby', name: 'Ruby', cost: 350, class: 'text-shine-ruby', uiClass: 'text-shine-ruby', bgClass: 'bg-rose-50/60 dark:bg-rose-900/10' },
 ];
 
 export const SOUND_PACKS = [
