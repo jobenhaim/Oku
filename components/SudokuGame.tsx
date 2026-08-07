@@ -334,7 +334,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       if (gameFinishedRef.current || isCompleted || isEnding) return;
       gameFinishedRef.current = true;
       setIsEnding(true);
-      sounds.playWin();
+      sounds.playPuzzleVictory();
       
       // Clear selection and active numbers immediately
       setSelectedCell(null);
@@ -795,7 +795,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   
   const handleDevSolve = () => {
       if (gameFinishedRef.current || isCompleted || isEnding) return;
-      sounds.playWin();
+      sounds.playPuzzleVictory();
       
       const newBoard = board.map((row, r) => row.map((cell, c) => ({
           ...cell,

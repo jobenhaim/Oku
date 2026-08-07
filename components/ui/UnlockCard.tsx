@@ -77,7 +77,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
         let cancelled = false;
 
         const duration = rawPercent <= 0 ? 0 : 300 + (rawPercent / 100) * 2700;
-        if (rawPercent > 0) stopSound = sounds.playProgressFill(duration / 1000);
+        if (rawPercent > 0) stopSound = sounds.playUniversalProgressFill(duration / 1000);
 
         const progressStart = performance.now();
         const animateProgress = (time: number) => {
@@ -101,7 +101,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
             revealTimer = setTimeout(() => {
                 if (cancelled) return;
                 setShowUnlockUI(true);
-                sounds.playUnlockReady();
+                sounds.playPackUnlockReady();
 
                 const priceStart = performance.now();
                 const priceDuration = 800;

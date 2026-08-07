@@ -118,7 +118,7 @@ export const useSudokuBoard = ({
   const guardFeedbackTimerRef = useRef<number | null>(null);
   const showGuardRejection = useCallback((row: number, col: number) => {
       if (guardFeedbackTimerRef.current !== null) window.clearTimeout(guardFeedbackTimerRef.current);
-      sounds.playGuardBlocked();
+      sounds.playUniversalGuardBlocked();
       sounds.playSelectionHaptic();
       setGuardRejectedCell({ row, col, key: Date.now() });
       guardFeedbackTimerRef.current = window.setTimeout(() => {

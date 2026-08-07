@@ -382,7 +382,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
             if (result.status === 'purchased' || result.status === 'restored') {
                 setWasRestored(result.status === 'restored');
                 setStatus('success');
-                sounds.playWin(); 
+                sounds.playUniversalPurchaseSuccess();
                 setTimeout(() => {
                     setIsClosing(true);
                     setTimeout(() => {

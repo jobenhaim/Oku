@@ -14,7 +14,7 @@ export const WelcomeGiftModal: React.FC<WelcomeGiftModalProps> = ({ onClose }) =
 
     // Play welcome gift sound upon opening
     useEffect(() => {
-        sounds.playGiftClaim();
+        sounds.playUniversalGiftClaim();
     }, []);
 
     // Core counting logic
@@ -55,7 +55,7 @@ export const WelcomeGiftModal: React.FC<WelcomeGiftModalProps> = ({ onClose }) =
 
     const handleAction = () => {
         if (isClosing) return;
-        sounds.playWin(); // Play delightful win sound on claim!
+        sounds.playUniversalGiftClaim();
         setIsClosing(true);
         setTimeout(() => {
             onClose(200);

@@ -14,6 +14,10 @@ interface SoundProfile {
     pitchDrop?: boolean;
     noiseFilterFreq?: number; // Center freq for noise bands
     tapFreqs?: number[]; // Frequencies for random variation on tap
+    victoryNotes: number[];
+    victoryDuration: number;
+    victoryVolume: number;
+    victorySpacingMs: number;
 }
 
 const PROFILES: Record<string, SoundProfile> = {
@@ -26,7 +30,11 @@ const PROFILES: Record<string, SoundProfile> = {
         popFreq: 400,
         duration: 0.035, 
         volumeScale: 0.55,
-        pitchDrop: true
+        pitchDrop: true,
+        victoryNotes: [1046.50, 1318.51, 1567.98],
+        victoryDuration: 0.18,
+        victoryVolume: 0.38,
+        victorySpacingMs: 70
     },
     'snd-paper': {
         id: 'snd-paper',
@@ -37,7 +45,11 @@ const PROFILES: Record<string, SoundProfile> = {
         popFreq: 800,
         duration: 0.05,
         volumeScale: 0.6,
-        noiseFilterFreq: 800
+        noiseFilterFreq: 800,
+        victoryNotes: [900, 1450, 2200],
+        victoryDuration: 0.075,
+        victoryVolume: 0.38,
+        victorySpacingMs: 65
     },
     'snd-wood': {
         id: 'snd-wood',
@@ -50,7 +62,11 @@ const PROFILES: Record<string, SoundProfile> = {
         popFreq: 164.8, // E3 (Deep Thud)
         duration: 0.15, 
         volumeScale: 0.72, // FM carries more perceived energy than a plain sine
-        pitchDrop: false 
+        pitchDrop: false,
+        victoryNotes: [523.25, 659.25, 783.99],
+        victoryDuration: 0.18,
+        victoryVolume: 0.34,
+        victorySpacingMs: 80
     },
     'snd-water': {
         id: 'snd-water',
@@ -62,7 +78,11 @@ const PROFILES: Record<string, SoundProfile> = {
         popFreq: 400,
         duration: 0.1, 
         volumeScale: 0.72,
-        pitchDrop: false // We use upward ramp
+        pitchDrop: false, // We use upward ramp
+        victoryNotes: [659.25, 880.00, 1174.66],
+        victoryDuration: 0.2,
+        victoryVolume: 0.34,
+        victorySpacingMs: 85
     },
     'snd-piano': {
         id: 'snd-piano',
@@ -75,7 +95,11 @@ const PROFILES: Record<string, SoundProfile> = {
         popFreq: 196, // G3
         duration: 0.9,
         volumeScale: 0.5,
-        pitchDrop: false
+        pitchDrop: false,
+        victoryNotes: [523.25, 659.25, 783.99, 1046.50],
+        victoryDuration: 0.78,
+        victoryVolume: 0.34,
+        victorySpacingMs: 95
     },
     'snd-stone': {
         id: 'snd-stone',
@@ -87,7 +111,11 @@ const PROFILES: Record<string, SoundProfile> = {
         popFreq: 164.81,
         duration: 0.12,
         volumeScale: 0.9,
-        pitchDrop: false
+        pitchDrop: false,
+        victoryNotes: [220.00, 293.66, 392.00],
+        victoryDuration: 0.18,
+        victoryVolume: 0.38,
+        victorySpacingMs: 90
     },
     'snd-mech': {
         id: 'snd-mech',
@@ -98,7 +126,11 @@ const PROFILES: Record<string, SoundProfile> = {
         popFreq: 1500,
         duration: 0.05,
         volumeScale: 0.12,
-        pitchDrop: false
+        pitchDrop: false,
+        victoryNotes: [1600, 2050, 2550],
+        victoryDuration: 0.07,
+        victoryVolume: 0.42,
+        victorySpacingMs: 65
     },
     'snd-retro': {
         id: 'snd-retro',
@@ -110,7 +142,11 @@ const PROFILES: Record<string, SoundProfile> = {
         popFreq: 220,
         duration: 0.09,
         volumeScale: 0.207,
-        pitchDrop: false
+        pitchDrop: false,
+        victoryNotes: [523.25, 659.25, 783.99, 1046.50],
+        victoryDuration: 0.1,
+        victoryVolume: 0.44,
+        victorySpacingMs: 72
     },
     'snd-crystal': {
         id: 'snd-crystal',
@@ -122,7 +158,11 @@ const PROFILES: Record<string, SoundProfile> = {
         popFreq: 800,
         duration: 0.8, // Ring out
         volumeScale: 0.32,
-        pitchDrop: false
+        pitchDrop: false,
+        victoryNotes: [1318.51, 1760.00, 2349.32],
+        victoryDuration: 0.38,
+        victoryVolume: 0.3,
+        victorySpacingMs: 80
     },
     'snd-koto': {
         id: 'snd-koto',
@@ -135,7 +175,11 @@ const PROFILES: Record<string, SoundProfile> = {
         popFreq: 220,
         duration: 0.65,
         volumeScale: 0.3,
-        pitchDrop: false
+        pitchDrop: false,
+        victoryNotes: [440.00, 523.25, 659.25, 880.00],
+        victoryDuration: 0.65,
+        victoryVolume: 0.42,
+        victorySpacingMs: 85
     }
 };
 
@@ -875,40 +919,43 @@ class SoundController {
         osc.stop(ctx.currentTime + duration + 0.2); 
     }
 
-    playClick() {
-        if (this.soundEnabled) {
-            if (this.activeProfile.id === 'snd-piano') {
-                const chord = [523.25, 783.99];
-                chord.forEach((f, i) => {
-                    setTimeout(() => {
-                        this.playTone(f, 0.38, 0.2, undefined, undefined, true);
-                    }, i * 24);
-                });
-            } else if (this.activeProfile.id === 'snd-koto') {
-                // Compact two-string Koto strum.
-                const chord = [329.63, 440.00];
-                chord.forEach((f, i) => {
-                    setTimeout(() => {
-                        this.playTone(f, 0.52, 0.2, undefined, undefined, true);
-                    }, i * 24);
-                });
-            } else if (this.activeProfile.id === 'snd-wood') {
-                this.playTone(330, 0.1, 0.4, 'sine', undefined, true);
-            } else if (this.activeProfile.id === 'snd-stone') {
-                this.playTone(this.activeProfile.uiClickFreq, this.activeProfile.duration, 0.55, 'sine', undefined, true);
-            } else if (this.activeProfile.id === 'snd-water') {
-                this.playTone(800, 0.08, 0.3, 'sine', undefined, true);
-            } else {
-                this.playTone(this.activeProfile.uiClickFreq, this.activeProfile.duration, 0.4);
-            }
+    private playPackClickTone() {
+        if (!this.soundEnabled) return;
+
+        if (this.activeProfile.id === 'snd-piano') {
+            const chord = [523.25, 783.99];
+            chord.forEach((frequency, index) => {
+                window.setTimeout(() => {
+                    this.playTone(frequency, 0.38, 0.2, undefined, undefined, true);
+                }, index * 24);
+            });
+        } else if (this.activeProfile.id === 'snd-koto') {
+            const chord = [329.63, 440.00];
+            chord.forEach((frequency, index) => {
+                window.setTimeout(() => {
+                    this.playTone(frequency, 0.52, 0.2, undefined, undefined, true);
+                }, index * 24);
+            });
+        } else if (this.activeProfile.id === 'snd-wood') {
+            this.playTone(330, 0.1, 0.4, 'sine', undefined, true);
+        } else if (this.activeProfile.id === 'snd-stone') {
+            this.playTone(this.activeProfile.uiClickFreq, this.activeProfile.duration, 0.55, 'sine', undefined, true);
+        } else if (this.activeProfile.id === 'snd-water') {
+            this.playTone(800, 0.08, 0.3, 'sine', undefined, true);
+        } else {
+            this.playTone(this.activeProfile.uiClickFreq, this.activeProfile.duration, 0.4);
         }
-        
+    }
+
+    playPackClick() {
+        this.playPackClickTone();
+
         if (this.vibrationEnabled) {
             Haptics.impact({ style: ImpactStyle.Light });
         }
     }
 
-    playTap() {
+    playPackTap() {
         if (this.soundEnabled) {
             let freq = this.activeProfile.uiTapFreq;
             if (this.activeProfile.tapFreqs && this.activeProfile.tapFreqs.length > 0) {
@@ -921,7 +968,7 @@ class SoundController {
         }
     }
 
-    playNumber(num: number) {
+    playPackNumber(num: number) {
         if (this.soundEnabled) {
             const freq = this.activeProfile.numberFreqs[num - 1] || 600;
             const vol = 0.6;
@@ -932,7 +979,7 @@ class SoundController {
         }
     }
 
-    playBookRowReveal(_rowIndex: number) {
+    playPackBookRowReveal(_rowIndex: number) {
         if (!this.soundEnabled) return;
 
         // Every row gets the same short tap from the selected sound pack.
@@ -949,15 +996,35 @@ class SoundController {
         );
     }
 
-    playPop() {
-        this.playClick();
+    playPackPop() {
+        this.playPackClick();
     }
 
-    playBubblePop() {
-        this.playClick();
+    playUniversalPepinoAppear() {
+        if (this.soundEnabled) {
+            const ctx = this.getCtx();
+            const oscillator = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(520, ctx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(920, ctx.currentTime + 0.085);
+            gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.11, ctx.currentTime + 0.008);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.13);
+
+            oscillator.connect(gain);
+            gain.connect(ctx.destination);
+            oscillator.start();
+            oscillator.stop(ctx.currentTime + 0.14);
+        }
+
+        if (this.vibrationEnabled) {
+            Haptics.impact({ style: ImpactStyle.Light });
+        }
     }
 
-    playPepinoTap() {
+    playUniversalPepinoTap() {
         if (this.soundEnabled) {
             const ctx = this.getCtx();
             const osc = ctx.createOscillator();
@@ -985,7 +1052,7 @@ class SoundController {
         }
     }
 
-    playCounterTick() {
+    playPackCounterTick() {
         if (!this.soundEnabled) return;
         
         // Throttling to avoid buzzing on large number jumps
@@ -1016,7 +1083,7 @@ class SoundController {
         }
     }
 
-    playProgressFill(duration: number): () => void {
+    playUniversalProgressFill(duration: number): () => void {
         if (!this.soundEnabled) return () => {};
         const ctx = this.getCtx();
         const osc = ctx.createOscillator();
@@ -1085,74 +1152,32 @@ class SoundController {
         };
     }
 
-    playUnlockReady() {
+    playPackUnlockReady() {
         // Opening the completed lock uses the exact victory sound belonging
         // to the currently selected sound pack.
-        this.playWin();
+        this.playPuzzleVictory();
     }
 
-    playWin() {
+    playPuzzleVictory() {
         if (this.soundEnabled) {
-            if (this.activeProfile.id === 'snd-koto') {
-                // A celebratory Hirajoshi flourish using the same refined
-                // instrument voice as normal gameplay.
-                this.playProfileSequence(
-                    [440.00, 523.25, 659.25, 880.00],
-                    0.65,
-                    0.42,
-                    85,
-                    this.activeProfile
-                );
-            } else if (this.activeProfile.id === 'snd-piano') {
-                // Warm upright cadence with enough space for every hammer
-                // attack to remain audible on a phone.
-                this.playProfileSequence(
-                    [523.25, 659.25, 783.99, 1046.50],
-                    0.78,
-                    0.34,
-                    95,
-                    this.activeProfile
-                );
-            } else if (this.activeProfile.id === 'snd-retro') {
-                // A compact handheld victory jingle: recognizable and cheerful
-                // without becoming an aggressive arcade fanfare.
-                this.playProfileSequence(
-                    [523.25, 659.25, 783.99, 1046.50],
-                    0.1,
-                    0.44,
-                    72,
-                    this.activeProfile
-                );
+            const profile = this.activeProfile;
+
+            if (profile.id === 'snd-paper') {
+                // Three dry paper flicks with an opening filter create a clear
+                // resolution without turning Paper into a melodic instrument.
+                profile.victoryNotes.forEach((frequency, index) => {
+                    window.setTimeout(() => {
+                        this.playNoiseBurst(frequency, profile.victoryDuration, 0.14);
+                    }, index * profile.victorySpacingMs);
+                });
             } else {
-                // Minimalistic success chime (e.g., C6 -> G6)
-                const ctx = this.getCtx();
-                const time = ctx.currentTime;
-
-                // First note
-                const osc1 = ctx.createOscillator();
-                const gain1 = ctx.createGain();
-                osc1.type = 'sine';
-                osc1.frequency.setValueAtTime(1046.50, time); // C6
-                gain1.gain.setValueAtTime(0, time);
-                gain1.gain.linearRampToValueAtTime(0.05, time + 0.05);
-                gain1.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
-                osc1.connect(gain1);
-                gain1.connect(ctx.destination);
-                osc1.start(time);
-                osc1.stop(time + 0.5);
-
-                // Second note
-                const osc2 = ctx.createOscillator();
-                const gain2 = ctx.createGain();
-                osc2.type = 'sine';
-                osc2.frequency.setValueAtTime(1567.98, time + 0.15); // G6
-                gain2.gain.setValueAtTime(0, time + 0.15);
-                gain2.gain.linearRampToValueAtTime(0.08, time + 0.2);
-                gain2.gain.exponentialRampToValueAtTime(0.001, time + 1.2);
-                osc2.connect(gain2);
-                gain2.connect(ctx.destination);
-                osc2.start(time + 0.15);
-                osc2.stop(time + 1.2);
+                this.playProfileSequence(
+                    profile.victoryNotes,
+                    profile.victoryDuration,
+                    profile.victoryVolume,
+                    profile.victorySpacingMs,
+                    profile
+                );
             }
         }
         
@@ -1174,7 +1199,7 @@ class SoundController {
         }
     }
 
-    playGiftClaim() {
+    playUniversalGiftClaim() {
         if (this.soundEnabled) {
             // A short, crisp, bright 3-note chime/arpeggio for receiving gifts or rewards
             const notes = [1046.50, 1318.51, 1567.98];
@@ -1215,7 +1240,35 @@ class SoundController {
         }
     }
 
-    playLevelEnter() {
+    playUniversalPurchaseSuccess() {
+        if (this.soundEnabled) {
+            const ctx = this.getCtx();
+            const now = ctx.currentTime;
+            const notes = [659.25, 987.77];
+
+            notes.forEach((frequency, index) => {
+                const oscillator = ctx.createOscillator();
+                const gain = ctx.createGain();
+                const start = now + index * 0.09;
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(frequency, start);
+                gain.gain.setValueAtTime(0.0001, start);
+                gain.gain.linearRampToValueAtTime(index === 0 ? 0.055 : 0.075, start + 0.015);
+                gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.42);
+                oscillator.connect(gain);
+                gain.connect(ctx.destination);
+                oscillator.start(start);
+                oscillator.stop(start + 0.45);
+            });
+        }
+
+        if (this.vibrationEnabled) {
+            Haptics.notification({ type: NotificationType.Success }).catch(() => {});
+        }
+    }
+
+    playPackLevelEnter() {
         if (this.vibrationEnabled) {
             // A compact two-step signature distinguishes entering a puzzle
             // from an ordinary UI tap without feeling heavy.
@@ -1288,13 +1341,17 @@ class SoundController {
     }
 
     playScan() {
-        this.playClick();
+        // Scan keeps a universal electronic identity, preceded by one small
+        // sound-pack signature without adding a second haptic impact.
+        this.playPackClickTone();
         if (this.soundEnabled) {
             const ctx = this.getCtx();
             const now = ctx.currentTime;
             const duration = 1.2;
             const scanOutput = ctx.createGain();
-            scanOutput.gain.setValueAtTime(0.6, now);
+            // Keep the scanner layers balanced while lowering the complete
+            // universal Scan effect by 20%.
+            scanOutput.gain.setValueAtTime(0.48, now);
             scanOutput.connect(ctx.destination);
 
             const tikOsc = ctx.createOscillator();
@@ -1365,7 +1422,7 @@ class SoundController {
      * A shared, deliberately tiny rejection cue for Guard. It bypasses the
      * active sound profile so the feedback stays identical in every pack.
      */
-    playGuardBlocked() {
+    playUniversalGuardBlocked() {
         if (!this.soundEnabled) return;
 
         const ctx = this.getCtx();
@@ -1399,7 +1456,7 @@ class SoundController {
         playSoftErrorTone(245, 0.055, 0.09, 0.055);
     }
 
-    playCheck() {
+    playPackCheck() {
         if (!this.soundEnabled) return;
         const profile = this.activeProfile;
         const sequences: Record<string, { notes: number[]; duration: number; volume: number; spacing: number }> = {
@@ -1429,7 +1486,7 @@ class SoundController {
         }
     }
 
-    playSectionComplete() {
+    playPackSectionComplete() {
         if (!this.soundEnabled) return;
         const ctx = this.getCtx();
         const now = ctx.currentTime;
@@ -1585,6 +1642,18 @@ class SoundController {
             } catch (e) {}
         }
     }
+
+    // Backward-compatible names for existing UI call sites. These wrappers keep
+    // the sound ownership explicit in one place while older components migrate.
+    playClick() { this.playPackClick(); }
+    playTap() { this.playPackTap(); }
+    playNumber(num: number) { this.playPackNumber(num); }
+    playBookRowReveal(rowIndex: number) { this.playPackBookRowReveal(rowIndex); }
+    playPop() { this.playPackPop(); }
+    playCounterTick() { this.playPackCounterTick(); }
+    playLevelEnter() { this.playPackLevelEnter(); }
+    playCheck() { this.playPackCheck(); }
+    playSectionComplete() { this.playPackSectionComplete(); }
 
     playPreview(profileId: string) {
         if (!this.soundEnabled) return;

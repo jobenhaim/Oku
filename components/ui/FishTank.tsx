@@ -238,7 +238,7 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
         
         setTimeout(() => {
             setIntroState('appearing'); 
-            sounds.playPop(); 
+            sounds.playUniversalPepinoAppear();
 
             setTimeout(() => {
                 setIntroState('active');
@@ -372,7 +372,7 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
 
         if (amount > 0) {
             // New short, punchy gift claim sound
-            sounds.playGiftClaim();
+            sounds.playUniversalGiftClaim();
             onRewardClaim(amount);
             showReward({ amount }, () => {
                 setIsGiftReady(updatedPepinoState.hasPendingGift);
@@ -382,7 +382,7 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
 
     const handlePepinoClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        sounds.playPepinoTap(); // Play cute tap sound
+        sounds.playUniversalPepinoTap();
         if (containerRef.current) {
             const rect = containerRef.current.getBoundingClientRect();
             const x = e.clientX - rect.left;

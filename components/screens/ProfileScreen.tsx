@@ -414,7 +414,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         ]);
         if (!onClaimAchievement(achievement.id, achievement.reward)) return;
 
-        sounds.playGiftClaim();
+        sounds.playUniversalGiftClaim();
         const nextClaimedRank = achievement.onClaimTitleRank ?? claimedRank;
         if (achievement.onClaimTitleRank !== undefined) {
             const newRank = achievement.onClaimTitleRank;

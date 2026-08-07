@@ -184,7 +184,7 @@ export const WinModal: React.FC<WinModalProps> = ({
         // Step 1: Difficulty/Level subtitle appears
         const t1 = setTimeout(() => {
             setStep(1);
-            sounds.playPepinoTap();
+            sounds.playPackPop();
         }, 100);
 
         // Step 2: Brief beat before the solved title

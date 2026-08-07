@@ -453,7 +453,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const handleClaimBonus = (e: React.MouseEvent) => {
     const now = Date.now();
     if (now < nextBonusClaimTime) return;
-    sounds.playGiftClaim();
+    sounds.playUniversalGiftClaim();
     
     const nextDate = new Date();
     nextDate.setDate(nextDate.getDate() + 1);
@@ -726,7 +726,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       const lowerCode = normalizedCode.toLowerCase();
 
       if (lowerCode === 'haha5000') {
-          sounds.playWin();
+          sounds.playUniversalGiftClaim();
           handleEarnPoints(5000, 'coupons');
           Storage.markCouponRedeemed(normalizedCode);
           setRedeemedCoupons(Storage.getStoredData().redeemedCoupons || []);
@@ -734,7 +734,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       }
 
       if (lowerCode === 'haha10000') {
-          sounds.playWin();
+          sounds.playUniversalGiftClaim();
           handleEarnPoints(10000, 'coupons');
           Storage.markCouponRedeemed(normalizedCode);
           setRedeemedCoupons(Storage.getStoredData().redeemedCoupons || []);
@@ -742,7 +742,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       }
 
       if (lowerCode === 'hahapepino') {
-          sounds.playWin();
+          sounds.playUniversalGiftClaim();
           Storage.unlockPepino();
           setPepinoState(Storage.getPepinoState());
           Storage.markCouponRedeemed(normalizedCode);
@@ -751,7 +751,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       }
 
       if (lowerCode === 'hahadev') {
-          sounds.playWin();
+          sounds.playUniversalGiftClaim();
           const newSettings = { ...settings, devAutoSolve: true };
           setSettings(newSettings);
           Storage.saveSettings(newSettings);
@@ -770,7 +770,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       };
 
       if (lowerCode === 'slvall100') {
-          sounds.playWin();
+          sounds.playUniversalGiftClaim();
           [
               Difficulty.SuperEasy,
               Difficulty.Easy,
@@ -789,7 +789,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       const couponDifficulty = solveCouponDifficulties[lowerCode];
 
       if (couponDifficulty) {
-          sounds.playWin();
+          sounds.playUniversalGiftClaim();
           Storage.completeDifficultyLevels(couponDifficulty);
           Storage.markCouponRedeemed(normalizedCode);
           const updatedData = Storage.getStoredData();
