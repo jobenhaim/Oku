@@ -122,7 +122,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   const [animatingSections, setAnimatingSections] = useState<Set<string>>(new Set());
   const [nudgeCue, setNudgeCue] = useState<{r: number, c: number, key: number} | null>(null);
-  const [placementShine, setPlacementShine] = useState<{r: number, c: number, key: number} | null>(null);
   const [showStartHint, setShowStartHint] = useState(false);
   const [pillMessage, setPillMessage] = useState<PillMessage | null>(null);
   const scanErrorDeckRef = useRef(shuffledCopy(SCAN_ERROR_MESSAGES));
@@ -149,7 +148,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const lastLifecycleSaveAtRef = useRef(0);
   const gameFinishedRef = useRef(false);
   const restartTimerRef = useRef<number | null>(null);
-  const placementShineTimerRef = useRef<number | null>(null);
   const isGuardActive = purchasedSkills.includes('skill-scribe');
   
   // Timer hook
@@ -225,18 +223,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           }, 2000);
       }
   }, []);
-
-  const handleNumberPlaced = useCallback((row: number, col: number) => {
-      if (!numberColor.includes('text-shine-') || numberColor.includes('text-shine-rainbow')) return;
-      if (placementShineTimerRef.current !== null) {
-          window.clearTimeout(placementShineTimerRef.current);
-      }
-      setPlacementShine({ r: row, c: col, key: Date.now() });
-      placementShineTimerRef.current = window.setTimeout(() => {
-          setPlacementShine(null);
-          placementShineTimerRef.current = null;
-      }, 650);
-  }, [numberColor]);
 
   const dismissCurrentPill = useCallback(() => {
       if (!pillMessageRef.current) return;
@@ -434,7 +420,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           saveProgress(newBoard, undefined, undefined, currentMoveLog, hasMadeMistake);
       },
       onSectionComplete: handleSectionComplete,
-      onNumberPlaced: handleNumberPlaced,
   });
   hasMadeMistakeRef.current = hasMadeMistake;
 
@@ -764,7 +749,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           setIsEraseMode(false);
           setAnimatingSections(new Set());
           setNudgeCue(null);
-          setPlacementShine(null);
           gameFinishedRef.current = false;
           notesReadyShownRef.current = false;
           hasUsedNotesRef.current = false;
@@ -787,9 +771,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   useEffect(() => () => {
       if (restartTimerRef.current !== null) {
           window.clearTimeout(restartTimerRef.current);
-      }
-      if (placementShineTimerRef.current !== null) {
-          window.clearTimeout(placementShineTimerRef.current);
       }
   }, []);
   
@@ -997,7 +978,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                     isScanning={isScanning}
                     isScanSuccess={isScanSuccess}
                     animatingSections={animatingSections}
-                    placementShine={placementShine}
                     settings={settings}
                     numberColor={numberColor}
                     onCellClick={onCellClickWrapper}
@@ -1176,7 +1156,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                             
                             <div className="flex flex-col gap-3 w-full">
                                 {/* Resume - Primary */}
-                                <button onClick={() => { sounds.playClick(); setIsPaused(false); }} className="w-full h-14 bg-blue-500 text-white rounded-2xl font-bold text-base shadow-lg shadow-blue-500/20 active:scale-95 transition-transform flex items-center justify-center gap-2.5">
+                                <button onClick={() => { sounds.playClick(); setIsPaused(false); }} className="w-full h-14 bg-stone-800 dark:bg-blue-600 text-white rounded-2xl font-bold text-base shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2.5">
                                     <Icons.Play className="w-5 h-5 fill-current" /> Resume
                                 </button>
                                 

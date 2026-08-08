@@ -316,14 +316,22 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 onClick={() => isPurchased ? onSelectNumberColor(num.id) : onPurchase(num, 'num')} 
                                 className={`w-full aspect-square rounded-2xl shadow-sm flex flex-col items-stretch relative overflow-hidden transition-all bg-gradient-to-t from-stone-100 to-white dark:bg-none dark:bg-stone-800 border ${isSelected ? 'border-stone-600 dark:border-stone-400 scale-105 z-10' : 'border-transparent active:scale-95'}`}
                             >
-                                <div className={`flex-1 flex items-center justify-center w-full`}>
-                                    <span
-                                        data-premium-number="5"
-                                        className={`number-style-preview text-3xl md:text-4xl font-bold ${num.uiClass} ${num.id === 'num-rainbow' ? 'rainbow-number-style-preview' : ''}`}
-                                        style={{ transform: `scale(${isPurchased ? 1.15 : 1})` }}
+                                <div className="flex-1 flex items-center justify-center w-full">
+                                    <div
+                                        className="grid grid-cols-3 grid-rows-3 place-items-center w-[38px] h-[38px] md:w-[46px] md:h-[46px]"
+                                        style={{ transform: `scale(${isPurchased ? 1.08 : 1})` }}
+                                        aria-label={`${num.name} number pad preview`}
                                     >
-                                        5
-                                    </span>
+                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(digit => (
+                                            <span
+                                                key={digit}
+                                                data-premium-number={digit}
+                                                className={`text-[11px] md:text-[13px] font-bold leading-none ${num.uiClass}`}
+                                            >
+                                                {digit}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
                                 <ItemFooter isPurchased={isPurchased} isSelected={isSelected} cost={num.cost} />
                             </button>

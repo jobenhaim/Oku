@@ -31,6 +31,7 @@ const requestedDifficulties = (args.get('difficulties') ?? 'Normal,Hard,Intense'
 const {
     generateCandidateFromSeed,
     auditSudokuPuzzle,
+    auditSudokuHumanFlow,
     assessSudokuDifficulty,
     scoreSudokuAudit,
     DIFFICULTY_TARGETS,
@@ -98,8 +99,11 @@ for (let difficultyIndex = 0; difficultyIndex < difficulties.length; difficultyI
         const { initial } = generateCandidateFromSeed(difficulty, candidateSeed);
         const audit = auditSudokuPuzzle(initial);
         const assessment = assessSudokuDifficulty(difficulty, audit);
+        const humanFlowAudit = difficulty === Difficulty.Normal
+            ? auditSudokuHumanFlow(initial)
+            : undefined;
 
-        if (assessment.status !== 'match') {
+        if (assessment.status !== 'match' || humanFlowAudit?.comfortable === false) {
             if (attempts % 500 === 0) {
                 process.stdout.write(`  ${attempts} attempts, ${accepted.length} accepted\n`);
             }
@@ -130,6 +134,10 @@ for (let difficultyIndex = 0; difficultyIndex < difficulties.length; difficultyI
             techniques: audit.tier3.techniques,
             logicalSteps: audit.tier3.logicalSteps,
             longestSinglesRun: audit.tier3.longestSinglesRun,
+            ...(humanFlowAudit ? {
+                maximumHumanScanCost: humanFlowAudit.maximumScanCost,
+                humanFlowBottlenecks: humanFlowAudit.bottleneckSteps
+            } : {}),
             maximumLayoutSymmetry,
             puzzle: board.map(row => row.join('')).join('/')
         };

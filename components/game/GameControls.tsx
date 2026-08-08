@@ -178,9 +178,12 @@ export const GameControls: React.FC<GameControlsProps> = ({
                                                 sounds.playClick();
                                                 if (onPurchaseScanRefill()) setShowScanRefill(false);
                                             }}
-                                            className="flex-1 rounded-full bg-blue-600 px-2 py-1.5 md:py-2 text-[11px] md:text-[13px] font-bold text-white active:scale-95 transition disabled:bg-stone-200 disabled:text-stone-400 dark:disabled:bg-stone-700 dark:disabled:text-stone-500 disabled:cursor-not-allowed"
+                                            className="flex-1 rounded-full bg-stone-800 dark:bg-blue-600 px-2 py-1.5 md:py-2 text-[11px] md:text-[13px] font-bold text-white active:scale-95 transition disabled:bg-stone-200 disabled:text-stone-400 dark:disabled:bg-stone-700 dark:disabled:text-stone-500 disabled:cursor-not-allowed"
                                         >
-                                            Yes
+                                            <span className="inline-flex items-center justify-center gap-0.5 whitespace-nowrap">
+                                                Buy for {scanRefillCost}
+                                                <Icons.Diamond className="h-3 w-3 fill-current text-blue-400" />
+                                            </span>
                                         </button>
                                     </div>
                                     <div className="absolute bottom-full left-7 h-0 w-0 -translate-x-1/2 border-x-[7px] border-b-[7px] border-x-transparent border-b-white dark:border-b-stone-800" />

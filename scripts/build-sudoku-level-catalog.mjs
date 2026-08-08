@@ -16,7 +16,11 @@ const impossibleSeedCatalog = JSON.parse(
   await readFile(impossibleSourcePath, 'utf8'),
 );
 seedCatalog.seeds.Impossible = impossibleSeedCatalog.seeds;
-const { generateCandidateFromSeed } = await loadSudokuTools();
+const {
+  generateCandidateFromSeed,
+  auditSudokuHumanFlow,
+  Difficulty,
+} = await loadSudokuTools();
 const levels = {};
 
 for (const difficulty of difficulties) {
@@ -25,8 +29,17 @@ for (const difficulty of difficulties) {
     throw new Error(`${difficulty} must contain exactly 300 approved seeds.`);
   }
 
-  levels[difficulty] = seeds.map((seed) => {
+  levels[difficulty] = seeds.map((seed, index) => {
     const { initial, solved } = generateCandidateFromSeed(difficulty, seed);
+    if (difficulty === Difficulty.Normal) {
+      const flowAudit = auditSudokuHumanFlow(initial);
+      if (!flowAudit.comfortable) {
+        throw new Error(
+          `Normal level ${index + 1} (seed ${seed}) fails the human-flow rule ` +
+          `(maximum scan cost ${flowAudit.maximumScanCost}).`,
+        );
+      }
+    }
     return {
       seed,
       puzzle: serializeGrid(

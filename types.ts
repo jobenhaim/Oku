@@ -75,6 +75,7 @@ export interface StoredData {
   settings: AppSettings;
   points: number;
   progress: Record<string, LevelProgress>; // key: "Difficulty-LevelID"
+  normalPuzzleCatalogVersion?: number; // Safely resets stale in-progress Normal boards after catalogue updates
   purchasedBackgrounds: string[];
   selectedBackground: string | null;
   purchasedNumberColors: string[];

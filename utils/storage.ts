@@ -5,6 +5,7 @@ import { getScanRefillCost } from './constants';
 
 const STORAGE_KEY = 'oku_data_v1';
 const LEGACY_STORAGE_KEY = 'minimal_sudoku_data_v1';
+const NORMAL_PUZZLE_CATALOG_VERSION = 1;
 
 export const hasPlayerBoardInput = (board?: Board) => Boolean(board?.some(row =>
     row.some(cell => !cell.isFixed && (cell.value !== null || cell.notes.length > 0))
@@ -69,7 +70,7 @@ const ensureStatsBreakdowns = (data: StoredData) => {
         let remaining = Math.max(0, unclassified);
 
         if (data.welcomeGiftClaimed && !rebuilt.welcomeGift && remaining > 0) {
-            const welcomeAmount = Math.min(200, remaining);
+            const welcomeAmount = Math.min(100, remaining);
             rebuilt.welcomeGift = welcomeAmount;
             remaining -= welcomeAmount;
         }
@@ -124,6 +125,7 @@ function getStoredData(): StoredData {
           settings: DEFAULT_SETTINGS, 
           points: 0, 
           progress: {},
+          normalPuzzleCatalogVersion: NORMAL_PUZZLE_CATALOG_VERSION,
           purchasedBackgrounds: ['bg-default', 'bg-dyn-default'],
           selectedBackground: 'bg-default',
           purchasedNumberColors: ['num-default'],
@@ -159,6 +161,28 @@ function getStoredData(): StoredData {
     
     // Migrations
     if (typeof data.points !== 'number') data.points = 0;
+
+    // Normal's human-flow catalogue replaces its previous boards. Preserve all
+    // completions and rewards, but discard an unfinished snapshot whose fixed
+    // cells would otherwise be compared with the replacement puzzle's answer.
+    if ((data.normalPuzzleCatalogVersion ?? 0) < NORMAL_PUZZLE_CATALOG_VERSION) {
+        for (const progress of Object.values(data.progress || {}) as LevelProgress[]) {
+            if (progress.difficulty !== Difficulty.Normal || progress.status !== 'in-progress') continue;
+            progress.status = progress.bestTime !== undefined ? 'completed' : 'not-started';
+            progress.boardState = undefined;
+            progress.moveLog = undefined;
+            progress.timeElapsed = 0;
+            progress.lastPlayed = undefined;
+            progress.scanUses = 3;
+            progress.scanRefillsPurchased = 0;
+            progress.revealUses = undefined;
+            progress.scribeUses = 4;
+            progress.hasMadeMistake = false;
+            progress.hasUsedNotes = false;
+        }
+        data.normalPuzzleCatalogVersion = NORMAL_PUZZLE_CATALOG_VERSION;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
     
     if (!data.purchasedBackgrounds) data.purchasedBackgrounds = ['bg-default', 'bg-dyn-default'];
     if (!data.purchasedBackgrounds.includes('bg-default')) data.purchasedBackgrounds.push('bg-default');
@@ -168,6 +192,13 @@ function getStoredData(): StoredData {
     
     if (!data.purchasedNumberColors) data.purchasedNumberColors = ['num-default'];
     if (!data.selectedNumberColor) data.selectedNumberColor = 'num-default';
+    // Lagoon was retired in favor of Ember. Preserve ownership for anyone who
+    // bought it, and keep their selected style valid.
+    if (data.purchasedNumberColors.includes('num-lagoon')) {
+        data.purchasedNumberColors = data.purchasedNumberColors.filter((id: string) => id !== 'num-lagoon');
+        if (!data.purchasedNumberColors.includes('num-ruby')) data.purchasedNumberColors.push('num-ruby');
+    }
+    if (data.selectedNumberColor === 'num-lagoon') data.selectedNumberColor = 'num-ruby';
 
     if (!data.purchasedSoundPacks) data.purchasedSoundPacks = ['snd-zen'];
     if (!data.selectedSoundPack) data.selectedSoundPack = 'snd-zen';
@@ -207,6 +238,13 @@ function getStoredData(): StoredData {
     data.purchasedSkills = [...new Set(data.purchasedSkills)];
     data.enabledSkills = [...new Set(data.enabledSkills)];
 
+    // Light is now part of Oku's welcome gift. Backfill it for players who
+    // claimed the previous welcome gift before this reward was introduced.
+    if (data.welcomeGiftClaimed && !data.purchasedSkills.includes('skill-nudge')) {
+        data.purchasedSkills.push('skill-nudge');
+        data.enabledSkills.push('skill-nudge');
+    }
+
     for (const progress of Object.values(data.progress || {}) as Array<LevelProgress & { autoUses?: number }>) {
         if (progress.scribeUses === undefined && progress.autoUses !== undefined) {
             progress.scribeUses = Math.min(progress.autoUses, 4);
@@ -223,13 +261,8 @@ function getStoredData(): StoredData {
     if (data.books2AllOwned === undefined) data.books2AllOwned = false;
     if (data.books3AllOwned === undefined) data.books3AllOwned = false;
     if (data.booksForeverOwned === undefined) data.booksForeverOwned = false;
-    // Backfill rewards added to the Starter Pack without re-enabling skills
-    // that an existing owner deliberately switched off.
+    // Backfill the number style added to the Starter Pack.
     if (data.starterPackPurchased) {
-        if (!data.purchasedSkills.includes('skill-nudge')) {
-            data.purchasedSkills.push('skill-nudge');
-            if (!data.enabledSkills.includes('skill-nudge')) data.enabledSkills.push('skill-nudge');
-        }
         if (!data.purchasedNumberColors.includes('num-teal')) data.purchasedNumberColors.push('num-teal');
     }
     
@@ -351,6 +384,7 @@ function getStoredData(): StoredData {
         settings: DEFAULT_SETTINGS, 
         points: 0, 
         progress: {},
+        normalPuzzleCatalogVersion: NORMAL_PUZZLE_CATALOG_VERSION,
         purchasedBackgrounds: ['bg-default', 'bg-dyn-default'],
         selectedBackground: 'bg-default',
         purchasedNumberColors: ['num-default'],
@@ -425,7 +459,7 @@ function ensureStarterPackUnlocked(data: StoredData) {
   if (!data.enabledSkills) data.enabledSkills = [];
   if (!data.purchasedSoundPacks) data.purchasedSoundPacks = ['snd-zen'];
 
-  for (const skillId of ['skill-nudge', 'skill-scribe', 'skill-scan']) {
+  for (const skillId of ['skill-scribe', 'skill-scan']) {
     if (!data.purchasedSkills.includes(skillId)) {
       data.purchasedSkills.push(skillId);
     }
@@ -1111,9 +1145,22 @@ export const Storage = {
       return !!getStoredData().welcomeGiftClaimed;
   },
 
-  claimWelcomeGift: () => {
+  claimWelcomeGift: (): { applied: boolean; data: StoredData } => {
       const data = getStoredData();
+      if (data.welcomeGiftClaimed) return { applied: false, data };
+
       data.welcomeGiftClaimed = true;
+      data.points += 100;
+      recordDiamondEarning(data, 100, 'welcomeGift');
+
+      if (!data.purchasedSkills.includes('skill-nudge')) {
+          data.purchasedSkills.push('skill-nudge');
+      }
+      if (!data.enabledSkills.includes('skill-nudge')) {
+          data.enabledSkills.push('skill-nudge');
+      }
+
       saveData(data);
+      return { applied: true, data };
   },
 };

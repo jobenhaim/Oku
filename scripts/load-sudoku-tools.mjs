@@ -11,6 +11,10 @@ export const loadSudokuTools = () => {
                     export { auditSudokuPuzzle } from './utils/sudokuAudit.ts';
                     export { auditSudokuWithAdvancedLogic } from './utils/sudokuAdvancedAudit.ts';
                     export {
+                        auditSudokuHumanFlow,
+                        NORMAL_HUMAN_FLOW_MAXIMUM_SCAN_COST
+                    } from './utils/sudokuHumanFlow.ts';
+                    export {
                         assessSudokuDifficulty,
                         DIFFICULTY_TARGETS,
                         scoreSudokuAudit

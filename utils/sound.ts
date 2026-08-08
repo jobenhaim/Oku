@@ -39,17 +39,19 @@ const PROFILES: Record<string, SoundProfile> = {
     'snd-paper': {
         id: 'snd-paper',
         type: 'noise', 
-        uiClickFreq: 1200, 
-        uiTapFreq: 1000,
-        numberFreqs: Array(9).fill(1000), 
-        popFreq: 800,
-        duration: 0.05,
-        volumeScale: 0.6,
-        noiseFilterFreq: 800,
-        victoryNotes: [900, 1450, 2200],
-        victoryDuration: 0.075,
-        victoryVolume: 0.38,
-        victorySpacingMs: 65
+        uiClickFreq: 1250,
+        uiTapFreq: 1100,
+        // Paper stays non-musical: each digit changes the brightness of the
+        // same dry pencil-on-paper texture instead of playing a pitched scale.
+        numberFreqs: [950, 1020, 1090, 1160, 1230, 1300, 1370, 1450, 1540],
+        popFreq: 900,
+        duration: 0.042,
+        volumeScale: 0.68,
+        noiseFilterFreq: 1100,
+        victoryNotes: [900, 1350, 1850],
+        victoryDuration: 0.065,
+        victoryVolume: 0.27,
+        victorySpacingMs: 62
     },
     'snd-wood': {
         id: 'snd-wood',
@@ -94,7 +96,7 @@ const PROFILES: Record<string, SoundProfile> = {
         numberFreqs: [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99],
         popFreq: 196, // G3
         duration: 0.9,
-        volumeScale: 0.5,
+        volumeScale: 0.4,
         pitchDrop: false,
         victoryNotes: [523.25, 659.25, 783.99, 1046.50],
         victoryDuration: 0.78,
@@ -187,6 +189,8 @@ class SoundController {
     private ctx: AudioContext | null = null;
     private profileOutputContext: AudioContext | null = null;
     private profileOutput: GainNode | null = null;
+    private paperNoiseContext: AudioContext | null = null;
+    private paperNoiseBuffer: AudioBuffer | null = null;
     private soundEnabled: boolean = true;
     private vibrationEnabled: boolean = true;
     private activeProfile: SoundProfile = PROFILES['snd-zen'];
@@ -269,6 +273,8 @@ class SoundController {
         this.ctx = null;
         this.profileOutput = null;
         this.profileOutputContext = null;
+        this.paperNoiseBuffer = null;
+        this.paperNoiseContext = null;
         this.lastObservedContextTime = 0;
         this.lastObservedWallTime = 0;
 
@@ -448,37 +454,86 @@ class SoundController {
         });
     }
 
+    private getPaperNoiseBuffer(ctx: AudioContext): AudioBuffer {
+        if (!this.paperNoiseBuffer || this.paperNoiseContext !== ctx) {
+            const buffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            this.paperNoiseContext = ctx;
+            this.paperNoiseBuffer = buffer;
+        }
+
+        return this.paperNoiseBuffer;
+    }
+
+    /**
+     * A dry paper voice built from a warm filtered body and a tiny bright
+     * pencil edge. Both layers reuse one noise buffer so rapid number entry
+     * does not allocate and fill a new buffer for every tap.
+     */
     private playNoiseBurst(centerFreq: number, duration: number, volume: number) {
         if (!this.soundEnabled) return;
         const ctx = this.getCtx();
-        
-        const bufferSize = ctx.sampleRate * duration;
-        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-            data[i] = (Math.random() * 2 - 1);
-        }
+        const now = ctx.currentTime;
+        const burstDuration = Math.max(0.018, duration);
+        const buffer = this.getPaperNoiseBuffer(ctx);
+        const brightnessVariation = 0.95 + Math.random() * 0.1;
+        const velocityVariation = 0.94 + Math.random() * 0.1;
+        const output = this.getProfileOutput(ctx);
 
         const noise = ctx.createBufferSource();
         noise.buffer = buffer;
+        noise.loop = true;
 
         const filter = ctx.createBiquadFilter();
         filter.type = 'bandpass';
-        filter.Q.value = 0.7; 
-        filter.frequency.setValueAtTime(centerFreq, ctx.currentTime);
-        filter.frequency.exponentialRampToValueAtTime(centerFreq * 0.6, ctx.currentTime + duration);
+        filter.Q.value = 1.15;
+        filter.frequency.setValueAtTime(centerFreq * 1.08 * brightnessVariation, now);
+        filter.frequency.exponentialRampToValueAtTime(
+            centerFreq * 0.82 * brightnessVariation,
+            now + burstDuration
+        );
 
         const gain = ctx.createGain();
-        gain.gain.setValueAtTime(0, ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(
+            volume * velocityVariation,
+            now + Math.min(0.003, burstDuration * 0.15)
+        );
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + burstDuration);
 
         noise.connect(filter);
         filter.connect(gain);
-        gain.connect(this.getProfileOutput(ctx));
+        gain.connect(output);
 
-        noise.start();
-        noise.stop(ctx.currentTime + duration + 0.1);
+        // A very short upper-mid scratch makes the attack read as a pencil or
+        // thick page flick instead of a soft, generic noise puff.
+        const edge = ctx.createBufferSource();
+        const edgeFilter = ctx.createBiquadFilter();
+        const edgeGain = ctx.createGain();
+        const edgeDuration = Math.min(0.016, Math.max(0.009, burstDuration * 0.38));
+        edge.buffer = buffer;
+        edge.loop = true;
+        edgeFilter.type = 'bandpass';
+        edgeFilter.Q.value = 1.35;
+        edgeFilter.frequency.setValueAtTime(
+            Math.min(3800, Math.max(2200, centerFreq * 2.15)) * brightnessVariation,
+            now
+        );
+        edgeGain.gain.setValueAtTime(volume * 0.32 * velocityVariation, now);
+        edgeGain.gain.exponentialRampToValueAtTime(0.0001, now + edgeDuration);
+        edge.connect(edgeFilter);
+        edgeFilter.connect(edgeGain);
+        edgeGain.connect(output);
+
+        const bodyOffset = Math.random() * 0.8;
+        const edgeOffset = Math.random() * 0.8;
+        noise.start(now, bodyOffset);
+        edge.start(now, edgeOffset);
+        noise.stop(now + burstDuration + 0.01);
+        edge.stop(now + edgeDuration + 0.01);
     }
 
     /**
@@ -517,7 +572,7 @@ class SoundController {
 
         // Paper handling
         if (profile.id === 'snd-paper') {
-            this.playNoiseBurst(profile.noiseFilterFreq || 800, duration, vol);
+            this.playNoiseBurst(freq || profile.noiseFilterFreq || 1100, duration, vol);
             return;
         }
 
@@ -1167,7 +1222,11 @@ class SoundController {
                 // resolution without turning Paper into a melodic instrument.
                 profile.victoryNotes.forEach((frequency, index) => {
                     window.setTimeout(() => {
-                        this.playNoiseBurst(frequency, profile.victoryDuration, 0.14);
+                        this.playNoiseBurst(
+                            frequency,
+                            profile.victoryDuration,
+                            profile.victoryVolume * profile.volumeScale
+                        );
                     }, index * profile.victorySpacingMs);
                 });
             } else {
@@ -1285,8 +1344,11 @@ class SoundController {
         const pid = this.activeProfile.id;
 
         if (pid === 'snd-paper') {
-            this.playTone(600, 0.15, 0.5, undefined, undefined, true);
-            setTimeout(() => this.playTone(1000, 0.1, 0.3, undefined, undefined, true), 100);
+            // Two compact page flicks welcome the player without a long hiss.
+            this.playTone(850, 0.068, 0.36, undefined, undefined, true);
+            setTimeout(() => {
+                this.playTone(1400, 0.055, 0.3, undefined, undefined, true);
+            }, 72);
             
         } else if (pid === 'snd-wood') {
             const notes = [440, 587, 659, 783]; 
@@ -1460,7 +1522,7 @@ class SoundController {
         if (!this.soundEnabled) return;
         const profile = this.activeProfile;
         const sequences: Record<string, { notes: number[]; duration: number; volume: number; spacing: number }> = {
-            'snd-paper': { notes: [1800, 2400], duration: 0.04, volume: 0.42, spacing: 50 },
+            'snd-paper': { notes: [1250, 1750], duration: 0.04, volume: 0.36, spacing: 48 },
             'snd-retro': { notes: [783.99, 1046.50], duration: 0.09, volume: 0.44, spacing: 48 },
             'snd-wood': { notes: [659.25, 880], duration: 0.1, volume: 0.42, spacing: 40 },
             'snd-water': { notes: [1174.66, 1567.98], duration: 0.13, volume: 0.42, spacing: 45 },
@@ -1486,161 +1548,21 @@ class SoundController {
         }
     }
 
-    playPackSectionComplete() {
-        if (!this.soundEnabled) return;
-        const ctx = this.getCtx();
-        const now = ctx.currentTime;
-        const pid = this.activeProfile.id;
-        const master = this.getProfileOutput(ctx);
-        const completionOutput = ctx.createGain();
-        completionOutput.gain.setValueAtTime(0.8, now);
-        completionOutput.connect(master);
+    playSectionCompleteHaptic() {
+        if (!this.vibrationEnabled) return;
 
-        if (pid === 'snd-paper') {
-            // Satisfying 3-step crisp paper rustling ripple
-            const centerFreqs = [1200, 1600, 2200];
-            centerFreqs.forEach((freq, i) => {
-                setTimeout(() => {
-                    this.playTone(freq, 0.045, 0.28, undefined, undefined, true);
-                }, i * 45);
-            });
-        } else if (pid === 'snd-mech') {
-            this.playProfileSequence([1600, 2000, 2400], 0.065, 0.352, 45);
-        } else if (pid === 'snd-retro') {
-            // Warm three-note handheld completion phrase.
-            this.playProfileSequence([523.25, 659.25, 783.99], 0.1, 0.4, 55);
-        } else if (pid === 'snd-wood') {
-            // Triple snappy wood-block percussion knocks
-            const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
-            notes.forEach((freq, i) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                
-                const mod = ctx.createOscillator();
-                const modGain = ctx.createGain();
-                mod.type = 'sine';
-                mod.frequency.setValueAtTime(freq * 1.5, now + i * 0.045);
-                modGain.gain.setValueAtTime(freq * 0.3, now + i * 0.045);
-                mod.connect(modGain);
-                modGain.connect(osc.frequency);
-                
-                osc.frequency.setValueAtTime(freq, now + i * 0.045);
-                const start = now + i * 0.045;
-                gain.gain.setValueAtTime(0, start);
-                gain.gain.linearRampToValueAtTime(0.18, start + 0.005);
-                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.1);
-                
-                osc.connect(gain);
-                gain.connect(completionOutput);
-                mod.start(start);
-                osc.start(start);
-                mod.stop(start + 0.12);
-                osc.stop(start + 0.12);
-            });
-        } else if (pid === 'snd-water') {
-            // Triple bubbly drops
-            const notes = [1046.50, 1318.51, 1567.98]; // C6, E6, G6
-            notes.forEach((freq, i) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                const start = now + i * 0.055;
-                osc.frequency.setValueAtTime(freq * 0.8, start);
-                osc.frequency.exponentialRampToValueAtTime(freq * 1.15, start + 0.05);
-                
-                gain.gain.setValueAtTime(0, start);
-                gain.gain.linearRampToValueAtTime(0.12, start + 0.012);
-                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.15);
-                
-                osc.connect(gain);
-                gain.connect(completionOutput);
-                osc.start(start);
-                osc.stop(start + 0.2);
-            });
-        } else if (pid === 'snd-piano') {
-            // Compact upright arpeggio using the exact gameplay voice.
-            this.playProfileSequence(
-                [523.25, 659.25, 783.99, 987.77],
-                0.62,
-                0.2,
-                60,
-                this.activeProfile
-            );
-        } else if (pid === 'snd-stone') {
-            // Resonant stone chime-thud
-            const notes = [196.00, 261.63, 329.63]; // G3, C4, E4
-            notes.forEach((freq, i) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                
-                const start = now + i * 0.06;
-                osc.frequency.setValueAtTime(freq, start);
-                gain.gain.setValueAtTime(0, start);
-                gain.gain.linearRampToValueAtTime(0.25, start + 0.005);
-                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.18);
-                
-                osc.connect(gain);
-                gain.connect(completionOutput);
-                osc.start(start);
-                osc.stop(start + 0.22);
-            });
-        } else if (pid === 'snd-koto') {
-            // A brighter three-string cascade through the same refined Koto
-            // voice used for number placement.
-            this.playProfileSequence([440.00, 523.25, 659.25], 0.5, 0.34, 58);
-        } else if (pid === 'snd-crystal') {
-            // Glassy high shimmering crystals
-            const notes = [1567.98, 2093.00, 2637.02]; // G6, C7, E7
-            notes.forEach((freq, i) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                
-                const start = now + i * 0.05;
-                osc.frequency.setValueAtTime(freq, start);
-                gain.gain.setValueAtTime(0, start);
-                gain.gain.linearRampToValueAtTime(0.05, start + 0.005);
-                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.4);
-                
-                osc.connect(gain);
-                gain.connect(completionOutput);
-                osc.start(start);
-                osc.stop(start + 0.45);
-            });
-        } else {
-            // Default Zen: Pure, beautiful, extremely satisfying 3-note ascending sine arpeggio
-            const notes = [1318.51, 1567.98, 2093.00]; // E6, G6, C7
-            notes.forEach((freq, i) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                
-                const start = now + (i * 0.055); // 55ms delay per note
-                osc.frequency.setValueAtTime(freq, start);
-                
-                gain.gain.setValueAtTime(0, start);
-                gain.gain.linearRampToValueAtTime(0.08, start + 0.01); // Soft click-less attack
-                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.18); // Snappy, clean ring-out
-                
-                osc.connect(gain);
-                gain.connect(completionOutput);
-                osc.start(start);
-                osc.stop(start + 0.22);
-            });
-        }
+        // Let the number-placement impact finish, then add a compact tactile
+        // acknowledgement for the completed row, column, or box.
+        window.setTimeout(() => {
+            if (!this.vibrationEnabled) return;
+            Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
 
-        if (this.vibrationEnabled) {
-            try {
-                Haptics.impact({ style: ImpactStyle.Light });
-                setTimeout(() => {
-                    if (this.vibrationEnabled) {
-                        Haptics.impact({ style: ImpactStyle.Light });
-                    }
-                }, 75);
-            } catch (e) {}
-        }
+            window.setTimeout(() => {
+                if (this.vibrationEnabled) {
+                    Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+                }
+            }, 90);
+        }, 55);
     }
 
     // Backward-compatible names for existing UI call sites. These wrappers keep
@@ -1653,7 +1575,7 @@ class SoundController {
     playCounterTick() { this.playPackCounterTick(); }
     playLevelEnter() { this.playPackLevelEnter(); }
     playCheck() { this.playPackCheck(); }
-    playSectionComplete() { this.playPackSectionComplete(); }
+    playSectionComplete() { this.playSectionCompleteHaptic(); }
 
     playPreview(profileId: string) {
         if (!this.soundEnabled) return;

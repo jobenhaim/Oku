@@ -7,6 +7,7 @@ import { Storage } from '../../utils/storage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IAP } from '../../utils/iap';
 import type { SuccessfulIAPPurchase } from '../../utils/iap';
+import { NUMBER_COLORS } from '../../utils/constants';
 
 // ... (Privacy Policy & Terms text remain unchanged)
 const PRIVACY_POLICY_TEXT = `Privacy Policy
@@ -253,13 +254,14 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ onConfirm,
 };
 
 interface PurchaseModalProps {
-    item: { id: string; name: string; cost: number; description?: string };
+    item: { id: string; name: string; cost: number; type?: 'bg' | 'num' | 'skill' | 'sound'; description?: string };
     onConfirm: () => void;
     onCancel: () => void;
 }
 
 export const PurchaseModal: React.FC<PurchaseModalProps> = ({ item, onConfirm, onCancel }) => {
     const [isClosing, setIsClosing] = useState(false);
+    const numberStyle = item.type === 'num' ? NUMBER_COLORS.find(style => style.id === item.id) : undefined;
     const handleAction = (action: () => void) => {
         sounds.playClick();
         setIsClosing(true);
@@ -272,9 +274,28 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ item, onConfirm, o
         >
             <div className={`bg-t-surface p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-xs md:max-w-sm text-center transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} onClick={e => e.stopPropagation()}>
                 <h3 className="text-xl md:text-2xl font-bold text-t-primary mb-2 transition-colors duration-300">Unlock {item.name}?</h3>
-                <div className="text-sm md:text-base text-t-secondary font-medium mb-1 flex items-center justify-center gap-1 transition-colors duration-300">
-                    Buy this item for <span className="text-t-primary font-bold transition-colors duration-300">{item.cost}</span> <span className="text-blue-500"><Icons.Diamond className="w-4 h-4 fill-current" /></span>?
-                </div>
+                {numberStyle ? (
+                    <>
+                        <div className="grid grid-cols-9 items-center gap-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl px-3 py-4 mt-4 mb-3" aria-label={`${item.name} number pad preview`}>
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(digit => (
+                                <span
+                                    key={digit}
+                                    data-premium-number={digit}
+                                    className={`text-xl md:text-2xl font-bold leading-none ${numberStyle.uiClass}`}
+                                >
+                                    {digit}
+                                </span>
+                            ))}
+                        </div>
+                        <p className="text-sm md:text-base text-t-secondary font-medium">
+                            This is how your number pad will look.
+                        </p>
+                    </>
+                ) : (
+                    <div className="text-sm md:text-base text-t-secondary font-medium mb-1 flex items-center justify-center gap-1 transition-colors duration-300">
+                        Buy this item for <span className="text-t-primary font-bold transition-colors duration-300">{item.cost}</span> <span className="text-blue-500"><Icons.Diamond className="w-4 h-4 fill-current" /></span>?
+                    </div>
+                )}
                 {item.description && (
                      <div className="bg-t-surface-sec rounded-xl p-3 mt-4 mb-2 transition-colors duration-300">
                         <p className="text-sm text-t-secondary leading-relaxed font-medium transition-colors duration-300">
@@ -283,8 +304,13 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ item, onConfirm, o
                      </div>
                 )}
                 <div className="flex gap-3 mt-6">
-                    <button onClick={() => handleAction(onCancel)} className="flex-1 py-3 text-t-secondary bg-t-surface-sec rounded-xl font-bold active:scale-95 transition-all duration-300">No</button>
-                    <button onClick={() => handleAction(onConfirm)} className="flex-1 py-3 text-white bg-stone-800 dark:bg-blue-600 rounded-xl font-bold shadow-lg active:scale-95 transition-all duration-300">Yes</button>
+                    <button onClick={() => handleAction(onCancel)} className="flex-1 py-3 text-t-secondary bg-t-surface-sec rounded-xl font-bold active:scale-95 transition-all duration-300">Cancel</button>
+                    <button onClick={() => handleAction(onConfirm)} className="flex-1 py-3 text-white bg-stone-800 dark:bg-blue-600 rounded-xl font-bold shadow-lg active:scale-95 transition-all duration-300">
+                        <span className="inline-flex items-center justify-center gap-1">
+                            Buy for {item.cost}
+                            <Icons.Diamond className="w-4 h-4 fill-current text-blue-400" />
+                        </span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -343,10 +369,10 @@ export const BookUnlockConfirmModal: React.FC<BookUnlockConfirmModalProps> = ({
                     <button
                         type="button"
                         onClick={() => handleAction(onConfirm)}
-                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-500 py-3.5 text-[1.05rem] font-bold text-white transition-transform duration-100 active:scale-[0.97]"
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-stone-800 py-3.5 text-[1.05rem] font-bold text-white shadow-lg transition-transform duration-100 active:scale-[0.97] dark:bg-blue-600"
                     >
                         Buy for {cost}
-                        <Icons.Diamond className="h-[1.05rem] w-[1.05rem] fill-current" />
+                        <Icons.Diamond className="h-[1.05rem] w-[1.05rem] fill-current text-blue-400" />
                     </button>
                     <button
                         type="button"
@@ -421,7 +447,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
         if (offer.type === 'starter') {
             return (
                 <span>
-                    Includes <span className="font-bold">500 Diamonds</span>, permanent access to <span className="font-bold">Light</span>, <span className="font-bold">Guard</span>, and <span className="font-bold">Scan</span>, plus the <span className="font-bold">Piano</span> sound pack and <span className="font-bold">Teal</span> number style.
+                    Includes <span className="font-bold">600 Diamonds</span>, permanent access to <span className="font-bold">Guard</span> and <span className="font-bold">Scan</span>, plus the <span className="font-bold">Piano</span> sound pack and <span className="font-bold">Teal</span> number style.
                 </span>
             );
         }
@@ -467,7 +493,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
                         <button 
                             ref={purchaseBtnRef}
                             onClick={handlePurchase} 
-                            className="w-full py-3.5 text-white bg-blue-500 hover:bg-blue-600 rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition flex items-center justify-center gap-2"
+                            className="w-full py-3.5 text-white bg-stone-800 hover:bg-stone-700 dark:bg-stone-700 dark:hover:bg-stone-600 rounded-xl font-bold shadow-lg active:scale-95 transition flex items-center justify-center gap-2"
                         >
                             <span className="tracking-wide">{status === 'failed' ? 'Retry' : 'Purchase'}</span>
                         </button>

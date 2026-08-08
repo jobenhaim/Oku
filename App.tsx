@@ -158,7 +158,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
         else document.documentElement.classList.remove('dark');
 
         // Check and trigger welcome gift
-        if (!Storage.isWelcomeGiftClaimed()) {
+        const isWelcomeGiftPreview = import.meta.env.DEV && new URLSearchParams(window.location.search).has('welcomeGiftPreview');
+        if (!Storage.isWelcomeGiftClaimed() || isWelcomeGiftPreview) {
             setShowWelcomeGift(true);
         }
     };
@@ -444,9 +445,12 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       setBooksForeverOwned(Storage.isBooksForeverOwned());
   };
 
-  const handleClaimWelcomeGift = (amount: number) => {
-      Storage.claimWelcomeGift();
-      handleEarnPoints(amount, 'welcomeGift');
+  const handleClaimWelcomeGift = () => {
+      const { data } = Storage.claimWelcomeGift();
+      setPoints(data.points);
+      setStats(data.stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
+      setPurchasedSkills(data.purchasedSkills);
+      setEnabledSkills(data.enabledSkills || [...data.purchasedSkills]);
       setShowWelcomeGift(false);
   };
   

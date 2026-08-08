@@ -12,7 +12,6 @@ interface SudokuGridProps {
     isScanning: boolean;
     isScanSuccess?: boolean;
     animatingSections: Set<string>;
-    placementShine: {r: number, c: number, key: number} | null;
     settings: AppSettings;
     numberColor: string;
     onCellClick: (e: React.MouseEvent, r: number, c: number) => void;
@@ -33,7 +32,6 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     isScanning,
     isScanSuccess,
     animatingSections,
-    placementShine,
     settings,
     numberColor,
     onCellClick,
@@ -383,7 +381,6 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                                 isGuardRejected={guardRejectedCell?.row === rIndex && guardRejectedCell?.col === cIndex}
                                 settings={settings}
                                 numberColor={numberColor}
-                                placementShineKey={placementShine?.r === rIndex && placementShine?.c === cIndex ? placementShine.key : undefined}
                                 onCellClick={onCellClick}
                                 onCellLongPress={onCellLongPress}
                                 enableLongPress={enableCellLongPress}
@@ -399,7 +396,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
             </div>
             
             {/* Crisp vector overlay outer border on top of grid lines and cell backgrounds */}
-            <div className={`absolute inset-0 rounded-lg border-[3px] transition-all duration-300 pointer-events-none z-30 ${isScanSuccess ? 'border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'border-stone-900 dark:border-stone-800'}`} />
+            <div className={`absolute inset-0 rounded-lg border-[3px] transition-all duration-300 pointer-events-none z-30 ${isScanSuccess ? 'border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'border-stone-900 dark:border-stone-500'}`} />
 
          </div>
          </div>

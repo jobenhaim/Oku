@@ -34,7 +34,7 @@
 
   /* Grid Lines - Dark Mode (Lighter for contrast against dark bg) */
   --grid-thin: #57534e; /* Stone 600 */
-  --grid-thick: #a8a29e; /* Stone 400 */
+  --grid-thick: #78716c; /* Stone 500 - clear without overpowering the board */
 }
 
 /* Home controls retain their existing lightweight translucent finish. */
@@ -274,6 +274,7 @@
 }
 
 .dark .oku-level-surface-progress {
+  border-color: #60a5fa;
   color: #f5f5f4;
 }
 
@@ -397,26 +398,47 @@ html, body {
 
 /* TEXT EFFECTS */
 
-/* Premium number styles use three-color gradients that remain static during
-   gameplay. The colors stay readable without a bright band sitting inside
-   the number. */
-.text-shine-gold {
-  --premium-color-1: #854d0e;
-  --premium-color-2: #d19a08;
-  --premium-color-3: #facc15;
-}
+/* Premium palettes color each digit separately. The palette is visible across
+   the numpad, while every individual digit stays crisp, solid, and static. */
+.text-palette-sunset[data-premium-number="1"] { color: #f97316; }
+.text-palette-sunset[data-premium-number="2"] { color: #fb7185; }
+.text-palette-sunset[data-premium-number="3"] { color: #f43f5e; }
+.text-palette-sunset[data-premium-number="4"] { color: #e11d48; }
+.text-palette-sunset[data-premium-number="5"] { color: #db2777; }
+.text-palette-sunset[data-premium-number="6"] { color: #c026d3; }
+.text-palette-sunset[data-premium-number="7"] { color: #a21caf; }
+.text-palette-sunset[data-premium-number="8"] { color: #9333ea; }
+.text-palette-sunset[data-premium-number="9"] { color: #7e22ce; }
 
-.text-shine-diamond {
-  --premium-color-1: #0369a1;
-  --premium-color-2: #0ea5e9;
-  --premium-color-3: #67d3f5;
-}
+.text-palette-caribbean[data-premium-number="1"] { color: #38bdf8; }
+.text-palette-caribbean[data-premium-number="2"] { color: #50b4dc; }
+.text-palette-caribbean[data-premium-number="3"] { color: #68abc0; }
+.text-palette-caribbean[data-premium-number="4"] { color: #80a2a4; }
+.text-palette-caribbean[data-premium-number="5"] { color: #999988; }
+.text-palette-caribbean[data-premium-number="6"] { color: #b1906c; }
+.text-palette-caribbean[data-premium-number="7"] { color: #c98750; }
+.text-palette-caribbean[data-premium-number="8"] { color: #e17e34; }
+.text-palette-caribbean[data-premium-number="9"] { color: #f97316; }
 
-.text-shine-ruby {
-  --premium-color-1: #9f1239;
-  --premium-color-2: #e11d48;
-  --premium-color-3: #fb7185;
-}
+.text-palette-sapphire[data-premium-number="1"] { color: #0ea5e9; }
+.text-palette-sapphire[data-premium-number="2"] { color: #0284c7; }
+.text-palette-sapphire[data-premium-number="3"] { color: #2563eb; }
+.text-palette-sapphire[data-premium-number="4"] { color: #3b82f6; }
+.text-palette-sapphire[data-premium-number="5"] { color: #4f46e5; }
+.text-palette-sapphire[data-premium-number="6"] { color: #6366f1; }
+.text-palette-sapphire[data-premium-number="7"] { color: #7c3aed; }
+.text-palette-sapphire[data-premium-number="8"] { color: #8b5cf6; }
+.text-palette-sapphire[data-premium-number="9"] { color: #a855f7; }
+
+.text-palette-matcha[data-premium-number="1"] { color: #65a30d; }
+.text-palette-matcha[data-premium-number="2"] { color: #6fb316; }
+.text-palette-matcha[data-premium-number="3"] { color: #74bd22; }
+.text-palette-matcha[data-premium-number="4"] { color: #62b53a; }
+.text-palette-matcha[data-premium-number="5"] { color: #4dab4e; }
+.text-palette-matcha[data-premium-number="6"] { color: #38a361; }
+.text-palette-matcha[data-premium-number="7"] { color: #249a71; }
+.text-palette-matcha[data-premium-number="8"] { color: #15927f; }
+.text-palette-matcha[data-premium-number="9"] { color: #0d9488; }
 
 .text-shine-rainbow {
   --premium-color-1: #0f766e;
@@ -480,9 +502,6 @@ html, body {
   --premium-color-3: #f9a8d4;
 }
 
-.text-shine-gold,
-.text-shine-diamond,
-.text-shine-ruby,
 .text-shine-rainbow {
   background-image: linear-gradient(
     135deg,
@@ -496,48 +515,6 @@ html, body {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-}
-
-/* The single Market sample can keep a gentle white shine without putting a
-   continuous animation on every gameplay number. */
-.number-style-preview.text-shine-gold,
-.number-style-preview.text-shine-diamond,
-.number-style-preview.text-shine-ruby,
-.number-style-preview.text-shine-rainbow {
-  background-image:
-    linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.95) 50%, transparent 62%),
-    linear-gradient(135deg, var(--premium-color-1) 0%, var(--premium-color-2) 52%, var(--premium-color-3) 100%);
-  background-size: 250% 100%, 100% 100%;
-  animation: premium-preview-shine 3.2s ease-in-out infinite;
-}
-
-/* The Market sample shows the entire spectrum at once so the Rainbow set is
-   immediately understandable. Gameplay still gives each digit one color. */
-.number-style-preview.rainbow-number-style-preview {
-  background-image: linear-gradient(90deg, #ef4444 0%, #f97316 17%, #eab308 33%, #22c55e 49%, #3b82f6 66%, #8b5cf6 83%, #ec4899 100%);
-  background-size: 100% 100%;
-  background-position: center;
-  animation: none;
-}
-
-/* A separate white wipe crosses only the newly placed number. The underlying
-   three-color gradient does not move and is restored at the end. */
-.premium-number-placement-shine {
-  background-image:
-    linear-gradient(105deg, transparent 33%, rgba(255, 255, 255, 0.98) 50%, transparent 67%),
-    linear-gradient(135deg, var(--premium-color-1) 0%, var(--premium-color-2) 52%, var(--premium-color-3) 100%);
-  background-size: 250% 100%, 100% 100%;
-  animation: premium-number-placement-shine 0.55s ease-out 1 forwards;
-}
-
-@keyframes premium-number-placement-shine {
-  0% { background-position: 160% center, center; }
-  100% { background-position: -160% center, center; }
-}
-
-@keyframes premium-preview-shine {
-  0%, 58% { background-position: 160% center, center; }
-  100% { background-position: -160% center, center; }
 }
 
 /* 3. PREMIUM GET MORE BUTTON */

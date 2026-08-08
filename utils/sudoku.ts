@@ -404,11 +404,11 @@ function getDifficultySeed(diff: Difficulty): number {
 }
 
 // Logic Configuration for each difficulty
-// Only Normal is increased by 2 (to 36). Others kept at original baseline.
+// Normal keeps 36 clues and is restricted to Tier 1 so it cannot overlap Hard.
 const DIFFICULTY_CONFIG = {
     [Difficulty.SuperEasy]: { tier: 1, minClues: 48 }, // Original baseline
     [Difficulty.Easy]:      { tier: 1, minClues: 40 }, // Original baseline
-    [Difficulty.Normal]:    { tier: 2, minClues: 36 }, // Increased +2 from 34
+    [Difficulty.Normal]:    { tier: 1, minClues: 36 },
     [Difficulty.Hard]:      { tier: 3, minClues: 32 }, // Original baseline
     [Difficulty.Intense]:   { tier: 3, minClues: 26 }, // Original baseline
     [Difficulty.Impossible]:{ tier: 4, minClues: 0 }   // Deepest dig

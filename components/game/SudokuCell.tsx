@@ -18,7 +18,6 @@ interface SudokuCellProps {
     isNudgeCue?: boolean;
     settings: AppSettings;
     numberColor: string;
-    placementShineKey?: number;
     onCellClick: (e: React.MouseEvent, r: number, c: number) => void;
     onCellLongPress?: (r: number, c: number) => void;
     enableLongPress?: boolean;
@@ -46,7 +45,6 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     isNudgeCue = false,
     settings,
     numberColor,
-    placementShineKey,
     onCellClick,
     onCellLongPress,
     enableLongPress = false,
@@ -123,10 +121,10 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
          bgClass = 'bg-red-100 dark:bg-red-950/60 z-10 ';
     } else if (isSelected) {
          // Selected: Blue 200 (Light) / Dark Blue (Dark Mode)
-         bgClass = 'bg-blue-200 dark:bg-blue-900 '; 
+         bgClass = 'bg-blue-200 dark:bg-blue-500/40 ';
     } else if (highlight && isSameValue) {
          // Same Value: Blue 100 / Translucent Dark Blue
-         bgClass = 'bg-blue-100 dark:bg-blue-900/60 '; 
+         bgClass = 'bg-blue-100 dark:bg-blue-500/20 ';
     } else if (highlight && isRelated) {
          // Related: Stone 100 / Stone 700 (Slightly lighter than base 800 for visibility)
          bgClass = 'bg-stone-100 dark:bg-stone-700 '; 
@@ -195,9 +193,9 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
         {!onlyBackground && (
             cell.value ? (
                 <span
-                    key={`value-${cell.value}-${placementShineKey ?? 0}`}
+                    key={`value-${cell.value}`}
                     data-premium-number={cell.value}
-                    className={`leading-none pt-[0.1em] relative z-20 ${!cell.isFixed && !isError && !isConflict && !isMarkedWrong && !isRevealed ? numberColor : ''} ${placementShineKey !== undefined ? 'premium-number-placement-shine' : ''}`}
+                    className={`leading-none pt-[0.1em] relative z-20 ${!cell.isFixed && !isError && !isConflict && !isMarkedWrong && !isRevealed ? numberColor : ''}`}
                 >
                     {cell.value}
                 </span>

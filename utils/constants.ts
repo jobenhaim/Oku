@@ -167,11 +167,13 @@ export const NUMBER_COLORS = [
     { id: 'num-fuchsia', name: 'Fuchsia', cost: 100, class: 'text-pink-600 dark:text-pink-400', uiClass: 'text-pink-600 dark:text-pink-400', bgClass: 'bg-pink-50/50 dark:bg-pink-900/10' },
     { id: 'num-orange', name: 'Orange', cost: 100, class: 'text-orange-600 dark:text-orange-400', uiClass: 'text-orange-600 dark:text-orange-400', bgClass: 'bg-orange-50/50 dark:bg-orange-900/10' },
     { id: 'num-emerald', name: 'Emerald', cost: 100, class: 'text-emerald-600 dark:text-emerald-400', uiClass: 'text-emerald-600 dark:text-emerald-400', bgClass: 'bg-emerald-50/50 dark:bg-emerald-900/10' },
+    // Static premium digit palettes. The first three retain the legacy IDs so
+    // existing Gold, Diamond, and Ruby purchases keep their ownership.
+    { id: 'num-shine', name: 'Sunset', cost: 250, class: 'text-palette-sunset', uiClass: 'text-palette-sunset', bgClass: 'bg-orange-50/60 dark:bg-orange-900/10' },
+    { id: 'num-rgb', name: 'Caribbean', cost: 250, class: 'text-palette-caribbean', uiClass: 'text-palette-caribbean', bgClass: 'bg-cyan-50/60 dark:bg-cyan-900/10' },
+    { id: 'num-ruby', name: 'Sapphire', cost: 250, class: 'text-palette-sapphire', uiClass: 'text-palette-sapphire', bgClass: 'bg-blue-50/60 dark:bg-blue-900/10' },
+    { id: 'num-matcha', name: 'Matcha', cost: 250, class: 'text-palette-matcha', uiClass: 'text-palette-matcha', bgClass: 'bg-lime-50/60 dark:bg-lime-900/10' },
     { id: 'num-rainbow', name: 'Rainbow', cost: 250, class: 'text-shine-rainbow', uiClass: 'text-shine-rainbow', bgClass: 'bg-stone-100/50 dark:bg-stone-800/50' },
-    // Premium last
-    { id: 'num-shine', name: 'Gold', cost: 350, class: 'text-shine-gold', uiClass: 'text-shine-gold', bgClass: 'bg-yellow-50/60 dark:bg-yellow-900/10' },
-    { id: 'num-rgb', name: 'Diamond', cost: 350, class: 'text-shine-diamond', uiClass: 'text-shine-diamond', bgClass: 'bg-cyan-50/60 dark:bg-cyan-900/10' },
-    { id: 'num-ruby', name: 'Ruby', cost: 350, class: 'text-shine-ruby', uiClass: 'text-shine-ruby', bgClass: 'bg-rose-50/60 dark:bg-rose-900/10' },
 ];
 
 export const SOUND_PACKS = [
@@ -302,8 +304,8 @@ export const DIAMOND_OFFERS: DiamondOffer[] = [
         productId: 'com.oku.sudoku.iap.starterpack',
         title: 'Starter Pack',
         subtitle: 'Everything you need to begin',
-        diamonds: 500,
-        includes: ['Light, Guard & Scan Skills Unlocked', 'Piano Sound Pack Unlocked', 'Teal Number Style Unlocked'],
+        diamonds: 600,
+        includes: ['Guard & Scan Skills Unlocked', 'Piano Sound Pack Unlocked', 'Teal Number Style Unlocked'],
         badge: 'BEST VALUE',
         priceLabel: '$2.99',
         type: 'starter',

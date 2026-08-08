@@ -45,10 +45,10 @@ export const DIFFICULTY_TARGETS: Record<Difficulty, DifficultyTarget> = {
     [Difficulty.Normal]: {
         clueRange: [34, 38],
         minimumTier: 1,
-        maximumTier: 2,
+        maximumTier: 1,
         minimumComplexityScore: 4,
         minimumAdvancedScore: 0,
-        description: 'Several hidden singles or a small locked-candidate step; notes remain optional.'
+        description: 'Singles only, with a longer solve path than Easy; notes remain optional.'
     },
     [Difficulty.Hard]: {
         clueRange: [29, 34],

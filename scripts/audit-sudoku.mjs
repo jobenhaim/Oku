@@ -17,6 +17,7 @@ const requestedDifficulty = args.get('difficulty');
     const {
         generateLevel,
         auditSudokuPuzzle,
+        auditSudokuHumanFlow,
         auditSudokuWithAdvancedLogic,
         assessSudokuDifficulty,
         DIFFICULTY_TARGETS,
@@ -42,6 +43,9 @@ const requestedDifficulty = args.get('difficulty');
         for (let levelId = 1; levelId <= levelCount; levelId++) {
             const { initial } = generateLevel(difficulty, levelId);
             const audit = auditSudokuPuzzle(initial);
+            const humanFlowAudit = difficulty === Difficulty.Normal
+                ? auditSudokuHumanFlow(initial)
+                : undefined;
             const advancedAudit = difficulty === Difficulty.Impossible
                 ? auditSudokuWithAdvancedLogic(initial)
                 : undefined;
@@ -57,7 +61,14 @@ const requestedDifficulty = args.get('difficulty');
             const existing = catalogueHashes.get(hash) ?? [];
             existing.push(`${difficulty} ${levelId}`);
             catalogueHashes.set(hash, existing);
-            results.push({ difficulty, levelId, ...audit, advancedAudit, assessment });
+            results.push({
+                difficulty,
+                levelId,
+                ...audit,
+                advancedAudit,
+                humanFlowAudit,
+                assessment
+            });
 
             if (levelId % 50 === 0 || levelId === levelCount) {
                 process.stdout.write(`  ${levelId}/${levelCount}\n`);
@@ -125,6 +136,18 @@ const requestedDifficulty = args.get('difficulty');
         process.stdout.write(
             `  Target assessment: match ${matches.length}, too easy ${tooEasy.length}, too hard ${tooHard.length}, unrated ${unrated.length}\n`
         );
+        if (difficulty === Difficulty.Normal) {
+            const comfortable = rows.filter(result => result.humanFlowAudit?.comfortable);
+            const flowFailures = rows.filter(result => !result.humanFlowAudit?.comfortable);
+            process.stdout.write(
+                `  Human flow: comfortable ${comfortable.length}/${rows.length}, bottlenecks ${flowFailures.length}\n`
+            );
+            if (flowFailures.length > 0) {
+                process.stdout.write(
+                    `  Flow failure levels: ${flowFailures.slice(0, 30).map(result => result.levelId).join(', ')}\n`
+                );
+            }
+        }
         if (difficulty === Difficulty.Impossible) {
             process.stdout.write(
                 `  No-guess proofs: ${rows.filter(result => result.advancedAudit?.solved).length}/${rows.length}\n`
