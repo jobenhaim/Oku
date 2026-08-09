@@ -2,9 +2,17 @@
 	"appId": "com.oku.sudoku",
 	"appName": "Oku",
 	"webDir": "dist",
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 0,
+			"launchAutoHide": true
+		}
+	},
 	"packageClassList": [
+		"AppPlugin",
 		"HapticsPlugin",
 		"PreferencesPlugin",
-		"ScreenOrientationPlugin"
+		"ScreenOrientationPlugin",
+		"PurchasesPlugin"
 	]
 }
