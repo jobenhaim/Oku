@@ -31,10 +31,12 @@ const PROFILES: Record<string, SoundProfile> = {
         duration: 0.035, 
         volumeScale: 0.55,
         pitchDrop: true,
-        victoryNotes: [1046.50, 1318.51, 1567.98],
-        victoryDuration: 0.18,
-        victoryVolume: 0.38,
-        victorySpacingMs: 70
+        // Three compact rising notes read like "vic-to-ry!" while remaining
+        // lower, softer, and distinct from the bright universal gift melody.
+        victoryNotes: [523.25, 659.25, 783.99],
+        victoryDuration: 0.22,
+        victoryVolume: 0.18,
+        victorySpacingMs: 95
     },
     'snd-paper': {
         id: 'snd-paper',
@@ -452,6 +454,53 @@ class SoundController {
                 this.playTone(freq, duration, volume, undefined, undefined, true, profile);
             }, index * spacingMs);
         });
+    }
+
+    /**
+     * A restrained singing-bowl voice reserved for Zen puzzle victories.
+     * The quiet, slightly inharmonic upper partial gives the short cadence
+     * character without turning it into another bright reward jingle.
+     */
+    private playZenVictoryTone(frequency: number, duration: number, volume: number) {
+        if (!this.soundEnabled) return;
+
+        const ctx = this.getCtx();
+        const now = ctx.currentTime;
+        const output = this.getProfileOutput(ctx);
+
+        const createLayer = (
+            layerFrequency: number,
+            level: number,
+            layerDuration: number,
+            attack: number,
+            settle: boolean = false
+        ) => {
+            const oscillator = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            oscillator.type = 'sine';
+            if (settle) {
+                oscillator.frequency.setValueAtTime(layerFrequency * 1.003, now);
+                oscillator.frequency.exponentialRampToValueAtTime(
+                    layerFrequency,
+                    now + Math.min(0.12, layerDuration * 0.35)
+                );
+            } else {
+                oscillator.frequency.setValueAtTime(layerFrequency, now);
+            }
+
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.linearRampToValueAtTime(volume * level, now + attack);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + layerDuration);
+
+            oscillator.connect(gain);
+            gain.connect(output);
+            oscillator.start(now);
+            oscillator.stop(now + layerDuration + 0.03);
+        };
+
+        createLayer(frequency, 1, duration, 0.01, true);
+        createLayer(frequency * 2.01, 0.16, Math.min(0.24, duration * 0.62), 0.006);
     }
 
     private getPaperNoiseBuffer(ctx: AudioContext): AudioBuffer {
@@ -1217,7 +1266,17 @@ class SoundController {
         if (this.soundEnabled) {
             const profile = this.activeProfile;
 
-            if (profile.id === 'snd-paper') {
+            if (profile.id === 'snd-zen') {
+                profile.victoryNotes.forEach((frequency, index) => {
+                    window.setTimeout(() => {
+                        this.playZenVictoryTone(
+                            frequency,
+                            profile.victoryDuration,
+                            profile.victoryVolume * profile.volumeScale
+                        );
+                    }, index * profile.victorySpacingMs);
+                });
+            } else if (profile.id === 'snd-paper') {
                 // Three dry paper flicks with an opening filter create a clear
                 // resolution without turning Paper into a melodic instrument.
                 profile.victoryNotes.forEach((frequency, index) => {

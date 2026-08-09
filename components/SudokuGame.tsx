@@ -114,6 +114,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const [isRestarting, setIsRestarting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
+  const [areCompletionNumbersLocked, setAreCompletionNumbersLocked] = useState(false);
   const [earnedPoints, setEarnedPoints] = useState(0);
   
   const [isGeneratingReplay, setIsGeneratingReplay] = useState(false);
@@ -262,6 +263,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   useEffect(() => {
       if (!pillMessage) return;
+      // The completion message can remain behind the dimmed win modal. It is
+      // cleared naturally when the player leaves this completed game screen.
+      if (pillMessage.type === 'complete') return;
       const displayTimer = window.setTimeout(() => {
           if (pillMessageRef.current?.id === pillMessage.id) {
               dismissCurrentPill();
@@ -304,7 +308,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           || difficulty === Difficulty.Hard
           || difficulty === Difficulty.Intense
           || difficulty === Difficulty.Impossible;
-      const warningTimer = isStrictMode ? window.setTimeout(() => {
+      const warningTimer = isStrictMode && settings.scanWarningNotifications !== false ? window.setTimeout(() => {
           enqueuePill({ text: 'Mistakes stay hidden.', type: 'warning', holdMs: 3000 });
       }, 2100) : null;
 
@@ -312,7 +316,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           window.clearTimeout(startMessageTimer);
           if (warningTimer !== null) window.clearTimeout(warningTimer);
       };
-  }, [difficulty, levelId, enqueuePill]);
+  }, [difficulty, levelId, enqueuePill, settings.scanWarningNotifications]);
 
   const handleGameComplete = (completedBoard: Board, completedMoveLog: MoveLogEntry[], isPerfect: boolean) => {
       // This ref changes synchronously, unlike React state. It makes the win
@@ -320,6 +324,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       if (gameFinishedRef.current || isCompleted || isEnding) return;
       gameFinishedRef.current = true;
       setIsEnding(true);
+      // Let the final number render in its selected style first, then smoothly
+      // settle every player-entered number into the completed-board color.
+      window.setTimeout(() => setAreCompletionNumbersLocked(true), 150);
       sounds.playPuzzleVictory();
       
       // Clear selection and active numbers immediately
@@ -366,21 +373,24 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       // The completion message always takes priority over any queued gameplay tip.
       if (settings.pillNotifications !== false) {
           pendingPillRef.current = null;
-          enqueuePill({
+          pillMessageIdRef.current += 1;
+          const completionMessage: PillMessage = {
+              id: pillMessageIdRef.current,
               text: completionText,
               type: 'complete',
               holdMs: 1000
-          });
+          };
+          pillMessageRef.current = completionMessage;
+          isPillExitingRef.current = false;
+          setPillMessage(completionMessage);
       }
 
       window.setTimeout(() => {
           pendingPillRef.current = null;
-          pillMessageRef.current = null;
           isPillExitingRef.current = false;
-          setPillMessage(null);
           setIsCompleted(true);
           onComplete();
-      }, 1500);
+      }, 2000);
   };
 
   const {
@@ -517,6 +527,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setScanRefillsPurchased(progress?.scanRefillsPurchased ?? 0);
       setIsCompleted(false);
       setIsEnding(false);
+      setAreCompletionNumbersLocked(false);
       setIsPaused(false);
       setIsFocusMode(false);
       setShowRestartConfirm(false);
@@ -541,7 +552,14 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   }, [difficulty, levelId, initializeBoard, setTimer, setScanUses, setScanRefillsPurchased]);
 
   useEffect(() => {
-      if (!halfwayTrackingReadyRef.current || halfwayShownRef.current || board.length === 0) return;
+      if (
+          gameFinishedRef.current ||
+          isEnding ||
+          isCompleted ||
+          !halfwayTrackingReadyRef.current ||
+          halfwayShownRef.current ||
+          board.length === 0
+      ) return;
       const editableCells = initialBoardRef.current.flat().filter(cell => !cell.isFixed).length;
       const filledEditableCells = board.flat().filter(cell => !cell.isFixed && cell.value !== null).length;
       if (editableCells > 0 && filledEditableCells >= Math.ceil(editableCells / 2)) {
@@ -551,7 +569,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           halfwayIndexRef.current = (halfwayIndexRef.current + 1) % deck.length;
           enqueuePill({ text, type: 'halfway', holdMs: 2500 });
       }
-  }, [board, enqueuePill]);
+  }, [board, enqueuePill, isCompleted, isEnding]);
 
   useEffect(() => {
       shownNudgeStatesRef.current.clear();
@@ -986,6 +1004,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                     onCellLongPress={onCellLongPressWrapper}
                     enableCellLongPress={settings.digitFirst && isPencilMode && activeNumber !== null}
                     hideNotes={isFocusMode}
+                    lockPlayerNumbers={areCompletionNumbersLocked}
                 />
             </div>
          </motion.div>

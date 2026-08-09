@@ -20,6 +20,7 @@ interface SudokuGridProps {
     onCellLongPress: (r: number, c: number) => void;
     enableCellLongPress: boolean;
     hideNotes?: boolean;
+    lockPlayerNumbers?: boolean;
 }
 
 export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
@@ -39,7 +40,8 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     enableDragExplore,
     onCellLongPress,
     enableCellLongPress,
-    hideNotes = false
+    hideNotes = false,
+    lockPlayerNumbers = false
 }) => {
     const gridAreaRef = useRef<HTMLDivElement | null>(null);
     const [isDragExploring, setIsDragExploring] = useState(false);
@@ -277,6 +279,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                                 mainFontSize={mainFontSize}
                                 noteFontSize={noteFontSize}
                                 noteLineHeight={noteLineHeight}
+                                lockPlayerNumbers={lockPlayerNumbers}
                                 onlyBackground={true}
                             />
                         );
@@ -388,6 +391,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                                 noteFontSize={noteFontSize}
                                 noteLineHeight={noteLineHeight}
                                 hideNotes={hideNotes}
+                                lockPlayerNumbers={lockPlayerNumbers}
                                 onlyContent={true}
                             />
                         );

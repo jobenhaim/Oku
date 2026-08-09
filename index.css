@@ -29,7 +29,7 @@
   --text-secondary: #a3a3a3; /* Neutral 400 */
   --border: #404040; /* Neutral 700 */
   --icon: #d4d4d4; /* Neutral 300 */
-  --board-bg: #292524; /* Stone 800 - Dark Grid Background */
+  --board-bg: #171513; /* Warm near-black — distinct from the pure-black app background */
   --overlay-opacity: 0.5;
 
   /* Grid Lines - Dark Mode (Lighter for contrast against dark bg) */
@@ -397,6 +397,25 @@ html, body {
 }
 
 /* TEXT EFFECTS */
+
+/* On completion, keep the exact same glyph and smoothly remove its color.
+   Using a filter also works for the clipped-gradient Rainbow style without
+   stacking a second copy of the number on top. */
+.sudoku-player-number {
+  /* Keep the same filter-function list at both ends. WebKit can treat a
+     transition from `none` to a filter as a discrete, instant change. */
+  filter: brightness(1) invert(0);
+  transition: filter 1000ms ease-in-out;
+  will-change: filter;
+}
+
+.sudoku-player-number-locked {
+  filter: brightness(0) invert(0);
+}
+
+.dark .sudoku-player-number-locked {
+  filter: brightness(0) invert(0.9);
+}
 
 /* Premium palettes color each digit separately. The palette is visible across
    the numpad, while every individual digit stays crisp, solid, and static. */
@@ -954,6 +973,12 @@ html, body {
 }
 .sudoku-cell .sudoku-cell-bg {
   transition: none !important;
+}
+
+/* The board remains instant during play, but completed player numbers are the
+   one intentional exception: they settle into the locked color after a win. */
+.sudoku-cell .sudoku-player-number {
+  transition: filter 1000ms ease-in-out !important;
 }
 
 /* Nudge: one calm, lightweight cue for a section's final empty cell. */

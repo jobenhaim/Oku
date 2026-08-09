@@ -590,6 +590,8 @@ const SettingRow = ({
     icon: Icon, 
     title, 
     desc,
+    tone = 'blue',
+    nested = false,
     settings,
     onToggle
 }: { 
@@ -597,24 +599,36 @@ const SettingRow = ({
     icon: any, 
     title: string, 
     desc: string,
+    tone?: 'blue' | 'violet' | 'amber' | 'emerald' | 'red',
+    nested?: boolean,
     settings: AppSettings,
     onToggle: (key: keyof AppSettings) => void
-}) => (
-    <div className="flex items-center justify-between gap-3 md:gap-4 px-3 md:px-4 py-2.5 md:py-3.5 rounded-xl bg-t-surface-sec transition-colors duration-300">
+}) => {
+    const toneClasses = {
+        blue: 'bg-blue-500/10 text-blue-600 dark:bg-blue-400/10 dark:text-blue-300',
+        violet: 'bg-violet-500/10 text-violet-600 dark:bg-violet-400/10 dark:text-violet-300',
+        amber: 'bg-amber-500/[0.12] text-amber-600 dark:bg-amber-400/10 dark:text-amber-300',
+        emerald: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-300',
+        red: 'bg-red-500/10 text-red-500 dark:bg-red-400/10 dark:text-red-300'
+    } as const;
+
+    return (
+    <div className={`flex items-center justify-between gap-3 md:gap-4 transition-colors duration-300 ${nested ? 'pl-11 md:pl-14 pr-3 md:pr-4 py-2.5 md:py-3 bg-violet-500/[0.025] dark:bg-violet-400/[0.025]' : 'px-3 md:px-4 py-3 md:py-4'}`}>
         <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
-            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-t-surface flex items-center justify-center flex-none text-stone-900 dark:text-stone-100 transition-colors duration-300">
-                <Icon className="w-[18px] h-[18px] md:w-5 md:h-5" />
+            <div className={`${nested ? 'w-8 h-8 rounded-lg' : 'w-9 h-9 md:w-10 md:h-10 rounded-xl'} flex items-center justify-center flex-none transition-colors duration-300 ${toneClasses[tone]}`}>
+                <Icon className={nested ? 'w-4 h-4' : 'w-[18px] h-[18px] md:w-5 md:h-5'} />
             </div>
             <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-sm md:text-base font-bold text-t-primary leading-tight transition-colors duration-300">{title}</span>
-                <span className="text-[13px] md:text-[15px] font-medium text-t-secondary leading-snug transition-colors duration-300">{desc}</span>
+                <span className={`${nested ? 'text-[13px] md:text-sm' : 'text-sm md:text-base'} font-bold text-t-primary leading-tight transition-colors duration-300`}>{title}</span>
+                <span className={`${nested ? 'text-[12px] md:text-[13px]' : 'text-[13px] md:text-[15px]'} font-medium text-t-secondary leading-snug transition-colors duration-300`}>{desc}</span>
             </div>
         </div>
-        <button onClick={() => onToggle(sKey)} className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-300 flex-none ${settings[sKey] ? 'bg-green-500' : 'bg-stone-300 dark:bg-stone-600'}`}>
+        <button onClick={() => onToggle(sKey)} className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-300 flex-none ${settings[sKey] ? 'bg-blue-500' : 'bg-stone-300 dark:bg-stone-600'}`}>
             <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${settings[sKey] ? 'translate-x-5' : 'translate-x-0'}`}></div>
         </button>
     </div>
-);
+    );
+};
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle, onToggleDifficulty, onSetAppearance, onReset, onClose, onRedeemCode, redeemedCoupons }) => {
     const [isClosing, setIsClosing] = useState(false);
@@ -709,7 +723,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                     {!activeDoc && (
                         <div className="scroll-edge-fade flex-1 overflow-y-auto px-5 md:px-7 pt-3 md:pt-4 pb-5 md:pb-7 hide-scrollbar animate-fade-in min-h-0">
                             {/* Appearance */}
-                            <div className="mb-4">
+                            <div className="mb-5">
                                 <label className="block text-[10px] md:text-xs font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Theme</label>
                                 <div className="bg-t-surface-sec p-1 rounded-xl flex min-h-[44px] md:min-h-[52px] transition-colors duration-300">
                                     {(['system', 'light', 'dark'] as const).map((opt) => (
@@ -735,15 +749,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                             </div>
 
                             {/* Content / Active Difficulties */}
-                            <div className="mb-4">
+                            <div className="mb-5">
                                 <label className="block text-[10px] md:text-xs font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Content</label>
-                                <div className="bg-t-surface-sec rounded-xl overflow-hidden transition-colors duration-300">
+                                <div className="bg-blue-500/[0.055] dark:bg-blue-400/[0.075] border border-blue-500/10 dark:border-blue-300/10 rounded-2xl overflow-hidden transition-colors duration-300">
                                     <button 
                                         onClick={() => { sounds.playClick(); setIsDifficultyExpanded(!isDifficultyExpanded); }}
                                         className="w-full flex items-center justify-between px-3 md:px-4 py-2.5 md:py-3.5"
                                     >
                                         <div className="flex items-center gap-3 md:gap-4">
-                                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-t-surface flex items-center justify-center text-stone-900 dark:text-stone-100 transition-colors duration-300">
+                                            <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-blue-500/10 dark:bg-blue-400/10 flex items-center justify-center text-blue-600 dark:text-blue-300 transition-colors duration-300">
                                                 <Icons.BarChart className="w-[18px] h-[18px] md:w-5 md:h-5" />
                                             </div>
                                             <div className="text-left flex flex-col gap-0.5">
@@ -784,9 +798,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                             </div>
 
                             {/* Gameplay */}
-                            <div className="mb-4">
+                            <div className="mb-5">
                                 <label className="block text-[10px] md:text-xs font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Gameplay</label>
-                                <div className="flex flex-col gap-2 md:gap-3">
+                                <div className="overflow-hidden rounded-2xl bg-t-surface-sec divide-y divide-stone-200/70 dark:divide-white/5 transition-colors duration-300">
                                 <SettingRow
                                     sKey="autoEraseNotes" 
                                     icon={Icons.Note}
@@ -816,25 +830,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                 </div>
                             </div>
 
-                            {/* Interface */}
-                            <div className="mb-4">
-                                <label className="block text-[10px] md:text-xs font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Interface</label>
-                                <div className="flex flex-col gap-2 md:gap-3">
+                            {/* Display */}
+                            <div className="mb-5">
+                                <label className="block text-[10px] md:text-xs font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Display</label>
+                                <div className="overflow-hidden rounded-2xl bg-t-surface-sec divide-y divide-stone-200/70 dark:divide-white/5 transition-colors duration-300">
 
                                 <SettingRow 
                                     sKey="showTimer" 
                                     icon={Icons.Clock} 
                                     title="Show Timer" 
                                     desc="Show timers and best times outside Stats."
-                                    settings={settings}
-                                    onToggle={onToggle}
-                                />
-
-                                <SettingRow 
-                                    sKey="generateReplay" 
-                                    icon={Icons.Video} 
-                                    title="Generate Replay" 
-                                    desc="Create a shareable video of your solution."
+                                    tone="violet"
                                     settings={settings}
                                     onToggle={onToggle}
                                 />
@@ -844,6 +850,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     icon={Icons.Eye} 
                                     title="Highlight Areas" 
                                     desc="Highlight rows, columns, and boxes for the selected cell."
+                                    tone="violet"
                                     settings={settings}
                                     onToggle={onToggle}
                                 />
@@ -853,15 +860,48 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     icon={Icons.Bell}
                                     title="Pill Notifications"
                                     desc="Show helpful messages above the Sudoku grid."
+                                    tone="violet"
                                     settings={settings}
                                     onToggle={onToggle}
                                 />
+
+                                <AnimatePresence initial={false}>
+                                    {settings.pillNotifications && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            transition={{ duration: 0.2, ease: 'easeInOut' }}
+                                            className="overflow-hidden"
+                                        >
+                                            <SettingRow
+                                                sKey="scanWarningNotifications"
+                                                icon={Icons.Scan}
+                                                title="Scan Warnings"
+                                                desc="Suggest Scan when mistakes may be hidden."
+                                                tone="red"
+                                                nested
+                                                settings={settings}
+                                                onToggle={onToggle}
+                                            />
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                </div>
+                            </div>
+
+                            {/* Sound & Feel */}
+                            <div className="mb-5">
+                                <label className="block text-[10px] md:text-xs font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Sound &amp; Feel</label>
+                                <div className="overflow-hidden rounded-2xl bg-t-surface-sec divide-y divide-stone-200/70 dark:divide-white/5 transition-colors duration-300">
 
                                 <SettingRow 
                                     sKey="sound" 
                                     icon={Icons.Sound} 
                                     title="Sound Effects" 
                                     desc="Play sounds for interactions and game events."
+                                    tone="amber"
                                     settings={settings}
                                     onToggle={onToggle}
                                 />
@@ -871,6 +911,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     icon={Icons.Vibration} 
                                     title="Haptics" 
                                     desc="Vibrate on taps and game events."
+                                    tone="amber"
+                                    settings={settings}
+                                    onToggle={onToggle}
+                                />
+
+                                </div>
+                            </div>
+
+                            {/* Replay */}
+                            <div className="mb-5">
+                                <label className="block text-[10px] md:text-xs font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Replay</label>
+                                <div className="overflow-hidden rounded-2xl bg-t-surface-sec divide-y divide-stone-200/70 dark:divide-white/5 transition-colors duration-300">
+                                <SettingRow
+                                    sKey="generateReplay"
+                                    icon={Icons.Video}
+                                    title="Generate Replay"
+                                    desc="Create a shareable video of your solution."
+                                    tone="emerald"
                                     settings={settings}
                                     onToggle={onToggle}
                                 />
@@ -882,17 +940,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                         icon={Icons.Keyboard} 
                                         title="Auto-Solve" 
                                         desc="Enable instant win button for testing."
+                                        tone="emerald"
                                         settings={settings}
                                         onToggle={onToggle}
                                     />
                                 )}
                                 </div>
 
+                            </div>
+
+                            {/* Rewards */}
+                            <div className="mb-5">
+                                <label className="block text-[10px] md:text-xs font-bold text-t-secondary uppercase tracking-[0.18em] mb-2 ml-1 transition-colors duration-300">Rewards</label>
                                 {/* Coupon Row */}
                                 {showCouponInput ? (
-                                    <div className="mt-2 md:mt-3 px-3 md:px-4 py-3 md:py-4 rounded-xl bg-t-surface-sec transition-colors duration-300 flex flex-col gap-2.5 md:gap-3 animate-fade-in">
+                                    <div className="px-3 md:px-4 py-3 md:py-4 rounded-2xl bg-blue-500/[0.055] dark:bg-blue-400/[0.075] border border-blue-500/10 dark:border-blue-300/10 transition-colors duration-300 flex flex-col gap-2.5 md:gap-3 animate-fade-in">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <Icons.Ticket className="w-5 h-5 text-stone-900 dark:text-stone-100" />
+                                            <Icons.Ticket className="w-5 h-5 text-blue-600 dark:text-blue-300" />
                                             <span className="text-sm md:text-base font-bold text-t-primary">Enter Code</span>
                                         </div>
                                         
@@ -931,10 +995,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                 ) : (
                                     <button 
                                         onClick={handleCouponClick}
-                                        className="mt-2 md:mt-3 w-full flex items-center justify-between px-3 md:px-4 py-2.5 md:py-3.5 rounded-xl bg-t-surface-sec transition-transform duration-300 active:scale-[0.98]"
+                                        className="w-full flex items-center justify-between px-3 md:px-4 py-3 md:py-4 rounded-2xl bg-blue-500/[0.055] dark:bg-blue-400/[0.075] border border-blue-500/10 dark:border-blue-300/10 transition-transform duration-300 active:scale-[0.98]"
                                     >
                                         <div className="flex items-center gap-3 md:gap-4 flex-1 pr-2">
-                                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-t-surface flex items-center justify-center text-stone-900 dark:text-stone-100 transition-colors duration-300">
+                                            <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-blue-500/10 dark:bg-blue-400/10 flex items-center justify-center text-blue-600 dark:text-blue-300 transition-colors duration-300">
                                                 <Icons.Ticket className="w-[18px] h-[18px] md:w-5 md:h-5" />
                                             </div>
                                             <div className="flex flex-col gap-0.5 text-left">
@@ -942,7 +1006,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                                 <span className="text-[13px] md:text-[15px] font-medium text-t-secondary leading-tight transition-colors duration-300">Enter code for rewards</span>
                                             </div>
                                         </div>
-                                        <div className="bg-t-surface p-1.5 rounded-full text-stone-900 dark:text-stone-100 transition-colors">
+                                        <div className="bg-blue-500/10 dark:bg-blue-400/10 p-1.5 rounded-full text-blue-600 dark:text-blue-300 transition-colors">
                                             <Icons.Next className="w-4 h-4" />
                                         </div>
                                     </button>
@@ -963,7 +1027,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     <div className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700 transition-colors duration-300" />
                                     <button onClick={() => { sounds.playClick(); setActiveDoc('terms'); }} className="transition-colors duration-300 px-2 py-1">Terms of Service</button>
                                 </div>
-                                <span className="text-[9px] md:text-[11px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.9.18</span>
+                                <span className="text-[9px] md:text-[11px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v3.9.20</span>
                             </div>
                         </div>
                     )}

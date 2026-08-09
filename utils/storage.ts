@@ -22,6 +22,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   screenWakeLock: false, // Default OFF
   generateReplay: true, // Default ON
   pillNotifications: true, // Default ON
+  scanWarningNotifications: true, // Default ON
   hiddenDifficulties: [], // Default show all
   devAutoSolve: false, // Default OFF
 };
@@ -219,6 +220,7 @@ function getStoredData(): StoredData {
     if (data.settings.screenWakeLock === undefined) data.settings.screenWakeLock = false;
     if (data.settings.generateReplay === undefined) data.settings.generateReplay = true; // Default ON
     if (data.settings.pillNotifications === undefined) data.settings.pillNotifications = true;
+    if (data.settings.scanWarningNotifications === undefined) data.settings.scanWarningNotifications = true;
     if (data.settings.hiddenDifficulties === undefined) data.settings.hiddenDifficulties = [];
     if (data.settings.devAutoSolve === undefined) data.settings.devAutoSolve = false;
 

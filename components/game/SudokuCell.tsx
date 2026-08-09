@@ -25,6 +25,7 @@ interface SudokuCellProps {
     noteFontSize: string;
     noteLineHeight: string;
     hideNotes?: boolean;
+    lockPlayerNumbers?: boolean;
     onlyBackground?: boolean;
     onlyContent?: boolean;
 }
@@ -52,6 +53,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     noteFontSize,
     noteLineHeight,
     hideNotes = false,
+    lockPlayerNumbers = false,
     onlyBackground = false,
     onlyContent = false
 }) => {
@@ -107,7 +109,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     let bgClass = ''; 
 
     // Dark Mode Color Strategy: 
-    // The board background is Stone-800 (#292524) in Dark Mode.
+    // The board background is a warm near-black (#171513) in Dark Mode.
     // Highlights must be darker or translucent to blend nicely.
 
     if (isMarkedWrong) {
@@ -126,8 +128,8 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
          // Same Value: Blue 100 / Translucent Dark Blue
          bgClass = 'bg-blue-100 dark:bg-blue-500/20 ';
     } else if (highlight && isRelated) {
-         // Related: Stone 100 / Stone 700 (Slightly lighter than base 800 for visibility)
-         bgClass = 'bg-stone-100 dark:bg-stone-700 '; 
+         // Related: Stone 100 / Stone 800 (Subtle lift above the near-black board)
+         bgClass = 'bg-stone-100 dark:bg-stone-800 ';
     } else if (isRevealed) {
          bgClass = 'bg-amber-100 dark:bg-amber-900 '; 
     } else {
@@ -192,13 +194,19 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
         {/* Cell Content Layer */}
         {!onlyBackground && (
             cell.value ? (
-                <span
-                    key={`value-${cell.value}`}
-                    data-premium-number={cell.value}
-                    className={`leading-none pt-[0.1em] relative z-20 ${!cell.isFixed && !isError && !isConflict && !isMarkedWrong && !isRevealed ? numberColor : ''}`}
-                >
-                    {cell.value}
-                </span>
+                cell.isFixed || isRevealed ? (
+                    <span key={`value-${cell.value}`} className="leading-none pt-[0.1em] relative z-20">
+                        {cell.value}
+                    </span>
+                ) : (
+                    <span
+                        key={`value-${cell.value}`}
+                        data-premium-number={cell.value}
+                        className={`leading-none pt-[0.1em] relative z-20 inline-block sudoku-player-number ${!isError && !isConflict && !isMarkedWrong ? numberColor : ''} ${lockPlayerNumbers ? 'sudoku-player-number-locked' : ''}`}
+                    >
+                        {cell.value}
+                    </span>
+                )
             ) : cell.notes.length > 0 ? (
                 <div
                     className={`grid grid-cols-3 grid-rows-3 w-full h-full p-[1px] pointer-events-none relative z-20 ${
