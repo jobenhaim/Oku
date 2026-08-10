@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>285365655003-ei0n96thvsedn0v4dbs8pj0nu8siqlnf.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.285365655003-ei0n96thvsedn0v4dbs8pj0nu8siqlnf</string>
+	<key>API_KEY</key>
+	<string>AIzaSyCfxucvv7W8C7Ps3knA0OloU1k00s7QP6k</string>
+	<key>GCM_SENDER_ID</key>
+	<string>285365655003</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.oku.sudoku</string>
+	<key>PROJECT_ID</key>
+	<string>oku-sudoku</string>
+	<key>STORAGE_BUCKET</key>
+	<string>oku-sudoku.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false/>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false/>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true/>
+	<key>IS_GCM_ENABLED</key>
+	<true/>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true/>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:285365655003:ios:7d7ab3438dee12b28c43fe</string>
+</dict>
+</plist>

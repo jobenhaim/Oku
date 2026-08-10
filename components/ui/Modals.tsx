@@ -707,8 +707,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                 )}
             </AnimatePresence>
 
-            {/* Added pb-safe to allow bottom sheet to respect home indicator */}
-            <div className={`bg-t-surface w-full max-w-md md:max-w-[620px] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[90vh] md:max-h-[86vh] overflow-hidden transition-colors duration-300 pb-safe ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} onClick={e => e.stopPropagation()}>
+            {/* 85%-height bottom sheet on phones; centered modal presentation stays unchanged on larger screens. */}
+            <div className={`bg-t-surface w-full max-w-md md:max-w-[620px] h-[85dvh] max-h-[85dvh] sm:h-auto sm:max-h-[90vh] md:max-h-[86vh] rounded-t-3xl rounded-b-none sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-colors duration-300 pb-safe ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} onClick={e => e.stopPropagation()}>
                 
                 {/* Header */}
                 <div className="flex justify-between items-center px-5 md:px-7 pt-4 md:pt-6 pb-2 md:pb-3 shrink-0 bg-t-surface z-10 transition-colors duration-300">

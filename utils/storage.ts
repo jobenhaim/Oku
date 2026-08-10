@@ -6,6 +6,7 @@ import { getScanRefillCost } from './constants';
 const STORAGE_KEY = 'oku_data_v1';
 const LEGACY_STORAGE_KEY = 'minimal_sudoku_data_v1';
 const NORMAL_PUZZLE_CATALOG_VERSION = 1;
+export const PROFILE_ACCOUNT_INTRO_KEY = 'oku_profile_account_intro_seen_v1';
 
 export const hasPlayerBoardInput = (board?: Board) => Boolean(board?.some(row =>
     row.some(cell => !cell.isFixed && (cell.value !== null || cell.notes.length > 0))
@@ -423,9 +424,17 @@ function getStoredData(): StoredData {
 // writes to race can leave an older snapshot as the final native value.
 // Keep them ordered while localStorage remains immediately available to the UI.
 let nativeSaveQueue: Promise<void> = Promise.resolve();
+type StorageListener = (data: StoredData) => void;
+const storageListeners = new Set<StorageListener>();
 
-function saveData(data: StoredData) {
+function saveData(
+  data: StoredData,
+  options: { touchModifiedAt?: boolean; notify?: boolean } = {}
+) {
   try {
+    if (options.touchModifiedAt !== false) {
+      data.lastModifiedAt = Date.now();
+    }
     const stringified = JSON.stringify(data);
     localStorage.setItem(STORAGE_KEY, stringified);
 
@@ -438,6 +447,10 @@ function saveData(data: StoredData) {
           });
       })
       .catch((err: any) => console.error("Native save failed", err));
+
+    if (options.notify !== false) {
+      storageListeners.forEach((listener) => listener(data));
+    }
   } catch (e) {
     console.error("Failed to save data", e);
   }
@@ -477,6 +490,20 @@ function ensureStarterPackUnlocked(data: StoredData) {
 
 export const Storage = {
   getStoredData, 
+
+  subscribe: (listener: StorageListener) => {
+      storageListeners.add(listener);
+      return () => storageListeners.delete(listener);
+  },
+
+  replaceStoredData: async (data: StoredData) => {
+      saveData(data, { touchModifiedAt: false });
+      await nativeSaveQueue;
+  },
+
+  flushPendingWrites: async () => {
+      await nativeSaveQueue;
+  },
   
   initializeNative: async (): Promise<StoredData | null> => {
       try {
@@ -996,6 +1023,7 @@ export const Storage = {
                status: 'not-started',
                boardState: undefined,
                timeElapsed: 0,
+               lastPlayed: Date.now(),
                bestTime: bestTime,
                scanUses: resetScanEconomy ? 3 : Math.max(0, Math.floor(scanUses ?? 3)),
                scanRefillsPurchased: resetScanEconomy
@@ -1011,6 +1039,8 @@ export const Storage = {
     localStorage.removeItem(STORAGE_KEY);
     // Also remove legacy just in case
     localStorage.removeItem(LEGACY_STORAGE_KEY);
+    // Reset one-time onboarding so a fresh profile sees the account reminder.
+    localStorage.removeItem(PROFILE_ACCOUNT_INTRO_KEY);
     
     try {
         await Preferences.remove({ key: STORAGE_KEY });
@@ -1018,6 +1048,12 @@ export const Storage = {
     } catch (e) {
         console.warn("Error removing native preference", e);
     }
+
+    // Persist and announce the fresh state as a real mutation. If an account
+    // is connected, its cloud save is reset too instead of restoring stale
+    // progress on the next launch.
+    saveData(getStoredData());
+    await nativeSaveQueue;
   },
   
   getCompletedCount: (difficulty: string, maxLevel: number = 200): number => {

@@ -9,6 +9,8 @@ import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { BOOKS_2_ALL_PRODUCT_ID, BOOKS_3_ALL_PRODUCT_ID, BOOKS_FOREVER_PRODUCT_ID, IAP } from './utils/iap';
 import type { SuccessfulIAPPurchase } from './utils/iap';
+import { Auth } from './utils/auth';
+import { CloudSave, CLOUD_DATA_UPDATED_EVENT } from './utils/cloudSave';
 
 // UI Components
 import { BookUnlockConfirmModal, PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal, ResetConfirmModal } from './components/ui/Modals';
@@ -106,30 +108,17 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
   // Initialize Native Storage, Orientation, IAP
   useEffect(() => {
-    const initStorage = async () => {
-        // Initialize native storage
-        await Storage.initializeNative();
-
-        // RevenueCat remains the source of truth for permanent purchases.
-        await IAP.initialize();
-        const ownership = await IAP.getOwnership();
-        // A successful CustomerInfo response is authoritative even when it
-        // contains no active purchases, so stale local book flags are cleared.
-        // Keep local access untouched only when RevenueCat itself failed and
-        // returned null (for example, a temporary offline launch).
-        if (ownership) {
-            Storage.restorePermanentPurchases(ownership);
-        }
-        
-        // Get updated data
+    const hydrateFromStorage = () => {
         const data = Storage.getStoredData();
-        
+
         setPoints(data.points);
         setSettings(data.settings);
         setStats(data.stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
         setClaimedProfileRank(getStoredClaimedProfileRank(data.stats?.totalGamesWon || 0));
         setPurchasedBackgrounds(data.purchasedBackgrounds);
+        setSelectedBackgroundId(data.selectedBackground);
         setPurchasedNumberColors(data.purchasedNumberColors);
+        setSelectedNumberColorId(data.selectedNumberColor);
         setPurchasedSoundPacks(data.purchasedSoundPacks || ['snd-zen']);
         setSelectedSoundPackId(data.selectedSoundPack || 'snd-zen');
         setPurchasedSkills(data.purchasedSkills);
@@ -139,9 +128,9 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
         setUnlockedPacks3(data.unlockedPack3 || []);
         setBook2UnlockReady(data.book2UnlockReady || []);
         setBook3UnlockReady(data.book3UnlockReady || []);
-        setBooks2AllOwned(Storage.isBooks2AllOwned());
-        setBooks3AllOwned(Storage.isBooks3AllOwned());
-        setBooksForeverOwned(Storage.isBooksForeverOwned());
+        setBooks2AllOwned(Boolean(data.books2AllOwned || data.booksForeverOwned));
+        setBooks3AllOwned(Boolean(data.books3AllOwned || data.booksForeverOwned));
+        setBooksForeverOwned(Boolean(data.booksForeverOwned));
         setNextBonusClaimTime(data.nextBonusClaimTime || 0);
         setPepinoState(data.pepino || {
           unlocked: false,
@@ -151,11 +140,37 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
           firstMessageShown: false
         });
         setRedeemedCoupons(data.redeemedCoupons || []);
-        
+
         const isDark = data.settings.appearance === 'dark' || (data.settings.appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
         setIsDarkMode(isDark);
         if (isDark) document.documentElement.classList.add('dark');
         else document.documentElement.classList.remove('dark');
+    };
+
+    const initStorage = async () => {
+        // Initialize native storage
+        await Storage.initializeNative();
+
+        // Configure RevenueCat with the stable Firebase UID when an account is
+        // already signed in. Guests keep the existing anonymous purchase flow.
+        await Auth.initialize();
+        const appUserID = Auth.getUser()?.uid ?? null;
+        if (appUserID) {
+            await CloudSave.connect(appUserID);
+        }
+        await IAP.initialize();
+        const ownership = await IAP.syncAppUserID(appUserID);
+        // A successful CustomerInfo response is authoritative even when it
+        // contains no active purchases, so stale local book flags are cleared.
+        // Keep local access untouched only when RevenueCat itself failed and
+        // returned null (for example, a temporary offline launch).
+        if (ownership) {
+            Storage.restorePermanentPurchases(ownership);
+        }
+
+        hydrateFromStorage();
+
+        const data = Storage.getStoredData();
 
         // Check and trigger welcome gift
         const isWelcomeGiftPreview = import.meta.env.DEV && new URLSearchParams(window.location.search).has('welcomeGiftPreview');
@@ -163,6 +178,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
             setShowWelcomeGift(true);
         }
     };
+    window.addEventListener(CLOUD_DATA_UPDATED_EVENT, hydrateFromStorage);
     initStorage();
 
     // Lock Orientation to Portrait
@@ -189,12 +205,15 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
     const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
             lockOrientation();
+        } else {
+            void CloudSave.flush();
         }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener(CLOUD_DATA_UPDATED_EVENT, hydrateFromStorage);
     };
   }, []);
 

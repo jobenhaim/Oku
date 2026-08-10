@@ -73,6 +73,8 @@ export interface PepinoState {
 }
 
 export interface StoredData {
+  /** Last local mutation time, used to resolve device/cloud conflicts safely. */
+  lastModifiedAt?: number;
   settings: AppSettings;
   points: number;
   progress: Record<string, LevelProgress>; // key: "Difficulty-LevelID"

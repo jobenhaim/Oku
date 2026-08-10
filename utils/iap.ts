@@ -72,14 +72,28 @@ const isProductOwned = (ownership: PermanentPurchaseOwnership, productId: string
 
 class IAPManager {
     private initialized = false;
+    private initializePromise: Promise<void> | null = null;
     private localizedPrices: Record<string, string> = {};
 
     async initialize(): Promise<void> {
         if (this.initialized) return;
+        if (this.initializePromise) return this.initializePromise;
 
+        this.initializePromise = this.initializeInternal();
+        try {
+            await this.initializePromise;
+        } finally {
+            this.initializePromise = null;
+        }
+    }
+
+    private async initializeInternal(): Promise<void> {
         if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
             try {
                 await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
+                // Oku supports both guests and accounts. Configure first with
+                // RevenueCat's cached/anonymous customer, then use logIn below
+                // to attach that history to a Firebase UID without losing it.
                 await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
                 console.log('IAP: RevenueCat initialized for iOS');
                 this.initialized = true;
@@ -91,6 +105,39 @@ class IAPManager {
 
         console.log('IAP: Web mode (mock purchases enabled)');
         this.initialized = true;
+    }
+
+    /**
+     * Keeps RevenueCat's customer identity aligned with Firebase Auth.
+     * Guests retain RevenueCat's anonymous purchase flow. Signed-in users use
+     * their opaque Firebase UID so their entitlements can follow the account.
+     */
+    async syncAppUserID(appUserID: string | null): Promise<PermanentPurchaseOwnership | null> {
+        if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'ios') return null;
+        if (!this.initialized) await this.initialize();
+        if (!this.initialized) return null;
+
+        try {
+            let customerInfo: CustomerInfo;
+
+            if (appUserID) {
+                const { appUserID: currentAppUserID } = await Purchases.getAppUserID();
+                customerInfo = currentAppUserID === appUserID
+                    ? (await Purchases.getCustomerInfo()).customerInfo
+                    : (await Purchases.logIn({ appUserID })).customerInfo;
+            } else {
+                const { isAnonymous } = await Purchases.isAnonymous();
+                customerInfo = isAnonymous
+                    ? (await Purchases.getCustomerInfo()).customerInfo
+                    : (await Purchases.logOut()).customerInfo;
+            }
+
+            console.log(`IAP: RevenueCat identity synced (${appUserID ? 'signed in' : 'guest'})`);
+            return getPermanentOwnership(customerInfo);
+        } catch (error) {
+            console.error('IAP: Failed to sync RevenueCat identity:', error);
+            return null;
+        }
     }
 
     async getOwnership(): Promise<PermanentPurchaseOwnership | null> {

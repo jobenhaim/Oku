@@ -8,6 +8,10 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 0,
       launchAutoHide: true
+    },
+    FirebaseAuthentication: {
+      skipNativeAuth: false,
+      providers: ['apple.com', 'google.com']
     }
   }
 };

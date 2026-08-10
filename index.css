@@ -3,6 +3,10 @@
 @tailwind components;
 @tailwind utilities;
 
+.achievement-scroll-container {
+  overflow-anchor: none;
+}
+
 :root {
   /* Light Theme (Default) */
   --app-bg: #fafaf9; /* stone-50 */

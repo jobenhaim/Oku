@@ -1,12 +1,14 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AchievementItem, getOtherAchievements, getPackAchievements, getProfileTitle, getTitleAchievement, MAX_PROFILE_RANK } from '../../utils/achievements';
-import { Storage } from '../../utils/storage';
+import { PROFILE_ACCOUNT_INTRO_KEY, Storage } from '../../utils/storage';
 import { sounds } from '../../utils/sound';
 import { DiamondBalancePill } from '../ui/DiamondBalancePill';
 import { Icons } from '../ui/Icons';
 import { Difficulty } from '../../types';
 import { useTactilePress } from '../../hooks/useTactilePress';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Auth, type OkuAuthProvider } from '../../utils/auth';
+import type { User } from '@capacitor-firebase/authentication';
 
 interface ProfileScreenProps {
     onClose: () => void;
@@ -20,6 +22,23 @@ export { MAX_PROFILE_RANK };
 
 type ProfileStatBreakdown = 'games' | 'diamonds' | null;
 type AchievementCategory = 'journey' | 'skills' | 'pepino' | 'collection' | 'books' | 'all';
+type AuthAction = OkuAuthProvider | 'sign-out' | null;
+
+const GoogleMark: React.FC<{ className?: string }> = ({ className = '' }) => (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.32 2.98-7.41Z" />
+        <path fill="#34A853" d="M12 22c2.7 0 4.98-.9 6.64-2.36l-3.24-2.54c-.9.6-2.05.96-3.4.96-2.61 0-4.82-1.77-5.61-4.14H3.04v2.62A10 10 0 0 0 12 22Z" />
+        <path fill="#FBBC05" d="M6.39 13.92A6 6 0 0 1 6.08 12c0-.67.11-1.32.31-1.92V7.46H3.04A10 10 0 0 0 2 12c0 1.61.38 3.14 1.04 4.54l3.35-2.62Z" />
+        <path fill="#EA4335" d="M12 5.94c1.47 0 2.78.5 3.82 1.49l2.88-2.88A9.65 9.65 0 0 0 12 2a10 10 0 0 0-8.96 5.46l3.35 2.62C7.18 7.71 9.39 5.94 12 5.94Z" />
+    </svg>
+);
+
+const getAccountProvider = (user: User) => {
+    const providerIds = user.providerData.map((provider) => provider.providerId);
+    if (providerIds.includes('apple.com')) return 'Apple';
+    if (providerIds.includes('google.com')) return 'Google';
+    return 'Oku';
+};
 
 const ACHIEVEMENT_CATEGORIES: Array<{ id: AchievementCategory; label: string }> = [
     { id: 'journey', label: 'Journey' },
@@ -275,8 +294,22 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     const [expandedStat, setExpandedStat] = useState<ProfileStatBreakdown>(null);
     const [visibleStatBreakdown, setVisibleStatBreakdown] = useState<Exclude<ProfileStatBreakdown, null>>('games');
     const [enteringAchievementIds, setEnteringAchievementIds] = useState<Set<string>>(() => new Set());
+    const [achievementScrollSpacerHeight, setAchievementScrollSpacerHeight] = useState(0);
+    const [authUser, setAuthUser] = useState<User | null>(() => Auth.getUser());
+    const [authLoading, setAuthLoading] = useState(true);
+    const [authAction, setAuthAction] = useState<AuthAction>(null);
+    const [authMessage, setAuthMessage] = useState<string | null>(null);
+    const [showAccountIntro, setShowAccountIntro] = useState(false);
+    const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
     const statSwitchTimer = useRef<number | null>(null);
     const achievementEntranceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const profileScrollRef = useRef<HTMLElement | null>(null);
+    const achievementScrollFrame = useRef<number | null>(null);
+    const pendingAchievementScroll = useRef<{
+        category: AchievementCategory;
+        spacerHeight: number;
+        scrollTop: number;
+    } | null>(null);
     const statPress = useTactilePress<'games' | 'diamonds'>();
     const [profile, setProfile] = useState(() => {
         try {
@@ -298,9 +331,38 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         localStorage.setItem('zen_profile', JSON.stringify(profile));
     }, [profile]);
 
+    useEffect(() => {
+        let mounted = true;
+        const unsubscribe = Auth.subscribe((user) => {
+            if (mounted) setAuthUser(user);
+        });
+
+        Auth.initialize().finally(() => {
+            if (mounted) setAuthLoading(false);
+        });
+
+        return () => {
+            mounted = false;
+            unsubscribe();
+        };
+    }, []);
+
+    useEffect(() => {
+        if (authLoading) return;
+
+        if (authUser) {
+            localStorage.setItem(PROFILE_ACCOUNT_INTRO_KEY, '1');
+            setShowAccountIntro(false);
+            return;
+        }
+
+        setShowAccountIntro(localStorage.getItem(PROFILE_ACCOUNT_INTRO_KEY) !== '1');
+    }, [authLoading, authUser]);
+
     useEffect(() => () => {
         if (statSwitchTimer.current) window.clearTimeout(statSwitchTimer.current);
         if (achievementEntranceTimer.current) clearTimeout(achievementEntranceTimer.current);
+        if (achievementScrollFrame.current) window.cancelAnimationFrame(achievementScrollFrame.current);
     }, []);
 
     const currentTitle = getProfileTitle(claimedRank);
@@ -362,6 +424,81 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 scale: { duration: 0.2 },
             },
         }),
+    };
+
+    useLayoutEffect(() => {
+        const pending = pendingAchievementScroll.current;
+        const scroller = profileScrollRef.current;
+        if (!pending || pending.category !== activeAchievementCategory || !scroller) return;
+
+        // React replaces the filtered cards before the first animation frame. Restore the
+        // captured position during layout so the browser cannot visibly clamp it first.
+        scroller.scrollTop = pending.scrollTop;
+
+        achievementScrollFrame.current = window.requestAnimationFrame(() => {
+            const naturalScrollHeight = Math.max(scroller.clientHeight, scroller.scrollHeight - pending.spacerHeight);
+            const nextMaximumScroll = Math.max(0, naturalScrollHeight - scroller.clientHeight);
+            const targetScrollTop = Math.min(pending.scrollTop, nextMaximumScroll);
+            const startScrollTop = scroller.scrollTop;
+            const distance = targetScrollTop - startScrollTop;
+
+            const finish = () => {
+                setAchievementScrollSpacerHeight(0);
+                pendingAchievementScroll.current = null;
+                achievementScrollFrame.current = null;
+            };
+
+            if (Math.abs(distance) < 1 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                scroller.scrollTop = targetScrollTop;
+                finish();
+                return;
+            }
+
+            const startedAt = performance.now();
+            const duration = 300;
+            const animateScroll = (time: number) => {
+                const progress = Math.min(1, (time - startedAt) / duration);
+                const easedProgress = 1 - Math.pow(1 - progress, 3);
+                scroller.scrollTop = startScrollTop + distance * easedProgress;
+
+                if (progress < 1) {
+                    achievementScrollFrame.current = window.requestAnimationFrame(animateScroll);
+                } else {
+                    finish();
+                }
+            };
+
+            achievementScrollFrame.current = window.requestAnimationFrame(animateScroll);
+        });
+    }, [activeAchievementCategory]);
+
+    const selectAchievementCategory = (category: AchievementCategory) => {
+        if (category === activeAchievementCategory) return;
+
+        if (achievementScrollFrame.current) {
+            window.cancelAnimationFrame(achievementScrollFrame.current);
+            achievementScrollFrame.current = null;
+        }
+
+        const scroller = profileScrollRef.current;
+        if (scroller) {
+            const spacerHeight = Math.max(
+                scroller.clientHeight,
+                scroller.scrollHeight - achievementScrollSpacerHeight,
+            );
+            setAchievementScrollSpacerHeight(spacerHeight);
+            pendingAchievementScroll.current = {
+                category,
+                spacerHeight,
+                scrollTop: scroller.scrollTop,
+            };
+        }
+
+        sounds.playClick();
+        const currentIndex = ACHIEVEMENT_CATEGORIES.findIndex((item) => item.id === activeAchievementCategory);
+        const nextIndex = ACHIEVEMENT_CATEGORIES.findIndex((item) => item.id === category);
+        setAchievementCategoryDirection(nextIndex > currentIndex ? 1 : -1);
+        setActiveAchievementCategory(category);
     };
     const gamesWonBreakdown = useMemo(() => {
         const breakdown = storedData.stats?.gamesWonByDifficulty || {};
@@ -442,6 +579,43 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         }, 700);
     };
 
+    const handleSignIn = async (provider: OkuAuthProvider) => {
+        if (authAction) return;
+        sounds.playClick();
+        setAuthAction(provider);
+        setAuthMessage(null);
+
+        const result = await Auth.signIn(provider);
+        if (result.status === 'signed-in') {
+            setStoredData(Storage.getStoredData());
+            setAuthMessage(result.cloudSynced
+                ? null
+                : 'Your progress will sync when you are online.');
+        } else if (result.status === 'failed') {
+            setAuthMessage(result.message);
+        }
+
+        setAuthAction(null);
+    };
+
+    const handleSignOut = async () => {
+        if (authAction) return;
+        sounds.playClick();
+        setAuthAction('sign-out');
+        setAuthMessage(null);
+
+        const result = await Auth.signOut();
+        if (result.status === 'signed-out') {
+            setAuthMessage(result.purchasesSynced
+                ? 'Signed out. Your progress is still on this device.'
+                : 'Signed out. Your progress is still safe on this device.');
+        } else if (result.status === 'failed') {
+            setAuthMessage(result.message);
+        }
+
+        setAuthAction(null);
+    };
+
     return (
         <div className="w-full h-full bg-transparent flex flex-col font-sans text-t-primary">
             <header className="w-full max-w-md md:max-w-[700px] mx-auto flex items-center justify-between px-6 md:px-0 pt-4 md:pt-7 pb-4 relative shrink-0 z-20">
@@ -456,7 +630,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 <DiamondBalancePill points={points} />
             </header>
 
-            <main className="scroll-edge-fade flex-1 overflow-y-auto hide-scrollbar px-6 md:px-0 pb-8">
+            <main ref={profileScrollRef} className="achievement-scroll-container scroll-edge-fade flex-1 overflow-y-auto hide-scrollbar px-6 md:px-0 pb-8">
                 <div className="w-full max-w-md md:max-w-[620px] mx-auto space-y-6 md:space-y-8">
                     <section className="flex flex-col items-center text-center pt-3 md:pt-5">
                         {!profile.hasEditedName && !isEditingName && (
@@ -480,6 +654,81 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         <span className="mt-3 md:mt-4 px-4 md:px-5 py-2 md:py-2.5 rounded-full bg-white dark:bg-white border border-stone-800 dark:border-stone-800 text-sm md:text-base font-bold text-blue-700 dark:text-blue-700">
                             {currentTitle}
                         </span>
+                    </section>
+
+                    <section className="space-y-2.5 md:space-y-3">
+                        <div className="flex items-end justify-between px-1 gap-4">
+                            <div>
+                                <span className="block text-[10px] md:text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-[0.16em]">Account</span>
+                                {!authUser && !authLoading && (
+                                    <span className="block mt-1 text-[12px] md:text-sm font-medium text-stone-600 dark:text-stone-300">
+                                        Save your progress. Continue with:
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className={`rounded-[1.4rem] border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm ${authUser ? 'px-4 py-3.5 md:px-5 md:py-4' : 'p-4 md:p-5'}`}>
+                            {authLoading ? (
+                                <div className="h-12 flex items-center justify-center text-xs md:text-sm font-semibold text-stone-400">
+                                    Checking account…
+                                </div>
+                            ) : authUser ? (
+                                <div className="flex items-center gap-3 md:gap-3.5">
+                                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-blue-50 dark:bg-blue-950/35 flex items-center justify-center shrink-0">
+                                        <Icons.Check className="w-4 h-4 md:w-[18px] md:h-[18px] text-blue-500" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <span className="block text-[13px] md:text-[15px] font-semibold text-t-primary truncate">
+                                            Progress saved
+                                        </span>
+                                        <span className="block mt-0.5 text-[10px] md:text-xs font-medium text-stone-400 dark:text-stone-500 truncate">
+                                            {getAccountProvider(authUser)} · {authUser.displayName || authUser.email || 'Oku account'}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            sounds.playClick();
+                                            setShowSignOutConfirm(true);
+                                        }}
+                                        disabled={authAction !== null}
+                                        className="px-1.5 py-2 text-[10px] md:text-xs font-semibold text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 active:scale-95 transition-[color,transform] disabled:opacity-50"
+                                    >
+                                        {authAction === 'sign-out' ? 'Signing out…' : 'Sign out'}
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-2.5 md:gap-3">
+                                    <button
+                                        type="button"
+                                        aria-label="Continue with Apple"
+                                        onClick={() => handleSignIn('apple')}
+                                        disabled={authAction !== null}
+                                        className="h-12 md:h-13 px-3 rounded-xl bg-black text-white flex items-center justify-center gap-2 text-xs md:text-sm font-semibold active:scale-[0.98] transition-transform disabled:opacity-55"
+                                    >
+                                        <span className="text-[22px] md:text-2xl leading-none -mt-0.5" aria-hidden="true"></span>
+                                        <span>{authAction === 'apple' ? 'Connecting…' : 'Apple'}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        aria-label="Continue with Google"
+                                        onClick={() => handleSignIn('google')}
+                                        disabled={authAction !== null}
+                                        className="h-12 md:h-13 px-3 rounded-xl bg-white text-stone-800 border border-stone-300 flex items-center justify-center gap-2 text-xs md:text-sm font-semibold active:scale-[0.98] transition-transform disabled:opacity-55"
+                                    >
+                                        <GoogleMark className="w-[18px] h-[18px] md:w-5 md:h-5 shrink-0" />
+                                        <span>{authAction === 'google' ? 'Connecting…' : 'Google'}</span>
+                                    </button>
+                                </div>
+                            )}
+
+                            {authMessage && (
+                                <p className="mt-3 text-center text-[10px] md:text-xs font-medium text-stone-500 dark:text-stone-400 animate-fade-in-fast">
+                                    {authMessage}
+                                </p>
+                            )}
+                        </div>
                     </section>
 
                     <section className="space-y-2.5">
@@ -591,14 +840,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                                         role="tab"
                                         aria-selected={isActive}
                                         aria-label={`${category.label}${hasReadyAchievement ? ', reward ready' : ''}`}
-                                        onClick={() => {
-                                            if (isActive) return;
-                                            sounds.playClick();
-                                            const currentIndex = ACHIEVEMENT_CATEGORIES.findIndex((item) => item.id === activeAchievementCategory);
-                                            const nextIndex = ACHIEVEMENT_CATEGORIES.findIndex((item) => item.id === category.id);
-                                            setAchievementCategoryDirection(nextIndex > currentIndex ? 1 : -1);
-                                            setActiveAchievementCategory(category.id);
-                                        }}
+                                        onClick={() => selectAchievementCategory(category.id)}
                                         className={`flex-1 py-2 px-0.5 text-[10px] md:text-[12px] font-bold transition-all relative z-10 flex items-center justify-center ${
                                             isActive
                                                 ? 'text-stone-900 dark:text-white'
@@ -648,8 +890,111 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                     </div>
 
                 </div>
+                {achievementScrollSpacerHeight > 0 && (
+                    <div aria-hidden="true" className="w-full shrink-0" style={{ height: achievementScrollSpacerHeight }} />
+                )}
                 <div className="h-safe-bottom w-full shrink-0" />
             </main>
+
+            <AnimatePresence>
+                {showAccountIntro && (
+                    <motion.div
+                        className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/30 backdrop-blur-sm px-5"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <motion.div
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="account-intro-title"
+                            aria-describedby="account-intro-description"
+                            className="w-full max-w-xs md:max-w-sm rounded-[1.75rem] border border-stone-100 dark:border-stone-700 bg-t-surface px-6 py-7 md:px-8 md:py-9 text-center shadow-2xl"
+                            initial={{ opacity: 0, scale: 0.94, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.97, y: 5 }}
+                            transition={{ duration: 0.22, ease: 'easeOut' }}
+                        >
+                            <h3 id="account-intro-title" className="text-2xl md:text-3xl font-bold text-t-primary">
+                                Save your progress
+                            </h3>
+                            <p id="account-intro-description" className="mt-3 text-sm md:text-base font-normal leading-relaxed text-stone-500 dark:text-stone-400">
+                                Sign in to save your progress across devices, or continue as a guest.
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    sounds.playClick();
+                                    localStorage.setItem(PROFILE_ACCOUNT_INTRO_KEY, '1');
+                                    setShowAccountIntro(false);
+                                }}
+                                className="mt-6 w-full rounded-2xl bg-stone-950 py-3.5 text-base font-bold text-white active:scale-[0.97] transition-transform"
+                            >
+                                Got it
+                            </button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {showSignOutConfirm && (
+                    <motion.div
+                        className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/35 backdrop-blur-sm px-5"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.18 }}
+                        onClick={() => {
+                            sounds.playClick();
+                            setShowSignOutConfirm(false);
+                        }}
+                    >
+                        <motion.div
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="sign-out-confirm-title"
+                            className="w-full max-w-xs md:max-w-sm rounded-[1.75rem] border border-stone-100 dark:border-stone-700 bg-t-surface p-6 md:p-8 text-center shadow-2xl"
+                            initial={{ opacity: 0, scale: 0.94, y: 8 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.96, y: 5 }}
+                            transition={{ duration: 0.2, ease: 'easeOut' }}
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            <h3
+                                id="sign-out-confirm-title"
+                                className="text-xl md:text-2xl font-bold leading-snug text-t-primary"
+                            >
+                                Are you sure you want to sign out of your account?
+                            </h3>
+
+                            <div className="mt-6 flex flex-col gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowSignOutConfirm(false);
+                                        void handleSignOut();
+                                    }}
+                                    className="w-full rounded-2xl bg-stone-950 py-3.5 text-base font-bold text-white active:scale-[0.97] transition-transform"
+                                >
+                                    Yes
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        sounds.playClick();
+                                        setShowSignOutConfirm(false);
+                                    }}
+                                    className="w-full rounded-2xl bg-stone-100 dark:bg-stone-800 py-3.5 text-base font-bold text-stone-500 dark:text-stone-400 active:scale-[0.97] transition-transform"
+                                >
+                                    No
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
