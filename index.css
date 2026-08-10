@@ -41,6 +41,21 @@
   --grid-thick: #78716c; /* Stone 500 - clear without overpowering the board */
 }
 
+/* Paint the welcome-gift glow into the card itself. Blurred child layers can
+   escape rounded clipping in iOS WebKit while Framer Motion is transforming. */
+.welcome-gift-card {
+  background-color: var(--surface);
+  background-image:
+    radial-gradient(circle at 100% 0%, rgba(219, 234, 254, 0.72) 0, rgba(219, 234, 254, 0) 46%),
+    radial-gradient(circle at 0% 100%, rgba(254, 243, 199, 0.68) 0, rgba(254, 243, 199, 0) 46%);
+}
+
+.dark .welcome-gift-card {
+  background-image:
+    radial-gradient(circle at 100% 0%, rgba(30, 58, 138, 0.20) 0, rgba(30, 58, 138, 0) 46%),
+    radial-gradient(circle at 0% 100%, rgba(120, 53, 15, 0.18) 0, rgba(120, 53, 15, 0) 46%);
+}
+
 /* Home controls retain their existing lightweight translucent finish. */
 .oku-main-glass {
   background: rgba(255, 255, 255, 0.68);

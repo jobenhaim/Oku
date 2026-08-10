@@ -1,10 +1,10 @@
 import { Capacitor } from '@capacitor/core';
 import { FirebaseFirestore } from '@capacitor-firebase/firestore';
 import { Preferences } from '@capacitor/preferences';
-import type { LevelProgress, PepinoState, StoredData } from '../types';
+import type { Cell, LevelProgress, PepinoState, StoredData } from '../types';
 import { Storage } from './storage';
 
-const CLOUD_SCHEMA_VERSION = 1;
+const CLOUD_SCHEMA_VERSION = 2;
 const CLOUD_SAVE_DEBOUNCE_MS = 1800;
 const SYNCED_ACCOUNT_IDS_KEY = 'oku_cloud_synced_account_ids_v1';
 export const CLOUD_DATA_UPDATED_EVENT = 'oku-cloud-data-updated';
@@ -17,10 +17,24 @@ interface CloudProfileDocument {
     data: CloudProfileData;
 }
 
+interface CloudBoardState {
+    rows: number;
+    columns: number;
+    cells: Cell[];
+}
+
+type CloudLevelProgress = Omit<LevelProgress, 'boardState'> & {
+    // Schema 2 stores the board as a map containing one flat cell array.
+    // Firestore rejects Cell[][] because an array cannot directly contain
+    // another array. Keep the legacy shape in the read type so a save made by
+    // an earlier development build can still be recovered if one exists.
+    boardState?: CloudBoardState | Cell[][];
+};
+
 interface CloudProgressDocument {
     schemaVersion: number;
     updatedAt: number;
-    levels: Record<string, LevelProgress>;
+    levels: Record<string, CloudLevelProgress>;
 }
 
 interface RemoteSave {
@@ -36,6 +50,73 @@ export interface CloudSyncResult {
 
 const cloneForCloud = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 const contentHash = (value: unknown) => JSON.stringify(cloneForCloud(value));
+
+const encodeBoardState = (boardState: Cell[][]): CloudBoardState | undefined => {
+    const rows = boardState.length;
+    const columns = boardState[0]?.length ?? 0;
+    const isRectangular = rows > 0
+        && columns > 0
+        && boardState.every((row) => Array.isArray(row) && row.length === columns);
+
+    if (!isRectangular) {
+        console.warn('Cloud save: Skipping a malformed in-progress board');
+        return undefined;
+    }
+
+    return {
+        rows,
+        columns,
+        cells: cloneForCloud(boardState.flat()),
+    };
+};
+
+const decodeBoardState = (
+    boardState: CloudBoardState | Cell[][] | undefined
+): Cell[][] | undefined => {
+    if (!boardState) return undefined;
+
+    // Backward compatibility for any development save that used schema 1.
+    if (Array.isArray(boardState)) {
+        const columns = boardState[0]?.length ?? 0;
+        const isRectangular = boardState.length > 0
+            && columns > 0
+            && boardState.every((row) => Array.isArray(row) && row.length === columns);
+        return isRectangular ? cloneForCloud(boardState) : undefined;
+    }
+
+    const { rows, columns, cells } = boardState;
+    if (!Number.isInteger(rows)
+        || !Number.isInteger(columns)
+        || rows <= 0
+        || columns <= 0
+        || !Array.isArray(cells)
+        || cells.length !== rows * columns) {
+        console.warn('Cloud save: Ignoring a malformed cloud board');
+        return undefined;
+    }
+
+    const decoded: Cell[][] = [];
+    for (let row = 0; row < rows; row += 1) {
+        decoded.push(cloneForCloud(cells.slice(row * columns, (row + 1) * columns)));
+    }
+    return decoded;
+};
+
+const containsDirectNestedArray = (value: unknown): boolean => {
+    if (Array.isArray(value)) {
+        if (value.some((item) => Array.isArray(item))) return true;
+        return value.some((item) => containsDirectNestedArray(item));
+    }
+    if (!value || typeof value !== 'object') return false;
+    return Object.values(value as Record<string, unknown>)
+        .some((item) => containsDirectNestedArray(item));
+};
+
+const assertFirestoreSafe = (value: unknown) => {
+    if (containsDirectNestedArray(value)) {
+        throw new Error('Cloud save contains a nested array that Firestore cannot store.');
+    }
+};
 
 const unionStrings = (...collections: Array<string[] | undefined>) => [
     ...new Set(collections.flatMap((collection) => collection ?? [])),
@@ -226,7 +307,7 @@ const getChunkId = (progress: LevelProgress) => {
     return `${difficulty}-book-${book}`;
 };
 
-const compactProgress = (progress: LevelProgress): LevelProgress => {
+const compactProgress = (progress: LevelProgress): CloudLevelProgress => {
     const compacted = cloneForCloud(progress);
     const isCompleted = compacted.status === 'completed' || compacted.bestTime !== undefined;
     if (isCompleted) {
@@ -236,11 +317,16 @@ const compactProgress = (progress: LevelProgress): LevelProgress => {
         delete compacted.boardState;
         delete compacted.moveLog;
     }
-    return compacted;
+
+    const { boardState, ...cloudProgress } = compacted;
+    const encodedBoard = boardState ? encodeBoardState(boardState) : undefined;
+    return encodedBoard
+        ? { ...cloudProgress, boardState: encodedBoard }
+        : cloudProgress;
 };
 
 const buildProgressChunks = (progress: StoredData['progress']) => {
-    const chunks = new Map<string, Record<string, LevelProgress>>();
+    const chunks = new Map<string, Record<string, CloudLevelProgress>>();
     for (const [key, value] of Object.entries(progress)) {
         const chunkId = getChunkId(value);
         const levels = chunks.get(chunkId) ?? {};
@@ -405,7 +491,13 @@ class CloudSaveManager {
         for (const snapshot of progressResult.snapshots) {
             const levels = snapshot.data?.levels ?? {};
             chunkHashes.set(snapshot.id, contentHash(levels));
-            Object.assign(progress, levels);
+            for (const [key, cloudProgress] of Object.entries(levels)) {
+                const { boardState, ...localProgress } = cloneForCloud(cloudProgress);
+                const decodedBoard = decodeBoardState(boardState);
+                progress[key] = decodedBoard
+                    ? { ...localProgress, boardState: decodedBoard }
+                    : localProgress;
+            }
         }
 
         if (!profileDocument && progressResult.snapshots.length === 0) {
@@ -431,13 +523,15 @@ class CloudSaveManager {
         const profile = toProfileData(data);
         const nextProfileHash = contentHash(profile);
         if (nextProfileHash !== this.profileHash) {
+            const profileDocument: CloudProfileDocument = {
+                schemaVersion: CLOUD_SCHEMA_VERSION,
+                updatedAt: Date.now(),
+                data: profile,
+            };
+            assertFirestoreSafe(profileDocument);
             await FirebaseFirestore.setDocument({
                 reference: `users/${uid}/saves/profile`,
-                data: {
-                    schemaVersion: CLOUD_SCHEMA_VERSION,
-                    updatedAt: Date.now(),
-                    data: profile,
-                },
+                data: profileDocument,
                 merge: false,
             });
             this.profileHash = nextProfileHash;
@@ -450,13 +544,15 @@ class CloudSaveManager {
             const nextHash = contentHash(levels);
             if (nextHash === this.chunkHashes.get(chunkId)) continue;
 
+            const progressDocument: CloudProgressDocument = {
+                schemaVersion: CLOUD_SCHEMA_VERSION,
+                updatedAt: Date.now(),
+                levels,
+            };
+            assertFirestoreSafe(progressDocument);
             await FirebaseFirestore.setDocument({
                 reference: `users/${uid}/progress/${chunkId}`,
-                data: {
-                    schemaVersion: CLOUD_SCHEMA_VERSION,
-                    updatedAt: Date.now(),
-                    levels,
-                },
+                data: progressDocument,
                 merge: false,
             });
             this.chunkHashes.set(chunkId, nextHash);

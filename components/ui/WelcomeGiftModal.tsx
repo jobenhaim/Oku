@@ -88,15 +88,12 @@ export const WelcomeGiftModal: React.FC<WelcomeGiftModalProps> = ({ onClose }) =
                 initial={{ opacity: 0, scale: 0.88, y: 18 }}
                 animate={isClosing ? { opacity: 0, scale: 0.96, y: 8 } : { opacity: 1, scale: 1, y: 0 }}
                 transition={{ type: 'spring', stiffness: 330, damping: 24 }}
-                className="bg-t-surface p-5 sm:p-6 md:p-7 rounded-[2rem] shadow-2xl w-full max-w-[310px] md:max-w-[350px] text-center border border-stone-100 dark:border-stone-800 transition-colors duration-300 relative overflow-hidden"
+                className="welcome-gift-card bg-t-surface p-5 sm:p-6 md:p-7 rounded-[2rem] shadow-2xl w-full max-w-[310px] md:max-w-[350px] text-center border border-stone-100 dark:border-stone-800 transition-colors duration-300 relative overflow-hidden"
                 onClick={e => e.stopPropagation()}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="welcome-gift-title"
             >
-                <div className="absolute -top-16 -right-16 h-40 w-40 rounded-full bg-blue-100/70 blur-3xl dark:bg-blue-900/20" aria-hidden="true" />
-                <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-amber-100/70 blur-3xl dark:bg-amber-900/20" aria-hidden="true" />
-
                 <div className="relative">
                     <h3 id="welcome-gift-title" className="text-[1.1rem] md:text-[1.25rem] font-medium text-t-primary mb-1 tracking-tight">
                         <span className="block">Thank you for downloading</span>
