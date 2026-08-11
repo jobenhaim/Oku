@@ -144,6 +144,9 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
     const claimedIds = new Set(data.claimedAchievements || []);
     const totalGamesWon = Math.max(0, data.stats?.totalGamesWon || 0);
     const pepinoGiftsOpened = Math.max(0, data.achievementCounters?.pepinoGiftsOpened || 0);
+    const pepinoHeartTaps = Math.max(0, data.achievementCounters?.pepinoHeartTaps || 0);
+    const pepinoTenLoveTaps = Math.max(0, data.achievementCounters?.pepinoTenLoveTaps || 0);
+    const pepinoStrongTaps = Math.max(0, data.achievementCounters?.pepinoStrongTaps || 0);
     const hardPerfectGames = Math.max(0, data.achievementCounters?.hardPerfectGames || 0);
     const scansUsed = Math.max(0, data.achievementCounters?.scansUsed || 0);
     const replaysWatched = Math.max(0, data.achievementCounters?.replaysWatched || 0);
@@ -175,7 +178,26 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
         { id: 'director-cut-unique-50', title: "Director's Cut", detail: 'Watch replays from 50 different puzzles.', current: replaysWatched, target: 50, reward: 75, category: 'journey' },
         { id: 'sharp-eye-valid-100', title: 'Sharp Eye', detail: 'Use Scan 100 times after at least 1 minute of play.', current: scansUsed, target: 100, reward: 50, category: 'skills' },
         { id: 'guiding-light-100', title: 'Guiding Light', detail: 'Tap 100 Light-highlighted cells.', current: nudgeCellClicks, target: 100, reward: 50, category: 'skills' },
-        { id: 'unlock-pepino', title: 'Nice to Meet You', detail: 'Unlock Pepino.', current: data.pepino?.unlocked ? 1 : 0, target: 1, reward: 10, category: 'pepino' },
+        { id: 'unlock-pepino', title: 'Nice to Meet You', detail: 'Unlock Pepino.', current: data.pepino?.unlocked ? 1 : 0, target: 1, reward: 50, category: 'pepino' },
+        { id: 'pepino-love-tap', title: 'Love Tap', detail: 'Make Pepino give you a heart.', current: pepinoHeartTaps, target: 1, reward: 10, category: 'pepino' },
+        ...(claimedIds.has('pepino-love-tap') ? [{
+            id: 'pepino-ten-love-taps',
+            title: '10 Love Taps',
+            detail: 'Pepino likes you!',
+            current: pepinoTenLoveTaps,
+            target: 10,
+            reward: 10,
+            category: 'pepino' as const,
+        }] : []),
+        ...(claimedIds.has('pepino-ten-love-taps') ? [{
+            id: 'pepino-10000-strong',
+            title: '10,000 Strong',
+            detail: 'You know what to do.',
+            current: pepinoStrongTaps,
+            target: 10000,
+            reward: 100,
+            category: 'pepino' as const,
+        }] : []),
         { id: 'pepino-best-friend-100', title: "Pepino's Best Friend", detail: 'Open 100 Pepino gifts.', current: pepinoGiftsOpened, target: 100, reward: 100, category: 'pepino' },
         { id: 'eight-backgrounds', title: 'Scene Setter', detail: 'Get 8 scenes.', current: backgrounds, target: 8, reward: 50, category: 'collection' },
         { id: 'eight-number-styles', title: 'Number Wardrobe', detail: 'Get 8 number styles.', current: numberStyles, target: 8, reward: 50, category: 'collection' },

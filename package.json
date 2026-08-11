@@ -1,12 +1,13 @@
 {
   "name": "oku",
-  "version": "3.9.20",
+  "version": "3.9.21",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
+    "test:profiles": "node scripts/test-profile-policy.mjs && node scripts/test-profile-storage.mjs",
     "audit:sudoku": "node scripts/audit-sudoku.mjs",
     "audit:sudoku:impossible": "node scripts/audit-impossible-sudoku.mjs",
     "mine:sudoku": "node scripts/mine-sudoku-catalog.mjs",

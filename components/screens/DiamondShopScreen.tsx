@@ -273,7 +273,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
 
                                     <div className="rounded-xl bg-white/80 dark:bg-slate-950/35 px-3.5 md:px-4 py-3 md:py-3.5 mb-3 md:mb-4">
                                         <p className="text-[13px] md:text-sm font-medium text-stone-600 dark:text-stone-300 leading-relaxed">
-                                            Pepino lives in a peaceful aquarium, grows with you, and brings you a diamond gift after every completed game.
+                                            Your purchase supports Oku, helps us make it better, and keeps the game alive.
                                         </p>
                                     </div>
 
@@ -283,9 +283,6 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         </FeatureRow>
                                         <FeatureRow icon={<Icons.Gift className="w-3.5 h-3.5" />}>
                                             A new Pepino gift after every solved puzzle
-                                        </FeatureRow>
-                                        <FeatureRow icon={<Icons.Check className="w-3.5 h-3.5 stroke-[3]" />}>
-                                            No forced ads, ever
                                         </FeatureRow>
                                     </div>
                                 </div>

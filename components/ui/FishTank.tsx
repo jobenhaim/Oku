@@ -355,19 +355,19 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
         setIsGiftReady(false);
 
         const r = Math.random();
-        let amount = isFirstGift ? 20 : 5;
+        let amount = isFirstGift ? 20 : 10;
 
         // Reward Distribution:
-        // 20 Diamonds: 5%
-        // 15 Diamonds: 15%
-        // 10 Diamonds: 30%
-        // 5 Diamonds: 50%
+        // 50 Diamonds: 5%
+        // 20 Diamonds: 15%
+        // 15 Diamonds: 30%
+        // 10 Diamonds: 50%
         
         if (!isFirstGift) {
-            if (r < 0.05) amount = 20;
-            else if (r < 0.20) amount = 15;
-            else if (r < 0.50) amount = 10;
-            else amount = 5;
+            if (r < 0.05) amount = 50;
+            else if (r < 0.20) amount = 20;
+            else if (r < 0.50) amount = 15;
+            else amount = 10;
         }
 
         if (amount > 0) {
@@ -384,6 +384,7 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
         e.stopPropagation();
         sounds.playUniversalPepinoTap();
         if (containerRef.current) {
+            Storage.recordPepinoHeartTap();
             const rect = containerRef.current.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;

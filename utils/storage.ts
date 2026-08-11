@@ -2,9 +2,17 @@
 import { AppSettings, Board, LevelProgress, StoredData, PepinoState, Difficulty, PermanentPurchaseOwnership, StorePurchaseUnlock, DiamondEarnSource } from '../types';
 import { Preferences } from '@capacitor/preferences';
 import { getScanRefillCost } from './constants';
+import {
+  isActiveAccount,
+  parseActiveProfile,
+  serializeActiveProfile,
+  type ActiveProfile,
+} from './profilePolicy';
 
 const STORAGE_KEY = 'oku_data_v1';
 const LEGACY_STORAGE_KEY = 'minimal_sudoku_data_v1';
+const GUEST_PROFILE_KEY = 'oku_guest_profile_v1';
+const ACTIVE_PROFILE_KEY = 'oku_active_profile_v1';
 const NORMAL_PUZZLE_CATALOG_VERSION = 1;
 export const PROFILE_ACCOUNT_INTRO_KEY = 'oku_profile_account_intro_seen_v1';
 
@@ -104,8 +112,51 @@ const emptyAchievementCounters = () => ({
     hardPerfectGames: 0,
     replaysWatched: 0,
     nudgeCellClicks: 0,
+    pepinoHeartTaps: 0,
+    pepinoTenLoveTaps: 0,
+    pepinoStrongTaps: 0,
     hardNoScanWins: 0,
     noteGamesWon: 0,
+});
+
+const createInitialData = (): StoredData => ({
+    settings: { ...DEFAULT_SETTINGS, hiddenDifficulties: [] },
+    points: 0,
+    progress: {},
+    normalPuzzleCatalogVersion: NORMAL_PUZZLE_CATALOG_VERSION,
+    purchasedBackgrounds: ['bg-default', 'bg-dyn-default'],
+    selectedBackground: 'bg-default',
+    purchasedNumberColors: ['num-default'],
+    selectedNumberColor: 'num-default',
+    purchasedSkills: [],
+    enabledSkills: [],
+    purchasedSoundPacks: ['snd-zen'],
+    selectedSoundPack: 'snd-zen',
+    bonusClaimed: false,
+    nextBonusClaimTime: 0,
+    starterPackPurchased: false,
+    books2AllOwned: false,
+    books3AllOwned: false,
+    booksForeverOwned: false,
+    unlockedPack2: [],
+    unlockedPack3: [],
+    book2UnlockReady: [],
+    book3UnlockReady: [],
+    pepino: {
+        unlocked: false,
+        hasPendingGift: false,
+        pendingGiftCount: 0,
+        firstGiftClaimed: false,
+        firstMessageShown: false,
+    },
+    seenStrictModeWarnings: [],
+    redeemedCoupons: [],
+    welcomeGiftClaimed: false,
+    processedPurchaseTransactions: [],
+    claimedAchievements: [],
+    watchedReplayPuzzleIds: [],
+    achievementCounters: emptyAchievementCounters(),
+    stats: { ...DEFAULT_STATS, gamesWonByDifficulty: {}, diamondsEarnedBySource: {} },
 });
 
 function getStoredData(): StoredData {
@@ -123,41 +174,7 @@ function getStoredData(): StoredData {
     }
 
     if (!raw) {
-      const initialData: StoredData = { 
-          settings: DEFAULT_SETTINGS, 
-          points: 0, 
-          progress: {},
-          normalPuzzleCatalogVersion: NORMAL_PUZZLE_CATALOG_VERSION,
-          purchasedBackgrounds: ['bg-default', 'bg-dyn-default'],
-          selectedBackground: 'bg-default',
-          purchasedNumberColors: ['num-default'],
-          selectedNumberColor: 'num-default',
-          purchasedSkills: [],
-          enabledSkills: [],
-          purchasedSoundPacks: ['snd-zen'],
-          selectedSoundPack: 'snd-zen',
-          bonusClaimed: false,
-          nextBonusClaimTime: 0,
-          starterPackPurchased: false,
-          books2AllOwned: false,
-          books3AllOwned: false,
-          booksForeverOwned: false,
-          unlockedPack2: [],
-          unlockedPack3: [],
-          book2UnlockReady: [],
-          book3UnlockReady: [],
-          pepino: { unlocked: false, hasPendingGift: false, pendingGiftCount: 0, firstGiftClaimed: false, firstMessageShown: false },
-          seenStrictModeWarnings: [],
-          redeemedCoupons: [],
-          welcomeGiftClaimed: false,
-          processedPurchaseTransactions: [],
-          claimedAchievements: [],
-          watchedReplayPuzzleIds: [],
-          achievementCounters: emptyAchievementCounters(),
-          stats: { ...DEFAULT_STATS, gamesWonByDifficulty: {}, diamondsEarnedBySource: {} }
-      };
-      
-      return initialData;
+      return createInitialData();
     }
     const data = JSON.parse(raw);
     
@@ -346,6 +363,18 @@ function getStoredData(): StoredData {
         0,
         Math.floor(data.achievementCounters.nudgeCellClicks || 0)
     );
+    data.achievementCounters.pepinoHeartTaps = Math.max(
+        0,
+        Math.floor(data.achievementCounters.pepinoHeartTaps || 0)
+    );
+    data.achievementCounters.pepinoTenLoveTaps = Math.max(
+        0,
+        Math.floor(data.achievementCounters.pepinoTenLoveTaps || 0)
+    );
+    data.achievementCounters.pepinoStrongTaps = Math.max(
+        0,
+        Math.floor(data.achievementCounters.pepinoStrongTaps || 0)
+    );
     data.achievementCounters.hardNoScanWins = Math.max(
         0,
         Math.floor(data.achievementCounters.hardNoScanWins || 0)
@@ -383,39 +412,7 @@ function getStoredData(): StoredData {
     return data;
   } catch (e) {
     console.error("Failed to load data", e);
-    return { 
-        settings: DEFAULT_SETTINGS, 
-        points: 0, 
-        progress: {},
-        normalPuzzleCatalogVersion: NORMAL_PUZZLE_CATALOG_VERSION,
-        purchasedBackgrounds: ['bg-default', 'bg-dyn-default'],
-        selectedBackground: 'bg-default',
-        purchasedNumberColors: ['num-default'],
-        selectedNumberColor: 'num-default',
-        purchasedSkills: [],
-        enabledSkills: [],
-        purchasedSoundPacks: ['snd-zen'],
-        selectedSoundPack: 'snd-zen',
-        bonusClaimed: false,
-        nextBonusClaimTime: 0,
-        starterPackPurchased: false,
-        books2AllOwned: false,
-        books3AllOwned: false,
-        booksForeverOwned: false,
-        unlockedPack2: [],
-        unlockedPack3: [],
-        book2UnlockReady: [],
-        book3UnlockReady: [],
-        pepino: { unlocked: false, hasPendingGift: false, pendingGiftCount: 0, firstGiftClaimed: false, firstMessageShown: false },
-        seenStrictModeWarnings: [],
-        redeemedCoupons: [],
-        welcomeGiftClaimed: false,
-        processedPurchaseTransactions: [],
-        claimedAchievements: [],
-        watchedReplayPuzzleIds: [],
-        achievementCounters: emptyAchievementCounters(),
-        stats: { ...DEFAULT_STATS, gamesWonByDifficulty: {}, diamondsEarnedBySource: {} }
-    };
+    return createInitialData();
   }
 }
 
@@ -426,6 +423,43 @@ function getStoredData(): StoredData {
 let nativeSaveQueue: Promise<void> = Promise.resolve();
 type StorageListener = (data: StoredData) => void;
 const storageListeners = new Set<StorageListener>();
+
+const queuePreferenceSet = (key: string, value: string) => {
+  nativeSaveQueue = nativeSaveQueue
+    .catch(() => undefined)
+    .then(async () => {
+      await Preferences.set({ key, value });
+    })
+    .catch((error: unknown) => console.error(`Native save failed for ${key}`, error));
+  return nativeSaveQueue;
+};
+
+const persistAuxiliaryValue = async (key: string, value: string) => {
+  localStorage.setItem(key, value);
+  await queuePreferenceSet(key, value);
+};
+
+const getActiveProfile = (): ActiveProfile | null => (
+  parseActiveProfile(localStorage.getItem(ACTIVE_PROFILE_KEY))
+);
+
+const readGuestProfile = (): StoredData | null => {
+  try {
+    const raw = localStorage.getItem(GUEST_PROFILE_KEY);
+    return raw ? JSON.parse(raw) as StoredData : null;
+  } catch (error) {
+    console.warn('Could not read the saved guest profile', error);
+    return null;
+  }
+};
+
+const persistGuestProfile = async (data: StoredData) => {
+  await persistAuxiliaryValue(GUEST_PROFILE_KEY, JSON.stringify(data));
+};
+
+const persistActiveProfile = async (profile: ActiveProfile) => {
+  await persistAuxiliaryValue(ACTIVE_PROFILE_KEY, serializeActiveProfile(profile));
+};
 
 function saveData(
   data: StoredData,
@@ -438,15 +472,7 @@ function saveData(
     const stringified = JSON.stringify(data);
     localStorage.setItem(STORAGE_KEY, stringified);
 
-    nativeSaveQueue = nativeSaveQueue
-      .catch(() => undefined)
-      .then(async () => {
-          await Preferences.set({
-              key: STORAGE_KEY,
-              value: stringified
-          });
-      })
-      .catch((err: any) => console.error("Native save failed", err));
+    void queuePreferenceSet(STORAGE_KEY, stringified);
 
     if (options.notify !== false) {
       storageListeners.forEach((listener) => listener(data));
@@ -491,13 +517,87 @@ function ensureStarterPackUnlocked(data: StoredData) {
 export const Storage = {
   getStoredData, 
 
+  createDefaultData: () => createInitialData(),
+
+  getActiveProfile,
+
+  isAccountProfileActive: (uid: string) => isActiveAccount(getActiveProfile(), uid),
+
+  getGuestProfile: () => {
+      const guest = readGuestProfile();
+      if (guest) return JSON.parse(JSON.stringify(guest)) as StoredData;
+      return getActiveProfile()?.kind === 'guest'
+          ? JSON.parse(JSON.stringify(getStoredData())) as StoredData
+          : createInitialData();
+  },
+
+  captureGuestProfile: async () => {
+      const activeProfile = getActiveProfile();
+      if (activeProfile?.kind === 'account') return;
+      await nativeSaveQueue;
+      await persistGuestProfile(JSON.parse(JSON.stringify(getStoredData())) as StoredData);
+  },
+
+  activateAccountProfile: async (uid: string) => {
+      if (!uid) throw new Error('Cannot activate an account without a user ID.');
+      await persistActiveProfile({ kind: 'account', uid });
+  },
+
+  restoreGuestProfile: async () => {
+      const guestSnapshot = readGuestProfile() ?? createInitialData();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(guestSnapshot));
+      const migratedGuest = getStoredData();
+      saveData(migratedGuest, { touchModifiedAt: false });
+      await persistGuestProfile(migratedGuest);
+      await persistActiveProfile({ kind: 'guest' });
+      await nativeSaveQueue;
+      return migratedGuest;
+  },
+
+  initializeProfiles: async (authenticatedUid: string | null) => {
+      let activeProfile = getActiveProfile();
+
+      // One-time migration for installations created before profiles were
+      // isolated. Preserve the current device save rather than risking loss.
+      if (!readGuestProfile()) {
+          await persistGuestProfile(JSON.parse(JSON.stringify(getStoredData())) as StoredData);
+      }
+
+      if (!authenticatedUid) {
+          if (activeProfile?.kind === 'account') {
+              return Storage.restoreGuestProfile();
+          }
+          if (!activeProfile) {
+              await persistActiveProfile({ kind: 'guest' });
+          }
+          return getStoredData();
+      }
+
+      if (!activeProfile) {
+          // Legacy signed-in installations already contain the account cache in
+          // the active slot. Mark it without rewriting either profile.
+          await persistActiveProfile({ kind: 'account', uid: authenticatedUid });
+          activeProfile = { kind: 'account', uid: authenticatedUid };
+      } else if (activeProfile.kind === 'guest') {
+          // Firebase may restore a session before cloud bootstrap. Keep the
+          // latest guest snapshot ready for a safe rollback or first upload.
+          await Storage.captureGuestProfile();
+      }
+
+      return getStoredData();
+  },
+
   subscribe: (listener: StorageListener) => {
       storageListeners.add(listener);
       return () => storageListeners.delete(listener);
   },
 
   replaceStoredData: async (data: StoredData) => {
-      saveData(data, { touchModifiedAt: false });
+      // Put the incoming snapshot through Oku's normal migrations before it
+      // becomes active. Cloud saves and long-idle guest profiles may come from
+      // an older app version.
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      saveData(getStoredData(), { touchModifiedAt: false });
       await nativeSaveQueue;
   },
 
@@ -507,7 +607,17 @@ export const Storage = {
   
   initializeNative: async (): Promise<StoredData | null> => {
       try {
-          let { value } = await Preferences.get({ key: STORAGE_KEY });
+          const [storedResult, guestResult, activeProfileResult] = await Promise.all([
+              Preferences.get({ key: STORAGE_KEY }),
+              Preferences.get({ key: GUEST_PROFILE_KEY }),
+              Preferences.get({ key: ACTIVE_PROFILE_KEY }),
+          ]);
+          let { value } = storedResult;
+
+          if (guestResult.value) localStorage.setItem(GUEST_PROFILE_KEY, guestResult.value);
+          if (activeProfileResult.value) {
+              localStorage.setItem(ACTIVE_PROFILE_KEY, activeProfileResult.value);
+          }
           
           // Native Migration Logic
           if (!value) {
@@ -620,6 +730,19 @@ export const Storage = {
       const data = getStoredData();
       if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
       data.achievementCounters.nudgeCellClicks += 1;
+      saveData(data);
+  },
+
+  recordPepinoHeartTap: () => {
+      const data = getStoredData();
+      if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
+      data.achievementCounters.pepinoHeartTaps += 1;
+      if (data.claimedAchievements?.includes('pepino-love-tap')) {
+          data.achievementCounters.pepinoTenLoveTaps += 1;
+      }
+      if (data.claimedAchievements?.includes('pepino-ten-love-taps')) {
+          data.achievementCounters.pepinoStrongTaps += 1;
+      }
       saveData(data);
   },
 
@@ -1036,6 +1159,7 @@ export const Storage = {
   },
 
   resetAllData: async () => {
+    const resetGuestProfile = getActiveProfile()?.kind !== 'account';
     localStorage.removeItem(STORAGE_KEY);
     // Also remove legacy just in case
     localStorage.removeItem(LEGACY_STORAGE_KEY);
@@ -1052,7 +1176,12 @@ export const Storage = {
     // Persist and announce the fresh state as a real mutation. If an account
     // is connected, its cloud save is reset too instead of restoring stale
     // progress on the next launch.
-    saveData(getStoredData());
+    const freshData = getStoredData();
+    saveData(freshData);
+    if (resetGuestProfile) {
+        await persistGuestProfile(freshData);
+        await persistActiveProfile({ kind: 'guest' });
+    }
     await nativeSaveQueue;
   },
   

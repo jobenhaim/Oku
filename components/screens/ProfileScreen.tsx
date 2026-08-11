@@ -16,6 +16,7 @@ interface ProfileScreenProps {
     claimedRank: number;
     onTitleClaimed: (rank: number) => void;
     onClaimAchievement: (id: string, reward: number) => boolean;
+    accountPreview?: { provider: OkuAuthProvider; name: string } | null;
 }
 
 export { MAX_PROFILE_RANK };
@@ -33,11 +34,11 @@ const GoogleMark: React.FC<{ className?: string }> = ({ className = '' }) => (
     </svg>
 );
 
-const getAccountProvider = (user: User) => {
+const getAccountProvider = (user: User): 'apple' | 'google' | 'oku' => {
     const providerIds = user.providerData.map((provider) => provider.providerId);
-    if (providerIds.includes('apple.com')) return 'Apple';
-    if (providerIds.includes('google.com')) return 'Google';
-    return 'Oku';
+    if (providerIds.includes('apple.com')) return 'apple';
+    if (providerIds.includes('google.com')) return 'google';
+    return 'oku';
 };
 
 const ACHIEVEMENT_CATEGORIES: Array<{ id: AchievementCategory; label: string }> = [
@@ -275,6 +276,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     claimedRank,
     onTitleClaimed,
     onClaimAchievement,
+    accountPreview = null,
 }) => {
     const [storedData, setStoredData] = useState(() => Storage.getStoredData());
     const [activeAchievementCategory, setActiveAchievementCategory] = useState<AchievementCategory>(() => {
@@ -296,7 +298,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     const [enteringAchievementIds, setEnteringAchievementIds] = useState<Set<string>>(() => new Set());
     const [achievementScrollSpacerHeight, setAchievementScrollSpacerHeight] = useState(0);
     const [authUser, setAuthUser] = useState<User | null>(() => Auth.getUser());
-    const [authLoading, setAuthLoading] = useState(true);
+    const [authLoading, setAuthLoading] = useState(() => !accountPreview);
     const [authAction, setAuthAction] = useState<AuthAction>(null);
     const [authMessage, setAuthMessage] = useState<string | null>(null);
     const [showAccountIntro, setShowAccountIntro] = useState(false);
@@ -332,6 +334,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     }, [profile]);
 
     useEffect(() => {
+        if (accountPreview) {
+            setAuthLoading(false);
+            return;
+        }
+
         let mounted = true;
         const unsubscribe = Auth.subscribe((user) => {
             if (mounted) setAuthUser(user);
@@ -345,9 +352,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             mounted = false;
             unsubscribe();
         };
-    }, []);
+    }, [accountPreview]);
 
     useEffect(() => {
+        if (accountPreview) {
+            setShowAccountIntro(false);
+            return;
+        }
+
         if (authLoading) return;
 
         if (authUser) {
@@ -357,7 +369,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         }
 
         setShowAccountIntro(localStorage.getItem(PROFILE_ACCOUNT_INTRO_KEY) !== '1');
-    }, [authLoading, authUser]);
+    }, [accountPreview, authLoading, authUser]);
 
     useEffect(() => () => {
         if (statSwitchTimer.current) window.clearTimeout(statSwitchTimer.current);
@@ -366,6 +378,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     }, []);
 
     const currentTitle = getProfileTitle(claimedRank);
+    const hasAccountCard = Boolean(authUser || accountPreview);
+    const accountProvider = authUser ? getAccountProvider(authUser) : accountPreview?.provider ?? null;
+    const accountName = authUser
+        ? authUser.displayName?.trim() || profile.username?.trim() || 'Oku player'
+        : accountPreview?.name ?? null;
     const titleAchievement = useMemo(() => getTitleAchievement(storedData, claimedRank), [storedData, claimedRank]);
     const packAchievements = useMemo(() => getPackAchievements(storedData), [storedData]);
     const otherAchievements = useMemo(() => getOtherAchievements(storedData), [storedData]);
@@ -606,9 +623,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
         const result = await Auth.signOut();
         if (result.status === 'signed-out') {
-            setAuthMessage(result.purchasesSynced
-                ? 'Signed out. Your progress is still on this device.'
-                : 'Signed out. Your progress is still safe on this device.');
+            setStoredData(Storage.getStoredData());
+            setAuthMessage('Signed out. Your guest progress is back.');
         } else if (result.status === 'failed') {
             setAuthMessage(result.message);
         }
@@ -660,7 +676,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         <div className="flex items-end justify-between px-1 gap-4">
                             <div>
                                 <span className="block text-[10px] md:text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-[0.16em]">Account</span>
-                                {!authUser && !authLoading && (
+                                {!hasAccountCard && !authLoading && (
                                     <span className="block mt-1 text-[12px] md:text-sm font-medium text-stone-600 dark:text-stone-300">
                                         Save your progress. Continue with:
                                     </span>
@@ -668,32 +684,39 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                             </div>
                         </div>
 
-                        <div className={`rounded-[1.4rem] border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm ${authUser ? 'px-4 py-3.5 md:px-5 md:py-4' : 'p-4 md:p-5'}`}>
-                            {authLoading ? (
+                        <div className={`rounded-[1.4rem] border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm ${hasAccountCard ? 'px-4 py-2.5 md:px-5 md:py-3' : 'p-4 md:p-5'}`}>
+                            {authLoading && !accountPreview ? (
                                 <div className="h-12 flex items-center justify-center text-xs md:text-sm font-semibold text-stone-400">
                                     Checking account…
                                 </div>
-                            ) : authUser ? (
-                                <div className="flex items-center gap-3 md:gap-3.5">
-                                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-blue-50 dark:bg-blue-950/35 flex items-center justify-center shrink-0">
-                                        <Icons.Check className="w-4 h-4 md:w-[18px] md:h-[18px] text-blue-500" />
+                            ) : hasAccountCard ? (
+                                <div className="flex items-center gap-3.5 md:gap-4">
+                                    <div className={`w-11 h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center shrink-0 shadow-sm ${accountProvider === 'apple'
+                                        ? 'bg-black text-white'
+                                        : 'bg-white border border-stone-200 dark:border-stone-700'
+                                        }`}>
+                                        {accountProvider === 'apple' ? (
+                                            <span className="text-[26px] md:text-[28px] leading-none -mt-0.5" aria-label="Apple account"></span>
+                                        ) : accountProvider === 'google' ? (
+                                            <GoogleMark className="w-6 h-6 md:w-7 md:h-7" />
+                                        ) : (
+                                            <span className="text-lg md:text-xl font-bold text-blue-500" aria-label="Oku account">O</span>
+                                        )}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <span className="block text-[13px] md:text-[15px] font-semibold text-t-primary truncate">
-                                            Progress saved
-                                        </span>
-                                        <span className="block mt-0.5 text-[10px] md:text-xs font-medium text-stone-400 dark:text-stone-500 truncate">
-                                            {getAccountProvider(authUser)} · {authUser.displayName || authUser.email || 'Oku account'}
+                                        <span className="block text-[16px] md:text-lg font-bold text-t-primary truncate">
+                                            Welcome, {accountName}.
                                         </span>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => {
+                                            if (accountPreview) return;
                                             sounds.playClick();
                                             setShowSignOutConfirm(true);
                                         }}
                                         disabled={authAction !== null}
-                                        className="px-1.5 py-2 text-[10px] md:text-xs font-semibold text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 active:scale-95 transition-[color,transform] disabled:opacity-50"
+                                        className="px-1.5 py-2 text-[10px] md:text-xs font-semibold text-stone-400 dark:text-stone-500 active:scale-95 transition-transform disabled:opacity-50"
                                     >
                                         {authAction === 'sign-out' ? 'Signing out…' : 'Sign out'}
                                     </button>

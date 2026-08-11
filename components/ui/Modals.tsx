@@ -440,7 +440,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
         if (offer.type === 'support') {
             return (
                 <span>
-                    Meet <span className="font-bold">Pepino</span>, a little companion who lives in a peaceful aquarium, grows with you, and brings a diamond gift after every completed game. Includes <span className="font-bold">1,500 Diamonds</span> and no forced ads.
+                    Meet <span className="font-bold">Pepino</span>, a little companion who lives in a peaceful aquarium, grows with you, and brings a diamond gift after every completed game. Includes <span className="font-bold">2,500 Diamonds</span>.
                 </span>
             );
         }

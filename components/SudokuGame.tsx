@@ -73,6 +73,9 @@ const COMPLETE_MESSAGES = [
   "That's a win!"
 ];
 
+const LIGHT_IDLE_DELAY_MS = 5000;
+const LIGHT_VISIBLE_MS = 8000;
+
 type PillMessageType = 'scan-error' | 'scan-clean' | 'start' | 'warning' | 'halfway' | 'notes' | 'complete';
 
 interface PillMessage {
@@ -123,6 +126,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   const [animatingSections, setAnimatingSections] = useState<Set<string>>(new Set());
   const [nudgeCue, setNudgeCue] = useState<{r: number, c: number, key: number} | null>(null);
+  const [nudgeActivityVersion, setNudgeActivityVersion] = useState(0);
   const [showStartHint, setShowStartHint] = useState(false);
   const [pillMessage, setPillMessage] = useState<PillMessage | null>(null);
   const scanErrorDeckRef = useRef(shuffledCopy(SCAN_ERROR_MESSAGES));
@@ -636,14 +640,14 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           shownNudgeStatesRef.current.add(boardSignature);
           nudgeCueIdRef.current += 1;
           setNudgeCue({ r: target.r, c: target.c, key: nudgeCueIdRef.current });
-          clearTimer = window.setTimeout(() => setNudgeCue(null), 6000);
-      }, 5000);
+          clearTimer = window.setTimeout(() => setNudgeCue(null), LIGHT_VISIBLE_MS);
+      }, LIGHT_IDLE_DELAY_MS);
 
       return () => {
           window.clearTimeout(showTimer);
           if (clearTimer !== undefined) window.clearTimeout(clearTimer);
       };
-  }, [board, purchasedSkills, isPaused, isCompleted, isEnding, isSettingsOpen]);
+  }, [board, purchasedSkills, isPaused, isCompleted, isEnding, isSettingsOpen, nudgeActivityVersion]);
 
   const generateReplay = () => {
         if (isGeneratingReplay || replayUrl) return;
@@ -826,6 +830,13 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   })();
 
   // Memoize click handlers to avoid passing new functions on every timer tick
+  const registerNudgeActivity = useCallback(() => {
+      // Interaction postpones Light only while it is waiting to appear. Once
+      // visible, its full display time is protected from ordinary touches.
+      if (nudgeCue) return;
+      setNudgeActivityVersion(current => current + 1);
+  }, [nudgeCue]);
+
   const onCellClickWrapper = useCallback((e: React.MouseEvent, r: number, c: number) => {
       if (gameFinishedRef.current) return;
       if (
@@ -985,7 +996,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                 )}
             </AnimatePresence>
 
-            <div className="relative z-10 w-full flex justify-center">
+            <div className="relative z-10 w-full flex justify-center" onPointerDown={registerNudgeActivity}>
                 <SudokuGrid
                     board={board}
                     selectedCell={selectedCell}
@@ -1015,6 +1026,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
              animate={{ opacity: 1, y: 0 }}
              transition={{ duration: 0.45, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
              className="w-full max-w-[500px] md:max-w-[560px] px-2 md:px-0 mt-4 md:mt-5 relative z-[100]"
+             onPointerDown={registerNudgeActivity}
              onClick={(e) => e.stopPropagation()}
          >
              <NumberPad 

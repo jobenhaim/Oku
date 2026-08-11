@@ -5,7 +5,7 @@ import {
 } from '@capacitor-firebase/authentication';
 import { IAP } from './iap';
 import { Storage } from './storage';
-import { CloudSave } from './cloudSave';
+import { CloudSave, CLOUD_DATA_UPDATED_EVENT } from './cloudSave';
 
 export type OkuAuthProvider = 'apple' | 'google';
 
@@ -76,6 +76,32 @@ class AuthManager {
         await this.initializePromise;
     }
 
+    /**
+     * Select the correct local profile after Firebase restores its session.
+     * Existing account caches can open offline; a half-finished first sign-in
+     * is rolled back to the untouched guest profile.
+     */
+    async activateStoredSession() {
+        await this.initialize();
+        const uid = this.currentUser?.uid ?? null;
+        await Storage.initializeProfiles(uid);
+        if (!uid) return null;
+
+        const hadAccountCache = Storage.isAccountProfileActive(uid);
+        const cloudResult = await CloudSave.connect(uid);
+        if (cloudResult.profileActivated || hadAccountCache) return uid;
+
+        try {
+            await FirebaseAuthentication.signOut();
+        } catch (error) {
+            console.warn('Auth: Could not clear an incomplete restored session', error);
+        }
+        this.setUser(null);
+        await Storage.restoreGuestProfile();
+        this.notifyProfileChanged();
+        return null;
+    }
+
     private async initializeInternal() {
         if (!this.isAvailable()) {
             this.initialized = true;
@@ -107,6 +133,10 @@ class AuthManager {
         await this.initialize();
 
         try {
+            // Preserve the local guest exactly as it is before Firebase changes
+            // identity. It is restored verbatim on sign-out.
+            await Storage.captureGuestProfile();
+
             const result = provider === 'apple'
                 ? await FirebaseAuthentication.signInWithApple()
                 : await FirebaseAuthentication.signInWithGoogle();
@@ -117,7 +147,20 @@ class AuthManager {
 
             this.setUser(result.user);
             const cloudResult = await CloudSave.connect(result.user.uid);
+            if (!cloudResult.profileActivated) {
+                await CloudSave.disconnect({ flush: false });
+                await FirebaseAuthentication.signOut();
+                this.setUser(null);
+                await Storage.restoreGuestProfile();
+                this.notifyProfileChanged();
+                return {
+                    status: 'failed',
+                    message: 'Your account could not be loaded. Please check your connection and try again.',
+                };
+            }
+
             const purchasesSynced = await this.syncPurchaseIdentity(result.user.uid);
+            this.notifyProfileChanged();
             return {
                 status: 'signed-in',
                 user: result.user,
@@ -137,6 +180,8 @@ class AuthManager {
     async signOut(): Promise<AuthActionResult> {
         if (!this.isAvailable()) {
             this.setUser(null);
+            await Storage.restoreGuestProfile();
+            this.notifyProfileChanged();
             return { status: 'signed-out', purchasesSynced: true };
         }
 
@@ -146,7 +191,11 @@ class AuthManager {
             await CloudSave.disconnect({ flush: true });
             await FirebaseAuthentication.signOut();
             this.setUser(null);
-            const purchasesSynced = await this.syncPurchaseIdentity(null);
+            await Storage.restoreGuestProfile();
+            // Switch RevenueCat back to its guest identity, but do not rewrite
+            // the restored guest profile with the account's purchase flags.
+            const purchasesSynced = await this.syncPurchaseIdentity(null, false);
+            this.notifyProfileChanged();
             return { status: 'signed-out', purchasesSynced };
         } catch (error) {
             console.error('Auth: Sign out failed', error);
@@ -159,11 +208,15 @@ class AuthManager {
         this.listeners.forEach((listener) => listener(user));
     }
 
-    private async syncPurchaseIdentity(appUserID: string | null) {
+    private notifyProfileChanged() {
+        window.dispatchEvent(new CustomEvent(CLOUD_DATA_UPDATED_EVENT));
+    }
+
+    private async syncPurchaseIdentity(appUserID: string | null, applyOwnership = true) {
         const ownership = await IAP.syncAppUserID(appUserID);
         if (!ownership) return false;
 
-        Storage.restorePermanentPurchases(ownership);
+        if (applyOwnership) Storage.restorePermanentPurchases(ownership);
         return true;
     }
 }

@@ -28,12 +28,27 @@ import { DiamondShopScreen } from './components/screens/DiamondShopScreen';
 import { StatsScreen } from './components/screens/StatsScreen';
 
 type Screen = 'splash' | 'difficulty' | 'levels' | 'game' | 'settings' | 'store' | 'diamondShop' | 'stats' | 'profile';
+type DevAccountPreview = { provider: 'apple' | 'google'; name: string } | null;
 
 const SCREEN_SETTLE_MS = 180;
 
+const getDevAccountPreview = (): DevAccountPreview => {
+  if (!import.meta.env.DEV) return null;
+
+  const params = new URLSearchParams(window.location.search);
+  const provider = params.get('accountPreview');
+  if (provider !== 'apple' && provider !== 'google') return null;
+
+  return {
+    provider,
+    name: params.get('accountName')?.trim() || 'Jo',
+  };
+};
+
 // Inner Application Component that contains all state and logic
 const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset }) => {
-  const [screen, setScreen] = useState<Screen>('difficulty');
+  const [accountPreview] = useState<DevAccountPreview>(() => getDevAccountPreview());
+  const [screen, setScreen] = useState<Screen>(() => accountPreview ? 'profile' : 'difficulty');
   const [prevScreen, setPrevScreen] = useState<Screen | null>(null);
   const [direction, setDirection] = useState<number>(0);
   const [difficultyAnimationKey, setDifficultyAnimationKey] = useState(0);
@@ -153,11 +168,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
         // Configure RevenueCat with the stable Firebase UID when an account is
         // already signed in. Guests keep the existing anonymous purchase flow.
-        await Auth.initialize();
-        const appUserID = Auth.getUser()?.uid ?? null;
-        if (appUserID) {
-            await CloudSave.connect(appUserID);
-        }
+        const appUserID = await Auth.activateStoredSession();
         await IAP.initialize();
         const ownership = await IAP.syncAppUserID(appUserID);
         // A successful CustomerInfo response is authoritative even when it
@@ -1126,6 +1137,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     claimedRank={claimedProfileRank}
                                     onTitleClaimed={setClaimedProfileRank}
                                     onClaimAchievement={handleClaimAchievement}
+                                    accountPreview={accountPreview}
                                 />
                             </motion.div>
                         )}

@@ -1,12 +1,11 @@
 import { Capacitor } from '@capacitor/core';
 import { FirebaseFirestore } from '@capacitor-firebase/firestore';
-import { Preferences } from '@capacitor/preferences';
-import type { Cell, LevelProgress, PepinoState, StoredData } from '../types';
+import type { Cell, LevelProgress, StoredData } from '../types';
 import { Storage } from './storage';
+import { chooseAccountSnapshot } from './profilePolicy';
 
 const CLOUD_SCHEMA_VERSION = 2;
 const CLOUD_SAVE_DEBOUNCE_MS = 1800;
-const SYNCED_ACCOUNT_IDS_KEY = 'oku_cloud_synced_account_ids_v1';
 export const CLOUD_DATA_UPDATED_EVENT = 'oku-cloud-data-updated';
 
 type CloudProfileData = Omit<StoredData, 'progress'>;
@@ -46,6 +45,7 @@ interface RemoteSave {
 export interface CloudSyncResult {
     synced: boolean;
     usedCloudData: boolean;
+    profileActivated: boolean;
 }
 
 const cloneForCloud = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
@@ -118,189 +118,6 @@ const assertFirestoreSafe = (value: unknown) => {
     }
 };
 
-const unionStrings = (...collections: Array<string[] | undefined>) => [
-    ...new Set(collections.flatMap((collection) => collection ?? [])),
-];
-
-const maxNumberMap = (
-    first: Record<string, number> | undefined,
-    second: Record<string, number> | undefined
-) => {
-    const merged: Record<string, number> = {};
-    for (const key of new Set([...Object.keys(first ?? {}), ...Object.keys(second ?? {})])) {
-        merged[key] = Math.max(first?.[key] ?? 0, second?.[key] ?? 0);
-    }
-    return merged;
-};
-
-const minDefined = (first?: number, second?: number) => {
-    if (first === undefined) return second;
-    if (second === undefined) return first;
-    return Math.min(first, second);
-};
-
-const mergeProgressEntry = (
-    local: LevelProgress,
-    remote: LevelProgress,
-    preferLocal: boolean
-): LevelProgress => {
-    const localCompleted = local.status === 'completed' || local.bestTime !== undefined;
-    const remoteCompleted = remote.status === 'completed' || remote.bestTime !== undefined;
-
-    if (localCompleted || remoteCompleted) {
-        const completedSource = localCompleted && !remoteCompleted
-            ? local
-            : remoteCompleted && !localCompleted
-                ? remote
-                : (local.lastPlayed ?? 0) >= (remote.lastPlayed ?? 0)
-                    ? local
-                    : remote;
-        const other = completedSource === local ? remote : local;
-        const merged: LevelProgress = {
-            ...cloneForCloud(completedSource),
-            status: 'completed',
-            bestTime: minDefined(local.bestTime, remote.bestTime),
-            lastPlayed: Math.max(local.lastPlayed ?? 0, remote.lastPlayed ?? 0) || undefined,
-            moveLog: completedSource.moveLog ?? other.moveLog,
-        };
-        delete merged.boardState;
-        return merged;
-    }
-
-    const localPlayed = local.lastPlayed ?? 0;
-    const remotePlayed = remote.lastPlayed ?? 0;
-    const source = localPlayed === remotePlayed
-        ? (preferLocal ? local : remote)
-        : localPlayed > remotePlayed
-            ? local
-            : remote;
-    return cloneForCloud(source);
-};
-
-const mergePepino = (
-    preferred: PepinoState | undefined,
-    other: PepinoState | undefined
-): PepinoState | undefined => {
-    if (!preferred && !other) return undefined;
-    const base = cloneForCloud(preferred ?? other!);
-    return {
-        ...base,
-        unlocked: Boolean(preferred?.unlocked || other?.unlocked),
-        hasPendingGift: Math.max(preferred?.pendingGiftCount ?? 0, other?.pendingGiftCount ?? 0) > 0,
-        pendingGiftCount: Math.max(preferred?.pendingGiftCount ?? 0, other?.pendingGiftCount ?? 0),
-        firstGiftClaimed: Boolean(preferred?.firstGiftClaimed || other?.firstGiftClaimed),
-        firstMessageShown: Boolean(preferred?.firstMessageShown || other?.firstMessageShown),
-        unlockedAt: minDefined(preferred?.unlockedAt, other?.unlockedAt),
-    };
-};
-
-interface MergeOptions {
-    preferRemoteProfile?: boolean;
-}
-
-export const mergeCloudAndDeviceData = (
-    local: StoredData,
-    remote: StoredData,
-    options: MergeOptions = {}
-): StoredData => {
-    const localModified = local.lastModifiedAt ?? 0;
-    const remoteModified = remote.lastModifiedAt ?? 0;
-    // The first time an existing account is opened on this installation, its
-    // cloud wallet and preferences are authoritative. Otherwise a freshly
-    // claimed welcome gift could make an empty install appear newer and replace
-    // the account's real diamond balance. Progress and permanent unlocks are
-    // still merged below, so legitimate guest play is not discarded.
-    const preferLocal = options.preferRemoteProfile
-        ? false
-        : localModified >= remoteModified;
-    const preferred = preferLocal ? local : remote;
-    const other = preferLocal ? remote : local;
-    const merged = cloneForCloud(preferred);
-
-    merged.lastModifiedAt = Math.max(localModified, remoteModified) || undefined;
-    merged.normalPuzzleCatalogVersion = Math.max(
-        local.normalPuzzleCatalogVersion ?? 0,
-        remote.normalPuzzleCatalogVersion ?? 0
-    ) || undefined;
-
-    merged.purchasedBackgrounds = unionStrings(local.purchasedBackgrounds, remote.purchasedBackgrounds);
-    merged.purchasedNumberColors = unionStrings(local.purchasedNumberColors, remote.purchasedNumberColors);
-    merged.purchasedSkills = unionStrings(local.purchasedSkills, remote.purchasedSkills);
-    merged.purchasedSoundPacks = unionStrings(local.purchasedSoundPacks, remote.purchasedSoundPacks);
-    merged.enabledSkills = unionStrings(preferred.enabledSkills)
-        .filter((skillId) => merged.purchasedSkills.includes(skillId));
-    merged.unlockedPack2 = unionStrings(local.unlockedPack2, remote.unlockedPack2);
-    merged.unlockedPack3 = unionStrings(local.unlockedPack3, remote.unlockedPack3);
-    merged.book2UnlockReady = unionStrings(local.book2UnlockReady, remote.book2UnlockReady);
-    merged.book3UnlockReady = unionStrings(local.book3UnlockReady, remote.book3UnlockReady);
-    merged.seenStrictModeWarnings = unionStrings(local.seenStrictModeWarnings, remote.seenStrictModeWarnings);
-    merged.redeemedCoupons = unionStrings(local.redeemedCoupons, remote.redeemedCoupons);
-    merged.processedPurchaseTransactions = unionStrings(
-        local.processedPurchaseTransactions,
-        remote.processedPurchaseTransactions
-    );
-    merged.claimedAchievements = unionStrings(local.claimedAchievements, remote.claimedAchievements);
-    merged.watchedReplayPuzzleIds = unionStrings(
-        local.watchedReplayPuzzleIds,
-        remote.watchedReplayPuzzleIds
-    );
-
-    merged.bonusClaimed = Boolean(local.bonusClaimed || remote.bonusClaimed);
-    merged.nextBonusClaimTime = Math.max(local.nextBonusClaimTime ?? 0, remote.nextBonusClaimTime ?? 0);
-    merged.starterPackPurchased = Boolean(local.starterPackPurchased || remote.starterPackPurchased);
-    merged.books2AllOwned = Boolean(local.books2AllOwned || remote.books2AllOwned);
-    merged.books3AllOwned = Boolean(local.books3AllOwned || remote.books3AllOwned);
-    merged.booksForeverOwned = Boolean(local.booksForeverOwned || remote.booksForeverOwned);
-    merged.welcomeGiftClaimed = Boolean(local.welcomeGiftClaimed || remote.welcomeGiftClaimed);
-    merged.pepino = mergePepino(preferred.pepino, other.pepino);
-
-    const counterKeys: Array<keyof NonNullable<StoredData['achievementCounters']>> = [
-        'scansUsed',
-        'pepinoGiftsOpened',
-        'hardPerfectGames',
-        'replaysWatched',
-        'nudgeCellClicks',
-        'hardNoScanWins',
-        'noteGamesWon',
-    ];
-    merged.achievementCounters = { ...preferred.achievementCounters! };
-    for (const key of counterKeys) {
-        merged.achievementCounters[key] = Math.max(
-            local.achievementCounters?.[key] ?? 0,
-            remote.achievementCounters?.[key] ?? 0
-        );
-    }
-    merged.achievementCounters.replaysWatched = merged.watchedReplayPuzzleIds.length;
-
-    merged.stats = {
-        totalGamesWon: Math.max(local.stats?.totalGamesWon ?? 0, remote.stats?.totalGamesWon ?? 0),
-        totalDiamondsEarned: Math.max(
-            local.stats?.totalDiamondsEarned ?? 0,
-            remote.stats?.totalDiamondsEarned ?? 0
-        ),
-        perfectGames: Math.max(local.stats?.perfectGames ?? 0, remote.stats?.perfectGames ?? 0),
-        gamesWonByDifficulty: maxNumberMap(
-            local.stats?.gamesWonByDifficulty,
-            remote.stats?.gamesWonByDifficulty
-        ),
-        diamondsEarnedBySource: maxNumberMap(
-            local.stats?.diamondsEarnedBySource,
-            remote.stats?.diamondsEarnedBySource
-        ),
-    };
-
-    merged.progress = {};
-    for (const key of new Set([...Object.keys(local.progress), ...Object.keys(remote.progress)])) {
-        const localProgress = local.progress[key];
-        const remoteProgress = remote.progress[key];
-        merged.progress[key] = localProgress && remoteProgress
-            ? mergeProgressEntry(localProgress, remoteProgress, preferLocal)
-            : cloneForCloud(localProgress ?? remoteProgress);
-    }
-
-    return merged;
-};
-
 const getChunkId = (progress: LevelProgress) => {
     const difficulty = progress.difficulty.toLowerCase().replace(/\s+/g, '-');
     const book = Math.min(3, Math.max(1, Math.ceil(progress.levelId / 100)));
@@ -355,25 +172,29 @@ class CloudSaveManager {
     }
 
     async connect(uid: string): Promise<CloudSyncResult> {
-        if (!this.isAvailable()) return { synced: false, usedCloudData: false };
+        if (!this.isAvailable()) {
+            return { synced: false, usedCloudData: false, profileActivated: false };
+        }
         if (this.uid === uid && this.storageUnsubscribe) {
-            return { synced: true, usedCloudData: false };
+            return {
+                synced: this.remoteReady,
+                usedCloudData: false,
+                profileActivated: Storage.isAccountProfileActive(uid),
+            };
         }
 
         await this.disconnect({ flush: true });
         this.uid = uid;
 
-        let usedCloudData = false;
-        let synced = true;
         try {
-            usedCloudData = await this.bootstrap(uid);
+            const result = await this.bootstrap(uid);
+            this.storageUnsubscribe = Storage.subscribe(() => this.scheduleSave());
+            return result;
         } catch (error) {
-            synced = false;
             console.error('Cloud save: Initial sync failed', error);
+            await this.disconnect({ flush: false });
+            return { synced: false, usedCloudData: false, profileActivated: false };
         }
-
-        this.storageUnsubscribe = Storage.subscribe(() => this.scheduleSave());
-        return { synced, usedCloudData };
     }
 
     async disconnect(options: { flush?: boolean } = {}) {
@@ -407,7 +228,7 @@ class CloudSaveManager {
 
     private enqueueUpload(data: StoredData) {
         const snapshot = cloneForCloud(data);
-        this.workQueue = this.workQueue
+        const upload = this.workQueue
             .catch(() => undefined)
             .then(async () => {
                 const uid = this.uid;
@@ -417,67 +238,48 @@ class CloudSaveManager {
                     return;
                 }
                 await this.uploadNow(snapshot);
-            })
-            .catch((error) => console.error('Cloud save: Upload failed', error));
-        return this.workQueue;
+            });
+        this.workQueue = upload.catch((error) => {
+            console.error('Cloud save: Upload failed', error);
+        });
+        return upload;
     }
 
     private async bootstrap(uid: string) {
-        const local = Storage.getStoredData();
-        const remote = await this.readRemote(uid, local);
+        const accountCache = Storage.getStoredData();
+        const accountIsAlreadyActive = Storage.isAccountProfileActive(uid);
+        const remote = await this.readRemote(uid);
         this.profileHash = remote.profileHash;
         this.chunkHashes = remote.chunkHashes;
-        const hasSyncedAccount = await this.hasSyncedAccount(uid);
 
-        const merged = remote.data
-            ? mergeCloudAndDeviceData(local, remote.data, {
-                preferRemoteProfile: !hasSyncedAccount,
-            })
-            : { ...local, lastModifiedAt: local.lastModifiedAt ?? Date.now() };
-        const usedCloudData = Boolean(remote.data && contentHash(merged) !== contentHash(local));
-        await Storage.replaceStoredData(merged);
+        const choice = chooseAccountSnapshot({
+            accountIsAlreadyActive,
+            accountCache,
+            cloudSnapshot: remote.data,
+            guestSnapshot: Storage.getGuestProfile(),
+        });
+        const selectedSnapshot = cloneForCloud(choice.snapshot);
+        selectedSnapshot.lastModifiedAt ??= Date.now();
+        const usedCloudData = choice.source === 'cloud'
+            && contentHash(selectedSnapshot) !== contentHash(accountCache);
+
+        await Storage.replaceStoredData(selectedSnapshot);
+        await Storage.activateAccountProfile(uid);
         this.remoteReady = true;
-        await this.uploadNow(Storage.getStoredData());
-        await this.rememberSyncedAccount(uid);
         window.dispatchEvent(new CustomEvent(CLOUD_DATA_UPDATED_EVENT));
-        return usedCloudData;
-    }
 
-    private async getSyncedAccountIds() {
+        let synced = true;
         try {
-            const { value } = await Preferences.get({ key: SYNCED_ACCOUNT_IDS_KEY });
-            if (!value) return [] as string[];
-            const parsed = JSON.parse(value);
-            return Array.isArray(parsed)
-                ? parsed.filter((accountId): accountId is string => typeof accountId === 'string')
-                : [];
+            await this.uploadNow(Storage.getStoredData());
         } catch (error) {
-            console.warn('Cloud save: Could not read the local account marker', error);
-            return [] as string[];
+            synced = false;
+            console.error('Cloud save: Initial upload failed', error);
         }
+
+        return { synced, usedCloudData, profileActivated: true };
     }
 
-    private async hasSyncedAccount(uid: string) {
-        return (await this.getSyncedAccountIds()).includes(uid);
-    }
-
-    private async rememberSyncedAccount(uid: string) {
-        const accountIds = await this.getSyncedAccountIds();
-        if (accountIds.includes(uid)) return;
-
-        try {
-            await Preferences.set({
-                key: SYNCED_ACCOUNT_IDS_KEY,
-                value: JSON.stringify([...accountIds, uid]),
-            });
-        } catch (error) {
-            // Sync already succeeded. A missing marker only means the cloud
-            // profile will be preferred again on the next connection.
-            console.warn('Cloud save: Could not save the local account marker', error);
-        }
-    }
-
-    private async readRemote(uid: string, localFallback: StoredData): Promise<RemoteSave> {
+    private async readRemote(uid: string): Promise<RemoteSave> {
         const profileReference = `users/${uid}/saves/profile`;
         const progressReference = `users/${uid}/progress`;
         const [profileResult, progressResult] = await Promise.all([
@@ -504,10 +306,11 @@ class CloudSaveManager {
             return { data: null, profileHash: null, chunkHashes };
         }
 
-        const profileData = profileDocument?.data ?? toProfileData(localFallback);
+        const defaultData = Storage.createDefaultData();
+        const profileData = profileDocument?.data ?? toProfileData(defaultData);
         return {
             data: {
-                ...cloneForCloud(localFallback),
+                ...cloneForCloud(defaultData),
                 ...cloneForCloud(profileData),
                 progress,
             },

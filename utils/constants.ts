@@ -293,7 +293,7 @@ export const DIAMOND_OFFERS: DiamondOffer[] = [
         productId: 'com.oku.sudoku.iap.premiumpack',
         title: 'Oku Premium',
         subtitle: 'Pepino Companion + Rewards',
-        diamonds: 1500,
+        diamonds: 2500,
         priceLabel: '$4.99',
         type: 'support',
         badge: 'PREMIUM'

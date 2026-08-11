@@ -110,6 +110,9 @@ export interface StoredData {
       hardPerfectGames: number;
       replaysWatched: number;
       nudgeCellClicks: number;
+      pepinoHeartTaps: number;
+      pepinoTenLoveTaps: number;
+      pepinoStrongTaps: number;
       hardNoScanWins: number;
       noteGamesWon: number;
   };
