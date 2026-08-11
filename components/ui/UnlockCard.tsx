@@ -228,15 +228,25 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
                         type="button"
                         onClick={onUnlockAllWithMoney}
                         disabled={!unlockReady || !onUnlockAllWithMoney || moneyPurchasePending}
+                        aria-busy={moneyPurchasePending}
                         aria-label={`Unlock Book ${packNumber} in every difficulty for ${moneyPriceLabel}`}
-                        className="w-full min-h-[6.25rem] md:min-h-[7rem] rounded-[1.4rem] md:rounded-[1.6rem] border-2 border-blue-300 dark:border-blue-700 bg-white dark:bg-stone-800 px-3 md:px-5 py-3.5 md:py-4 text-center transition-[transform,border-color] duration-100 ease-out active:scale-[0.97] disabled:cursor-default"
+                        className="w-full min-h-[6.25rem] md:min-h-[7rem] rounded-[1.4rem] md:rounded-[1.6rem] border-2 border-blue-300 dark:border-blue-700 bg-white dark:bg-stone-800 px-3 md:px-5 py-3.5 md:py-4 text-center transition-[transform,border-color] duration-100 ease-out active:scale-[0.97] disabled:cursor-default flex flex-col items-center justify-center"
                     >
-                        <span className="block text-[1.65rem] md:text-3xl font-bold leading-none text-stone-950 dark:text-white tabular-nums">
-                            {moneyPriceLabel}
-                        </span>
-                        <span className="block mt-2 md:mt-2.5 text-[12px] md:text-sm font-semibold leading-tight text-stone-500 dark:text-stone-400">
-                            Book {packNumber} in every difficulty
-                        </span>
+                        {moneyPurchasePending ? (
+                            <span
+                                className="block w-7 h-7 md:w-8 md:h-8 rounded-full border-[3px] border-stone-200 dark:border-stone-600 border-t-blue-500 dark:border-t-blue-400 animate-spin"
+                                aria-hidden="true"
+                            />
+                        ) : (
+                            <>
+                                <span className="block text-[1.65rem] md:text-3xl font-bold leading-none text-stone-950 dark:text-white tabular-nums">
+                                    {moneyPriceLabel}
+                                </span>
+                                <span className="block mt-2 md:mt-2.5 text-[12px] md:text-sm font-semibold leading-tight text-stone-500 dark:text-stone-400">
+                                    Book {packNumber} in every difficulty
+                                </span>
+                            </>
+                        )}
                     </button>
                 </div>
             )}

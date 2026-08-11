@@ -422,12 +422,17 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         <p className="text-[13px] md:text-sm font-semibold text-t-secondary leading-tight mt-1">600 puzzles.</p>
                                         <p className="text-[13px] md:text-sm font-semibold text-t-secondary leading-tight mt-0.5">All difficulties.</p>
                                     </div>
-                                    <span className={`shrink-0 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap ${
+                                    <span
+                                        aria-live="polite"
+                                        aria-busy={isPurchasingBook2Bundle}
+                                        className={`shrink-0 min-w-[4.25rem] min-h-9 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap flex items-center justify-center ${
                                         books2AllOwned
                                             ? 'bg-t-surface-sec text-t-secondary'
                                             : 'bg-blue-500 text-white'
                                     }`}>
-                                        {books2AllOwned ? 'Owned' : book2BundlePrice}
+                                        {isPurchasingBook2Bundle ? (
+                                            <span className="block w-5 h-5 rounded-full border-[2.5px] border-white/40 border-t-white animate-spin" aria-hidden="true" />
+                                        ) : books2AllOwned ? 'Owned' : book2BundlePrice}
                                     </span>
                                 </button>
                             </div>
@@ -460,12 +465,17 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                             <p className="text-[13px] md:text-sm font-semibold text-t-secondary leading-tight mt-1">600 puzzles.</p>
                                             <p className="text-[13px] md:text-sm font-semibold text-t-secondary leading-tight mt-0.5">All difficulties.</p>
                                         </div>
-                                        <span className={`shrink-0 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap ${
+                                        <span
+                                            aria-live="polite"
+                                            aria-busy={isPurchasingBook3Bundle}
+                                            className={`shrink-0 min-w-[4.25rem] min-h-9 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap flex items-center justify-center ${
                                             books3AllOwned
                                                 ? 'bg-t-surface-sec text-t-secondary'
                                                 : 'bg-blue-500 text-white'
                                         }`}>
-                                            {books3AllOwned ? 'Owned' : book3BundlePrice}
+                                            {isPurchasingBook3Bundle ? (
+                                                <span className="block w-5 h-5 rounded-full border-[2.5px] border-white/40 border-t-white animate-spin" aria-hidden="true" />
+                                            ) : books3AllOwned ? 'Owned' : book3BundlePrice}
                                         </span>
                                     </button>
                                 </div>
@@ -500,12 +510,17 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     <p className="text-[13px] md:text-sm font-semibold text-t-secondary leading-tight mt-0.5">Every difficulty.</p>
                                     <p className="text-[13px] md:text-sm font-semibold text-t-secondary leading-tight mt-0.5">Forever.</p>
                                 </div>
-                                <span className={`shrink-0 self-start mt-2 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap ${
+                                <span
+                                    aria-live="polite"
+                                    aria-busy={isPurchasingBooksForever}
+                                    className={`shrink-0 self-start mt-2 min-w-[4.25rem] min-h-9 px-3.5 py-2 rounded-full text-sm font-bold whitespace-nowrap flex items-center justify-center ${
                                     booksForeverOwned
                                         ? 'bg-t-surface-sec text-t-secondary'
                                         : 'bg-blue-500 text-white'
                                 }`}>
-                                    {booksForeverOwned ? 'Owned' : booksForeverPrice}
+                                    {isPurchasingBooksForever ? (
+                                        <span className="block w-5 h-5 rounded-full border-[2.5px] border-white/40 border-t-white animate-spin" aria-hidden="true" />
+                                    ) : booksForeverOwned ? 'Owned' : booksForeverPrice}
                                 </span>
                             </button>
 

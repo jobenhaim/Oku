@@ -118,24 +118,31 @@ export const getReadyTitleAchievementCount = (data: StoredData, claimedRank: num
 export const getPackAchievements = (data: StoredData): AchievementItem[] => {
     const claimedIds = new Set(data.claimedAchievements || []);
 
-    return Object.values(Difficulty).map((difficulty) => {
-        let pack = 1;
-        while (pack <= 3 && claimedIds.has(`finish-pack-${pack}-${difficulty}`)) pack++;
-        const displayPack = Math.min(3, pack);
-        const start = (displayPack - 1) * 100 + 1;
-        const end = displayPack * 100;
-        const id = `finish-pack-${displayPack}-${difficulty}`;
-        const current = completedInRange(data, difficulty, start, end);
+    return Object.values(Difficulty).flatMap((difficulty) => {
+        const visiblePacks = [1];
+        while (
+            visiblePacks.length < 3
+            && claimedIds.has(`finish-pack-${visiblePacks.length}-${difficulty}`)
+        ) {
+            visiblePacks.push(visiblePacks.length + 1);
+        }
 
-        return makeItem(claimedIds, {
-            id,
-            title: `Finish Book ${displayPack}`,
-            detail: `Complete Book ${displayPack} · ${difficulty}.`,
-            current,
-            target: 100,
-            reward: PACK_REWARDS[difficulty],
-            category: 'journey',
-            showProgress: false,
+        return visiblePacks.map((pack) => {
+            const start = (pack - 1) * 100 + 1;
+            const end = pack * 100;
+            const id = `finish-pack-${pack}-${difficulty}`;
+            const current = completedInRange(data, difficulty, start, end);
+
+            return makeItem(claimedIds, {
+                id,
+                title: `Finish Book ${pack}`,
+                detail: `Complete Book ${pack} · ${difficulty}.`,
+                current,
+                target: 100,
+                reward: PACK_REWARDS[difficulty],
+                category: 'journey',
+                showProgress: false,
+            });
         });
     });
 };

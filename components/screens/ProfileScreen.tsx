@@ -253,12 +253,17 @@ const AchievementList: React.FC<{
     achievements.length > 0 ? (
         <div className="flex flex-col gap-2.5 md:gap-3.5 animate-fade-in-fast">
             {achievements.map((achievement) => (
-                <AchievementRow
+                <motion.div
                     key={achievement.id}
-                    achievement={achievement}
-                    onClaim={onClaim}
-                    isEntering={enteringAchievementIds.has(achievement.id)}
-                />
+                    layout="position"
+                    transition={{ layout: { type: 'spring', stiffness: 360, damping: 32, mass: 0.65 } }}
+                >
+                    <AchievementRow
+                        achievement={achievement}
+                        onClaim={onClaim}
+                        isEntering={enteringAchievementIds.has(achievement.id)}
+                    />
+                </motion.div>
             ))}
         </div>
     ) : (
@@ -407,9 +412,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         all: allAchievements,
     };
     const activeCategoryAchievements = achievementsByCategory[activeAchievementCategory];
-    const visibleAchievements = !hideCompleted
+    const filteredAchievements = !hideCompleted
         ? activeCategoryAchievements
         : activeCategoryAchievements.filter((achievement) => !achievement.claimed);
+    const visibleAchievements = [...filteredAchievements].sort(
+        (first, second) => Number(first.claimed) - Number(second.claimed)
+    );
     const categoryHasReadyAchievement = (category: AchievementCategory) =>
         achievementsByCategory[category].some((achievement) => achievement.ready);
     const achievementContentVariants = {
