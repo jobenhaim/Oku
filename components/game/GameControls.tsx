@@ -92,7 +92,11 @@ export const GameControls: React.FC<GameControlsProps> = ({
                                 ? 'bg-blue-100 dark:bg-blue-900/50 shadow-[0_0_14px_rgba(59,130,246,0.45)]'
                                 : 'bg-white dark:bg-stone-800 shadow-sm'
                         }`}>
-                            <Icons.Focus className="w-5 h-5 md:w-6 md:h-6 scale-[1.85]" />
+                            {isFocusMode ? (
+                                <Icons.FocusEmpty className="w-5 h-5 md:w-6 md:h-6 scale-[1.85]" />
+                            ) : (
+                                <Icons.Focus className="w-5 h-5 md:w-6 md:h-6 scale-[1.85]" />
+                            )}
                         </div>
                         <span className="text-sm md:text-base font-medium">Focus</span>
                     </button>

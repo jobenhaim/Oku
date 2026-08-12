@@ -166,7 +166,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                     const delay = idx * 5;
                     const iconOpticalScale =
                         skill.id === 'skill-focus'
-                            ? 'scale-[1.15]'
+                            ? 'scale-[1.38]'
                             : skill.id === 'skill-scribe'
                                 ? 'scale-[1.03] translate-x-[2px]'
                                 : skill.id === 'skill-scan'

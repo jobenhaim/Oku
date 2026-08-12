@@ -707,8 +707,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                 )}
             </AnimatePresence>
 
-            {/* 85%-height bottom sheet on phones; centered modal presentation stays unchanged on larger screens. */}
-            <div className={`bg-t-surface w-full max-w-md md:max-w-[620px] h-[85dvh] max-h-[85dvh] sm:h-auto sm:max-h-[90vh] md:max-h-[86vh] rounded-t-3xl rounded-b-none sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-colors duration-300 pb-safe ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} onClick={e => e.stopPropagation()}>
+            {/* 80%-height bottom sheet on phones; centered modal presentation stays unchanged on larger screens. */}
+            <div className={`bg-t-surface w-full max-w-md md:max-w-[620px] h-[80dvh] max-h-[80dvh] sm:h-auto sm:max-h-[90vh] md:max-h-[86vh] rounded-t-3xl rounded-b-none sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-colors duration-300 pb-safe sm:pb-0 ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`} onClick={e => e.stopPropagation()}>
                 
                 {/* Header */}
                 <div className="flex justify-between items-center px-5 md:px-7 pt-4 md:pt-6 pb-2 md:pb-3 shrink-0 bg-t-surface z-10 transition-colors duration-300">
@@ -872,12 +872,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                             animate={{ height: 'auto', opacity: 1 }}
                                             exit={{ height: 0, opacity: 0 }}
                                             transition={{ duration: 0.2, ease: 'easeInOut' }}
-                                            className="overflow-hidden"
+                                            className="overflow-hidden divide-y divide-stone-200/70 dark:divide-white/5"
                                         >
+                                            <SettingRow
+                                                sKey="goodLuckMessage"
+                                                icon={Icons.Star}
+                                                title="Good Luck Message"
+                                                desc={'Show "Good luck!" when a level begins.'}
+                                                tone="violet"
+                                                nested
+                                                settings={settings}
+                                                onToggle={onToggle}
+                                            />
                                             <SettingRow
                                                 sKey="scanWarningNotifications"
                                                 icon={Icons.Scan}
-                                                title="Scan Warnings"
+                                                title="Scan Warning"
                                                 desc="Suggest Scan when mistakes may be hidden."
                                                 tone="red"
                                                 nested

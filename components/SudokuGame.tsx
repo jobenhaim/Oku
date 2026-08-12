@@ -302,12 +302,21 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       isPillExitingRef.current = false;
       setPillMessage(null);
       halfwayShownRef.current = false;
+  }, [difficulty, levelId]);
 
-      const startMessageTimer = window.setTimeout(() => {
+  useEffect(() => {
+      if (settings.goodLuckMessage === false) return;
+      const startMessageTimer = settings.goodLuckMessage !== false ? window.setTimeout(() => {
           const text = LEVEL_START_MESSAGES[Math.floor(Math.random() * LEVEL_START_MESSAGES.length)];
           enqueuePill({ text, type: 'start', holdMs: 1000 });
-      }, 500);
+      }, 500) : null;
 
+      return () => {
+          if (startMessageTimer !== null) window.clearTimeout(startMessageTimer);
+      };
+  }, [difficulty, levelId, enqueuePill, settings.goodLuckMessage]);
+
+  useEffect(() => {
       const isStrictMode = difficulty === Difficulty.Normal
           || difficulty === Difficulty.Hard
           || difficulty === Difficulty.Intense
@@ -317,7 +326,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       }, 2100) : null;
 
       return () => {
-          window.clearTimeout(startMessageTimer);
           if (warningTimer !== null) window.clearTimeout(warningTimer);
       };
   }, [difficulty, levelId, enqueuePill, settings.scanWarningNotifications]);

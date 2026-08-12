@@ -58,6 +58,7 @@ export interface AppSettings {
   screenWakeLock: boolean; // Keep screen on
   generateReplay: boolean; // Generate video replay on completion
   pillNotifications: boolean; // Show gameplay pill messages
+  goodLuckMessage: boolean; // Show the level-start Good Luck pill
   scanWarningNotifications: boolean; // Show the automatic Scan recommendation pill
   hiddenDifficulties: Difficulty[]; // List of difficulties to hide from main screen
   devAutoSolve?: boolean; // Developer setting to enable auto-solve button

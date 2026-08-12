@@ -438,25 +438,27 @@ html, body {
 
 /* Premium palettes color each digit separately. The palette is visible across
    the numpad, while every individual digit stays crisp, solid, and static. */
-.text-palette-sunset[data-premium-number="1"] { color: #f97316; }
-.text-palette-sunset[data-premium-number="2"] { color: #fb7185; }
-.text-palette-sunset[data-premium-number="3"] { color: #f43f5e; }
-.text-palette-sunset[data-premium-number="4"] { color: #e11d48; }
-.text-palette-sunset[data-premium-number="5"] { color: #db2777; }
-.text-palette-sunset[data-premium-number="6"] { color: #c026d3; }
-.text-palette-sunset[data-premium-number="7"] { color: #a21caf; }
-.text-palette-sunset[data-premium-number="8"] { color: #9333ea; }
-.text-palette-sunset[data-premium-number="9"] { color: #7e22ce; }
+.text-palette-sunset[data-premium-number="1"] { color: #d97706; }
+.text-palette-sunset[data-premium-number="2"] { color: #ea850f; }
+.text-palette-sunset[data-premium-number="3"] { color: #f97316; }
+.text-palette-sunset[data-premium-number="4"] { color: #fb6a24; }
+.text-palette-sunset[data-premium-number="5"] { color: #f45b35; }
+.text-palette-sunset[data-premium-number="6"] { color: #ef4444; }
+.text-palette-sunset[data-premium-number="7"] { color: #e63b55; }
+.text-palette-sunset[data-premium-number="8"] { color: #db3464; }
+.text-palette-sunset[data-premium-number="9"] { color: #be285f; }
 
-.text-palette-caribbean[data-premium-number="1"] { color: #38bdf8; }
-.text-palette-caribbean[data-premium-number="2"] { color: #50b4dc; }
-.text-palette-caribbean[data-premium-number="3"] { color: #68abc0; }
-.text-palette-caribbean[data-premium-number="4"] { color: #80a2a4; }
-.text-palette-caribbean[data-premium-number="5"] { color: #999988; }
-.text-palette-caribbean[data-premium-number="6"] { color: #b1906c; }
-.text-palette-caribbean[data-premium-number="7"] { color: #c98750; }
-.text-palette-caribbean[data-premium-number="8"] { color: #e17e34; }
-.text-palette-caribbean[data-premium-number="9"] { color: #f97316; }
+/* Caribbean stays deliberately two-toned: clear tropical water followed by
+   warm sun, without the muddy grey midpoint produced by direct RGB mixing. */
+.text-palette-caribbean[data-premium-number="1"] { color: #0369a1; }
+.text-palette-caribbean[data-premium-number="2"] { color: #0284c7; }
+.text-palette-caribbean[data-premium-number="3"] { color: #0e9dcc; }
+.text-palette-caribbean[data-premium-number="4"] { color: #0891b2; }
+.text-palette-caribbean[data-premium-number="5"] { color: #ca8a04; }
+.text-palette-caribbean[data-premium-number="6"] { color: #d97706; }
+.text-palette-caribbean[data-premium-number="7"] { color: #e66a08; }
+.text-palette-caribbean[data-premium-number="8"] { color: #ea580c; }
+.text-palette-caribbean[data-premium-number="9"] { color: #c2410c; }
 
 .text-palette-sapphire[data-premium-number="1"] { color: #0ea5e9; }
 .text-palette-sapphire[data-premium-number="2"] { color: #0284c7; }

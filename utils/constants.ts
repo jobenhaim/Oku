@@ -166,7 +166,6 @@ export const NUMBER_COLORS = [
     { id: 'num-teal', name: 'Teal', cost: 100, class: 'text-cyan-600 dark:text-cyan-400', uiClass: 'text-cyan-600 dark:text-cyan-400', bgClass: 'bg-cyan-50/50 dark:bg-cyan-900/10' },
     { id: 'num-fuchsia', name: 'Fuchsia', cost: 100, class: 'text-pink-600 dark:text-pink-400', uiClass: 'text-pink-600 dark:text-pink-400', bgClass: 'bg-pink-50/50 dark:bg-pink-900/10' },
     { id: 'num-orange', name: 'Orange', cost: 100, class: 'text-orange-600 dark:text-orange-400', uiClass: 'text-orange-600 dark:text-orange-400', bgClass: 'bg-orange-50/50 dark:bg-orange-900/10' },
-    { id: 'num-emerald', name: 'Emerald', cost: 100, class: 'text-emerald-600 dark:text-emerald-400', uiClass: 'text-emerald-600 dark:text-emerald-400', bgClass: 'bg-emerald-50/50 dark:bg-emerald-900/10' },
     // Static premium digit palettes. The first three retain the legacy IDs so
     // existing Gold, Diamond, and Ruby purchases keep their ownership.
     { id: 'num-shine', name: 'Sunset', cost: 250, class: 'text-palette-sunset', uiClass: 'text-palette-sunset', bgClass: 'bg-orange-50/60 dark:bg-orange-900/10' },

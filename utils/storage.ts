@@ -31,6 +31,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   screenWakeLock: false, // Default OFF
   generateReplay: true, // Default ON
   pillNotifications: true, // Default ON
+  goodLuckMessage: true, // Default ON
   scanWarningNotifications: true, // Default ON
   hiddenDifficulties: [], // Default show all
   devAutoSolve: false, // Default OFF
@@ -219,6 +220,14 @@ function getStoredData(): StoredData {
     }
     if (data.selectedNumberColor === 'num-lagoon') data.selectedNumberColor = 'num-ruby';
 
+    // Emerald was retired because it visually overlapped Matcha. Transfer the
+    // purchase and selection so existing players never lose an owned style.
+    if (data.purchasedNumberColors.includes('num-emerald')) {
+        data.purchasedNumberColors = data.purchasedNumberColors.filter((id: string) => id !== 'num-emerald');
+        if (!data.purchasedNumberColors.includes('num-matcha')) data.purchasedNumberColors.push('num-matcha');
+    }
+    if (data.selectedNumberColor === 'num-emerald') data.selectedNumberColor = 'num-matcha';
+
     if (!data.purchasedSoundPacks) data.purchasedSoundPacks = ['snd-zen'];
     if (!data.selectedSoundPack) data.selectedSoundPack = 'snd-zen';
 
@@ -238,6 +247,7 @@ function getStoredData(): StoredData {
     if (data.settings.screenWakeLock === undefined) data.settings.screenWakeLock = false;
     if (data.settings.generateReplay === undefined) data.settings.generateReplay = true; // Default ON
     if (data.settings.pillNotifications === undefined) data.settings.pillNotifications = true;
+    if (data.settings.goodLuckMessage === undefined) data.settings.goodLuckMessage = true;
     if (data.settings.scanWarningNotifications === undefined) data.settings.scanWarningNotifications = true;
     if (data.settings.hiddenDifficulties === undefined) data.settings.hiddenDifficulties = [];
     if (data.settings.devAutoSolve === undefined) data.settings.devAutoSolve = false;
