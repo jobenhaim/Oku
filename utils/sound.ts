@@ -1059,7 +1059,7 @@ class SoundController {
         }
     }
 
-    playPackTap() {
+    private playPackTapTone() {
         if (this.soundEnabled) {
             let freq = this.activeProfile.uiTapFreq;
             if (this.activeProfile.tapFreqs && this.activeProfile.tapFreqs.length > 0) {
@@ -1067,8 +1067,21 @@ class SoundController {
             }
             this.playTone(freq, this.activeProfile.duration, 0.4);
         }
+    }
+
+    playPackTap() {
+        this.playPackTapTone();
+
         if (this.vibrationEnabled) {
-            Haptics.selectionStart();
+            Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+        }
+    }
+
+    playPackPlacementTap() {
+        this.playPackTapTone();
+
+        if (this.vibrationEnabled) {
+            Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
         }
     }
 
@@ -1628,6 +1641,7 @@ class SoundController {
     // the sound ownership explicit in one place while older components migrate.
     playClick() { this.playPackClick(); }
     playTap() { this.playPackTap(); }
+    playPlacementTap() { this.playPackPlacementTap(); }
     playNumber(num: number) { this.playPackNumber(num); }
     playBookRowReveal(rowIndex: number) { this.playPackBookRowReveal(rowIndex); }
     playPop() { this.playPackPop(); }

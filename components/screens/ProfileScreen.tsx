@@ -63,20 +63,11 @@ const DIAMOND_SOURCE_LABELS: Record<string, string> = {
 
 export const getStoredClaimedProfileRank = (totalGamesWon: number) => {
     const earnedRank = Math.min(MAX_PROFILE_RANK, Math.floor(Math.max(0, totalGamesWon) / 20));
-
-    try {
-        const stored = localStorage.getItem('zen_profile');
-        if (!stored) return earnedRank;
-        const parsed = JSON.parse(stored);
-        const storedRank = typeof parsed.claimedRank === 'number'
-            ? parsed.claimedRank
-            : typeof parsed.lastSeenRank === 'number'
-                ? parsed.lastSeenRank
-                : earnedRank;
-        return Math.min(earnedRank, Math.max(0, Math.floor(storedRank)));
-    } catch {
-        return earnedRank;
-    }
+    const profile = Storage.getPlayerProfile();
+    const storedRank = typeof profile.claimedRank === 'number'
+        ? profile.claimedRank
+        : profile.lastSeenRank;
+    return Math.min(earnedRank, Math.max(0, Math.floor(storedRank)));
 };
 
 const AchievementRow: React.FC<{
@@ -318,24 +309,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         scrollTop: number;
     } | null>(null);
     const statPress = useTactilePress<'games' | 'diamonds'>();
-    const [profile, setProfile] = useState(() => {
-        try {
-            const stored = localStorage.getItem('zen_profile');
-            const parsed = stored ? JSON.parse(stored) : {};
-            return {
-                ...parsed,
-                username: parsed.username || 'Zen Player',
-                hasEditedName: parsed.hasEditedName ?? Boolean(parsed.username && parsed.username !== 'Zen Player'),
-                claimedRank,
-                lastSeenRank: claimedRank,
-            };
-        } catch {
-            return { username: 'Zen Player', hasEditedName: false, claimedRank, lastSeenRank: claimedRank };
-        }
-    });
+    const [profile, setProfile] = useState(() => ({
+        ...Storage.getPlayerProfile(),
+        claimedRank,
+        lastSeenRank: claimedRank,
+    }));
 
     useEffect(() => {
-        localStorage.setItem('zen_profile', JSON.stringify(profile));
+        Storage.updatePlayerProfile(profile);
     }, [profile]);
 
     useEffect(() => {
@@ -613,6 +594,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         const result = await Auth.signIn(provider);
         if (result.status === 'signed-in') {
             setStoredData(Storage.getStoredData());
+            setProfile(Storage.getPlayerProfile());
             setAuthMessage(result.cloudSynced
                 ? null
                 : 'Your progress will sync when you are online.');
@@ -632,6 +614,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         const result = await Auth.signOut();
         if (result.status === 'signed-out') {
             setStoredData(Storage.getStoredData());
+            setProfile(Storage.getPlayerProfile());
             setAuthMessage('Signed out. Your guest progress is back.');
         } else if (result.status === 'failed') {
             setAuthMessage(result.message);

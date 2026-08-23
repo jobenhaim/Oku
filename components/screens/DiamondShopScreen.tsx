@@ -13,7 +13,7 @@ interface DiamondShopScreenProps {
     points: number;
     onBack: () => void;
     onBuyOffer: (offer: DiamondOffer) => void;
-    onEarnPoints: (amount: number) => void;
+    onPointsChanged: (points: number) => void;
     onRestorePurchases: () => Promise<'restored' | 'none' | 'failed'>;
     starterPackPurchased: boolean;
     books2AllOwned: boolean;
@@ -137,7 +137,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     points,
     onBack,
     onBuyOffer,
-    onEarnPoints,
+    onPointsChanged,
     onRestorePurchases,
     starterPackPurchased,
     books2AllOwned,
@@ -208,8 +208,8 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
         return Date.now() - pepinoState.unlockedAt < 15000;
     };
 
-    const handleRewardClaim = (amount: number) => {
-        if (amount > 0) onEarnPoints(amount);
+    const handleRewardClaim = (points: number) => {
+        onPointsChanged(points);
     };
 
     const handleRestore = async () => {

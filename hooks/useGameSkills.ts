@@ -13,7 +13,8 @@ interface UseGameSkillsProps {
         revealUses?: number,
         moveLog?: MoveLogEntry[],
         hasMadeMistake?: boolean,
-        scanRefillsPurchased?: number
+        scanRefillsPurchased?: number,
+        scanAchievementElapsedSeconds?: number
     ) => void;
     onScanResult?: (hasErrors: boolean) => void;
     solvedBoard: number[][];
@@ -75,8 +76,15 @@ export const useGameSkills = ({
             setIsScanning(false);
             setScanUses(nextScanUses);
             setScanRefillsPurchased(currentRefillCount);
-            Storage.recordScanUse(scanAchievementTime);
-            onSaveProgress(newBoard, nextScanUses, undefined, moveLog.current, undefined, currentRefillCount);
+            onSaveProgress(
+                newBoard,
+                nextScanUses,
+                undefined,
+                moveLog.current,
+                undefined,
+                currentRefillCount,
+                scanAchievementTime,
+            );
             setScanCooldown(false);
             onScanResult?.(hasErrors);
 

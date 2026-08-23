@@ -7,6 +7,7 @@ import { sounds } from './utils/sound';
 import { getPackCost, NUMBER_COLORS, ALL_BACKGROUNDS } from './utils/constants';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
+import { App as CapacitorApp } from '@capacitor/app';
 import { BOOKS_2_ALL_PRODUCT_ID, BOOKS_3_ALL_PRODUCT_ID, BOOKS_FOREVER_PRODUCT_ID, IAP } from './utils/iap';
 import type { SuccessfulIAPPurchase } from './utils/iap';
 import { Auth } from './utils/auth';
@@ -212,17 +213,60 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
     
     lockOrientation();
 
+    const flushWhenInactive = () => {
+        // Defer until every gameplay lifecycle listener has written its latest
+        // board/timer snapshot for this same native or web lifecycle event.
+        queueMicrotask(() => {
+            void Storage.flushPendingWrites()
+                .then(() => CloudSave.flush())
+                .catch((error) => {
+                    // CloudSave keeps a retryable local account cache. A device
+                    // going offline during suspension is expected, not fatal.
+                    console.warn('Could not finish the background cloud flush', error);
+                });
+        });
+    };
+
     // Re-lock on visibility change (sometimes needed on Android resume)
     const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
             lockOrientation();
+            // iOS may suspend timers/network work while backgrounded. Every
+            // foreground resumes the account sync state machine and compares
+            // the newest local and cloud snapshots before writing anything.
+            void CloudSave.reconcileOnForeground();
         } else {
-            void CloudSave.flush();
+            // Guests need their native Preferences backup flushed too; cloud
+            // flush is intentionally a no-op when no account is connected.
+            flushWhenInactive();
         }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    let disposed = false;
+    let resumeListener: { remove: () => Promise<void> } | undefined;
+    let appStateListener: { remove: () => Promise<void> } | undefined;
+    void CapacitorApp.addListener('resume', () => {
+        void CloudSave.reconcileOnForeground();
+    }).then((listener) => {
+        if (disposed) void listener.remove();
+        else resumeListener = listener;
+    }).catch(() => {
+        // Browser previews do not provide the native App lifecycle plugin.
+    });
+    void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) void CloudSave.reconcileOnForeground();
+        else flushWhenInactive();
+    }).then((listener) => {
+        if (disposed) void listener.remove();
+        else appStateListener = listener;
+    }).catch(() => {
+        // Browser previews are covered by visibilitychange.
+    });
     
     return () => {
+        disposed = true;
+        void resumeListener?.remove();
+        void appStateListener?.remove();
         document.removeEventListener('visibilitychange', handleVisibilityChange);
         window.removeEventListener(CLOUD_DATA_UPDATED_EVENT, hydrateFromStorage);
     };
@@ -247,19 +291,10 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   }, [stats.totalGamesWon]);
 
   useEffect(() => {
-      try {
-          const stored = localStorage.getItem('zen_profile');
-          const profile = stored ? JSON.parse(stored) : {};
-          if (profile.claimedRank !== claimedProfileRank) {
-              localStorage.setItem('zen_profile', JSON.stringify({
-                  ...profile,
-                  claimedRank: claimedProfileRank,
-                  lastSeenRank: claimedProfileRank
-              }));
-          }
-      } catch {
-          // A storage failure should never interrupt the game.
-      }
+      Storage.updatePlayerProfile({
+          claimedRank: claimedProfileRank,
+          lastSeenRank: claimedProfileRank,
+      });
   }, [claimedProfileRank]);
 
   // Theme Detection
@@ -487,16 +522,18 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const handleClaimBonus = (e: React.MouseEvent) => {
     const now = Date.now();
     if (now < nextBonusClaimTime) return;
-    sounds.playUniversalGiftClaim();
-    
+
     const nextDate = new Date();
     nextDate.setDate(nextDate.getDate() + 1);
     nextDate.setHours(0, 0, 0, 0);
     const nextTime = nextDate.getTime();
 
-    Storage.setNextBonusClaimTime(nextTime);
-    setNextBonusClaimTime(nextTime);
-    handleEarnPoints(10, 'dailyGifts');
+    const result = Storage.claimDailyBonus(nextTime, 10);
+    if (!result.applied) return;
+    sounds.playUniversalGiftClaim();
+    setNextBonusClaimTime(result.data.nextBonusClaimTime || 0);
+    setPoints(result.data.points);
+    setStats(result.data.stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
   };
   
   const initiatePurchase = (item: any, type: 'bg' | 'num' | 'skill' | 'sound') => {
@@ -759,39 +796,41 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
       const lowerCode = normalizedCode.toLowerCase();
 
-      if (lowerCode === 'haha5000') {
+      const redeem = (effect: {
+          diamonds?: number;
+          unlockPepino?: boolean;
+          settings?: Partial<AppSettings>;
+          completeDifficulties?: Difficulty[];
+      }) => {
+          const result = Storage.redeemCoupon(normalizedCode, effect);
+          if (!result.applied) {
+              sounds.playClick();
+              return false;
+          }
+
           sounds.playUniversalGiftClaim();
-          handleEarnPoints(5000, 'coupons');
-          Storage.markCouponRedeemed(normalizedCode);
-          setRedeemedCoupons(Storage.getStoredData().redeemedCoupons || []);
+          setPoints(result.data.points);
+          setSettings(result.data.settings);
+          setStats(result.data.stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
+          setPepinoState(result.data.pepino || Storage.getPepinoState());
+          setRedeemedCoupons(result.data.redeemedCoupons || []);
           return true;
+      };
+
+      if (lowerCode === 'haha5000') {
+          return redeem({ diamonds: 5000 });
       }
 
       if (lowerCode === 'haha10000') {
-          sounds.playUniversalGiftClaim();
-          handleEarnPoints(10000, 'coupons');
-          Storage.markCouponRedeemed(normalizedCode);
-          setRedeemedCoupons(Storage.getStoredData().redeemedCoupons || []);
-          return true;
+          return redeem({ diamonds: 10000 });
       }
 
       if (lowerCode === 'hahapepino') {
-          sounds.playUniversalGiftClaim();
-          Storage.unlockPepino();
-          setPepinoState(Storage.getPepinoState());
-          Storage.markCouponRedeemed(normalizedCode);
-          setRedeemedCoupons(Storage.getStoredData().redeemedCoupons || []);
-          return true;
+          return redeem({ unlockPepino: true });
       }
 
       if (lowerCode === 'hahadev') {
-          sounds.playUniversalGiftClaim();
-          const newSettings = { ...settings, devAutoSolve: true };
-          setSettings(newSettings);
-          Storage.saveSettings(newSettings);
-          Storage.markCouponRedeemed(normalizedCode);
-          setRedeemedCoupons(Storage.getStoredData().redeemedCoupons || []);
-          return true;
+          return redeem({ settings: { devAutoSolve: true } });
       }
 
       const solveCouponDifficulties: Record<string, Difficulty> = {
@@ -804,32 +843,20 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       };
 
       if (lowerCode === 'slvall100') {
-          sounds.playUniversalGiftClaim();
-          [
+          return redeem({ completeDifficulties: [
               Difficulty.SuperEasy,
               Difficulty.Easy,
               Difficulty.Normal,
               Difficulty.Hard,
               Difficulty.Intense,
               Difficulty.Impossible,
-          ].forEach(Storage.completeDifficultyLevels);
-          Storage.markCouponRedeemed(normalizedCode);
-          const updatedData = Storage.getStoredData();
-          setStats(updatedData.stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
-          setRedeemedCoupons(updatedData.redeemedCoupons || []);
-          return true;
+          ] });
       }
 
       const couponDifficulty = solveCouponDifficulties[lowerCode];
 
       if (couponDifficulty) {
-          sounds.playUniversalGiftClaim();
-          Storage.completeDifficultyLevels(couponDifficulty);
-          Storage.markCouponRedeemed(normalizedCode);
-          const updatedData = Storage.getStoredData();
-          setStats(updatedData.stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
-          setRedeemedCoupons(updatedData.redeemedCoupons || []);
-          return true;
+          return redeem({ completeDifficulties: [couponDifficulty] });
       }
       
       sounds.playClick();
@@ -985,7 +1012,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     points={points}
                                     onBack={handleDiamondShopBack}
                                     onBuyOffer={handleBuyOffer}
-                                    onEarnPoints={(amount) => handleEarnPoints(amount, 'pepino')}
+                                    onPointsChanged={setPoints}
                                     onRestorePurchases={handleRestorePurchases}
                                     starterPackPurchased={starterPackPurchased}
                                     books2AllOwned={books2AllOwned}
@@ -1092,7 +1119,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     }}
                                     onSettingsOpen={() => setShowSettings(true)}
                                     settings={settings}
-                                    onEarnPoints={(amount) => handleEarnPoints(amount, 'sudoku')}
                                     onPointsChanged={setPoints}
                                     currentPoints={points}
                                     isSettingsOpen={showSettings}

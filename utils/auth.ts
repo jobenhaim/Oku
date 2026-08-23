@@ -132,6 +132,7 @@ class AuthManager {
 
         await this.initialize();
 
+        let providerUser: User | null = null;
         try {
             // Preserve the local guest exactly as it is before Firebase changes
             // identity. It is restored verbatim on sign-out.
@@ -144,7 +145,14 @@ class AuthManager {
             if (!result.user) {
                 return { status: 'failed', message: 'No account was returned. Please try again.' };
             }
+            providerUser = result.user;
 
+            // Finish any previous account's work before selecting this UID's
+            // isolated local cache. This also makes an offline sign-out/sign-in
+            // round trip recover the account snapshot that has not reached
+            // Firestore yet.
+            await CloudSave.disconnect({ flush: true });
+            await Storage.initializeProfiles(result.user.uid);
             this.setUser(result.user);
             const cloudResult = await CloudSave.connect(result.user.uid);
             if (!cloudResult.profileActivated) {
@@ -168,6 +176,22 @@ class AuthManager {
                 cloudSynced: cloudResult.synced,
             };
         } catch (error) {
+            // Once the provider returned a Firebase user, every remaining step
+            // is part of one profile switch. Roll the whole switch back if
+            // local-cache selection or cloud bootstrap fails so Firebase Auth,
+            // CloudSave, and the active local profile cannot disagree.
+            if (providerUser) {
+                try {
+                    await CloudSave.disconnect({ flush: false });
+                    await FirebaseAuthentication.signOut();
+                } catch (rollbackError) {
+                    console.warn('Auth: Could not fully roll back failed sign in', rollbackError);
+                }
+                this.setUser(null);
+                await Storage.restoreGuestProfile();
+                this.notifyProfileChanged();
+            }
+
             if (isCancellationError(error)) {
                 return { status: 'cancelled' };
             }
@@ -186,10 +210,18 @@ class AuthManager {
         }
 
         try {
-            // Firestore writes require the current Firebase session, so finish
-            // the queued save before ending that session.
-            await CloudSave.disconnect({ flush: true });
+            // Try the final upload while CloudSave is still attached. A network
+            // failure is safe because the UID-scoped account cache is durable;
+            // sign-out may continue and the cache will reconcile next sign-in.
+            // Crucially, if native sign-out itself fails, CloudSave remains
+            // connected and later gameplay can still sync in this session.
+            try {
+                await CloudSave.flush();
+            } catch (flushError) {
+                console.warn('Auth: Final cloud save will retry next sign in', flushError);
+            }
             await FirebaseAuthentication.signOut();
+            await CloudSave.disconnect({ flush: false });
             this.setUser(null);
             await Storage.restoreGuestProfile();
             // Switch RevenueCat back to its guest identity, but do not rewrite

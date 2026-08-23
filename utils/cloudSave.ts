@@ -1,11 +1,16 @@
 import { Capacitor } from '@capacitor/core';
 import { FirebaseFirestore } from '@capacitor-firebase/firestore';
+import type { WriteBatchOperation } from '@capacitor-firebase/firestore';
 import type { Cell, LevelProgress, StoredData } from '../types';
 import { Storage } from './storage';
 import { chooseAccountSnapshot } from './profilePolicy';
 
 const CLOUD_SCHEMA_VERSION = 2;
 const CLOUD_SAVE_DEBOUNCE_MS = 1800;
+const CLOUD_RETRY_BASE_MS = 2000;
+const CLOUD_RETRY_MAX_MS = 60000;
+const CLOUD_READ_TIMEOUT_MS = 8000;
+const CLOUD_WRITE_TIMEOUT_MS = 8000;
 export const CLOUD_DATA_UPDATED_EVENT = 'oku-cloud-data-updated';
 
 type CloudProfileData = Omit<StoredData, 'progress'>;
@@ -50,6 +55,75 @@ export interface CloudSyncResult {
 
 const cloneForCloud = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 const contentHash = (value: unknown) => JSON.stringify(cloneForCloud(value));
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+    Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+);
+
+const hasSupportedCloudSchema = (value: unknown) => (
+    Number.isInteger(value)
+    && Number(value) >= 1
+    && Number(value) <= CLOUD_SCHEMA_VERSION
+);
+
+const isCloudProfileDocument = (value: unknown): value is CloudProfileDocument => {
+    if (!isRecord(value)
+        || !hasSupportedCloudSchema(value.schemaVersion)
+        || !Number.isFinite(value.updatedAt)
+        || !isRecord(value.data)) {
+        return false;
+    }
+
+    const data = value.data;
+    return Number.isFinite(data.points)
+        && isRecord(data.settings)
+        && Array.isArray(data.purchasedBackgrounds)
+        && (typeof data.selectedBackground === 'string' || data.selectedBackground === null)
+        && Array.isArray(data.purchasedNumberColors)
+        && typeof data.selectedNumberColor === 'string'
+        && Array.isArray(data.purchasedSkills)
+        && Array.isArray(data.enabledSkills)
+        && Array.isArray(data.purchasedSoundPacks)
+        && typeof data.selectedSoundPack === 'string';
+};
+
+const isCloudProgressDocument = (value: unknown): value is CloudProgressDocument => {
+    if (!isRecord(value)
+        || !hasSupportedCloudSchema(value.schemaVersion)
+        || !Number.isFinite(value.updatedAt)
+        || !isRecord(value.levels)) {
+        return false;
+    }
+
+    return Object.values(value.levels).every((progress) => (
+        isRecord(progress)
+        && Number.isFinite(progress.levelId)
+        && typeof progress.difficulty === 'string'
+        && typeof progress.status === 'string'
+        && Number.isFinite(progress.timeElapsed)
+    ));
+};
+
+const withTimeout = <T>(
+    operation: Promise<T>,
+    timeoutMs: number,
+    description: string
+): Promise<T> => new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+        reject(new Error(`${description} timed out after ${timeoutMs}ms.`));
+    }, timeoutMs);
+
+    operation.then(
+        (value) => {
+            clearTimeout(timer);
+            resolve(value);
+        },
+        (error) => {
+            clearTimeout(timer);
+            reject(error);
+        }
+    );
+});
 
 const encodeBoardState = (boardState: Cell[][]): CloudBoardState | undefined => {
     const rows = boardState.length;
@@ -160,12 +234,37 @@ const toProfileData = (data: StoredData): CloudProfileData => {
 
 class CloudSaveManager {
     private uid: string | null = null;
+    private generation = 0;
     private saveTimer: ReturnType<typeof setTimeout> | null = null;
+    private retryTimer: ReturnType<typeof setTimeout> | null = null;
+    private retryAttempt = 0;
     private storageUnsubscribe: (() => void) | null = null;
     private profileHash: string | null = null;
     private chunkHashes = new Map<string, string>();
     private workQueue: Promise<void> = Promise.resolve();
     private remoteReady = false;
+    private onlineListenerAttached = false;
+
+    private readonly handleOnline = () => {
+        if (!this.uid) return;
+        this.clearRetryTimer();
+        this.retryAttempt = 0;
+        void this.reconcileOnForeground();
+    };
+
+    private attachOnlineListener() {
+        if (this.onlineListenerAttached) return;
+        if (typeof window === 'undefined') return;
+        window.addEventListener('online', this.handleOnline);
+        this.onlineListenerAttached = true;
+    }
+
+    private detachOnlineListener() {
+        if (!this.onlineListenerAttached) return;
+        if (typeof window === 'undefined') return;
+        window.removeEventListener('online', this.handleOnline);
+        this.onlineListenerAttached = false;
+    }
 
     isAvailable() {
         return Capacitor.isNativePlatform();
@@ -176,79 +275,189 @@ class CloudSaveManager {
             return { synced: false, usedCloudData: false, profileActivated: false };
         }
         if (this.uid === uid && this.storageUnsubscribe) {
-            return {
-                synced: this.remoteReady,
-                usedCloudData: false,
-                profileActivated: Storage.isAccountProfileActive(uid),
-            };
+            const generation = this.generation;
+            try {
+                await Storage.flushPendingWrites();
+                const result = await this.enqueueReconcile(uid, generation);
+                return result ?? {
+                    synced: this.remoteReady,
+                    usedCloudData: false,
+                    profileActivated: Storage.isAccountProfileActive(uid),
+                };
+            } catch (error) {
+                console.error('Cloud save: Reconnect failed', error);
+                this.scheduleRetry(uid, generation);
+                return {
+                    synced: false,
+                    usedCloudData: false,
+                    profileActivated: Storage.isAccountProfileActive(uid),
+                };
+            }
         }
 
         await this.disconnect({ flush: true });
         this.uid = uid;
+        this.generation += 1;
+        const generation = this.generation;
+        const accountCacheIsActive = Storage.isAccountProfileActive(uid);
+
+        // Listen before the first network request. An already-active account can
+        // keep playing offline while reconciliation retries in the background.
+        this.storageUnsubscribe = Storage.subscribe(() => this.scheduleSave(uid, generation));
+        this.attachOnlineListener();
 
         try {
-            const result = await this.bootstrap(uid);
-            this.storageUnsubscribe = Storage.subscribe(() => this.scheduleSave());
-            return result;
+            await Storage.flushPendingWrites();
+            const result = await this.enqueueReconcile(uid, generation);
+            if (result) return result;
+            return { synced: false, usedCloudData: false, profileActivated: false };
         } catch (error) {
             console.error('Cloud save: Initial sync failed', error);
-            await this.disconnect({ flush: false });
+
+            // A restored account already has an isolated local cache. Keep that
+            // session active offline and reconcile it when connectivity returns.
+            if (this.isCurrentConnection(uid, generation)
+                && accountCacheIsActive
+                && Storage.isAccountProfileActive(uid)) {
+                this.remoteReady = false;
+                this.scheduleRetry(uid, generation);
+                return { synced: false, usedCloudData: false, profileActivated: true };
+            }
+
+            // A first sign-in has no trusted account cache yet. Leave the guest
+            // profile untouched so Auth can safely roll the attempted login back.
+            this.clearConnection(uid, generation);
             return { synced: false, usedCloudData: false, profileActivated: false };
         }
     }
 
     async disconnect(options: { flush?: boolean } = {}) {
-        if (options.flush && this.uid) await this.flush();
-        if (this.saveTimer) clearTimeout(this.saveTimer);
-        this.saveTimer = null;
-        this.storageUnsubscribe?.();
-        this.storageUnsubscribe = null;
-        this.uid = null;
-        this.remoteReady = false;
-        this.profileHash = null;
-        this.chunkHashes.clear();
+        const uid = this.uid;
+        const generation = this.generation;
+        if (options.flush && uid) {
+            try {
+                if (this.saveTimer) clearTimeout(this.saveTimer);
+                this.saveTimer = null;
+                await Storage.flushPendingWrites();
+                if (this.remoteReady && this.isCurrentConnection(uid, generation)) {
+                    await this.enqueueUpload(Storage.getStoredData(), uid, generation);
+                }
+            } catch (error) {
+                // The account cache is already durable locally. A network failure
+                // must not trap the user in an account they are trying to leave.
+                console.error('Cloud save: Final upload before disconnect failed', error);
+            }
+        }
+        this.clearConnection(uid, generation);
     }
 
     async flush() {
-        if (!this.uid) return;
+        const uid = this.uid;
+        const generation = this.generation;
+        if (!uid) return;
         if (this.saveTimer) clearTimeout(this.saveTimer);
         this.saveTimer = null;
         await Storage.flushPendingWrites();
-        await this.enqueueUpload(Storage.getStoredData());
+        if (!this.isCurrentConnection(uid, generation)) return;
+        await this.enqueueUpload(Storage.getStoredData(), uid, generation);
     }
 
-    private scheduleSave() {
-        if (!this.uid) return;
+    /**
+     * Reconcile after returning to the foreground. Callers do not need to catch
+     * connectivity failures; the manager retains the local account cache and
+     * retries with exponential backoff.
+     */
+    async reconcileOnForeground(): Promise<CloudSyncResult | null> {
+        const uid = this.uid;
+        const generation = this.generation;
+        if (!uid) return null;
+
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+            this.scheduleRetry(uid, generation);
+            return null;
+        }
+
+        try {
+            await Storage.flushPendingWrites();
+            if (!this.isCurrentConnection(uid, generation)) return null;
+            return await this.enqueueReconcile(uid, generation);
+        } catch (error) {
+            console.error('Cloud save: Foreground reconciliation failed', error);
+            this.scheduleRetry(uid, generation);
+            return null;
+        }
+    }
+
+    private scheduleSave(uid: string, generation: number) {
+        if (!this.isCurrentConnection(uid, generation)) return;
         if (this.saveTimer) clearTimeout(this.saveTimer);
         this.saveTimer = setTimeout(() => {
             this.saveTimer = null;
-            void this.enqueueUpload(Storage.getStoredData());
+            if (!this.isCurrentConnection(uid, generation)) return;
+            void this.enqueueUpload(Storage.getStoredData(), uid, generation).catch((error) => {
+                console.error('Cloud save: Upload failed', error);
+            });
         }, CLOUD_SAVE_DEBOUNCE_MS);
     }
 
-    private enqueueUpload(data: StoredData) {
-        const snapshot = cloneForCloud(data);
-        const upload = this.workQueue
+    private enqueueTask<T>(
+        uid: string,
+        generation: number,
+        task: () => Promise<T>
+    ): Promise<T | null> {
+        const run = this.workQueue
             .catch(() => undefined)
             .then(async () => {
-                const uid = this.uid;
-                if (!uid) return;
-                if (!this.remoteReady) {
-                    await this.bootstrap(uid);
-                    return;
-                }
-                await this.uploadNow(snapshot);
+                if (!this.isCurrentConnection(uid, generation)) return null;
+                return task();
             });
-        this.workQueue = upload.catch((error) => {
-            console.error('Cloud save: Upload failed', error);
-        });
-        return upload;
+        this.workQueue = run.then(() => undefined, () => undefined);
+        return run;
     }
 
-    private async bootstrap(uid: string) {
+    private enqueueUpload(data: StoredData, uid: string, generation: number) {
+        const snapshot = cloneForCloud(data);
+        return this.enqueueTask(uid, generation, async () => {
+            try {
+                if (!this.remoteReady) {
+                    await this.reconcileNow(uid, generation);
+                    return;
+                }
+                await this.uploadNow(snapshot, uid, generation);
+                this.markSyncSucceeded(uid, generation);
+            } catch (error) {
+                this.scheduleRetry(uid, generation);
+                throw error;
+            }
+        });
+    }
+
+    private enqueueReconcile(uid: string, generation: number) {
+        return this.enqueueTask(uid, generation, async () => {
+            try {
+                return await this.reconcileNow(uid, generation);
+            } catch (error) {
+                this.scheduleRetry(uid, generation);
+                throw error;
+            }
+        });
+    }
+
+    private async reconcileNow(
+        uid: string,
+        generation: number
+    ): Promise<CloudSyncResult | null> {
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+            throw new Error('Cloud save is offline.');
+        }
+
+        const remote = await this.readRemote(uid);
+        if (!this.isCurrentConnection(uid, generation)) return null;
+
+        // Read local state after the network request so gameplay performed while
+        // Firestore was responding participates in the snapshot decision.
         const accountCache = Storage.getStoredData();
         const accountIsAlreadyActive = Storage.isAccountProfileActive(uid);
-        const remote = await this.readRemote(uid);
         this.profileHash = remote.profileHash;
         this.chunkHashes = remote.chunkHashes;
 
@@ -263,35 +472,63 @@ class CloudSaveManager {
         const usedCloudData = choice.source === 'cloud'
             && contentHash(selectedSnapshot) !== contentHash(accountCache);
 
-        await Storage.replaceStoredData(selectedSnapshot);
-        await Storage.activateAccountProfile(uid);
+        if (contentHash(selectedSnapshot) !== contentHash(accountCache)) {
+            await Storage.replaceStoredData(selectedSnapshot);
+            if (!this.isCurrentConnection(uid, generation)) return null;
+        }
+        if (!accountIsAlreadyActive) {
+            await Storage.activateAccountProfile(uid);
+            if (!this.isCurrentConnection(uid, generation)) return null;
+        }
         this.remoteReady = true;
-        window.dispatchEvent(new CustomEvent(CLOUD_DATA_UPDATED_EVENT));
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent(CLOUD_DATA_UPDATED_EVENT));
+        }
 
         let synced = true;
         try {
-            await this.uploadNow(Storage.getStoredData());
+            await this.uploadNow(Storage.getStoredData(), uid, generation);
+            this.markSyncSucceeded(uid, generation);
         } catch (error) {
             synced = false;
-            console.error('Cloud save: Initial upload failed', error);
+            console.error('Cloud save: Reconciliation upload failed', error);
+            this.scheduleRetry(uid, generation);
         }
 
+        if (!this.isCurrentConnection(uid, generation)) return null;
         return { synced, usedCloudData, profileActivated: true };
     }
 
     private async readRemote(uid: string): Promise<RemoteSave> {
         const profileReference = `users/${uid}/saves/profile`;
         const progressReference = `users/${uid}/progress`;
-        const [profileResult, progressResult] = await Promise.all([
-            FirebaseFirestore.getDocument<CloudProfileDocument>({ reference: profileReference }),
-            FirebaseFirestore.getCollection<CloudProgressDocument>({ reference: progressReference }),
-        ]);
+        const [profileResult, progressResult] = await withTimeout(
+            Promise.all([
+                FirebaseFirestore.getDocument<CloudProfileDocument>({ reference: profileReference }),
+                FirebaseFirestore.getCollection<CloudProgressDocument>({ reference: progressReference }),
+            ]),
+            CLOUD_READ_TIMEOUT_MS,
+            'Cloud save read'
+        );
+
+        const snapshots = [profileResult.snapshot, ...progressResult.snapshots];
+        if (snapshots.some((snapshot) => (
+            snapshot.metadata.fromCache || snapshot.metadata.hasPendingWrites
+        ))) {
+            throw new Error('Cloud save read did not reach the Firestore server.');
+        }
 
         const profileDocument = profileResult.snapshot.data;
+        if (profileDocument && !isCloudProfileDocument(profileDocument)) {
+            throw new Error('Cloud profile is malformed or uses an unsupported schema.');
+        }
         const progress: StoredData['progress'] = {};
         const chunkHashes = new Map<string, string>();
         for (const snapshot of progressResult.snapshots) {
-            const levels = snapshot.data?.levels ?? {};
+            if (!isCloudProgressDocument(snapshot.data)) {
+                throw new Error(`Cloud progress chunk ${snapshot.id} is malformed or unsupported.`);
+            }
+            const levels = snapshot.data.levels;
             chunkHashes.set(snapshot.id, contentHash(levels));
             for (const [key, cloudProgress] of Object.entries(levels)) {
                 const { boardState, ...localProgress } = cloneForCloud(cloudProgress);
@@ -302,7 +539,11 @@ class CloudSaveManager {
             }
         }
 
-        if (!profileDocument && progressResult.snapshots.length === 0) {
+        if (!profileDocument) {
+            // The profile document is the authoritative commit/root. Orphaned
+            // progress documents must never replace trusted local or guest
+            // data, but they also must not deadlock sync forever. Preserve their
+            // hashes so the next atomic upload can replace/delete them.
             return { data: null, profileHash: null, chunkHashes };
         }
 
@@ -319,47 +560,127 @@ class CloudSaveManager {
         };
     }
 
-    private async uploadNow(data: StoredData) {
-        const uid = this.uid;
-        if (!uid) return;
+    private async uploadNow(data: StoredData, uid: string, generation: number) {
+        if (!this.isCurrentConnection(uid, generation)) return;
 
         const profile = toProfileData(data);
         const nextProfileHash = contentHash(profile);
+        const operations: WriteBatchOperation[] = [];
+        const nextChunkHashes = new Map<string, string>();
+        const updatedAt = Date.now();
+
         if (nextProfileHash !== this.profileHash) {
             const profileDocument: CloudProfileDocument = {
                 schemaVersion: CLOUD_SCHEMA_VERSION,
-                updatedAt: Date.now(),
+                updatedAt,
                 data: profile,
             };
             assertFirestoreSafe(profileDocument);
-            await FirebaseFirestore.setDocument({
+            operations.push({
+                type: 'set',
                 reference: `users/${uid}/saves/profile`,
                 data: profileDocument,
-                merge: false,
+                options: { merge: false },
             });
-            this.profileHash = nextProfileHash;
         }
 
         const chunks = buildProgressChunks(data.progress);
         const chunkIds = new Set([...chunks.keys(), ...this.chunkHashes.keys()]);
         for (const chunkId of chunkIds) {
-            const levels = chunks.get(chunkId) ?? {};
+            const levels = chunks.get(chunkId);
+            if (!levels) {
+                operations.push({
+                    type: 'delete',
+                    reference: `users/${uid}/progress/${chunkId}`,
+                });
+                continue;
+            }
             const nextHash = contentHash(levels);
             if (nextHash === this.chunkHashes.get(chunkId)) continue;
 
             const progressDocument: CloudProgressDocument = {
                 schemaVersion: CLOUD_SCHEMA_VERSION,
-                updatedAt: Date.now(),
+                updatedAt,
                 levels,
             };
             assertFirestoreSafe(progressDocument);
-            await FirebaseFirestore.setDocument({
+            operations.push({
+                type: 'set',
                 reference: `users/${uid}/progress/${chunkId}`,
                 data: progressDocument,
-                merge: false,
+                options: { merge: false },
             });
-            this.chunkHashes.set(chunkId, nextHash);
+            nextChunkHashes.set(chunkId, nextHash);
         }
+
+        if (operations.length === 0) return;
+        await withTimeout(
+            FirebaseFirestore.writeBatch({ operations }),
+            CLOUD_WRITE_TIMEOUT_MS,
+            'Cloud save write'
+        );
+        if (!this.isCurrentConnection(uid, generation)) return;
+
+        if (nextProfileHash !== this.profileHash) {
+            this.profileHash = nextProfileHash;
+        }
+        for (const [chunkId, hash] of nextChunkHashes) {
+            this.chunkHashes.set(chunkId, hash);
+        }
+        for (const chunkId of [...this.chunkHashes.keys()]) {
+            if (!chunks.has(chunkId)) this.chunkHashes.delete(chunkId);
+        }
+    }
+
+    private isCurrentConnection(uid: string, generation: number) {
+        return this.uid === uid && this.generation === generation;
+    }
+
+    private markSyncSucceeded(uid: string, generation: number) {
+        if (!this.isCurrentConnection(uid, generation)) return;
+        this.retryAttempt = 0;
+        this.clearRetryTimer();
+    }
+
+    private scheduleRetry(uid: string, generation: number) {
+        if (!this.isCurrentConnection(uid, generation) || this.retryTimer) return;
+        const delay = Math.min(
+            CLOUD_RETRY_BASE_MS * (2 ** this.retryAttempt),
+            CLOUD_RETRY_MAX_MS
+        );
+        this.retryAttempt += 1;
+        this.retryTimer = setTimeout(() => {
+            this.retryTimer = null;
+            if (!this.isCurrentConnection(uid, generation)) return;
+            void this.enqueueReconcile(uid, generation).catch((error) => {
+                console.error('Cloud save: Scheduled reconciliation failed', error);
+            });
+        }, delay);
+    }
+
+    private clearRetryTimer() {
+        if (!this.retryTimer) return;
+        clearTimeout(this.retryTimer);
+        this.retryTimer = null;
+    }
+
+    private clearConnection(uid: string | null, generation: number) {
+        if (uid !== null && !this.isCurrentConnection(uid, generation)) return;
+        if (uid === null && this.uid !== null) return;
+
+        this.generation += 1;
+        if (this.saveTimer) clearTimeout(this.saveTimer);
+        this.saveTimer = null;
+        this.clearRetryTimer();
+        this.retryAttempt = 0;
+        this.storageUnsubscribe?.();
+        this.storageUnsubscribe = null;
+        this.detachOnlineListener();
+        this.uid = null;
+        this.remoteReady = false;
+        this.profileHash = null;
+        this.chunkHashes.clear();
+        this.workQueue = Promise.resolve();
     }
 }
 

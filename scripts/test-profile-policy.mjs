@@ -74,6 +74,16 @@ assert.equal(newerAccountCache.source, 'account-cache');
 assert.deepEqual(newerAccountCache.snapshot, accountCache);
 assert.equal(newerAccountCache.snapshot.progress['cloud-level'], undefined);
 
+const equalTimestampAccountCache = chooseAccountSnapshot({
+    accountIsAlreadyActive: true,
+    accountCache: snapshot('equal-cache', 400, 500),
+    cloudSnapshot: snapshot('equal-cloud', 500, 500),
+    guestSnapshot: guest,
+});
+assert.equal(equalTimestampAccountCache.source, 'account-cache');
+assert.equal(equalTimestampAccountCache.snapshot.name, 'equal-cache');
+assert.equal(equalTimestampAccountCache.snapshot.progress['equal-cloud-level'], undefined);
+
 const newerCloud = chooseAccountSnapshot({
     accountIsAlreadyActive: true,
     accountCache: snapshot('old-cache', 10, 50),

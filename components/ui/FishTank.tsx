@@ -146,7 +146,7 @@ const PEPINO_MESSAGES = [
 ];
 
 interface FishTankProps {
-    onRewardClaim: (amount: number) => void;
+    onRewardClaim: (points: number) => void;
     showIntro?: boolean;
 }
 
@@ -349,11 +349,6 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
         }
         
         const isFirstGift = !pepinoState.firstGiftClaimed;
-        Storage.claimPepinoGift();
-        const updatedPepinoState = Storage.getPepinoState();
-        setPepinoState(updatedPepinoState);
-        setIsGiftReady(false);
-
         const r = Math.random();
         let amount = isFirstGift ? 20 : 10;
 
@@ -370,14 +365,19 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
             else amount = 10;
         }
 
-        if (amount > 0) {
-            // New short, punchy gift claim sound
-            sounds.playUniversalGiftClaim();
-            onRewardClaim(amount);
-            showReward({ amount }, () => {
-                setIsGiftReady(updatedPepinoState.hasPendingGift);
-            });
-        }
+        const claim = Storage.claimPepinoGiftReward(amount);
+        if (!claim.applied) return;
+
+        const updatedPepinoState = claim.data.pepino ?? Storage.getPepinoState();
+        setPepinoState(updatedPepinoState);
+        setIsGiftReady(false);
+
+        // New short, punchy gift claim sound
+        sounds.playUniversalGiftClaim();
+        onRewardClaim(claim.data.points);
+        showReward({ amount }, () => {
+            setIsGiftReady(updatedPepinoState.hasPendingGift);
+        });
     };
 
     const handlePepinoClick = (e: React.MouseEvent) => {

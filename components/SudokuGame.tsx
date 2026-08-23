@@ -25,7 +25,6 @@ interface SudokuGameProps {
   onComplete: () => void;
   onSettingsOpen: () => void;
   settings: AppSettings;
-  onEarnPoints: (amount: number) => void;
   onPointsChanged: (points: number) => void;
   currentPoints: number;
   isSettingsOpen: boolean;
@@ -102,7 +101,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   onComplete,
   onSettingsOpen,
   settings,
-  onEarnPoints,
   onPointsChanged,
   currentPoints,
   isSettingsOpen,
@@ -171,7 +169,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       _revealUsesVal?: number,
       moveLog?: MoveLogEntry[],
       hasMadeMistake?: boolean,
-      scanRefillsPurchasedVal?: number
+      scanRefillsPurchasedVal?: number,
+      scanAchievementElapsedSeconds?: number
   ) => {
       if (gameFinishedRef.current || isCompleted || isEnding) return;
       // A fresh or fully reset board is not a resumable game. Avoid creating
@@ -185,11 +184,12 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
               scanUsesVal !== undefined ? scanUsesVal : scanUses,
               scanRefillsPurchasedVal !== undefined
                   ? scanRefillsPurchasedVal
-                  : scanRefillsPurchased
+                  : scanRefillsPurchased,
+              scanAchievementElapsedSeconds,
           );
           return;
       }
-      Storage.saveLevelProgress({
+      const progress = {
           levelId,
           difficulty,
           status: 'in-progress',
@@ -203,7 +203,13 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
               : scanRefillsPurchased,
           hasMadeMistake: hasMadeMistake ?? hasMadeMistakeRef.current(),
           hasUsedNotes: hasUsedNotesRef.current,
-      });
+      } as const;
+
+      if (scanAchievementElapsedSeconds !== undefined) {
+          Storage.saveScannedLevelProgress(progress, scanAchievementElapsedSeconds);
+      } else {
+          Storage.saveLevelProgress(progress);
+      }
   };
 
   const handleSectionComplete = useCallback((sections: string[]) => {
@@ -306,13 +312,13 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   useEffect(() => {
       if (settings.goodLuckMessage === false) return;
-      const startMessageTimer = settings.goodLuckMessage !== false ? window.setTimeout(() => {
+      const startMessageTimer = window.setTimeout(() => {
           const text = LEVEL_START_MESSAGES[Math.floor(Math.random() * LEVEL_START_MESSAGES.length)];
           enqueuePill({ text, type: 'start', holdMs: 1000 });
-      }, 500) : null;
+      }, 500);
 
       return () => {
-          if (startMessageTimer !== null) window.clearTimeout(startMessageTimer);
+          window.clearTimeout(startMessageTimer);
       };
   }, [difficulty, levelId, enqueuePill, settings.goodLuckMessage]);
 
@@ -355,24 +361,28 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           case Difficulty.Impossible: points = 50; break;
       }
       
-      onEarnPoints(points);
       setEarnedPoints(points);
-      
-      Storage.saveLevelProgress({
-          levelId,
-          difficulty,
-          status: 'completed',
-          timeElapsed: timer,
-          boardState: completedBoard,
-          moveLog: completedMoveLog,
-          lastPlayed: Date.now(),
-          scanUses,
-          scanRefillsPurchased,
-          hasUsedNotes: hasUsedNotesRef.current,
-      }, isPerfect);
-      
-      // Grant Pepino Gift on Win
-      Storage.grantPepinoGift();
+
+      // A completed puzzle is one durable transaction. Diamonds, stats,
+      // progress, achievements, and Pepino's pending gift must never split
+      // across different local/cloud snapshots when iOS suspends the app.
+      const completion = Storage.completePuzzle({
+          progress: {
+              levelId,
+              difficulty,
+              status: 'completed',
+              timeElapsed: timer,
+              boardState: completedBoard,
+              moveLog: completedMoveLog,
+              lastPlayed: Date.now(),
+              scanUses,
+              scanRefillsPurchased,
+              hasUsedNotes: hasUsedNotesRef.current,
+          },
+          isPerfectGame: isPerfect,
+          diamonds: points,
+      });
+      onPointsChanged(completion.data.points);
       
       if (settings.generateReplay) {
           // Pass true to indicate auto-generation
@@ -467,8 +477,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setBoard,
       solvedBoard,
       moveLog,
-      onSaveProgress: (b, s, r, ml, mistake, refills) => (
-          saveProgress(b, s, r, ml, mistake, refills)
+      onSaveProgress: (b, s, r, ml, mistake, refills, scanElapsed) => (
+          saveProgress(b, s, r, ml, mistake, refills, scanElapsed)
       ),
       onScanResult: handleScanResult,
       elapsedSeconds: timer,

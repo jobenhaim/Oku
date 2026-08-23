@@ -1,5 +1,5 @@
 
-import { AppSettings, Board, LevelProgress, StoredData, PepinoState, Difficulty, PermanentPurchaseOwnership, StorePurchaseUnlock, DiamondEarnSource } from '../types';
+import { AppSettings, Board, LevelProgress, StoredData, PepinoState, Difficulty, PermanentPurchaseOwnership, StorePurchaseUnlock, DiamondEarnSource, PlayerProfile } from '../types';
 import { Preferences } from '@capacitor/preferences';
 import { getScanRefillCost } from './constants';
 import {
@@ -13,6 +13,8 @@ const STORAGE_KEY = 'oku_data_v1';
 const LEGACY_STORAGE_KEY = 'minimal_sudoku_data_v1';
 const GUEST_PROFILE_KEY = 'oku_guest_profile_v1';
 const ACTIVE_PROFILE_KEY = 'oku_active_profile_v1';
+const ACCOUNT_PROFILE_KEY_PREFIX = 'oku_account_profile_v1:';
+const LEGACY_PLAYER_PROFILE_KEY = 'zen_profile';
 const NORMAL_PUZZLE_CATALOG_VERSION = 1;
 export const PROFILE_ACCOUNT_INTRO_KEY = 'oku_profile_account_intro_seen_v1';
 
@@ -45,6 +47,13 @@ const DEFAULT_STATS = {
     diamondsEarnedBySource: {} as Record<string, number>,
 };
 
+const DEFAULT_PLAYER_PROFILE: PlayerProfile = {
+    username: 'Zen Player',
+    hasEditedName: false,
+    claimedRank: 0,
+    lastSeenRank: 0,
+};
+
 const sanitizeBreakdown = (breakdown: unknown): Record<string, number> => {
     if (!breakdown || typeof breakdown !== 'object') return {};
     const sanitized: Record<string, number> = {};
@@ -59,19 +68,37 @@ const ensureStatsBreakdowns = (data: StoredData) => {
     if (!data.stats) data.stats = { ...DEFAULT_STATS, gamesWonByDifficulty: {}, diamondsEarnedBySource: {} };
 
     const savedWinBreakdown = sanitizeBreakdown(data.stats.gamesWonByDifficulty);
-    if (!data.stats.gamesWonByDifficulty || savedWinBreakdown.previous) {
-        const inferred: Record<string, number> = {};
-        for (const progress of Object.values(data.progress || {})) {
-            if (progress.status !== 'completed' && progress.bestTime === undefined) continue;
-            inferred[progress.difficulty] = (inferred[progress.difficulty] || 0) + 1;
-        }
-        data.stats.gamesWonByDifficulty = inferred;
-        data.stats.totalGamesWon = Object.values(inferred).reduce((sum, value) => sum + value, 0);
-    } else {
-        data.stats.gamesWonByDifficulty = savedWinBreakdown;
-        const trackedWins = Object.values(data.stats.gamesWonByDifficulty).reduce((sum, value) => sum + value, 0);
-        data.stats.totalGamesWon = trackedWins;
+    const inferredWins: Record<string, number> = {};
+    for (const progress of Object.values(data.progress || {})) {
+        if (progress.status !== 'completed' && progress.bestTime === undefined) continue;
+        inferredWins[progress.difficulty] = (inferredWins[progress.difficulty] || 0) + 1;
     }
+
+    // Older versions only stored the aggregate win count, or placed that
+    // aggregate under `previous`. Keep any part that cannot be reconstructed
+    // from level progress as an unclassified remainder instead of silently
+    // reducing totalGamesWon during migration.
+    const previousAggregate = savedWinBreakdown.previous || 0;
+    delete savedWinBreakdown.previous;
+    const savedKnownTotal = Object.values(savedWinBreakdown).reduce((sum, value) => sum + value, 0);
+    const legacyTotal = Math.max(
+        0,
+        Math.floor(Number(data.stats.totalGamesWon) || 0),
+        previousAggregate,
+        savedKnownTotal,
+    );
+
+    for (const [difficulty, inferredCount] of Object.entries(inferredWins)) {
+        savedWinBreakdown[difficulty] = Math.max(savedWinBreakdown[difficulty] || 0, inferredCount);
+    }
+
+    const knownTotal = Object.values(savedWinBreakdown).reduce((sum, value) => sum + value, 0);
+    const preservedTotal = Math.max(legacyTotal, knownTotal);
+    const unclassifiedRemainder = preservedTotal - knownTotal;
+    if (unclassifiedRemainder > 0) savedWinBreakdown.previous = unclassifiedRemainder;
+
+    data.stats.gamesWonByDifficulty = savedWinBreakdown;
+    data.stats.totalGamesWon = preservedTotal;
 
     const savedDiamondBreakdown = sanitizeBreakdown(data.stats.diamondsEarnedBySource);
     if (!data.stats.diamondsEarnedBySource || savedDiamondBreakdown.previous) {
@@ -99,6 +126,14 @@ const ensureStatsBreakdowns = (data: StoredData) => {
     }
 };
 
+const recordGameWin = (data: StoredData, difficulty: Difficulty) => {
+    ensureStatsBreakdowns(data);
+    const winBreakdown = data.stats!.gamesWonByDifficulty!;
+    winBreakdown[difficulty] = (winBreakdown[difficulty] || 0) + 1;
+    data.stats!.totalGamesWon = Object.values(winBreakdown)
+        .reduce((sum, value) => sum + value, 0);
+};
+
 const recordDiamondEarning = (data: StoredData, amount: number, source: DiamondEarnSource) => {
     if (amount <= 0) return;
     ensureStatsBreakdowns(data);
@@ -121,6 +156,7 @@ const emptyAchievementCounters = () => ({
 });
 
 const createInitialData = (): StoredData => ({
+    playerProfile: { ...DEFAULT_PLAYER_PROFILE },
     settings: { ...DEFAULT_SETTINGS, hiddenDifficulties: [] },
     points: 0,
     progress: {},
@@ -340,6 +376,62 @@ function getStoredData(): StoredData {
     }
     ensureStatsBreakdowns(data);
 
+    if (!data.playerProfile) {
+        let legacyProfile: Partial<PlayerProfile> = {};
+        try {
+            const legacyRaw = localStorage.getItem(LEGACY_PLAYER_PROFILE_KEY);
+            if (legacyRaw) {
+                const parsed = JSON.parse(legacyRaw);
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    legacyProfile = parsed as Partial<PlayerProfile>;
+                }
+                // Import this device-only profile at most once. Leaving the old
+                // key around could later leak a guest's name/title into a newly
+                // downloaded account snapshot that predates this migration.
+                localStorage.removeItem(LEGACY_PLAYER_PROFILE_KEY);
+            }
+        } catch {
+            // A malformed legacy profile must never prevent the main save from
+            // loading. It simply falls back to the values below.
+        }
+
+        const earnedRank = Math.max(0, Math.floor((data.stats?.totalGamesWon || 0) / 20));
+        const username = typeof legacyProfile.username === 'string'
+            ? legacyProfile.username
+            : DEFAULT_PLAYER_PROFILE.username;
+        const claimedRank = Number.isFinite(legacyProfile.claimedRank)
+            ? Math.max(0, Math.floor(legacyProfile.claimedRank!))
+            : Number.isFinite(legacyProfile.lastSeenRank)
+                ? Math.max(0, Math.floor(legacyProfile.lastSeenRank!))
+                : earnedRank;
+        const lastSeenRank = Number.isFinite(legacyProfile.lastSeenRank)
+            ? Math.max(0, Math.floor(legacyProfile.lastSeenRank!))
+            : claimedRank;
+        data.playerProfile = {
+            username,
+            hasEditedName: typeof legacyProfile.hasEditedName === 'boolean'
+                ? legacyProfile.hasEditedName
+                : username !== DEFAULT_PLAYER_PROFILE.username,
+            claimedRank,
+            lastSeenRank,
+        };
+    } else {
+        data.playerProfile = {
+            username: typeof data.playerProfile.username === 'string'
+                ? data.playerProfile.username
+                : DEFAULT_PLAYER_PROFILE.username,
+            hasEditedName: typeof data.playerProfile.hasEditedName === 'boolean'
+                ? data.playerProfile.hasEditedName
+                : false,
+            claimedRank: Number.isFinite(data.playerProfile.claimedRank)
+                ? Math.max(0, Math.floor(data.playerProfile.claimedRank))
+                : 0,
+            lastSeenRank: Number.isFinite(data.playerProfile.lastSeenRank)
+                ? Math.max(0, Math.floor(data.playerProfile.lastSeenRank))
+                : 0,
+        };
+    }
+
     if (!data.seenStrictModeWarnings) data.seenStrictModeWarnings = [];
     if (!data.redeemedCoupons) data.redeemedCoupons = [];
     if (data.welcomeGiftClaimed === undefined) data.welcomeGiftClaimed = false;
@@ -431,18 +523,100 @@ function getStoredData(): StoredData {
 // writes to race can leave an older snapshot as the final native value.
 // Keep them ordered while localStorage remains immediately available to the UI.
 let nativeSaveQueue: Promise<void> = Promise.resolve();
+const pendingNativeValues = new Map<string, string>();
 type StorageListener = (data: StoredData) => void;
 const storageListeners = new Set<StorageListener>();
 
+interface StoredSnapshotCandidate {
+  raw: string;
+  lastModifiedAt: number;
+}
+
+const parseStoredSnapshotCandidate = (raw: string | null): StoredSnapshotCandidate | null => {
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<StoredData> | null;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    if (!parsed.settings || typeof parsed.settings !== 'object') return null;
+    if (!parsed.progress || typeof parsed.progress !== 'object' || Array.isArray(parsed.progress)) return null;
+
+    return {
+      raw,
+      lastModifiedAt: Number.isFinite(parsed.lastModifiedAt)
+        ? Math.max(0, Math.floor(parsed.lastModifiedAt!))
+        : 0,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const chooseNewestStoredSnapshot = (
+  localCandidate: StoredSnapshotCandidate | null,
+  nativeCandidate: StoredSnapshotCandidate | null,
+) => {
+  if (!localCandidate) return nativeCandidate;
+  if (!nativeCandidate) return localCandidate;
+
+  // Equal timestamps prefer WebView storage because it is updated
+  // synchronously, while the Preferences mirror is intentionally async.
+  return localCandidate.lastModifiedAt >= nativeCandidate.lastModifiedAt
+    ? localCandidate
+    : nativeCandidate;
+};
+
 const queuePreferenceSet = (key: string, value: string) => {
+  pendingNativeValues.set(key, value);
   nativeSaveQueue = nativeSaveQueue
     .catch(() => undefined)
     .then(async () => {
       await Preferences.set({ key, value });
+      if (pendingNativeValues.get(key) === value) {
+        pendingNativeValues.delete(key);
+      }
     })
     .catch((error: unknown) => console.error(`Native save failed for ${key}`, error));
   return nativeSaveQueue;
 };
+
+const retryPendingPreferenceWrites = async () => {
+  await nativeSaveQueue;
+  const entries = [...pendingNativeValues.entries()];
+  for (const [key, value] of entries) {
+    try {
+      await Preferences.set({ key, value });
+      if (pendingNativeValues.get(key) === value) {
+        pendingNativeValues.delete(key);
+      }
+    } catch (error) {
+      console.error(`Native save retry failed for ${key}`, error);
+    }
+  }
+};
+
+// Account cloud flushes already wait for Preferences, but guests do not have a
+// CloudSave connection. Queue the newest synchronous WebView snapshot again at
+// lifecycle boundaries so it is the final native write even after a burst of
+// board moves.
+const queueLatestSnapshotForLifecycle = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) void queuePreferenceSet(STORAGE_KEY, raw);
+  } catch (error) {
+    console.warn('Could not queue the latest save during app suspension', error);
+  }
+};
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') queueLatestSnapshotForLifecycle();
+  });
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', queueLatestSnapshotForLifecycle);
+}
 
 const persistAuxiliaryValue = async (key: string, value: string) => {
   localStorage.setItem(key, value);
@@ -451,6 +625,10 @@ const persistAuxiliaryValue = async (key: string, value: string) => {
 
 const getActiveProfile = (): ActiveProfile | null => (
   parseActiveProfile(localStorage.getItem(ACTIVE_PROFILE_KEY))
+);
+
+const getAccountProfileKey = (uid: string) => (
+  `${ACCOUNT_PROFILE_KEY_PREFIX}${encodeURIComponent(uid)}`
 );
 
 const readGuestProfile = (): StoredData | null => {
@@ -467,28 +645,101 @@ const persistGuestProfile = async (data: StoredData) => {
   await persistAuxiliaryValue(GUEST_PROFILE_KEY, JSON.stringify(data));
 };
 
+const readAccountProfile = (uid: string): StoredData | null => {
+  try {
+    const raw = localStorage.getItem(getAccountProfileKey(uid));
+    return raw ? JSON.parse(raw) as StoredData : null;
+  } catch (error) {
+    console.warn(`Could not read the saved account profile for ${uid}`, error);
+    return null;
+  }
+};
+
+const persistAccountProfile = async (uid: string, data: StoredData) => {
+  await persistAuxiliaryValue(getAccountProfileKey(uid), JSON.stringify(data));
+};
+
+const loadNewestAccountProfile = async (uid: string): Promise<StoredData | null> => {
+  const key = getAccountProfileKey(uid);
+  const localCandidate = parseStoredSnapshotCandidate(localStorage.getItem(key));
+  let nativeCandidate: StoredSnapshotCandidate | null = null;
+  try {
+    const nativeResult = await Preferences.get({ key });
+    nativeCandidate = parseStoredSnapshotCandidate(nativeResult.value);
+  } catch (error) {
+    console.warn(`Could not read the native account cache for ${uid}`, error);
+  }
+
+  const selected = chooseNewestStoredSnapshot(localCandidate, nativeCandidate);
+  if (!selected) return null;
+
+  localStorage.setItem(key, selected.raw);
+  if (nativeCandidate?.raw !== selected.raw) void queuePreferenceSet(key, selected.raw);
+
+  // Migrate the cached snapshot through the same path as every active save.
+  localStorage.setItem(STORAGE_KEY, selected.raw);
+  const migrated = getStoredData();
+  const migratedRaw = JSON.stringify(migrated);
+  localStorage.setItem(STORAGE_KEY, migratedRaw);
+  localStorage.setItem(key, migratedRaw);
+  void queuePreferenceSet(STORAGE_KEY, migratedRaw);
+  void queuePreferenceSet(key, migratedRaw);
+  return migrated;
+};
+
 const persistActiveProfile = async (profile: ActiveProfile) => {
   await persistAuxiliaryValue(ACTIVE_PROFILE_KEY, serializeActiveProfile(profile));
 };
 
 function saveData(
   data: StoredData,
-  options: { touchModifiedAt?: boolean; notify?: boolean } = {}
+  options: { touchModifiedAt?: boolean; notify?: boolean; mirrorActiveProfile?: boolean } = {}
 ) {
   try {
+    // A read-only restore/check must not make an old device look newer than a
+    // device that actually progressed. Compare business data before advancing
+    // the conflict timestamp or notifying CloudSave.
     if (options.touchModifiedAt !== false) {
-      data.lastModifiedAt = Date.now();
+      const currentRaw = localStorage.getItem(STORAGE_KEY);
+      if (currentRaw) {
+        try {
+          const current = JSON.parse(currentRaw) as StoredData;
+          const { lastModifiedAt: _currentModifiedAt, ...currentContent } = current;
+          const { lastModifiedAt: _nextModifiedAt, ...nextContent } = data;
+          if (JSON.stringify(currentContent) === JSON.stringify(nextContent)) {
+            return false;
+          }
+        } catch {
+          // Persisting a valid replacement is the recovery path for bad JSON.
+        }
+      }
+    }
+
+    if (options.touchModifiedAt !== false) {
+      const previousModifiedAt = Number.isFinite(data.lastModifiedAt)
+        ? Math.max(0, Math.floor(data.lastModifiedAt!))
+        : 0;
+      data.lastModifiedAt = Math.max(Date.now(), previousModifiedAt + 1);
     }
     const stringified = JSON.stringify(data);
     localStorage.setItem(STORAGE_KEY, stringified);
 
     void queuePreferenceSet(STORAGE_KEY, stringified);
 
+    const activeProfile = getActiveProfile();
+    if (options.mirrorActiveProfile !== false && activeProfile?.kind === 'account') {
+      const accountKey = getAccountProfileKey(activeProfile.uid);
+      localStorage.setItem(accountKey, stringified);
+      void queuePreferenceSet(accountKey, stringified);
+    }
+
     if (options.notify !== false) {
       storageListeners.forEach((listener) => listener(data));
     }
+    return true;
   } catch (e) {
     console.error("Failed to save data", e);
+    return false;
   }
 }
 
@@ -524,10 +775,177 @@ function ensureStarterPackUnlocked(data: StoredData) {
   }
 }
 
+interface LevelProgressMutationResult {
+  changed: boolean;
+  completedNow: boolean;
+}
+
+/**
+ * Apply the level snapshot and every stat derived directly from crossing into
+ * `completed`. All public progress writers use this helper so an autosave and
+ * the victory transaction cannot disagree about completion or personal bests.
+ */
+const applyLevelProgressMutation = (
+  data: StoredData,
+  progress: LevelProgress,
+  isPerfectGame = false,
+): LevelProgressMutationResult => {
+  const key = `${progress.difficulty}-${progress.levelId}`;
+  const existing = data.progress[key];
+
+  // A lifecycle or Scan callback can arrive after the synchronous victory
+  // write. Never reopen a completed puzzle with that stale snapshot.
+  if (existing?.status === 'completed' && progress.status !== 'completed') {
+    return { changed: false, completedNow: false };
+  }
+
+  const completedNow = progress.status === 'completed' && existing?.status !== 'completed';
+  let bestTime = existing?.bestTime;
+
+  if (progress.status === 'completed') {
+    const incomingTime = Math.max(0, Math.floor(progress.timeElapsed || 0));
+    const existingBest = bestTime === undefined
+      ? undefined
+      : Math.max(0, Math.floor(bestTime));
+
+    // A repeated callback for a completion we already stored must be a true
+    // no-op when the stored result is at least as good. This is what prevents a
+    // second reward/notification from a duplicate native or React callback.
+    if (!completedNow && existingBest !== undefined && existingBest <= incomingTime) {
+      return { changed: false, completedNow: false };
+    }
+
+    if (existingBest === undefined || incomingTime < existingBest) {
+      bestTime = incomingTime;
+    }
+
+    if (completedNow) {
+      if (!data.stats) {
+        data.stats = { ...DEFAULT_STATS, gamesWonByDifficulty: {}, diamondsEarnedBySource: {} };
+      }
+      recordGameWin(data, progress.difficulty as Difficulty);
+
+      if (isPerfectGame) {
+        data.stats.perfectGames += 1;
+        if ([Difficulty.Hard, Difficulty.Intense, Difficulty.Impossible].includes(progress.difficulty as Difficulty)) {
+          if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
+          data.achievementCounters.hardPerfectGames += 1;
+        }
+      }
+
+      if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
+      if (
+        [Difficulty.Hard, Difficulty.Intense, Difficulty.Impossible].includes(progress.difficulty as Difficulty)
+        && (progress.scanUses ?? 3) === 3
+      ) {
+        data.achievementCounters.hardNoScanWins += 1;
+      }
+      if (progress.hasUsedNotes) {
+        data.achievementCounters.noteGamesWon += 1;
+      }
+    }
+  }
+
+  const storedProgress: LevelProgress = {
+    ...progress,
+    bestTime,
+  };
+  if (storedProgress.status === 'completed') {
+    // Completed games only need their result/economy metadata. Keeping 81 Cell
+    // objects plus the entire move history for hundreds of finished levels can
+    // exhaust WebView localStorage and make an otherwise successful save fail.
+    storedProgress.boardState = undefined;
+    storedProgress.moveLog = undefined;
+  }
+  data.progress[key] = storedProgress;
+  return { changed: true, completedNow };
+};
+
+const applyPepinoGiftClaim = (data: StoredData, reward: number) => {
+  const pendingGiftCount = Math.max(0, Math.floor(data.pepino?.pendingGiftCount || 0));
+  if (!data.pepino || pendingGiftCount <= 0) return false;
+
+  data.pepino.pendingGiftCount = pendingGiftCount - 1;
+  data.pepino.hasPendingGift = data.pepino.pendingGiftCount > 0;
+  data.pepino.firstGiftClaimed = true;
+  if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
+  data.achievementCounters.pepinoGiftsOpened += 1;
+
+  if (reward > 0) {
+    data.points += reward;
+    recordDiamondEarning(data, reward, 'pepino');
+  }
+  return true;
+};
+
+const applyDifficultyCompletion = (data: StoredData, difficulty: Difficulty) => {
+  if (!data.stats) {
+    data.stats = { ...DEFAULT_STATS, gamesWonByDifficulty: {}, diamondsEarnedBySource: {} };
+  }
+
+  for (let level = 1; level <= 100; level += 1) {
+    const key = `${difficulty}-${level}`;
+    const existing = data.progress[key];
+    const wasAlreadyCompleted = existing?.status === 'completed' || existing?.bestTime !== undefined;
+    if (existing?.status === 'completed') continue;
+
+    data.progress[key] = {
+      ...existing,
+      levelId: level,
+      difficulty,
+      status: 'completed',
+      timeElapsed: existing?.timeElapsed || 60,
+      bestTime: existing?.bestTime !== undefined ? Math.min(existing.bestTime, 60) : 60,
+      boardState: undefined,
+      moveLog: undefined,
+      scanUses: existing?.scanUses ?? 3,
+      scribeUses: existing?.scribeUses ?? 4,
+    };
+
+    if (!wasAlreadyCompleted) recordGameWin(data, difficulty);
+  }
+};
+
 export const Storage = {
   getStoredData, 
 
   createDefaultData: () => createInitialData(),
+
+  getPlayerProfile: (): PlayerProfile => {
+      const profile = getStoredData().playerProfile ?? DEFAULT_PLAYER_PROFILE;
+      // Do not expose the live object stored inside the full save snapshot.
+      return { ...profile };
+  },
+
+  updatePlayerProfile: (partial: Partial<PlayerProfile>): PlayerProfile => {
+      const data = getStoredData();
+      const current = data.playerProfile ?? { ...DEFAULT_PLAYER_PROFILE };
+      const next: PlayerProfile = {
+          username: typeof partial.username === 'string' ? partial.username : current.username,
+          hasEditedName: typeof partial.hasEditedName === 'boolean'
+              ? partial.hasEditedName
+              : current.hasEditedName,
+          claimedRank: Number.isFinite(partial.claimedRank)
+              ? Math.max(0, Math.floor(partial.claimedRank!))
+              : current.claimedRank,
+          lastSeenRank: Number.isFinite(partial.lastSeenRank)
+              ? Math.max(0, Math.floor(partial.lastSeenRank!))
+              : current.lastSeenRank,
+      };
+
+      if (
+          current.username === next.username
+          && current.hasEditedName === next.hasEditedName
+          && current.claimedRank === next.claimedRank
+          && current.lastSeenRank === next.lastSeenRank
+      ) {
+          return { ...current };
+      }
+
+      data.playerProfile = next;
+      saveData(data);
+      return { ...next };
+  },
 
   getActiveProfile,
 
@@ -541,6 +959,11 @@ export const Storage = {
           : createInitialData();
   },
 
+  getAccountProfile: (uid: string) => {
+      const account = readAccountProfile(uid);
+      return account ? JSON.parse(JSON.stringify(account)) as StoredData : null;
+  },
+
   captureGuestProfile: async () => {
       const activeProfile = getActiveProfile();
       if (activeProfile?.kind === 'account') return;
@@ -550,14 +973,19 @@ export const Storage = {
 
   activateAccountProfile: async (uid: string) => {
       if (!uid) throw new Error('Cannot activate an account without a user ID.');
+      await persistAccountProfile(uid, getStoredData());
       await persistActiveProfile({ kind: 'account', uid });
   },
 
   restoreGuestProfile: async () => {
+      const activeProfile = getActiveProfile();
+      if (activeProfile?.kind === 'account') {
+          await persistAccountProfile(activeProfile.uid, getStoredData());
+      }
       const guestSnapshot = readGuestProfile() ?? createInitialData();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(guestSnapshot));
       const migratedGuest = getStoredData();
-      saveData(migratedGuest, { touchModifiedAt: false });
+      saveData(migratedGuest, { touchModifiedAt: false, mirrorActiveProfile: false });
       await persistGuestProfile(migratedGuest);
       await persistActiveProfile({ kind: 'guest' });
       await nativeSaveQueue;
@@ -566,10 +994,11 @@ export const Storage = {
 
   initializeProfiles: async (authenticatedUid: string | null) => {
       let activeProfile = getActiveProfile();
+      const guestProfileBeforeMigration = readGuestProfile();
 
       // One-time migration for installations created before profiles were
       // isolated. Preserve the current device save rather than risking loss.
-      if (!readGuestProfile()) {
+      if (!guestProfileBeforeMigration) {
           await persistGuestProfile(JSON.parse(JSON.stringify(getStoredData())) as StoredData);
       }
 
@@ -584,14 +1013,55 @@ export const Storage = {
       }
 
       if (!activeProfile) {
-          // Legacy signed-in installations already contain the account cache in
-          // the active slot. Mark it without rewriting either profile.
-          await persistActiveProfile({ kind: 'account', uid: authenticatedUid });
-          activeProfile = { kind: 'account', uid: authenticatedUid };
+          const cachedAccount = await loadNewestAccountProfile(authenticatedUid);
+          if (cachedAccount) {
+              await persistActiveProfile({ kind: 'account', uid: authenticatedUid });
+              activeProfile = { kind: 'account', uid: authenticatedUid };
+          } else if (!guestProfileBeforeMigration) {
+              // A genuinely legacy signed-in installation has neither an active
+              // marker nor an isolated guest. Its current slot is the only
+              // recoverable account snapshot, so migrate it to both caches.
+              await persistActiveProfile({ kind: 'account', uid: authenticatedUid });
+              await persistAccountProfile(authenticatedUid, getStoredData());
+              activeProfile = { kind: 'account', uid: authenticatedUid };
+          } else {
+              // If the profile marker alone was lost, a pre-existing guest cache
+              // proves that profile isolation already ran. Never relabel that
+              // guest as the restored Firebase account; CloudSave will either
+              // load the account root or explicitly convert the guest.
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(guestProfileBeforeMigration));
+              const migratedGuest = getStoredData();
+              saveData(migratedGuest, {
+                  touchModifiedAt: false,
+                  notify: false,
+                  mirrorActiveProfile: false,
+              });
+              await persistGuestProfile(migratedGuest);
+              await persistActiveProfile({ kind: 'guest' });
+              activeProfile = { kind: 'guest' };
+          }
+      } else if (activeProfile.kind === 'account' && activeProfile.uid === authenticatedUid) {
+          await persistAccountProfile(authenticatedUid, getStoredData());
+      } else if (activeProfile.kind === 'account') {
+          // An external Firebase account switch must never reuse the previous
+          // user's in-memory snapshot as the new user's account cache.
+          await persistAccountProfile(activeProfile.uid, getStoredData());
+          await Storage.restoreGuestProfile();
+          activeProfile = { kind: 'guest' };
+          const cachedAccount = await loadNewestAccountProfile(authenticatedUid);
+          if (cachedAccount) {
+              await persistActiveProfile({ kind: 'account', uid: authenticatedUid });
+              activeProfile = { kind: 'account', uid: authenticatedUid };
+          }
       } else if (activeProfile.kind === 'guest') {
           // Firebase may restore a session before cloud bootstrap. Keep the
           // latest guest snapshot ready for a safe rollback or first upload.
           await Storage.captureGuestProfile();
+          const cachedAccount = await loadNewestAccountProfile(authenticatedUid);
+          if (cachedAccount) {
+              await persistActiveProfile({ kind: 'account', uid: authenticatedUid });
+              activeProfile = { kind: 'account', uid: authenticatedUid };
+          }
       }
 
       return getStoredData();
@@ -612,7 +1082,7 @@ export const Storage = {
   },
 
   flushPendingWrites: async () => {
-      await nativeSaveQueue;
+      await retryPendingPreferenceWrites();
   },
   
   initializeNative: async (): Promise<StoredData | null> => {
@@ -622,28 +1092,81 @@ export const Storage = {
               Preferences.get({ key: GUEST_PROFILE_KEY }),
               Preferences.get({ key: ACTIVE_PROFILE_KEY }),
           ]);
-          let { value } = storedResult;
-
-          if (guestResult.value) localStorage.setItem(GUEST_PROFILE_KEY, guestResult.value);
-          if (activeProfileResult.value) {
-              localStorage.setItem(ACTIVE_PROFILE_KEY, activeProfileResult.value);
-          }
-          
-          // Native Migration Logic
-          if (!value) {
-              const legacy = await Preferences.get({ key: LEGACY_STORAGE_KEY });
-              if (legacy.value) {
-                  value = legacy.value;
-                  // Persist to new key
-                  await Preferences.set({ key: STORAGE_KEY, value: legacy.value });
+          const localGuestCandidate = parseStoredSnapshotCandidate(localStorage.getItem(GUEST_PROFILE_KEY));
+          const nativeGuestCandidate = parseStoredSnapshotCandidate(guestResult.value);
+          const selectedGuestCandidate = chooseNewestStoredSnapshot(localGuestCandidate, nativeGuestCandidate);
+          if (selectedGuestCandidate) {
+              localStorage.setItem(GUEST_PROFILE_KEY, selectedGuestCandidate.raw);
+              if (guestResult.value !== selectedGuestCandidate.raw) {
+                  void queuePreferenceSet(GUEST_PROFILE_KEY, selectedGuestCandidate.raw);
               }
           }
 
-          if (value) {
-              localStorage.setItem(STORAGE_KEY, value);
-              // Run the same migrations/defaults used by normal local reads before
-              // hydrating React state from native preferences.
-              return getStoredData();
+          // Auxiliary markers are written to localStorage synchronously before
+          // their Preferences mirror. Prefer that local marker when the two
+          // disagree after a suspension between those writes. A malformed local
+          // value, however, must not hide a valid native marker.
+          const localActiveProfileValue = localStorage.getItem(ACTIVE_PROFILE_KEY);
+          const selectedActiveProfile = parseActiveProfile(localActiveProfileValue)
+              ?? parseActiveProfile(activeProfileResult.value);
+          const selectedActiveProfileValue = selectedActiveProfile
+              ? serializeActiveProfile(selectedActiveProfile)
+              : null;
+          if (selectedActiveProfileValue) {
+              localStorage.setItem(ACTIVE_PROFILE_KEY, selectedActiveProfileValue);
+              if (activeProfileResult.value !== selectedActiveProfileValue) {
+                  void queuePreferenceSet(ACTIVE_PROFILE_KEY, selectedActiveProfileValue);
+              }
+          }
+
+          const localCurrentCandidate = parseStoredSnapshotCandidate(localStorage.getItem(STORAGE_KEY));
+          const localLegacyCandidate = localCurrentCandidate
+              ? null
+              : parseStoredSnapshotCandidate(localStorage.getItem(LEGACY_STORAGE_KEY));
+          let nativeCandidate = parseStoredSnapshotCandidate(storedResult.value);
+
+          // Native migration fallback. A corrupt current value must not hide a
+          // valid legacy snapshot.
+          if (!nativeCandidate) {
+              const legacy = await Preferences.get({ key: LEGACY_STORAGE_KEY });
+              nativeCandidate = parseStoredSnapshotCandidate(legacy.value);
+          }
+
+          let selectedCandidate = chooseNewestStoredSnapshot(
+              localCurrentCandidate ?? localLegacyCandidate,
+              nativeCandidate,
+          );
+
+          if (selectedActiveProfile?.kind === 'guest' && selectedGuestCandidate) {
+              // The generic slot can still contain the account snapshot if the
+              // app stopped midway through sign-out. Logical profiles must not
+              // compete by timestamp: an explicit guest marker always selects
+              // the isolated guest cache.
+              selectedCandidate = selectedGuestCandidate;
+          } else if (selectedActiveProfile?.kind === 'account') {
+              const accountKey = getAccountProfileKey(selectedActiveProfile.uid);
+              const accountNativeResult = await Preferences.get({ key: accountKey });
+              const accountCandidate = chooseNewestStoredSnapshot(
+                  parseStoredSnapshotCandidate(localStorage.getItem(accountKey)),
+                  parseStoredSnapshotCandidate(accountNativeResult.value),
+              );
+
+              // The UID-scoped copy cannot be mistaken for a guest snapshot if
+              // the app stopped midway through sign-out/account switching.
+              if (accountCandidate) selectedCandidate = accountCandidate;
+          }
+
+          if (selectedCandidate) {
+              localStorage.setItem(STORAGE_KEY, selectedCandidate.raw);
+              // Run normal migrations, then repair both mirrors with the same
+              // complete snapshot without making hydration look like a mutation.
+              const migrated = getStoredData();
+              saveData(migrated, { touchModifiedAt: false, notify: false });
+              if (selectedActiveProfile?.kind === 'account') {
+                  await persistAccountProfile(selectedActiveProfile.uid, migrated);
+              }
+              await nativeSaveQueue;
+              return migrated;
           }
           return null;
       } catch (e) {
@@ -893,6 +1416,25 @@ export const Storage = {
       return getStoredData().nextBonusClaimTime || 0;
   },
 
+  claimDailyBonus: (nextTime: number, amount: number): { applied: boolean; data: StoredData } => {
+      const data = getStoredData();
+      const now = Date.now();
+      const normalizedNextTime = Number.isFinite(nextTime) ? Math.floor(nextTime) : 0;
+      const reward = Number.isFinite(amount) ? Math.floor(amount) : 0;
+
+      // Check the durable value, not React state, so a double tap or duplicate
+      // event cannot claim twice before the UI re-renders.
+      if ((data.nextBonusClaimTime || 0) > now || normalizedNextTime <= now || reward <= 0) {
+          return { applied: false, data };
+      }
+
+      data.nextBonusClaimTime = normalizedNextTime;
+      data.points += reward;
+      recordDiamondEarning(data, reward, 'dailyGifts');
+      saveData(data);
+      return { applied: true, data };
+  },
+
   setNextBonusClaimTime: (time: number) => {
       const data = getStoredData();
       data.nextBonusClaimTime = time;
@@ -1081,7 +1623,8 @@ export const Storage = {
     difficulty: Difficulty,
     levelId: number,
     scanUses: number,
-    scanRefillsPurchased: number
+    scanRefillsPurchased: number,
+    scanAchievementElapsedSeconds?: number,
   ) => {
     const data = getStoredData();
     const key = `${difficulty}-${levelId}`;
@@ -1095,6 +1638,11 @@ export const Storage = {
         scanUses: Math.max(0, Math.floor(scanUses)),
         scanRefillsPurchased: Math.max(0, Math.floor(scanRefillsPurchased)),
     };
+
+    if (scanAchievementElapsedSeconds !== undefined && scanAchievementElapsedSeconds >= 60) {
+      if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
+      data.achievementCounters.scansUsed += 1;
+    }
     saveData(data);
   },
 
@@ -1103,46 +1651,58 @@ export const Storage = {
     isPerfectGame: boolean = false
   ) => {
     const data = getStoredData();
-    const key = `${progress.difficulty}-${progress.levelId}`;
-    const existing = data.progress[key];
-    let bestTime = existing?.bestTime;
-    
-    if (progress.status === 'completed') {
-        if (bestTime === undefined || progress.timeElapsed < bestTime) {
-            bestTime = progress.timeElapsed;
-        }
-        // Increment Stats
-        if (!data.stats) data.stats = { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 };
-        
-        data.stats.totalGamesWon += 1;
-        ensureStatsBreakdowns(data);
-        const winBreakdown = data.stats.gamesWonByDifficulty!;
-        winBreakdown[progress.difficulty] = (winBreakdown[progress.difficulty] || 0) + 1;
-        if (isPerfectGame) {
-            data.stats.perfectGames += 1;
-            if ([Difficulty.Hard, Difficulty.Intense, Difficulty.Impossible].includes(progress.difficulty as Difficulty)) {
-                if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
-                data.achievementCounters.hardPerfectGames += 1;
-            }
-        }
-        if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
-        if (
-            [Difficulty.Hard, Difficulty.Intense, Difficulty.Impossible].includes(progress.difficulty as Difficulty)
-            && (progress.scanUses ?? 3) === 3
-        ) {
-            data.achievementCounters.hardNoScanWins += 1;
-        }
-        if (progress.hasUsedNotes) {
-            data.achievementCounters.noteGamesWon += 1;
-        }
+    const mutation = applyLevelProgressMutation(data, progress, isPerfectGame);
+    if (mutation.changed) saveData(data);
+    return { applied: mutation.changed, data };
+  },
+
+  saveScannedLevelProgress: (progress: LevelProgress, elapsedSeconds: number) => {
+    const data = getStoredData();
+    const mutation = applyLevelProgressMutation(data, progress);
+    if (!mutation.changed) return { applied: false, data };
+
+    if (elapsedSeconds >= 60) {
+      if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
+      data.achievementCounters.scansUsed += 1;
     }
-    
-    data.progress[key] = {
-        ...progress,
-        bestTime: bestTime
-    };
-    
+
     saveData(data);
+    return { applied: true, data };
+  },
+
+  completePuzzle: ({
+    progress,
+    isPerfectGame,
+    diamonds,
+  }: {
+    progress: LevelProgress;
+    isPerfectGame: boolean;
+    diamonds: number;
+  }): { applied: boolean; data: StoredData } => {
+    const data = getStoredData();
+    if (progress.status !== 'completed') return { applied: false, data };
+
+    const mutation = applyLevelProgressMutation(data, progress, isPerfectGame);
+    if (!mutation.completedNow) {
+      // A genuinely faster result may still improve the personal best, but an
+      // already-completed attempt can never award another win or diamonds.
+      if (mutation.changed) saveData(data);
+      return { applied: false, data };
+    }
+
+    const reward = Number.isFinite(diamonds) ? Math.max(0, Math.floor(diamonds)) : 0;
+    if (reward > 0) {
+      data.points += reward;
+      recordDiamondEarning(data, reward, 'sudoku');
+    }
+
+    if (data.pepino?.unlocked) {
+      data.pepino.pendingGiftCount = Math.max(0, Math.floor(data.pepino.pendingGiftCount || 0)) + 1;
+      data.pepino.hasPendingGift = true;
+    }
+
+    saveData(data);
+    return { applied: true, data };
   },
   
   clearLevelProgress: (difficulty: string, levelId: number, resetScanEconomy = false) => {
@@ -1234,14 +1794,20 @@ export const Storage = {
 
   claimPepinoGift: () => {
       const data = getStoredData();
-      if (data.pepino) {
-          data.pepino.pendingGiftCount = Math.max(0, (data.pepino.pendingGiftCount || 0) - 1);
-          data.pepino.hasPendingGift = data.pepino.pendingGiftCount > 0;
-          data.pepino.firstGiftClaimed = true;
-          if (!data.achievementCounters) data.achievementCounters = emptyAchievementCounters();
-          data.achievementCounters.pepinoGiftsOpened += 1;
-          saveData(data);
+      if (!applyPepinoGiftClaim(data, 0)) return false;
+      saveData(data);
+      return true;
+  },
+
+  claimPepinoGiftReward: (amount: number): { applied: boolean; data: StoredData } => {
+      const data = getStoredData();
+      const reward = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : -1;
+      if (reward < 0 || !applyPepinoGiftClaim(data, reward)) {
+          return { applied: false, data };
       }
+
+      saveData(data);
+      return { applied: true, data };
   },
 
   markPepinoFirstMessageShown: () => {
@@ -1268,35 +1834,47 @@ export const Storage = {
   },
 
   // COUPONS
+  redeemCoupon: (
+      code: string,
+      effect: {
+          diamonds?: number;
+          unlockPepino?: boolean;
+          settings?: Partial<AppSettings>;
+          completeDifficulties?: Difficulty[];
+      }
+  ): { applied: boolean; data: StoredData } => {
+      const data = getStoredData();
+      const normalizedCode = code.trim().toUpperCase();
+      if (!normalizedCode) return { applied: false, data };
+      if (!data.redeemedCoupons) data.redeemedCoupons = [];
+      if (data.redeemedCoupons.includes(normalizedCode)) return { applied: false, data };
+
+      const diamonds = Number.isFinite(effect.diamonds)
+          ? Math.max(0, Math.floor(effect.diamonds!))
+          : 0;
+      const difficulties = [...new Set(effect.completeDifficulties || [])];
+      const hasEffect = diamonds > 0
+          || effect.unlockPepino === true
+          || Boolean(effect.settings && Object.keys(effect.settings).length > 0)
+          || difficulties.length > 0;
+      if (!hasEffect) return { applied: false, data };
+
+      data.redeemedCoupons.push(normalizedCode);
+      if (diamonds > 0) {
+          data.points += diamonds;
+          recordDiamondEarning(data, diamonds, 'coupons');
+      }
+      if (effect.unlockPepino) ensurePepinoUnlocked(data);
+      if (effect.settings) data.settings = { ...data.settings, ...effect.settings };
+      difficulties.forEach((difficulty) => applyDifficultyCompletion(data, difficulty));
+
+      saveData(data);
+      return { applied: true, data };
+  },
+
   completeDifficultyLevels: (difficulty: Difficulty) => {
       const data = getStoredData();
-      if (!data.stats) data.stats = { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 };
-      
-      for (let lvl = 1; lvl <= 100; lvl++) {
-          const key = `${difficulty}-${lvl}`;
-          const existing = data.progress[key];
-          const wasAlreadyCompleted = existing?.status === 'completed' || existing?.bestTime !== undefined;
-
-          if (existing?.status !== 'completed') {
-              data.progress[key] = {
-                  ...existing,
-                  levelId: lvl,
-                  difficulty,
-                  status: 'completed',
-                  timeElapsed: existing?.timeElapsed || 60,
-                  bestTime: existing?.bestTime !== undefined ? Math.min(existing.bestTime, 60) : 60,
-                  scanUses: existing?.scanUses ?? 3,
-                  scribeUses: existing?.scribeUses ?? 4,
-              };
-
-              if (!wasAlreadyCompleted) {
-                  data.stats.totalGamesWon += 1;
-                  ensureStatsBreakdowns(data);
-                  const winBreakdown = data.stats.gamesWonByDifficulty!;
-                  winBreakdown[difficulty] = (winBreakdown[difficulty] || 0) + 1;
-              }
-          }
-      }
+      applyDifficultyCompletion(data, difficulty);
       saveData(data);
   },
 

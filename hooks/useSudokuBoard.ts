@@ -234,7 +234,7 @@ export const useSudokuBoard = ({
             }
 
             if (forcePlace) sounds.playNumber(currentActiveNumber);
-            else sounds.playTap();
+            else sounds.playPlacementTap();
             
             rememberBoardForUndo(currentBoard);
             const newBoard = cloneBoard(currentBoard);

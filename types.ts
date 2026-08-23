@@ -73,9 +73,18 @@ export interface PepinoState {
   unlockedAt?: number; // Timestamp of when it was unlocked, for intro logic
 }
 
+export interface PlayerProfile {
+  username: string;
+  hasEditedName: boolean;
+  claimedRank: number;
+  lastSeenRank: number;
+}
+
 export interface StoredData {
   /** Last local mutation time, used to resolve device/cloud conflicts safely. */
   lastModifiedAt?: number;
+  /** User-facing profile details that follow a signed-in account across devices. */
+  playerProfile?: PlayerProfile;
   settings: AppSettings;
   points: number;
   progress: Record<string, LevelProgress>; // key: "Difficulty-LevelID"

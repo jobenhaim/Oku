@@ -47,7 +47,10 @@ export const chooseAccountSnapshot = ({
     }
 
     if (accountIsAlreadyActive
-        && (accountCache.lastModifiedAt ?? 0) > (cloudSnapshot.lastModifiedAt ?? 0)) {
+        // Equal timestamps prefer the local account cache. WebView storage is
+        // written synchronously, so it may contain the final same-millisecond
+        // mutation while the cloud/native mirror still has the earlier one.
+        && (accountCache.lastModifiedAt ?? 0) >= (cloudSnapshot.lastModifiedAt ?? 0)) {
         return { snapshot: accountCache, source: 'account-cache' };
     }
 

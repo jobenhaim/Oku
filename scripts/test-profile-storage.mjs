@@ -88,6 +88,25 @@ assert.equal(Storage.getStoredData().points, 111);
 assert.ok(Storage.getStoredData().progress['guest-1']);
 assert.equal(Storage.getStoredData().progress['account-1'], undefined);
 
+// An account that signs out before its offline changes reach Firestore keeps a
+// UID-scoped local cache. Signing into that UID again must restore the account,
+// never convert/merge the currently visible guest profile.
+const offlineAccount = withIdentity(Storage.createDefaultData(), 'offline-account', 777);
+await Storage.replaceStoredData(offlineAccount);
+await Storage.activateAccountProfile('user-offline');
+Storage.addPoints(1);
+await Storage.restoreGuestProfile();
+assert.equal(Storage.getStoredData().points, 111);
+
+await Storage.initializeProfiles('user-offline');
+assert.deepEqual(Storage.getActiveProfile(), { kind: 'account', uid: 'user-offline' });
+assert.equal(Storage.getStoredData().points, 778);
+assert.ok(Storage.getStoredData().progress['offline-account-1']);
+assert.equal(Storage.getStoredData().progress['guest-1'], undefined);
+
+await Storage.restoreGuestProfile();
+assert.equal(Storage.getStoredData().points, 111);
+
 // Resetting while playing as a guest replaces both the active and backup copy.
 await Storage.resetAllData();
 assert.equal(Storage.getStoredData().points, 0);
