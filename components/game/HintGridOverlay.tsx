@@ -207,6 +207,7 @@ export const HintGridOverlay: React.FC<HintGridOverlayProps> = ({
     noteLineHeight,
 }) => {
     const isColorChainFrame = frame.id.startsWith('color-chain-');
+    const guideCellsAreFocus = !isColorChainFrame || frame.id === 'color-chain-rule';
     const visual = useMemo(() => ({
         spotlight: new Set(frame.spotlightCells.map(keyFor)),
         unit: new Set((frame.unitCells ?? []).map(keyFor)),
@@ -314,7 +315,7 @@ export const HintGridOverlay: React.FC<HintGridOverlayProps> = ({
                     const isRelevant = isSpotlight
                         || isUnit
                         || isContext
-                        || (isGuide && !isColorChainFrame)
+                        || (isGuide && guideCellsAreFocus)
                         || isSource
                         || isSupportSource
                         || isTarget

@@ -769,6 +769,13 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                 break;
             case 'color-chain-links':
                 assert.equal(frame.title, 'Follow the alternating chain');
+                assert.equal(
+                    frame.body,
+                    `The possible ${frame.candidateMarks[0].value}s alternate between circles and squares.`,
+                );
+                assert.deepEqual(frame.spotlightCells, []);
+                assert.equal(frame.guideUnits, undefined);
+                assert.equal(frame.guideStrokeTone, undefined);
                 assert.ok(frame.candidateMarks.length >= 4 && frame.candidateMarks.length <= 8);
                 assert.ok(frame.candidateMarks.every(mark => mark.tone === 'locked' || mark.tone === 'possible'));
                 assert.deepEqual(new Set(frame.candidateMarks.map(mark => mark.tone)), new Set(['locked', 'possible']));
@@ -776,9 +783,12 @@ const assertPresentationContract = (plan, label = plan.technique) => {
             case 'color-chain-rule':
                 assert.ok(frame.spotlightCells.length > 0);
                 assert.ok(frame.guideUnits.length > 0);
+                assert.equal(frame.guideStrokeTone, 'normal');
                 assert.ok(frame.candidateMarks.every(mark => mark.tone === 'locked' || mark.tone === 'possible'));
                 break;
             case 'color-chain-remove':
+                assert.equal(frame.guideUnits, undefined);
+                assert.equal(frame.guideStrokeTone, undefined);
                 assert.equal(frame.eliminationStyle, 'candidate-slash');
                 assert.equal(frame.fillEliminatedCells, true);
                 assert.ok(frame.candidateMarks.every(mark => mark.tone === 'eliminated'));
@@ -791,6 +801,8 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                 }
                 break;
             case 'color-chain-answer':
+                assert.equal(frame.guideUnits, undefined);
+                assert.equal(frame.guideStrokeTone, undefined);
                 assertTargetFocus(frame);
                 assert.equal(frame.title, plan.derivedResult === 'naked'
                     ? `Only ${targetValue} remains`
@@ -2779,6 +2791,14 @@ test('keeps Color Trap and Color Wrap previews causal, focused, and mutation-fre
             grid: COLOR_CHAIN_PUZZLE, solution: COLOR_CHAIN_SOLUTION,
             target: { row: 4, col: 7, value: 5 }, nodeCount: 4,
             colored: ['4:0:locked', '7:2:locked', '7:7:possible', '8:0:possible'],
+            startGuide: { kind: 'column', index: 0 },
+            startMarks: [
+                { row: 4, col: 0, value: 8, tone: 'locked' },
+                { row: 8, col: 0, value: 8, tone: 'possible' },
+            ],
+            ruleGuides: [{ kind: 'row', index: 4 }, { kind: 'column', index: 7 }],
+            ruleTitle: 'This 8 sees both groups',
+            ruleBody: 'One group must be true, so this candidate is blocked either way.',
             ruleSpotlights: [{ row: 4, col: 7 }],
             ruleNoteSets: [{
                 row: 4, col: 7,
@@ -2791,6 +2811,14 @@ test('keeps Color Trap and Color Wrap previews causal, focused, and mutation-fre
             grid: COLOR_CHAIN_WRAP_PUZZLE, solution: COLOR_CHAIN_WRAP_SOLUTION,
             target: { row: 5, col: 3, value: 7 }, nodeCount: 5,
             colored: ['5:0:locked', '6:2:locked', '5:3:possible', '6:3:possible', '7:0:possible'],
+            startGuide: { kind: 'row', index: 5 },
+            startMarks: [
+                { row: 5, col: 0, value: 8, tone: 'locked' },
+                { row: 5, col: 3, value: 8, tone: 'possible' },
+            ],
+            ruleGuides: [{ kind: 'column', index: 3 }],
+            ruleTitle: 'Two square 8s share this column',
+            ruleBody: 'They cannot both be true, so every square 8 is false.',
             ruleSpotlights: [{ row: 5, col: 3 }, { row: 6, col: 3 }],
             ruleNoteSets: undefined,
             delta: { row: 5, col: 3, beforeCandidates: [7, 8], removedValues: [8], afterCandidates: [7] },
@@ -2817,17 +2845,30 @@ test('keeps Color Trap and Color Wrap previews causal, focused, and mutation-fre
         ]);
         assert.deepEqual(result.plan.candidateEliminations, [fixture.delta]);
         assertPresentationContract(result.plan, fixture.preview);
-        const [, links, rule, remove] = result.plan.frames;
+        const [start, links, rule, remove, answer] = result.plan.frames;
+        assert.deepEqual(start.guideUnits, [fixture.startGuide]);
+        assert.equal(start.guideStrokeTone, 'soft');
+        assert.deepEqual(start.candidateMarks, fixture.startMarks);
         assert.equal(links.candidateMarks.length, fixture.nodeCount);
+        assert.equal(links.title, 'Follow the alternating chain');
+        assert.equal(links.body, 'The possible 8s alternate between circles and squares.');
+        assert.deepEqual(links.spotlightCells, []);
+        assert.equal(links.guideUnits, undefined);
+        assert.equal(links.guideStrokeTone, undefined);
         assert.deepEqual(links.candidateMarks.map(mark => (
             `${mark.row}:${mark.col}:${mark.tone}`
         )), fixture.colored);
         assert.deepEqual(rule.candidateMarks, links.candidateMarks);
+        assert.deepEqual(rule.guideUnits, fixture.ruleGuides);
+        assert.equal(rule.guideStrokeTone, 'normal');
+        assert.equal(rule.title, fixture.ruleTitle);
+        assert.equal(rule.body, fixture.ruleBody);
         assert.deepEqual(rule.spotlightCells, fixture.ruleSpotlights);
         assert.deepEqual(rule.candidateNoteSets, fixture.ruleNoteSets);
-        if (fixture.preview === 'color-chain') {
-            assert.equal(rule.title, 'This 8 sees both groups');
-        }
+        assert.equal(remove.guideUnits, undefined);
+        assert.equal(remove.guideStrokeTone, undefined);
+        assert.equal(answer.guideUnits, undefined);
+        assert.equal(answer.guideStrokeTone, undefined);
         assert.deepEqual(remove.candidateMarks, [{
             row: fixture.delta.row, col: fixture.delta.col,
             value: fixture.delta.removedValues[0], tone: 'eliminated',
