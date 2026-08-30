@@ -2703,6 +2703,10 @@ test('keeps Color Trap and Color Wrap previews causal, focused, and mutation-fre
             target: { row: 4, col: 7, value: 5 }, nodeCount: 4,
             colored: ['4:0:locked', '7:2:locked', '7:7:possible', '8:0:possible'],
             ruleSpotlights: [{ row: 4, col: 7 }],
+            ruleNoteSets: [{
+                row: 4, col: 7,
+                marks: [{ value: 8, tone: 'possible' }],
+            }],
             delta: { row: 4, col: 7, beforeCandidates: [5, 8], removedValues: [8], afterCandidates: [5] },
         },
         {
@@ -2711,6 +2715,7 @@ test('keeps Color Trap and Color Wrap previews causal, focused, and mutation-fre
             target: { row: 5, col: 3, value: 7 }, nodeCount: 5,
             colored: ['5:0:locked', '6:2:locked', '5:3:possible', '6:3:possible', '7:0:possible'],
             ruleSpotlights: [{ row: 5, col: 3 }, { row: 6, col: 3 }],
+            ruleNoteSets: undefined,
             delta: { row: 5, col: 3, beforeCandidates: [7, 8], removedValues: [8], afterCandidates: [7] },
         },
     ];
@@ -2742,6 +2747,10 @@ test('keeps Color Trap and Color Wrap previews causal, focused, and mutation-fre
         )), fixture.colored);
         assert.deepEqual(rule.candidateMarks, links.candidateMarks);
         assert.deepEqual(rule.spotlightCells, fixture.ruleSpotlights);
+        assert.deepEqual(rule.candidateNoteSets, fixture.ruleNoteSets);
+        if (fixture.preview === 'color-chain') {
+            assert.equal(rule.title, 'This 8 sees both groups');
+        }
         assert.deepEqual(remove.candidateMarks, [{
             row: fixture.delta.row, col: fixture.delta.col,
             value: fixture.delta.removedValues[0], tone: 'eliminated',

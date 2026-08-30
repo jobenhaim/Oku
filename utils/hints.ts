@@ -3121,6 +3121,13 @@ const makeSimpleColoringPlan = (
         value: match.value,
         tone: 'eliminated',
     }));
+    const trapFocusNoteSets: HintCandidateNoteSet[] = match.rule === 'trap'
+        ? focusEliminations.map(elimination => ({
+            row: elimination.row,
+            col: elimination.col,
+            marks: [{ value: match.value, tone: 'possible' }],
+        }))
+        : [];
     const answerMark: HintCandidateMark = { ...match.target, tone: 'answer' };
     const linkGuides = uniqueColoringGuides(causalLinks);
     const focusCoordinate = focusEliminations[0];
@@ -3218,7 +3225,7 @@ const makeSimpleColoringPlan = (
                 id: 'color-chain-rule',
                 techniqueLabel: 'Color chain',
                 title: match.rule === 'trap'
-                    ? `${focusEliminations.length === 1 ? 'This' : 'Each'} ${match.value} sees a circle and a square`
+                    ? `${focusEliminations.length === 1 ? 'This' : 'Each'} ${match.value} sees both groups`
                     : `Two square ${match.value}s share this ${unitName(wrapConflictUnit!)}`,
                 body: match.rule === 'trap'
                     ? `One group must be true, so ${focusEliminations.length === 1 ? 'this candidate is' : 'these candidates are'} blocked either way.`
@@ -3232,6 +3239,7 @@ const makeSimpleColoringPlan = (
                 guideUnits: ruleGuides,
                 guideStrokeTone: 'soft',
                 candidateMarks: coloredMarks,
+                candidateNoteSets: match.rule === 'trap' ? trapFocusNoteSets : undefined,
                 dimUnrelated: true,
             },
             {
