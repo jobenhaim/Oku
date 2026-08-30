@@ -973,6 +973,15 @@ html, body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Short phones have no spare vertical space between the grid and Hint sheet.
+   Keep the compact technique label on the sheet edge instead of projecting it
+   upward over the last Sudoku row. */
+@media (max-height: 700px) {
+  .hint-technique-pill {
+    transform: translate(-50%, -50%) !important;
+  }
+}
+
 .hint-digit-strip__item {
   display: flex;
   min-width: 0;

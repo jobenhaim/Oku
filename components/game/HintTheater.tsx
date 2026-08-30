@@ -108,12 +108,12 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
             aria-labelledby="hint-theater-title"
             aria-describedby={frame.accessibleDetail ? 'hint-theater-body hint-theater-detail' : 'hint-theater-body'}
         >
-            <div className="absolute left-1/2 top-0 z-10 flex h-[42px] -translate-x-1/2 -translate-y-[calc(100%+10px)] items-center justify-center whitespace-nowrap rounded-full border border-blue-200/80 dark:border-blue-800/80 bg-white/[0.98] dark:bg-stone-900/[0.98] px-4">
+            <div className="hint-technique-pill absolute left-1/2 top-0 z-10 flex h-7 md:h-9 -translate-x-1/2 -translate-y-[calc(100%+4px)] md:-translate-y-[calc(100%+6px)] items-center justify-center whitespace-nowrap rounded-full border border-blue-200/80 dark:border-blue-800/80 bg-white/[0.98] dark:bg-stone-900/[0.98] px-3 md:px-4">
                 <div className="grid items-center justify-items-center">
                     {plan.frames.map(candidateFrame => (
                         <span
                             key={`label-measure-${candidateFrame.id}`}
-                            className="invisible pointer-events-none col-start-1 row-start-1 -translate-y-px text-[10px] md:text-xs font-bold uppercase leading-none tracking-[0.16em]"
+                            className="invisible pointer-events-none col-start-1 row-start-1 -translate-y-px text-[9px] md:text-[10px] font-bold uppercase leading-none tracking-[0.14em]"
                             aria-hidden="true"
                         >
                             {candidateFrame.techniqueLabel ?? plan.techniqueLabel}
@@ -126,7 +126,7 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: reduceMotion ? 0 : 0.14 }}
-                            className="col-start-1 row-start-1 -translate-y-px text-[10px] md:text-xs font-bold uppercase leading-none tracking-[0.16em] text-blue-600 dark:text-blue-300"
+                            className="col-start-1 row-start-1 -translate-y-px text-[9px] md:text-[10px] font-bold uppercase leading-none tracking-[0.14em] text-blue-600 dark:text-blue-300"
                         >
                             {techniqueLabel}
                         </motion.span>
@@ -134,7 +134,7 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
                 </div>
             </div>
 
-            <div className="hint-theater-card max-h-[42dvh] overflow-y-auto rounded-t-[2rem] rounded-b-none border-x border-t border-stone-200/90 dark:border-stone-700/80 bg-white/[0.99] dark:bg-stone-900/[0.99] px-5 md:px-7 pt-5 md:pt-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <div className="hint-theater-card max-h-[42dvh] overflow-y-auto rounded-t-[2rem] rounded-b-none border-x border-t border-stone-200/90 dark:border-stone-700/80 bg-white/[0.99] dark:bg-stone-900/[0.99] px-5 md:px-7 pt-4 md:pt-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
                 <div className="flex items-center justify-center gap-1.5" role="status" aria-label={`Step ${frameIndex + 1} of ${plan.frames.length}`}>
                     {plan.frames.map((item, index) => (
                         <span
@@ -151,18 +151,18 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
                     ))}
                 </div>
 
-                <div className="mt-4 text-center">
-                    <div className="grid min-h-[88px] md:min-h-[100px]">
+                <div className="mt-3 text-center">
+                    <div className="grid min-h-[80px] md:min-h-[94px]">
                         {plan.frames.map(candidateFrame => (
                             <div
                                 key={`measure-${candidateFrame.id}`}
                                 className="invisible pointer-events-none col-start-1 row-start-1 flex flex-col justify-center"
                                 aria-hidden="true"
                             >
-                                <div className="text-[1.45rem] md:text-[1.7rem] font-bold tracking-tight leading-tight">
+                                <div className="text-[1.35rem] md:text-[1.6rem] font-bold tracking-tight leading-tight">
                                     {candidateFrame.title}
                                 </div>
-                                <div className="mt-2 text-sm md:text-base font-medium leading-relaxed">
+                                <div className="mt-1.5 text-sm md:text-base font-medium leading-relaxed">
                                     {candidateFrame.body}
                                 </div>
                             </div>
@@ -179,10 +179,10 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
                                 aria-live="polite"
                                 aria-atomic="true"
                             >
-                                <h2 id="hint-theater-title" className="text-[1.45rem] md:text-[1.7rem] font-bold text-t-primary tracking-tight leading-tight">
+                                <h2 id="hint-theater-title" className="text-[1.35rem] md:text-[1.6rem] font-bold text-t-primary tracking-tight leading-tight">
                                     {frame.title}
                                 </h2>
-                                <p id="hint-theater-body" className="mt-2 text-sm md:text-base font-medium leading-relaxed text-t-secondary">
+                                <p id="hint-theater-body" className="mt-1.5 text-sm md:text-base font-medium leading-relaxed text-t-secondary">
                                     {frame.body}
                                 </p>
                                 {frame.accessibleDetail && (
@@ -196,7 +196,7 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
 
                     {stripRemainingDigit !== undefined && (
                         <div
-                            className={`hint-digit-strip mt-3 ${visibleRemainingDigit === undefined ? 'invisible' : ''}`}
+                            className={`hint-digit-strip mt-2.5 ${visibleRemainingDigit === undefined ? 'invisible' : ''}`}
                             role={visibleRemainingDigit === undefined ? undefined : 'img'}
                             aria-hidden={visibleRemainingDigit === undefined ? true : undefined}
                             aria-label={visibleRemainingDigit === undefined
@@ -219,12 +219,12 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
                     )}
                 </div>
 
-                <div className="mt-4 flex items-center gap-2.5">
+                <div className="mt-3 flex items-center gap-2.5">
                     {frameIndex > 0 && (
                         <button
                             type="button"
                             onClick={() => { sounds.playClick(); onFrameIndexChange(frameIndex - 1); }}
-                            className="h-[52px] px-5 rounded-2xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 font-bold active:scale-[0.98] transition"
+                            className="h-12 md:h-[52px] px-5 rounded-2xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 font-bold active:scale-[0.98] transition"
                         >
                             Back
                         </button>
@@ -233,7 +233,7 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
                         type="button"
                         data-dialog-autofocus
                         onClick={advance}
-                        className="h-[52px] flex-1 rounded-2xl bg-stone-900 dark:bg-blue-600 text-white font-bold active:scale-[0.98] transition flex items-center justify-center gap-2"
+                        className="h-12 md:h-[52px] flex-1 rounded-2xl bg-stone-900 dark:bg-blue-600 text-white font-bold active:scale-[0.98] transition flex items-center justify-center gap-2"
                     >
                         {isLastFrame ? `Place ${plan.target.value}` : 'Next'}
                         {!isLastFrame && <Icons.Next className="w-4 h-4" />}

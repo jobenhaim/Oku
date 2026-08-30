@@ -290,7 +290,7 @@ export const SOUND_PACKS = [
 ];
 
 export const SKILLS = [
-    { id: 'skill-nudge', name: 'Light', cost: 100, icon: Icons.Nudge, class: 'text-amber-500', bgClass: 'bg-amber-50/60 dark:bg-amber-900/10', description: 'Passive skill. Highlights a helpful last empty cell based on your inputs.' },
+    { id: 'skill-nudge', name: 'Light', cost: 100, icon: Icons.Nudge, class: 'text-amber-500', bgClass: 'bg-amber-50/60 dark:bg-amber-900/10', description: 'Highlights the last empty cell in a row, column, or box.' },
     { id: 'skill-focus', name: 'Focus', cost: 200, icon: Icons.Focus, class: '', bgClass: 'bg-blue-50/60 dark:bg-blue-900/10', description: 'Active skill. Temporarily hides every note for a clearer view.' },
     { id: 'skill-scribe', name: 'Guard', cost: 200, icon: Icons.Guard, class: '', bgClass: 'bg-blue-50/60 dark:bg-blue-900/10', description: 'Passive skill. Blocks notes that conflict with your current board.' },
     { id: 'skill-scan', name: 'Scan', cost: 200, icon: Icons.Scan, class: 'text-red-500', bgClass: 'bg-red-50/60 dark:bg-red-900/10', description: 'Spot errors instantly. Includes 3 free uses per puzzle.' },
