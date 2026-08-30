@@ -378,7 +378,7 @@ const makeNakedSinglePlan = (
         const name = unitName(unit);
         return {
             technique: 'nakedSingle',
-            techniqueLabel: 'Last number',
+            techniqueLabel: 'Full house',
             target,
             frames: [
                 {
@@ -426,7 +426,7 @@ const makeNakedSinglePlan = (
 
     return {
         technique: 'nakedSingle',
-        techniqueLabel: 'One number fits',
+        techniqueLabel: 'Naked single',
         target,
         frames: [
             {
@@ -440,7 +440,7 @@ const makeNakedSinglePlan = (
             {
                 id: 'naked-rule-out',
                 title: `Only ${value} can fit`,
-                body: 'The gray numbers are blocked by its row, column, or box.',
+                body: "Each gray candidate is blocked by a green number in this cell's row, column, or box.",
                 spotlightCells: [{ row, col }],
                 guideUnits: [
                     { kind: 'row', index: row },
@@ -531,14 +531,14 @@ const makeHiddenSinglePlan = (
 
     return {
         technique: 'hiddenSingle',
-        techniqueLabel: 'Only one place',
+        techniqueLabel: 'Hidden single',
         target,
         frames: [
             {
                 id: 'hidden-look',
                 title: `Look at this ${unitName(unit)}`,
                 body: `${value} is missing from this ${unitName(unit)}.`,
-                accessibleDetail: `${describeCoordinate(target)} is the only possible place for ${value} in this ${unitName(unit)}.`,
+                accessibleDetail: `The highlighted ${unitName(unit)} does not contain ${value}.`,
                 spotlightCells: [],
                 unitCells: unit.cells,
                 dimUnrelated: true,
@@ -546,7 +546,7 @@ const makeHiddenSinglePlan = (
             {
                 id: 'hidden-blocked',
                 title: `Only one place for ${value}`,
-                body: `The green ${value}s block every gray ×.`,
+                body: `The green ${value}s rule out every gray ${value}.`,
                 accessibleDetail: `Existing ${value}s block ${describeCoordinates(otherEmptyCells)}, leaving ${describeCoordinate(target)} as the only place for ${value} in this ${unitName(unit)}.`,
                 spotlightCells: [{ row, col }],
                 contextCells: unit.cells,
@@ -554,6 +554,7 @@ const makeHiddenSinglePlan = (
                 candidateMarks: [
                     ...otherEmptyCells.map(cell => ({ ...cell, value, tone: 'eliminated' as const })),
                 ],
+                eliminationStyle: 'candidate-slash',
                 dimUnrelated: true,
             },
             {
@@ -854,10 +855,13 @@ const makeLockedCandidatePlan = (
     const eliminatedCellPhrase = causalEliminatedMarks.length === 1
         ? 'the shaded cell'
         : 'the shaded cells';
+    const nakedEliminatedCellPhrase = causalEliminatedMarks.length === 1
+        ? 'the outlined cell'
+        : 'the outlined cells';
 
     return {
         technique: 'lockedCandidate',
-        techniqueLabel: 'Locked candidate',
+        techniqueLabel: 'Locked candidates',
         target: match.target,
         derivedResult: match.resultKind,
         frames: [
@@ -878,16 +882,18 @@ const makeLockedCandidatePlan = (
                     : `These ${match.value}s share this ${intersectingName}`,
                 body: match.resultKind === 'hidden'
                     ? `The locked ${match.value}s rule out ${match.value} in ${eliminatedCellPhrase}.`
-                    : `So ${match.value} cannot go in ${eliminatedCellPhrase}.`,
+                    : `So ${match.value} cannot go in ${nakedEliminatedCellPhrase}.`,
                 accessibleDetail: `Candidate ${match.value} is eliminated from ${describeCoordinates(causalEliminatedMarks)} because every possible ${match.value} in the ${sourceName} lies in this ${intersectingName}.`,
-                spotlightCells: [],
+                spotlightCells: match.resultKind === 'naked'
+                    ? [{ row: match.target.row, col: match.target.col }]
+                    : [],
                 unitCells: removeFocusUnit.cells,
                 unitStrokeTone: match.resultKind === 'naked' ? 'soft' : undefined,
                 contextCells: match.resultKind === 'naked' ? match.intersectingUnit.cells : undefined,
                 guideUnits: match.resultKind === 'naked' ? [intersectingGuide] : undefined,
                 candidateMarks: removeCandidateMarks,
                 eliminationStyle: 'candidate-slash',
-                fillEliminatedCells: true,
+                fillEliminatedCells: match.resultKind === 'hidden',
                 candidateTransition: match.resultKind === 'naked'
                     ? {
                         row: match.target.row,
@@ -901,6 +907,7 @@ const makeLockedCandidatePlan = (
             },
             {
                 id: 'locked-answer',
+                techniqueLabel: match.resultKind === 'naked' ? 'Naked single' : 'Hidden single',
                 title: match.resultKind === 'naked'
                     ? `Only ${match.target.value} remains`
                     : `Only one place remains for ${match.target.value}`,
@@ -1235,6 +1242,7 @@ const makeNakedPairPlan = (
             },
             {
                 id: 'pair-answer',
+                techniqueLabel: match.resultKind === 'naked' ? 'Naked single' : 'Hidden single',
                 title: match.resultKind === 'naked'
                     ? `Only ${match.target.value} remains`
                     : `Only one place remains for ${match.target.value}`,
@@ -1505,12 +1513,12 @@ const makeHiddenPairPlan = (
                 candidateNoteSets: afterNoteSets,
                 candidateMarks: fillMarks,
                 eliminationStyle: 'candidate-slash',
-                fillEliminatedCells: true,
+                fillEliminatedCells: false,
                 dimUnrelated: true,
             },
             {
                 id: 'hidden-pair-answer',
-                techniqueLabel: 'Only one place',
+                techniqueLabel: 'Hidden single',
                 title: `Only one place remains for ${match.target.value}`,
                 body: `Every gray ${match.target.value} is blocked, so ${match.target.value} belongs in the green cell.`,
                 accessibleDetail: `The hidden pair rules out ${describeCoordinates(causalMarks)}.${preBlockedDetail} That leaves ${describeCoordinate(match.target)}.`,
@@ -1856,8 +1864,8 @@ const makeNakedTriplePlan = (
             {
                 id: 'triple-answer',
                 techniqueLabel: match.resultKind === 'naked'
-                    ? 'One number fits'
-                    : 'Only one place',
+                    ? 'Naked single'
+                    : 'Hidden single',
                 title: match.resultKind === 'naked'
                     ? `Only ${match.target.value} remains`
                     : `Only one place remains for ${match.target.value}`,
@@ -2221,7 +2229,7 @@ const makeXWingPlan = (
                 techniqueLabel: 'X-Wing',
                 title: `So ${match.value} cannot go elsewhere in these ${coverName}`,
                 body: match.resultKind === 'naked'
-                    ? `Cross out the gray ${match.value}s. Only ${match.target.value} remains in the outlined cell.`
+                    ? `Cross out the slashed ${match.value}s. Only ${match.target.value} remains in the outlined cell.`
                     : `Cross out the gray ${match.value}s. That leaves one place for ${match.target.value}.`,
                 accessibleDetail: `The four corner candidates force ${match.value} into both highlighted ${coverName}, eliminating ${match.value} from ${describeCoordinates(match.eliminations)}.`,
                 spotlightCells: match.resultKind === 'naked'
@@ -2241,14 +2249,14 @@ const makeXWingPlan = (
                     }
                     : undefined,
                 eliminationStyle: 'candidate-slash',
-                fillEliminatedCells: true,
+                fillEliminatedCells: match.resultKind === 'hidden',
                 dimUnrelated: true,
             },
             {
                 id: 'x-wing-answer',
                 techniqueLabel: match.resultKind === 'naked'
-                    ? 'One number fits'
-                    : 'Only one place',
+                    ? 'Naked single'
+                    : 'Hidden single',
                 title: match.resultKind === 'naked'
                     ? `Only ${match.target.value} remains`
                     : `Only one place remains for ${match.target.value}`,
@@ -2613,14 +2621,16 @@ const makeXYWingPlan = (
                 techniqueLabel: 'XY-Wing',
                 title: `Either way, one wing must be ${match.z}`,
                 body: match.resultKind === 'naked'
-                    ? `The shaded cell sees both wings, so ${match.z} cannot go here. Cross it out; only ${match.target.value} remains.`
+                    ? `The outlined cell sees both wings, so ${match.z} cannot go here. Cross it out; only ${match.target.value} remains.`
                     : match.eliminations.length === 1
                         ? `The ${match.z} in the shaded cell sees both wings, so cross it out.`
                         : `Every shaded ${match.z} sees both wings, so cross them out.`,
                 accessibleDetail: match.eliminations.length === 1
                     ? `If the pivot is ${match.x}, the ${match.x}/${match.z} wing must be ${match.z}. If the pivot is ${match.y}, the ${match.y}/${match.z} wing must be ${match.z}. Therefore the ${match.z} at ${describeCoordinate(match.eliminations[0])} can be crossed out because that cell sees both wings.`
                     : `If the pivot is ${match.x}, the ${match.x}/${match.z} wing must be ${match.z}. If the pivot is ${match.y}, the ${match.y}/${match.z} wing must be ${match.z}. Therefore ${match.z} can be crossed out at ${describeCoordinates(match.eliminations)} because those cells see both wings.`,
-                spotlightCells: [match.xWing, match.yWing],
+                spotlightCells: match.resultKind === 'naked'
+                    ? [{ row: match.target.row, col: match.target.col }]
+                    : [match.xWing, match.yWing],
                 guideUnits: removalGuideUnits,
                 guideStrokeTone: 'soft',
                 candidateNoteSets: removalFrameNotes,
@@ -2635,16 +2645,18 @@ const makeXYWingPlan = (
                     }
                     : undefined,
                 eliminationStyle: 'candidate-slash',
-                fillEliminatedCells: true,
+                fillEliminatedCells: match.resultKind === 'hidden',
                 dimUnrelated: true,
             },
             {
                 id: 'xy-wing-answer',
-                techniqueLabel: match.resultKind === 'naked' ? 'One number fits' : 'Only one place',
+                techniqueLabel: match.resultKind === 'naked' ? 'Naked single' : 'Hidden single',
                 title: match.resultKind === 'naked'
                     ? `Only ${match.target.value} remains`
                     : `Only one place remains for ${match.target.value}`,
-                body: `${match.target.value} belongs in this cell.`,
+                body: match.resultKind === 'naked'
+                    ? `${match.target.value} belongs in this cell.`
+                    : `Every gray ${match.target.value} is blocked, so ${match.target.value} belongs in the green cell.`,
                 accessibleDetail: match.resultKind === 'naked'
                     ? `The XY-Wing removes ${match.z} from ${describeCoordinate(match.target)}, leaving ${match.target.value}.`
                     : `The XY-Wing leaves ${describeCoordinate(match.target)} as the only place for ${match.target.value} in this ${unitName(match.resultUnit)}.`,
@@ -3217,20 +3229,24 @@ const makeSimpleColoringPlan = (
     const guideDescription = linkGuides.map(guide => (
         `${guide.kind === 'box' ? '3 × 3 box' : guide.kind} ${guide.index + 1}`
     )).join(', ');
+    const focusDescription = focusEliminations.map(describeCoordinate).join(' and ');
+    const wrapConflictDescription = (match.conflictCells ?? [])
+        .map(describeCoordinate)
+        .join(' and ');
 
     return {
         technique: 'simpleColoring',
-        techniqueLabel: 'Color chain',
+        techniqueLabel: 'Simple coloring',
         target: match.target,
         derivedResult: match.resultKind,
         candidateEliminations: focusEliminations.map(cloneCandidateDelta),
         frames: [
             {
                 id: 'color-chain-start',
-                techniqueLabel: 'Color chain',
+                techniqueLabel: 'Simple coloring',
                 title: `Only two places for ${match.value}`,
                 body: `One must be ${match.value}. We mark one with a circle and one with a square.`,
-                accessibleDetail: `${unitName(startLink.unit)} ${startLink.unit.index + 1} has exactly two places for ${match.value}: ${describeCoordinate(startLink.first)} and ${describeCoordinate(startLink.second)}. The circle and square are opposite groups; neither is assumed true yet.`,
+                accessibleDetail: `This ${unitName(startLink.unit)} has exactly two places for ${match.value}: ${describeCoordinate(startLink.first)} and ${describeCoordinate(startLink.second)}. The circle and square are opposite groups; neither is assumed true yet.`,
                 spotlightCells: [],
                 guideUnits: [{ kind: startLink.unit.kind, index: startLink.unit.index }],
                 guideStrokeTone: 'soft',
@@ -3239,7 +3255,7 @@ const makeSimpleColoringPlan = (
             },
             {
                 id: 'color-chain-links',
-                techniqueLabel: 'Color chain',
+                techniqueLabel: 'Simple coloring',
                 title: 'Follow the alternating chain',
                 body: `The possible ${match.value}s alternate between circles and squares.`,
                 accessibleDetail: `The shortest relevant chain alternates circle and square candidates at ${describeCoordinates(causalColorCells.flat())}. Its strong links are in ${guideDescription}.`,
@@ -3249,7 +3265,7 @@ const makeSimpleColoringPlan = (
             },
             {
                 id: 'color-chain-rule',
-                techniqueLabel: 'Color chain',
+                techniqueLabel: 'Simple coloring',
                 title: match.rule === 'trap'
                     ? `${focusEliminations.length === 1 ? 'This' : 'Each'} ${match.value} sees both groups`
                     : `Two square ${match.value}s share this ${unitName(wrapConflictUnit!)}`,
@@ -3257,8 +3273,10 @@ const makeSimpleColoringPlan = (
                     ? `One group must be true, so ${focusEliminations.length === 1 ? 'this candidate is' : 'these candidates are'} blocked either way.`
                     : `They cannot both be true, so every square ${match.value} is false.`,
                 accessibleDetail: match.rule === 'trap'
-                    ? `${describeCoordinates(focusEliminations)} ${focusEliminations.length === 1 ? 'sees' : 'each see'} one circle and one square ${match.value}. One of those opposite groups must be true, so ${focusEliminations.length === 1 ? 'this outside candidate is' : 'these outside candidates are'} false.`
-                    : `${describeCoordinates(match.conflictCells ?? [])} are both square ${match.value}s and see each other in ${unitName(wrapConflictUnit!)} ${wrapConflictUnit!.index + 1}. Therefore the square group is false.`,
+                    ? focusEliminations.length === 1
+                        ? `The ${match.value} at ${describeCoordinate(focusEliminations[0])} sees one circle and one square ${match.value}. One of those opposite groups must be true, so this outside candidate is false.`
+                        : `The ${match.value}s at ${focusDescription} each see one circle and one square ${match.value}. One of those opposite groups must be true, so these outside candidates are false.`
+                    : `The square ${match.value}s at ${wrapConflictDescription} see each other in ${unitName(wrapConflictUnit!)} ${wrapConflictUnit!.index + 1}. Therefore the square group is false.`,
                 spotlightCells: match.rule === 'wrap'
                     ? match.conflictCells ?? []
                     : focusEliminations.map(({ row, col }) => ({ row, col })),
@@ -3270,7 +3288,7 @@ const makeSimpleColoringPlan = (
             },
             {
                 id: 'color-chain-remove',
-                techniqueLabel: 'Color chain',
+                techniqueLabel: 'Simple coloring',
                 title: match.resultKind === 'naked'
                     ? `Cross out ${match.value}`
                     : `Now ${match.target.value} has one place in this ${unitName(match.resultUnit)}`,
@@ -3293,16 +3311,18 @@ const makeSimpleColoringPlan = (
                     }
                     : undefined,
                 eliminationStyle: 'candidate-slash',
-                fillEliminatedCells: true,
+                fillEliminatedCells: match.resultKind === 'hidden',
                 dimUnrelated: true,
             },
             {
                 id: 'color-chain-answer',
-                techniqueLabel: match.resultKind === 'naked' ? 'One number fits' : 'Only one place',
+                techniqueLabel: match.resultKind === 'naked' ? 'Naked single' : 'Hidden single',
                 title: match.resultKind === 'naked'
                     ? `Only ${match.target.value} remains`
                     : `Only one place remains for ${match.target.value}`,
-                body: `${match.target.value} belongs in this cell.`,
+                body: match.resultKind === 'naked'
+                    ? `${match.target.value} belongs in this cell.`
+                    : `Every gray ${match.target.value} is blocked, so ${match.target.value} belongs in the green cell.`,
                 accessibleDetail: match.resultKind === 'naked'
                     ? `Crossing out ${match.value} leaves only ${match.target.value} at ${describeCoordinate(match.target)}.`
                     : `The color-chain eliminations leave ${describeCoordinate(match.target)} as the only place for ${match.target.value} in ${unitName(match.resultUnit)} ${match.resultUnit.index + 1}.`,
@@ -3768,18 +3788,18 @@ const makeMultiStepPlan = (
                 value: pattern.value,
                 tone: 'eliminated',
             }));
-            const victim = eliminations.length === 1 ? 'the shaded cell' : 'the shaded cells';
             const finalTargetDelta = result.placement.resultKind === 'naked' && isFinalDeduction
                 ? eliminations.find(elimination => (
                     elimination.row === result.placement.target.row
                     && elimination.col === result.placement.target.col
                 ))
                 : undefined;
+            const victim = eliminations.length === 1 ? 'the shaded cell' : 'the shaded cells';
 
             frames.push(
                 {
                     id: `chain-${stepNumber}-locked-find`,
-                    techniqueLabel: 'Locked candidate',
+                    techniqueLabel: 'Locked candidates',
                     title: index === 0
                         ? `Only ${placeCount} places for ${pattern.value}`
                         : `Now only ${placeCount} places for ${pattern.value}`,
@@ -3794,11 +3814,11 @@ const makeMultiStepPlan = (
                 },
                 {
                     id: `chain-${stepNumber}-locked-remove`,
-                    techniqueLabel: 'Locked candidate',
+                    techniqueLabel: 'Locked candidates',
                     title: `These ${pattern.value}s share this ${intersectingName}`,
                     body: isFinalDeduction
                         ? result.placement.resultKind === 'naked'
-                            ? `Cross out ${pattern.value} in ${victim}. Only ${result.placement.target.value} remains.`
+                            ? `Cross out the slashed ${pattern.value}s. Only ${result.placement.target.value} remains in the outlined cell.`
                             : `Cross out ${pattern.value} in ${victim}. Now ${result.placement.target.value} has one place in this ${unitName(result.placement.resultUnit)}.`
                         : `So ${pattern.value} cannot go in ${victim}.`,
                     accessibleDetail: `The locked ${pattern.value}s eliminate ${pattern.value} from ${describeCoordinates(eliminations)}.`,
@@ -3823,7 +3843,7 @@ const makeMultiStepPlan = (
                         }
                         : undefined,
                     eliminationStyle: 'candidate-slash',
-                    fillEliminatedCells: true,
+                    fillEliminatedCells: !finalTargetDelta,
                     dimUnrelated: true,
                 },
             );
@@ -3856,7 +3876,9 @@ const makeMultiStepPlan = (
             const removedValues = [...new Set(eliminations.flatMap(elimination => (
                 elimination.removedValues
             )))].sort((left, right) => left - right);
-            const victim = eliminations.length === 1 ? 'the shaded cell' : 'the shaded cells';
+            const removalInstruction = removedValues.length === 1
+                ? `Cross out the gray ${removedValues[0]}`
+                : `Cross out the gray notes for ${formatCandidateValues(removedValues)}`;
 
             frames.push(
                 {
@@ -3881,9 +3903,9 @@ const makeMultiStepPlan = (
                     title: `The pair reserves ${firstValue} and ${secondValue}`,
                     body: isFinalDeduction
                         ? result.placement.resultKind === 'naked'
-                            ? `Cross out ${formatCandidateValues(removedValues)} in ${victim}. Only ${result.placement.target.value} remains in the outlined cell.`
-                            : `Cross out ${formatCandidateValues(removedValues)} in ${victim}. Now ${result.placement.target.value} has one place in this ${unitName(result.placement.resultUnit)}.`
-                        : `Cross out ${formatCandidateValues(removedValues)} in ${victim}.`,
+                            ? `${removalInstruction}. Only ${result.placement.target.value} remains in the outlined cell.`
+                            : `${removalInstruction}. Now ${result.placement.target.value} has one place in this ${unitName(result.placement.resultUnit)}.`
+                        : `${removalInstruction}.`,
                     accessibleDetail: `The pair eliminates ${formatCandidateValues(removedValues)} from ${describeCoordinates(eliminations)}.`,
                     spotlightCells: isFinalDeduction && result.placement.resultKind === 'naked'
                         ? [{ row: result.placement.target.row, col: result.placement.target.col }]
@@ -3893,7 +3915,7 @@ const makeMultiStepPlan = (
                     candidateNoteSets: [...pairNoteSets, ...eliminatedNoteSets],
                     candidateMarks: eliminatedCellMarks,
                     eliminationStyle: 'candidate-slash',
-                    fillEliminatedCells: true,
+                    fillEliminatedCells: false,
                     dimUnrelated: true,
                 },
             );
@@ -3948,7 +3970,7 @@ const makeMultiStepPlan = (
                     title: `So ${pattern.value} cannot go elsewhere in these ${coverName}`,
                     body: isFinalDeduction
                         ? result.placement.resultKind === 'naked'
-                            ? `Cross out the gray ${pattern.value}s. Only ${result.placement.target.value} remains in the outlined cell.`
+                            ? `Cross out the slashed ${pattern.value}s. Only ${result.placement.target.value} remains in the outlined cell.`
                             : `Cross out the gray ${pattern.value}s. Now ${result.placement.target.value} has one place in this ${unitName(result.placement.resultUnit)}.`
                         : `Cross out the gray ${pattern.value}s.`,
                     accessibleDetail: `The X-Wing eliminates ${pattern.value} from ${describeCoordinates(eliminations)}.`,
@@ -3972,7 +3994,7 @@ const makeMultiStepPlan = (
                         }
                         : undefined,
                     eliminationStyle: 'candidate-slash',
-                    fillEliminatedCells: true,
+                    fillEliminatedCells: !finalTargetDelta,
                     dimUnrelated: true,
                 },
             );
@@ -4052,7 +4074,7 @@ const makeMultiStepPlan = (
                         }
                         : undefined,
                     eliminationStyle: 'candidate-slash',
-                    fillEliminatedCells: true,
+                    fillEliminatedCells: !finalTargetDelta,
                     dimUnrelated: true,
                 },
             );
@@ -4110,9 +4132,9 @@ const makeMultiStepPlan = (
             const removedValues = [...new Set(displayedEliminations.flatMap(elimination => (
                 elimination.removedValues
             )))].sort((left, right) => left - right);
-            const victim = displayedEliminations.length === 1
-                ? 'the shaded cell'
-                : 'the shaded cells';
+            const removalInstruction = removedValues.length === 1
+                ? `Cross out the gray ${removedValues[0]}`
+                : `Cross out the gray notes for ${formatCandidateValues(removedValues)}`;
             const finalHiddenUnit = isFinalDeduction && result.placement.resultKind === 'hidden'
                 ? result.placement.resultUnit
                 : null;
@@ -4163,8 +4185,8 @@ const makeMultiStepPlan = (
                     body: finalHiddenUnit
                         ? `Cross out ${finalHiddenVictim}. That leaves one place for ${result.placement.target.value}.`
                         : isFinalDeduction && result.placement.resultKind === 'naked'
-                            ? `Cross out ${formatCandidateValues(removedValues)} in ${victim}. Only ${result.placement.target.value} remains in the outlined cell.`
-                            : `Cross out ${formatCandidateValues(removedValues)} in ${victim}.`,
+                            ? `${removalInstruction}. Only ${result.placement.target.value} remains in the outlined cell.`
+                            : `${removalInstruction}.`,
                     accessibleDetail: finalHiddenUnit
                         ? `The triple eliminates ${result.placement.target.value} from ${describeCoordinates(finalHiddenEliminations)}, leaving one place in this ${unitName(finalHiddenUnit)}.`
                         : `The triple eliminates ${formatCandidateValues(removedValues)} from ${describeCoordinates(displayedEliminations)}.`,
@@ -4185,7 +4207,7 @@ const makeMultiStepPlan = (
                         ? finalHiddenMarks
                         : eliminatedCellMarks,
                     eliminationStyle: 'candidate-slash',
-                    fillEliminatedCells: true,
+                    fillEliminatedCells: Boolean(finalHiddenUnit),
                     dimUnrelated: true,
                 },
             );
@@ -4270,7 +4292,7 @@ const makeMultiStepPlan = (
                 candidateNoteSets: noteSets.map(noteSet => noteSet.after),
                 candidateMarks: eliminatedCellMarks,
                 eliminationStyle: 'candidate-slash',
-                fillEliminatedCells: true,
+                fillEliminatedCells: false,
                 dimUnrelated: true,
             },
         );
@@ -4281,7 +4303,7 @@ const makeMultiStepPlan = (
     if (placement.resultKind === 'naked') {
         frames.push({
             id: 'chain-answer',
-            techniqueLabel: 'One number fits',
+            techniqueLabel: 'Naked single',
             title: `Only ${placement.target.value} remains`,
             body: `${placement.target.value} belongs in this cell.`,
             accessibleDetail: `Place ${placement.target.value} at ${describeCoordinate(placement.target)}.`,
@@ -4312,7 +4334,7 @@ const makeMultiStepPlan = (
 
         frames.push({
             id: 'chain-answer',
-            techniqueLabel: 'Only one place',
+            techniqueLabel: 'Hidden single',
             title: `Only one place remains for ${placement.target.value}`,
             body: `Every gray ${placement.target.value} is blocked, so ${placement.target.value} belongs in the green cell.`,
             accessibleDetail: `The chained deductions leave ${describeCoordinate(placement.target)} as the only place for ${placement.target.value} in this ${unitName(placement.resultUnit)}.`,
@@ -4349,7 +4371,7 @@ const makeMultiStepPlan = (
             id: `chain-deduction-${index + 1}`,
             technique: deduction.technique,
             techniqueLabel: deduction.technique === 'lockedCandidate'
-                ? 'Locked candidate'
+                ? 'Locked candidates'
                 : deduction.technique === 'nakedPair'
                     ? 'Naked pair'
                     : deduction.technique === 'hiddenPair'

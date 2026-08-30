@@ -262,7 +262,7 @@ const assertPresentationContract = (plan, label = plan.technique) => {
             const removeFrame = plan.frames[index * 2 + 1];
             const stepNumber = index + 1;
             const expectedLabel = deduction.technique === 'lockedCandidate'
-                ? 'Locked candidate'
+                ? 'Locked candidates'
                 : deduction.technique === 'nakedPair'
                     ? 'Naked pair'
                     : deduction.technique === 'hiddenPair'
@@ -290,7 +290,14 @@ const assertPresentationContract = (plan, label = plan.technique) => {
             assert.equal(removeFrame.techniqueLabel, expectedLabel);
             assert.ok(deduction.candidateEliminations.length > 0);
             assert.equal(removeFrame.eliminationStyle, 'candidate-slash');
-            assert.equal(removeFrame.fillEliminatedCells, true);
+            const isFinalDeduction = index === plan.deductions.length - 1;
+            const expectedFill = deduction.technique === 'nakedPair'
+                || deduction.technique === 'hiddenPair'
+                ? false
+                : deduction.technique === 'nakedTriple'
+                    ? isFinalDeduction && plan.derivedResult === 'hidden'
+                    : removeFrame.candidateTransition === undefined;
+            assert.equal(removeFrame.fillEliminatedCells, expectedFill);
         });
 
         const answerFrame = plan.frames.at(-1);
@@ -299,7 +306,7 @@ const assertPresentationContract = (plan, label = plan.technique) => {
         assert.deepEqual(answerFrame.target, plan.target);
         assert.equal(
             answerFrame.techniqueLabel,
-            plan.derivedResult === 'naked' ? 'One number fits' : 'Only one place',
+            plan.derivedResult === 'naked' ? 'Naked single' : 'Hidden single',
         );
         if (plan.derivedResult === 'naked') {
             assert.equal(answerFrame.title, `Only ${targetValue} remains`);
@@ -353,7 +360,10 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                     new Set(['row', 'column', 'box']),
                 );
                 assert.equal(frame.title, `Only ${targetValue} can fit`);
-                assert.equal(frame.body, 'The gray numbers are blocked by its row, column, or box.');
+                assert.equal(
+                    frame.body,
+                    "Each gray candidate is blocked by a green number in this cell's row, column, or box.",
+                );
                 break;
             case 'naked-answer':
                 assertTargetFocus(frame);
@@ -375,7 +385,8 @@ const assertPresentationContract = (plan, label = plan.technique) => {
             case 'hidden-blocked':
                 assertTargetFocus(frame);
                 assert.equal(frame.title, `Only one place for ${targetValue}`);
-                assert.equal(frame.body, `The green ${targetValue}s block every gray ×.`);
+                assert.equal(frame.body, `The green ${targetValue}s rule out every gray ${targetValue}.`);
+                assert.equal(frame.eliminationStyle, 'candidate-slash');
                 assert.ok(frame.accessibleDetail?.includes(`only place for ${targetValue}`));
                 break;
             case 'hidden-answer':
@@ -398,10 +409,12 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                 const lockedMarks = frame.candidateMarks.filter(mark => mark.tone === 'locked');
                 const eliminatedMarks = frame.candidateMarks.filter(mark => mark.tone === 'eliminated');
                 const lockedValue = lockedMarks[0].value;
-                const victim = eliminatedMarks.length === 1 ? 'the shaded cell' : 'the shaded cells';
+                const victim = plan.derivedResult === 'hidden'
+                    ? eliminatedMarks.length === 1 ? 'the shaded cell' : 'the shaded cells'
+                    : eliminatedMarks.length === 1 ? 'the outlined cell' : 'the outlined cells';
                 assert.ok(lockedMarks.length >= 2);
                 assert.ok(eliminatedMarks.length >= 1);
-                assert.equal(frame.fillEliminatedCells, true);
+                assert.equal(frame.fillEliminatedCells, plan.derivedResult === 'hidden');
                 if (plan.derivedResult === 'hidden') {
                     const unit = unitFromCells(frame);
                     const name = displayUnitName(unit);
@@ -410,6 +423,7 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                     assert.equal(frame.title, `Now look at this ${name}`);
                     assert.equal(frame.body, `The locked ${lockedValue}s rule out ${lockedValue} in ${victim}.`);
                 } else {
+                    assertTargetFocus(frame);
                     const [unit] = frame.guideUnits;
                     const name = displayUnitName(unit);
                     assert.equal(frame.unitStrokeTone, 'soft');
@@ -421,6 +435,10 @@ const assertPresentationContract = (plan, label = plan.technique) => {
             }
             case 'locked-answer':
                 assertTargetFocus(frame);
+                assert.equal(
+                    frame.techniqueLabel,
+                    plan.derivedResult === 'naked' ? 'Naked single' : 'Hidden single',
+                );
                 if (plan.derivedResult === 'hidden') {
                     assert.equal(frame.unitStrokeTone, 'soft');
                     assert.equal(frame.title, `Only one place remains for ${targetValue}`);
@@ -475,6 +493,10 @@ const assertPresentationContract = (plan, label = plan.technique) => {
             }
             case 'pair-answer':
                 assertTargetFocus(frame);
+                assert.equal(
+                    frame.techniqueLabel,
+                    plan.derivedResult === 'naked' ? 'Naked single' : 'Hidden single',
+                );
                 if (plan.derivedResult === 'hidden') {
                     assert.equal(frame.unitStrokeTone, 'soft');
                     assert.equal(frame.title, `Only one place remains for ${targetValue}`);
@@ -524,7 +546,7 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                     `${removalInstruction} That leaves one place for ${targetValue}.`,
                 );
                 assert.equal(frame.eliminationStyle, 'candidate-slash');
-                assert.equal(frame.fillEliminatedCells, true);
+                assert.equal(frame.fillEliminatedCells, false);
                 break;
             }
             case 'hidden-pair-answer':
@@ -648,7 +670,7 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                 assert.ok(eliminatedMarks.length > 0);
                 assert.ok(eliminatedMarks.every(mark => mark.value === value));
                 assert.equal(frame.eliminationStyle, 'candidate-slash');
-                assert.equal(frame.fillEliminatedCells, true);
+                assert.equal(frame.fillEliminatedCells, plan.derivedResult === 'hidden');
                 assert.equal(frame.title, `So ${value} cannot go elsewhere in these ${coverName}`);
                 if (plan.derivedResult === 'naked') {
                     assertTargetFocus(frame);
@@ -656,7 +678,7 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                     assert.equal(frame.candidateTransition.removedValue, value);
                     assert.equal(
                         frame.body,
-                        `Cross out the gray ${value}s. Only ${targetValue} remains in the outlined cell.`,
+                        `Cross out the slashed ${value}s. Only ${targetValue} remains in the outlined cell.`,
                     );
                 } else {
                     assert.deepEqual(frame.spotlightCells, []);
@@ -728,7 +750,7 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                 const eliminated = frame.candidateMarks.filter(mark => mark.tone === 'eliminated');
                 assert.equal(frame.title, `Either way, one wing must be ${z}`);
                 assert.equal(frame.eliminationStyle, 'candidate-slash');
-                assert.equal(frame.fillEliminatedCells, true);
+                assert.equal(frame.fillEliminatedCells, plan.derivedResult === 'hidden');
                 assert.ok(frame.guideUnits.length > 0);
                 assert.equal(frame.guideStrokeTone, 'soft');
                 assert.equal(pivotValues.length, 2);
@@ -746,8 +768,9 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                     mark.value === z && isPeer(mark, firstWing) && isPeer(mark, secondWing)
                 )));
                 assert.ok(frame.candidateMarks.every(mark => mark.tone === 'eliminated'));
+                if (plan.derivedResult === 'naked') assertTargetFocus(frame);
                 assert.equal(frame.body, plan.derivedResult === 'naked'
-                    ? `The shaded cell sees both wings, so ${z} cannot go here. Cross it out; only ${targetValue} remains.`
+                    ? `The outlined cell sees both wings, so ${z} cannot go here. Cross it out; only ${targetValue} remains.`
                     : eliminated.length === 1
                         ? `The ${z} in the shaded cell sees both wings, so cross it out.`
                         : `Every shaded ${z} sees both wings, so cross them out.`);
@@ -758,7 +781,9 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                 assert.equal(frame.title, plan.derivedResult === 'naked'
                     ? `Only ${targetValue} remains`
                     : `Only one place remains for ${targetValue}`);
-                assert.equal(frame.body, `${targetValue} belongs in this cell.`);
+                assert.equal(frame.body, plan.derivedResult === 'naked'
+                    ? `${targetValue} belongs in this cell.`
+                    : `Every gray ${targetValue} is blocked, so ${targetValue} belongs in the green cell.`);
                 break;
             case 'color-chain-start':
                 assert.equal(frame.guideUnits.length, 1);
@@ -790,7 +815,7 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                 assert.equal(frame.guideUnits, undefined);
                 assert.equal(frame.guideStrokeTone, undefined);
                 assert.equal(frame.eliminationStyle, 'candidate-slash');
-                assert.equal(frame.fillEliminatedCells, true);
+                assert.equal(frame.fillEliminatedCells, plan.derivedResult === 'hidden');
                 assert.ok(frame.candidateMarks.every(mark => mark.tone === 'eliminated'));
                 if (plan.derivedResult === 'naked') {
                     assertTargetFocus(frame);
@@ -807,7 +832,9 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                 assert.equal(frame.title, plan.derivedResult === 'naked'
                     ? `Only ${targetValue} remains`
                     : `Only one place remains for ${targetValue}`);
-                assert.equal(frame.body, `${targetValue} belongs in this cell.`);
+                assert.equal(frame.body, plan.derivedResult === 'naked'
+                    ? `${targetValue} belongs in this cell.`
+                    : `Every gray ${targetValue} is blocked, so ${targetValue} belongs in the green cell.`);
                 break;
             default:
                 assert.fail(`${label}: no presentation contract for ${frame.id}`);
@@ -820,7 +847,7 @@ const assertUnitCompletionPlan = (grid, expectedTarget, expectedUnit) => {
     const result = createHintPlan(board, SOLUTION);
     assert.equal(result.status, 'ready');
     assert.equal(result.plan.technique, 'nakedSingle');
-    assert.equal(result.plan.techniqueLabel, 'Last number');
+    assert.equal(result.plan.techniqueLabel, 'Full house');
     assert.deepEqual(result.plan.target, expectedTarget);
     assert.deepEqual(legalCandidates(grid, expectedTarget.row, expectedTarget.col), [expectedTarget.value]);
 
@@ -1029,7 +1056,7 @@ const assertLockedCandidatePlan = (grid, solution, expected) => {
 
     assert.equal(result.status, 'ready');
     assert.equal(result.plan.technique, 'lockedCandidate');
-    assert.equal(result.plan.techniqueLabel, 'Locked candidate');
+    assert.equal(result.plan.techniqueLabel, 'Locked candidates');
     assert.equal(result.plan.derivedResult, expected.resultKind);
     assert.deepEqual(result.plan.target, expected.target);
     assert.equal(result.plan.frames.length, 3);
@@ -1040,7 +1067,12 @@ const assertLockedCandidatePlan = (grid, solution, expected) => {
     assert.equal(removeFrame.id, 'locked-remove');
     assert.equal(answerFrame.id, 'locked-answer');
     assert.deepEqual(findFrame.spotlightCells, []);
-    assert.deepEqual(removeFrame.spotlightCells, []);
+    assert.deepEqual(
+        removeFrame.spotlightCells,
+        expected.resultKind === 'naked'
+            ? [{ row: expected.target.row, col: expected.target.col }]
+            : [],
+    );
     assert.equal(findFrame.dimUnrelated, true);
     assert.equal(removeFrame.dimUnrelated, true);
     assert.equal(answerFrame.dimUnrelated, true);
@@ -1065,7 +1097,7 @@ const assertLockedCandidatePlan = (grid, solution, expected) => {
         assert.equal(removeFrame.guideStrokeTone, undefined);
     }
     assert.equal(removeFrame.eliminationStyle, 'candidate-slash');
-    assert.equal(removeFrame.fillEliminatedCells, true);
+    assert.equal(removeFrame.fillEliminatedCells, expected.resultKind === 'hidden');
     assert.ok(isSameCoordinateSet(
         coordinateSet(findFrame.unitCells),
         coordinateSet(cellsForGuideUnit(sourceGuide)),
@@ -1115,7 +1147,7 @@ const assertLockedCandidatePlan = (grid, solution, expected) => {
         removeFrame.body,
         expected.resultKind === 'hidden'
             ? `The locked ${expected.value}s rule out ${expected.value} in ${eliminatedMarks.length === 1 ? 'the shaded cell' : 'the shaded cells'}.`
-            : `So ${expected.value} cannot go in ${eliminatedMarks.length === 1 ? 'the shaded cell' : 'the shaded cells'}.`,
+            : `So ${expected.value} cannot go in ${eliminatedMarks.length === 1 ? 'the outlined cell' : 'the outlined cells'}.`,
     );
     assert.equal(
         removeFrame.candidateMarks.length,
@@ -1332,7 +1364,10 @@ test('builds a deterministic naked-single theater plan', () => {
     assert.equal(lookFrame.remainingDigit, undefined);
     assert.deepEqual(lookFrame.spotlightCells, [{ row: 0, col: 0 }]);
     assert.equal(evidenceFrame.title, 'Only 5 can fit');
-    assert.equal(evidenceFrame.body, 'The gray numbers are blocked by its row, column, or box.');
+    assert.equal(
+        evidenceFrame.body,
+        "Each gray candidate is blocked by a green number in this cell's row, column, or box.",
+    );
     assert.equal(evidenceFrame.unitCells, undefined);
     assert.equal(evidenceFrame.contextCells, undefined);
     assertNakedCandidateBreakdown(evidenceFrame, result.plan.target, grid);
@@ -1380,13 +1415,18 @@ test('builds a deterministic hidden-single theater plan', () => {
     const [lookFrame, evidenceFrame, answerFrame] = result.plan.frames;
     assert.equal(lookFrame.title, 'Look at this 3 × 3 box');
     assert.equal(lookFrame.body, '9 is missing from this 3 × 3 box.');
+    assert.equal(
+        lookFrame.accessibleDetail,
+        'The highlighted 3 × 3 box does not contain 9.',
+    );
     assert.equal(lookFrame.unitCells.length, 9);
     assert.equal(evidenceFrame.unitCells, undefined);
     assert.deepEqual(evidenceFrame.contextCells, lookFrame.unitCells);
     assert.deepEqual(lookFrame.spotlightCells, []);
     assert.deepEqual(evidenceFrame.spotlightCells, [{ row: 3, col: 8 }]);
     assert.equal(evidenceFrame.title, 'Only one place for 9');
-    assert.equal(evidenceFrame.body, 'The green 9s block every gray ×.');
+    assert.equal(evidenceFrame.body, 'The green 9s rule out every gray 9.');
+    assert.equal(evidenceFrame.eliminationStyle, 'candidate-slash');
     assert.equal(
         evidenceFrame.accessibleDetail,
         'Existing 9s block row 4, column 8; row 5, column 8, leaving row 4, column 9 as the only place for 9 in this 3 × 3 box.',
@@ -1874,7 +1914,7 @@ test('uses a Hidden Pair inside a dependent multi-step Hint', () => {
         'Naked pair',
         'Hidden pair',
         'Hidden pair',
-        'Only one place',
+        'Hidden single',
     ]);
 
     const notedBoard = deepClone(board);
@@ -2164,7 +2204,7 @@ test('uses a Naked Triple inside a dependent multi-step Hint', () => {
         'Naked triple',
         'Naked pair',
         'Naked pair',
-        'One number fits',
+        'Naked single',
     ]);
 
     const notedBoard = deepClone(board);
@@ -2594,7 +2634,7 @@ test('keeps productive direct and chained XY-Wing previews exact and mutation-fr
         assert.deepEqual(result.plan.candidateEliminations, [fixture.elimination]);
         assertPresentationContract(result.plan, fixture.preview);
 
-        const [pivotFrame, firstFrame, secondFrame, removeFrame] = result.plan.frames;
+        const [pivotFrame, firstFrame, secondFrame, removeFrame, answerFrame] = result.plan.frames;
         const z = fixture.elimination.removedValues[0];
         const firstShared = fixture.firstWing.values.find(value => fixture.pivot.values.includes(value));
         const secondShared = fixture.secondWing.values.find(value => fixture.pivot.values.includes(value));
@@ -2630,6 +2670,22 @@ test('keeps productive direct and chained XY-Wing previews exact and mutation-fr
         ]);
         assert.deepEqual(removeFrame.guideUnits, fixture.removalGuides);
         assert.equal(removeFrame.guideStrokeTone, 'soft');
+        assert.equal(removeFrame.fillEliminatedCells, fixture.resultKind === 'hidden');
+        assert.deepEqual(
+            removeFrame.spotlightCells,
+            fixture.resultKind === 'naked'
+                ? [{ row: fixture.target.row, col: fixture.target.col }]
+                : [
+                    { row: fixture.firstWing.row, col: fixture.firstWing.col },
+                    { row: fixture.secondWing.row, col: fixture.secondWing.col },
+                ],
+        );
+        assert.equal(
+            answerFrame.body,
+            fixture.resultKind === 'naked'
+                ? `${fixture.target.value} belongs in this cell.`
+                : `Every gray ${fixture.target.value} is blocked, so ${fixture.target.value} belongs in the green cell.`,
+        );
         assert.ok(isPeer(fixture.pivot, fixture.firstWing));
         assert.ok(isPeer(fixture.pivot, fixture.secondWing));
         assert.equal(isPeer(fixture.firstWing, fixture.secondWing), false);
@@ -2796,9 +2852,11 @@ test('keeps Color Trap and Color Wrap previews causal, focused, and mutation-fre
                 { row: 4, col: 0, value: 8, tone: 'locked' },
                 { row: 8, col: 0, value: 8, tone: 'possible' },
             ],
+            startAccessible: 'This column has exactly two places for 8: row 5, column 1 and row 9, column 1. The circle and square are opposite groups; neither is assumed true yet.',
             ruleGuides: [{ kind: 'row', index: 4 }, { kind: 'column', index: 7 }],
             ruleTitle: 'This 8 sees both groups',
             ruleBody: 'One group must be true, so this candidate is blocked either way.',
+            ruleAccessible: 'The 8 at row 5, column 8 sees one circle and one square 8. One of those opposite groups must be true, so this outside candidate is false.',
             ruleSpotlights: [{ row: 4, col: 7 }],
             ruleNoteSets: [{
                 row: 4, col: 7,
@@ -2816,9 +2874,11 @@ test('keeps Color Trap and Color Wrap previews causal, focused, and mutation-fre
                 { row: 5, col: 0, value: 8, tone: 'locked' },
                 { row: 5, col: 3, value: 8, tone: 'possible' },
             ],
+            startAccessible: 'This row has exactly two places for 8: row 6, column 1 and row 6, column 4. The circle and square are opposite groups; neither is assumed true yet.',
             ruleGuides: [{ kind: 'column', index: 3 }],
             ruleTitle: 'Two square 8s share this column',
             ruleBody: 'They cannot both be true, so every square 8 is false.',
+            ruleAccessible: 'The square 8s at row 6, column 4 and row 7, column 4 see each other in column 4. Therefore the square group is false.',
             ruleSpotlights: [{ row: 5, col: 3 }, { row: 6, col: 3 }],
             ruleNoteSets: undefined,
             delta: { row: 5, col: 3, beforeCandidates: [7, 8], removedValues: [8], afterCandidates: [7] },
@@ -2836,7 +2896,7 @@ test('keeps Color Trap and Color Wrap previews causal, focused, and mutation-fre
         assert.equal(scopeDevHintPreview(fixture.preview, Difficulty.Impossible, fixture.levelId + 1), undefined);
         assert.equal(result.status, 'ready');
         assert.equal(result.plan.technique, 'simpleColoring');
-        assert.equal(result.plan.techniqueLabel, 'Color chain');
+        assert.equal(result.plan.techniqueLabel, 'Simple coloring');
         assert.equal(result.plan.derivedResult, 'naked');
         assert.deepEqual(result.plan.target, fixture.target);
         assert.deepEqual(result.plan.frames.map(frame => frame.id), [
@@ -2849,6 +2909,7 @@ test('keeps Color Trap and Color Wrap previews causal, focused, and mutation-fre
         assert.deepEqual(start.guideUnits, [fixture.startGuide]);
         assert.equal(start.guideStrokeTone, 'soft');
         assert.deepEqual(start.candidateMarks, fixture.startMarks);
+        assert.equal(start.accessibleDetail, fixture.startAccessible);
         assert.equal(links.candidateMarks.length, fixture.nodeCount);
         assert.equal(links.title, 'Follow the alternating chain');
         assert.equal(links.body, 'The possible 8s alternate between circles and squares.');
@@ -2863,10 +2924,22 @@ test('keeps Color Trap and Color Wrap previews causal, focused, and mutation-fre
         assert.equal(rule.guideStrokeTone, 'normal');
         assert.equal(rule.title, fixture.ruleTitle);
         assert.equal(rule.body, fixture.ruleBody);
+        assert.equal(rule.accessibleDetail, fixture.ruleAccessible);
         assert.deepEqual(rule.spotlightCells, fixture.ruleSpotlights);
         assert.deepEqual(rule.candidateNoteSets, fixture.ruleNoteSets);
         assert.equal(remove.guideUnits, undefined);
         assert.equal(remove.guideStrokeTone, undefined);
+        assert.equal(remove.fillEliminatedCells, false);
+        assert.deepEqual(remove.spotlightCells, [{
+            row: fixture.delta.row, col: fixture.delta.col,
+        }]);
+        assert.deepEqual(remove.candidateTransition, {
+            row: fixture.delta.row,
+            col: fixture.delta.col,
+            beforeCandidates: fixture.delta.beforeCandidates,
+            removedValue: fixture.delta.removedValues[0],
+            afterCandidates: fixture.delta.afterCandidates,
+        });
         assert.equal(answer.guideUnits, undefined);
         assert.equal(answer.guideStrokeTone, undefined);
         assert.deepEqual(remove.candidateMarks, [{
@@ -2969,13 +3042,19 @@ test('chains candidate deductions until one number can be placed', () => {
         'chain-answer',
     ]);
     assert.deepEqual(result.plan.frames.map(frame => frame.techniqueLabel), [
-        'Locked candidate',
-        'Locked candidate',
-        'Locked candidate',
-        'Locked candidate',
-        'One number fits',
+        'Locked candidates',
+        'Locked candidates',
+        'Locked candidates',
+        'Locked candidates',
+        'Naked single',
     ]);
     assert.deepEqual(result.plan.frames[3].spotlightCells, [{ row: 3, col: 7 }]);
+    assert.equal(result.plan.frames[1].fillEliminatedCells, true);
+    assert.equal(result.plan.frames[3].fillEliminatedCells, false);
+    assert.equal(
+        result.plan.frames[3].body,
+        'Cross out the slashed 4s. Only 6 remains in the outlined cell.',
+    );
 
     const notedBoard = deepClone(board);
     notedBoard.forEach(row => row.forEach(cell => { cell.notes = [9, 2, 6, 1]; }));
@@ -3036,7 +3115,7 @@ test('keeps every core local Hint preview deterministic and production-compatibl
             preview: 'last-number',
             puzzle: { difficulty: Difficulty.SuperEasy, levelId: 1 },
             technique: 'nakedSingle',
-            techniqueLabel: 'Last number',
+            techniqueLabel: 'Full house',
             derivedResult: undefined,
             target: { row: 4, col: 5, value: 5 },
             frameIds: ['unit-completion-look', 'unit-completion-answer', 'unit-completion-place'],
@@ -3046,7 +3125,7 @@ test('keeps every core local Hint preview deterministic and production-compatibl
             preview: 'naked',
             puzzle: { difficulty: Difficulty.SuperEasy, levelId: 4 },
             technique: 'nakedSingle',
-            techniqueLabel: 'One number fits',
+            techniqueLabel: 'Naked single',
             derivedResult: undefined,
             target: { row: 3, col: 8, value: 1 },
             frameIds: ['naked-look', 'naked-rule-out', 'naked-answer'],
@@ -3056,7 +3135,7 @@ test('keeps every core local Hint preview deterministic and production-compatibl
             preview: 'hidden',
             puzzle: { difficulty: Difficulty.Easy, levelId: 42 },
             technique: 'hiddenSingle',
-            techniqueLabel: 'Only one place',
+            techniqueLabel: 'Hidden single',
             derivedResult: undefined,
             target: { row: 3, col: 8, value: 9 },
             frameIds: ['hidden-look', 'hidden-blocked', 'hidden-answer'],
@@ -3066,7 +3145,7 @@ test('keeps every core local Hint preview deterministic and production-compatibl
             preview: 'locked',
             puzzle: { difficulty: Difficulty.Hard, levelId: 2 },
             technique: 'lockedCandidate',
-            techniqueLabel: 'Locked candidate',
+            techniqueLabel: 'Locked candidates',
             derivedResult: 'naked',
             target: { row: 4, col: 0, value: 9 },
             frameIds: ['locked-find', 'locked-remove', 'locked-answer'],
@@ -3076,7 +3155,7 @@ test('keeps every core local Hint preview deterministic and production-compatibl
             preview: 'locked-hidden',
             puzzle: { difficulty: Difficulty.Hard, levelId: 4 },
             technique: 'lockedCandidate',
-            techniqueLabel: 'Locked candidate',
+            techniqueLabel: 'Locked candidates',
             derivedResult: 'hidden',
             target: { row: 6, col: 5, value: 5 },
             frameIds: ['locked-find', 'locked-remove', 'locked-answer'],
@@ -3252,7 +3331,7 @@ test('keeps every core local Hint preview deterministic and production-compatibl
             preview: 'color-chain',
             puzzle: { difficulty: Difficulty.Impossible, levelId: 10 },
             technique: 'simpleColoring',
-            techniqueLabel: 'Color chain',
+            techniqueLabel: 'Simple coloring',
             derivedResult: 'naked',
             target: { row: 4, col: 7, value: 5 },
             frameIds: ['color-chain-start', 'color-chain-links', 'color-chain-rule', 'color-chain-remove', 'color-chain-answer'],
@@ -3262,7 +3341,7 @@ test('keeps every core local Hint preview deterministic and production-compatibl
             preview: 'color-chain-wrap',
             puzzle: { difficulty: Difficulty.Impossible, levelId: 13 },
             technique: 'simpleColoring',
-            techniqueLabel: 'Color chain',
+            techniqueLabel: 'Simple coloring',
             derivedResult: 'naked',
             target: { row: 5, col: 3, value: 7 },
             frameIds: ['color-chain-start', 'color-chain-links', 'color-chain-rule', 'color-chain-remove', 'color-chain-answer'],
@@ -3363,7 +3442,7 @@ test('keeps the local Locked Candidates preview deterministic and ready', () => 
     assert.equal(preview.plan.frames[1].title, 'These 1s share this row');
     assert.equal(
         preview.plan.frames[1].body,
-        'So 1 cannot go in the shaded cell.',
+        'So 1 cannot go in the outlined cell.',
     );
     assert.equal(
         preview.plan.frames[1].accessibleDetail,
@@ -3460,7 +3539,7 @@ test('keeps the local Hidden Pair previews isolated and deterministic', () => {
     assert.deepEqual(directPreview.plan.target, { row: 3, col: 5, value: 2 });
     assert.deepEqual(
         directPreview.plan.frames.map(frame => frame.techniqueLabel),
-        ['Hidden pair', 'Hidden pair', 'Only one place'],
+        ['Hidden pair', 'Hidden pair', 'Hidden single'],
     );
     assert.deepEqual(directPuzzle, { difficulty: Difficulty.Impossible, levelId: 84 });
     assert.equal(scopeDevHintPreview('hidden-pair', Difficulty.Impossible, 84), 'hidden-pair');
@@ -3507,7 +3586,7 @@ test('keeps the local Naked Triple previews isolated and deterministic', () => {
     assert.deepEqual(directPreview.plan.target, { row: 4, col: 1, value: 7 });
     assert.deepEqual(
         directPreview.plan.frames.map(frame => frame.techniqueLabel),
-        ['Naked triple', 'Naked triple', 'One number fits'],
+        ['Naked triple', 'Naked triple', 'Naked single'],
     );
     assert.deepEqual(directPuzzle, { difficulty: Difficulty.Intense, levelId: 145 });
     assert.equal(scopeDevHintPreview('triple', Difficulty.Intense, 145), 'triple');
@@ -3528,7 +3607,7 @@ test('keeps the local Naked Triple previews isolated and deterministic', () => {
     assert.deepEqual(hiddenPreview.plan.target, { row: 0, col: 0, value: 9 });
     assert.deepEqual(
         hiddenPreview.plan.frames.map(frame => frame.techniqueLabel),
-        ['Naked triple', 'Naked triple', 'Only one place'],
+        ['Naked triple', 'Naked triple', 'Hidden single'],
     );
     assert.deepEqual(hiddenPuzzle, { difficulty: Difficulty.Impossible, levelId: 74 });
     assert.equal(
@@ -3583,7 +3662,7 @@ test('keeps the local multi-step preview isolated and deterministic', () => {
     );
     assert.deepEqual(
         preview.plan.frames.map(frame => frame.techniqueLabel),
-        ['Locked candidate', 'Locked candidate', 'Locked candidate', 'Locked candidate', 'One number fits'],
+        ['Locked candidates', 'Locked candidates', 'Locked candidates', 'Locked candidates', 'Naked single'],
     );
     assert.deepEqual(puzzle, { difficulty: Difficulty.Hard, levelId: 35 });
     assert.equal(scopeDevHintPreview('chain', Difficulty.Hard, 35), 'chain');
@@ -3754,7 +3833,7 @@ test('walks every production puzzle through a safe deterministic Hint path', () 
 
                 if (
                     result.plan.technique === 'nakedSingle'
-                    && result.plan.techniqueLabel === 'One number fits'
+                    && result.plan.techniqueLabel === 'Naked single'
                 ) {
                     const numericGrid = board.map(boardRow => boardRow.map(cell => cell.value ?? 0));
                     assertNakedCandidateBreakdown(result.plan.frames[1], result.plan.target, numericGrid);

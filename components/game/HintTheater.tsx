@@ -109,11 +109,11 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
             aria-describedby={frame.accessibleDetail ? 'hint-theater-body hint-theater-detail' : 'hint-theater-body'}
         >
             <div className="hint-technique-pill absolute left-1/2 top-0 z-10 flex h-7 md:h-9 -translate-x-1/2 -translate-y-[calc(100%+4px)] md:-translate-y-[calc(100%+6px)] items-center justify-center whitespace-nowrap rounded-full border border-blue-200/80 dark:border-blue-800/80 bg-white/[0.98] dark:bg-stone-900/[0.98] px-3 md:px-4">
-                <div className="grid items-center justify-items-center">
+                <div className="grid h-full place-items-center text-center">
                     {plan.frames.map(candidateFrame => (
                         <span
                             key={`label-measure-${candidateFrame.id}`}
-                            className="invisible pointer-events-none col-start-1 row-start-1 -translate-y-px text-[9px] md:text-[10px] font-bold uppercase leading-none tracking-[0.14em]"
+                            className="invisible pointer-events-none col-start-1 row-start-1 text-[9px] md:text-[10px] font-bold uppercase leading-none tracking-[0.14em]"
                             aria-hidden="true"
                         >
                             {candidateFrame.techniqueLabel ?? plan.techniqueLabel}
@@ -126,7 +126,7 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: reduceMotion ? 0 : 0.14 }}
-                            className="col-start-1 row-start-1 -translate-y-px text-[9px] md:text-[10px] font-bold uppercase leading-none tracking-[0.14em] text-blue-600 dark:text-blue-300"
+                            className="col-start-1 row-start-1 text-center text-[9px] md:text-[10px] font-bold uppercase leading-none tracking-[0.14em] text-blue-600 dark:text-blue-300"
                         >
                             {techniqueLabel}
                         </motion.span>
