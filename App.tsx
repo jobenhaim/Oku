@@ -19,6 +19,12 @@ import { WelcomeGiftModal } from './components/ui/WelcomeGiftModal';
 import { getStoredClaimedProfileRank, MAX_PROFILE_RANK, ProfileScreen } from './components/screens/ProfileScreen';
 import { hasClaimableAchievement } from './utils/achievements';
 import { LandscapeBlocker } from './components/ui/LandscapeBlocker';
+import {
+  getDevHintPreviewPuzzle,
+  isDevHintPreview,
+  scopeDevHintPreview,
+  type DevHintPreview,
+} from './utils/devHintPreview';
 
 // Screens
 import { SplashScreen } from './components/screens/SplashScreen';
@@ -46,19 +52,65 @@ const getDevAccountPreview = (): DevAccountPreview => {
   };
 };
 
+const getDevHintPreview = (): DevHintPreview | null => {
+  if (!import.meta.env.DEV) return null;
+  const preview = new URLSearchParams(window.location.search).get('hintPreview');
+  return isDevHintPreview(preview) ? preview : null;
+};
+
+const getDevHintTheme = (): 'light' | 'dark' | null => {
+  if (!import.meta.env.DEV) return null;
+  const theme = new URLSearchParams(window.location.search).get('hintTheme');
+  return theme === 'light' || theme === 'dark' ? theme : null;
+};
+
 // Inner Application Component that contains all state and logic
 const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset }) => {
   const [accountPreview] = useState<DevAccountPreview>(() => getDevAccountPreview());
-  const [screen, setScreen] = useState<Screen>(() => accountPreview ? 'profile' : 'difficulty');
+  const [hintPreview, setHintPreview] = useState<DevHintPreview | null>(() => getDevHintPreview());
+  const [hintPreviewTheme] = useState<'light' | 'dark' | null>(() => getDevHintTheme());
+  const [screen, setScreen] = useState<Screen>(() => (
+      hintPreview ? 'game' : accountPreview ? 'profile' : 'difficulty'
+  ));
   const [prevScreen, setPrevScreen] = useState<Screen | null>(null);
   const [direction, setDirection] = useState<number>(0);
   const [difficultyAnimationKey, setDifficultyAnimationKey] = useState(0);
   const [isScreenTransitioning, setIsScreenTransitioning] = useState(false);
   const isNavigatingRef = useRef(false);
   const screenTransitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
-  const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
-  const [settings, setSettings] = useState<AppSettings>(Storage.getSettings());
+  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(() => (
+      hintPreview ? getDevHintPreviewPuzzle(hintPreview).difficulty : null
+  ));
+  const [selectedLevel, setSelectedLevel] = useState<number | null>(() => (
+      hintPreview ? getDevHintPreviewPuzzle(hintPreview).levelId : null
+  ));
+  const scopedHintPreview = scopeDevHintPreview(
+      hintPreview,
+      selectedDifficulty,
+      selectedLevel,
+  );
+  const [settings, setSettings] = useState<AppSettings>(() => {
+      const storedSettings = Storage.getSettings();
+      return hintPreview && hintPreviewTheme
+          ? { ...storedSettings, appearance: hintPreviewTheme }
+          : storedSettings;
+  });
+
+  const closeHintPreviewSession = () => {
+      if (!hintPreview) return;
+
+      setHintPreview(null);
+      if (hintPreviewTheme) setSettings(Storage.getSettings());
+
+      const url = new URL(window.location.href);
+      url.searchParams.delete('hintPreview');
+      url.searchParams.delete('hintTheme');
+      window.history.replaceState(
+          window.history.state,
+          '',
+          `${url.pathname}${url.search}${url.hash}`,
+      );
+  };
   const [points, setPoints] = useState<number>(Storage.getPoints());
   
   const [purchasedBackgrounds, setPurchasedBackgrounds] = useState<string[]>(Storage.getPurchasedBackgrounds());
@@ -126,9 +178,12 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   useEffect(() => {
     const hydrateFromStorage = () => {
         const data = Storage.getStoredData();
+        const hydratedSettings = hintPreview && hintPreviewTheme
+            ? { ...data.settings, appearance: hintPreviewTheme }
+            : data.settings;
 
         setPoints(data.points);
-        setSettings(data.settings);
+        setSettings(hydratedSettings);
         setStats(data.stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
         setClaimedProfileRank(getStoredClaimedProfileRank(data.stats?.totalGamesWon || 0));
         setPurchasedBackgrounds(data.purchasedBackgrounds);
@@ -157,7 +212,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
         });
         setRedeemedCoupons(data.redeemedCoupons || []);
 
-        const isDark = data.settings.appearance === 'dark' || (data.settings.appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        const isDark = hydratedSettings.appearance === 'dark'
+            || (hydratedSettings.appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
         setIsDarkMode(isDark);
         if (isDark) document.documentElement.classList.add('dark');
         else document.documentElement.classList.remove('dark');
@@ -186,7 +242,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
         // Check and trigger welcome gift
         const isWelcomeGiftPreview = import.meta.env.DEV && new URLSearchParams(window.location.search).has('welcomeGiftPreview');
-        if (!Storage.isWelcomeGiftClaimed() || isWelcomeGiftPreview) {
+        if (!hintPreview && (!Storage.isWelcomeGiftClaimed() || isWelcomeGiftPreview)) {
             setShowWelcomeGift(true);
         }
     };
@@ -358,6 +414,10 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
   const navigate = (nextScreen: Screen, dir: 'forward' | 'back' | 'none' = 'forward') => {
       if (nextScreen === screen || isNavigatingRef.current) return;
+
+      if (screen === 'game' && nextScreen !== 'game') {
+          closeHintPreviewSession();
+      }
 
       isNavigatingRef.current = true;
       setIsScreenTransitioning(true);
@@ -1109,6 +1169,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
                             >
                                 <SudokuGame
+                                    key={`${selectedDifficulty}-${selectedLevel}-${scopedHintPreview ?? 'normal'}`}
                                     difficulty={selectedDifficulty}
                                     levelId={selectedLevel}
                                     onBack={handleGameBack}
@@ -1125,6 +1186,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     backgroundClass={activeBackgroundClass}
                                     numberColor={numberColorClass}
                                     purchasedSkills={enabledSkills}
+                                    devHintPreview={scopedHintPreview}
                                 />
                             </motion.div>
                         )}

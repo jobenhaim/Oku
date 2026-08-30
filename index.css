@@ -884,6 +884,374 @@ html, body {
   }
 }
 
+/* Hint Theater keeps the live grid geometry and paints a read-only frozen board in place. */
+.sudoku-grid-readonly,
+.sudoku-grid-readonly * {
+  cursor: default !important;
+}
+
+.hint-grid-overlay {
+  opacity: 1;
+}
+
+.hint-grid-cell--dimmed {
+  background: rgba(41, 37, 36, 0.28);
+}
+
+.dark .hint-grid-cell--dimmed {
+  background: rgba(0, 0, 0, 0.38);
+}
+
+.hint-grid-cell--unit {
+  background: transparent;
+}
+
+.dark .hint-grid-cell--unit {
+  background: transparent;
+}
+
+.hint-grid-cell--spotlight,
+.hint-grid-cell--target,
+.hint-grid-cell--possible {
+  background: transparent;
+}
+
+.dark .hint-grid-cell--spotlight,
+.dark .hint-grid-cell--target,
+.dark .hint-grid-cell--possible {
+  background: transparent;
+}
+
+.hint-grid-cell--target-filled {
+  background: rgba(34, 197, 94, 0.16);
+}
+
+.dark .hint-grid-cell--target-filled {
+  background: rgba(74, 222, 128, 0.14);
+}
+
+.hint-grid-strokes {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  color: #16a34a;
+  pointer-events: none;
+}
+
+.dark .hint-grid-strokes {
+  color: #4ade80;
+}
+
+.hint-grid-strokes--soft {
+  color: rgba(22, 163, 74, 0.42);
+}
+
+.dark .hint-grid-strokes--soft {
+  color: rgba(74, 222, 128, 0.4);
+}
+
+.hint-grid-cell--source {
+  z-index: 4;
+  background: transparent;
+}
+
+.hint-digit-strip {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  align-items: start;
+  width: min(100%, 320px);
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-top: 1px solid #e7e5e4;
+  border-bottom: 1px solid #e7e5e4;
+  column-gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hint-digit-strip__item {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.dark .hint-digit-strip {
+  border-color: #44403c;
+}
+
+.hint-digit-strip__item--blocked {
+  color: #a8a29e;
+  opacity: 0.48;
+}
+
+.hint-digit-strip__item--remaining {
+  color: #16a34a;
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.dark .hint-digit-strip__item--blocked {
+  color: #78716c;
+  opacity: 0.58;
+}
+
+.dark .hint-digit-strip__item--remaining {
+  color: #4ade80;
+}
+
+.sudoku-cell--hint-source {
+  color: #16a34a !important;
+  text-shadow: none !important;
+}
+
+.dark .sudoku-cell--hint-source {
+  color: #4ade80 !important;
+  text-shadow: none !important;
+}
+
+.sudoku-player-number--hint-source {
+  color: #16a34a !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.dark .sudoku-player-number--hint-source {
+  color: #4ade80 !important;
+}
+
+.sudoku-cell--hint-support,
+.sudoku-player-number--hint-support {
+  color: #3f7772 !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.dark .sudoku-cell--hint-support,
+.dark .sudoku-player-number--hint-support {
+  color: #78afa9 !important;
+}
+
+.hint-grid-cell--eliminated {
+  background: transparent;
+}
+
+.dark .hint-grid-cell--eliminated {
+  background: transparent;
+}
+
+.hint-grid-cell--elimination-focus {
+  background: rgba(120, 113, 108, 0.22);
+}
+
+.dark .hint-grid-cell--elimination-focus {
+  background: rgba(168, 162, 158, 0.18);
+}
+
+.hint-grid-candidate {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 1;
+  font-weight: 600;
+  color: #15803d;
+  text-shadow: none;
+}
+
+.dark .hint-grid-candidate {
+  color: #4ade80;
+  text-shadow: none;
+}
+
+.hint-grid-candidate--locked {
+  color: #15803d;
+  font-weight: 700;
+  text-shadow: none;
+  transform: scale(0.56);
+}
+
+.dark .hint-grid-candidate--locked {
+  color: #4ade80;
+  text-shadow: none;
+}
+
+.hint-grid-candidate--eliminated {
+  color: #78716c;
+  font-weight: 500;
+  text-shadow: none;
+  opacity: 0.9;
+  transform: scale(0.94);
+}
+
+.dark .hint-grid-candidate--eliminated {
+  color: #a8a29e;
+  text-shadow: none;
+}
+
+.hint-grid-candidate--answer {
+  animation: hint-answer-arrive 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hint-grid-note-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  padding: 1px;
+  pointer-events: none;
+}
+
+.hint-grid-note {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #15803d;
+  font-weight: 600;
+  text-shadow: none;
+  transform: scale(1.18);
+}
+
+.hint-grid-note--removed {
+  color: #57534e;
+  font-weight: 500;
+}
+
+.hint-grid-note--blocked {
+  color: #a8a29e;
+  font-weight: 500;
+  opacity: 0.72;
+  transform: scale(1.08);
+}
+
+.hint-grid-note--possible {
+  color: #78716c;
+  font-weight: 500;
+  opacity: 0.86;
+}
+
+/*
+ * Color-chain groups use color and shape together. The solid circle and
+ * dashed square keep the two alternating groups distinguishable in
+ * grayscale, forced-colors mode, and for players with color-vision
+ * differences; blue and amber are only secondary cues.
+ */
+.hint-grid-note--chain-a,
+.hint-grid-note--chain-b {
+  place-self: center;
+  box-sizing: border-box;
+  width: calc(100% - 2px);
+  height: calc(100% - 2px);
+  opacity: 1;
+  font-weight: 700;
+  text-shadow: none;
+  transform: scale(1.04);
+}
+
+.hint-grid-note--chain-a {
+  color: #1d4ed8;
+  background: rgba(219, 234, 254, 0.9);
+  border: 1px solid #2563eb;
+  border-radius: 999px;
+}
+
+.hint-grid-note--chain-b {
+  color: #9a3412;
+  background: rgba(254, 243, 199, 0.92);
+  border: 1.5px dashed #b45309;
+  border-radius: 2px;
+}
+
+.hint-grid-note--removed::after {
+  content: '';
+  position: absolute;
+  left: 11%;
+  top: calc(50% - 0.5px);
+  width: 78%;
+  height: 1px;
+  border-radius: 999px;
+  background: #78716c;
+  transform: rotate(-45deg);
+}
+
+.hint-grid-note--remaining,
+.hint-grid-note--locked {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.hint-grid-note--remaining {
+  color: #15803d;
+}
+
+.dark .hint-grid-note {
+  color: #4ade80;
+}
+
+.dark .hint-grid-note--removed {
+  color: #a8a29e;
+}
+
+.dark .hint-grid-note--blocked {
+  color: #a8a29e;
+  opacity: 0.8;
+}
+
+.dark .hint-grid-note--possible {
+  color: #a8a29e;
+  opacity: 0.9;
+}
+
+.dark .hint-grid-note--chain-a {
+  color: #dbeafe;
+  background: rgba(30, 64, 175, 0.58);
+  border-color: #60a5fa;
+}
+
+.dark .hint-grid-note--chain-b {
+  color: #fef3c7;
+  background: rgba(146, 64, 14, 0.56);
+  border-color: #fbbf24;
+}
+
+.dark .hint-grid-note--removed::after {
+  background: #a8a29e;
+}
+
+@media (forced-colors: active) {
+  .hint-grid-note--chain-a,
+  .hint-grid-note--chain-b {
+    color: CanvasText;
+    background: Canvas;
+    border-color: CanvasText;
+    forced-color-adjust: none;
+  }
+}
+
+@keyframes hint-answer-arrive {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hint-grid-candidate--answer {
+    animation: none !important;
+  }
+}
+
 /* Touch devices get one lightweight moving layer per atmosphere. */
 @media (hover: none) and (pointer: coarse) {
   .bg-atmosphere-aurora,
@@ -1095,6 +1463,81 @@ html, body {
   pointer-events: none;
 }
 
+/* Player title: a compact Oku sticker with one calm sweep on Profile open. */
+.oku-profile-title-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  isolation: isolate;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 52%, #2563eb 100%);
+  border: 1px solid rgba(30, 64, 175, 0.92);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 2px 0 rgba(30, 64, 175, 0.95),
+    0 6px 13px rgba(37, 99, 235, 0.18);
+  transform: rotate(-0.35deg);
+}
+
+.oku-profile-title-badge > span {
+  position: relative;
+  z-index: 1;
+  line-height: 1;
+  text-shadow: 0 1px 1px rgba(30, 58, 138, 0.2);
+}
+
+.oku-profile-title-badge::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: -70%;
+  left: -52%;
+  width: 42%;
+  height: 240%;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(191, 219, 254, 0.16) 24%,
+    rgba(255, 255, 255, 0.78) 50%,
+    rgba(219, 234, 254, 0.2) 76%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  filter: blur(0.45px);
+  transform: translateX(-190%) skewX(-16deg);
+  animation: oku-profile-title-sweep 1600ms cubic-bezier(0.35, 0, 0.2, 1) 350ms 1 both;
+}
+
+.dark .oku-profile-title-badge {
+  color: #eff6ff;
+  background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 48%, #2563eb 100%);
+  border-color: rgba(96, 165, 250, 0.78);
+  box-shadow:
+    inset 0 1px 0 rgba(191, 219, 254, 0.3),
+    0 2px 0 rgba(23, 37, 84, 0.95),
+    0 7px 16px rgba(37, 99, 235, 0.22);
+}
+
+@keyframes oku-profile-title-sweep {
+  0% {
+    opacity: 0;
+    transform: translateX(-190%) skewX(-16deg);
+  }
+  14% {
+    opacity: 0.82;
+  }
+  76% {
+    opacity: 0.76;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(590%) skewX(-16deg);
+  }
+}
+
 /* Achievement rows return to their original size without a shadow track. */
 .oku-achievement-row-shell {
   position: relative;
@@ -1257,6 +1700,10 @@ html, body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .oku-profile-title-badge::after {
+    animation: none;
+  }
+
   .achievement-milestone-enter {
     animation-duration: 1ms !important;
   }

@@ -9,12 +9,14 @@ const makeSnapshot = (name, points, lastModifiedAt, progress = {}) => ({
     settings: {},
     points,
     progress,
+    hintUsageByPuzzle: {},
     purchasedBackgrounds: ['bg-default'],
     selectedBackground: 'bg-default',
     purchasedNumberColors: ['num-default'],
     selectedNumberColor: 'num-default',
     purchasedSkills: [],
     enabledSkills: [],
+    starterPackPurchased: false,
     purchasedSoundPacks: ['snd-zen'],
     selectedSoundPack: 'snd-zen',
     nextBonusClaimTime: 0,
@@ -246,6 +248,12 @@ const newestProgress = {
     },
 };
 storageState.data = makeSnapshot('newest-local', 333, 300, newestProgress);
+storageState.data.hintUsageByPuzzle = { 'Easy-3': 4 };
+storageState.data.starterPackPurchased = true;
+storageState.data.purchasedSkills = ['skill-focus', 'skill-scribe', 'skill-scan'];
+storageState.data.enabledSkills = ['skill-focus', 'skill-scribe', 'skill-scan'];
+storageState.data.purchasedSoundPacks = ['snd-zen', 'snd-piano'];
+storageState.data.purchasedNumberColors = ['num-default', 'num-teal'];
 navigator.onLine = true;
 
 const foregroundResult = await CloudSave.reconcileOnForeground();
@@ -268,6 +276,12 @@ const progressOperation = reconciliationOperations.find(({ reference }) => (
 assert.ok(profileOperation, 'the batch should contain the profile document');
 assert.ok(progressOperation, 'the same batch should contain the changed progress chunk');
 assert.equal(profileOperation.data.data.points, 333);
+assert.deepEqual(profileOperation.data.data.hintUsageByPuzzle, { 'Easy-3': 4 });
+assert.equal(profileOperation.data.data.starterPackPurchased, true);
+assert.deepEqual(profileOperation.data.data.purchasedSkills, ['skill-focus', 'skill-scribe', 'skill-scan']);
+assert.deepEqual(profileOperation.data.data.enabledSkills, ['skill-focus', 'skill-scribe', 'skill-scan']);
+assert.deepEqual(profileOperation.data.data.purchasedSoundPacks, ['snd-zen', 'snd-piano']);
+assert.deepEqual(profileOperation.data.data.purchasedNumberColors, ['num-default', 'num-teal']);
 assert.equal(progressOperation.data.levels['Easy-3'].status, 'completed');
 
 await CloudSave.disconnect({ flush: false });

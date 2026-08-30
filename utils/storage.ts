@@ -1,7 +1,7 @@
 
 import { AppSettings, Board, LevelProgress, StoredData, PepinoState, Difficulty, PermanentPurchaseOwnership, StorePurchaseUnlock, DiamondEarnSource, PlayerProfile } from '../types';
 import { Preferences } from '@capacitor/preferences';
-import { getScanRefillCost } from './constants';
+import { getHintCost, getScanRefillCost } from './constants';
 import {
   isActiveAccount,
   parseActiveProfile,
@@ -60,6 +60,17 @@ const sanitizeBreakdown = (breakdown: unknown): Record<string, number> => {
     for (const [key, value] of Object.entries(breakdown as Record<string, unknown>)) {
         const amount = Math.max(0, Math.floor(Number(value) || 0));
         if (amount > 0) sanitized[key] = amount;
+    }
+    return sanitized;
+};
+
+const sanitizeHintUsage = (usage: unknown): Record<string, number> => {
+    if (!usage || typeof usage !== 'object' || Array.isArray(usage)) return {};
+    const sanitized: Record<string, number> = {};
+    for (const [key, value] of Object.entries(usage as Record<string, unknown>)) {
+        if (!key || key.length > 120 || !Number.isFinite(value)) continue;
+        const count = Math.max(0, Math.floor(Number(value)));
+        if (count > 0) sanitized[key] = count;
     }
     return sanitized;
 };
@@ -160,6 +171,7 @@ const createInitialData = (): StoredData => ({
     settings: { ...DEFAULT_SETTINGS, hiddenDifficulties: [] },
     points: 0,
     progress: {},
+    hintUsageByPuzzle: {},
     normalPuzzleCatalogVersion: NORMAL_PUZZLE_CATALOG_VERSION,
     purchasedBackgrounds: ['bg-default', 'bg-dyn-default'],
     selectedBackground: 'bg-default',
@@ -217,6 +229,7 @@ function getStoredData(): StoredData {
     
     // Migrations
     if (typeof data.points !== 'number') data.points = 0;
+    data.hintUsageByPuzzle = sanitizeHintUsage(data.hintUsageByPuzzle);
 
     // Normal's human-flow catalogue replaces its previous boards. Preserve all
     // completions and rewards, but discard an unfinished snapshot whose fixed
@@ -327,9 +340,10 @@ function getStoredData(): StoredData {
     if (data.books2AllOwned === undefined) data.books2AllOwned = false;
     if (data.books3AllOwned === undefined) data.books3AllOwned = false;
     if (data.booksForeverOwned === undefined) data.booksForeverOwned = false;
-    // Backfill the number style added to the Starter Pack.
+    // Existing Starter Pack owners keep every permanent reward as the bundle
+    // evolves. Consumable diamonds are intentionally never re-awarded here.
     if (data.starterPackPurchased) {
-        if (!data.purchasedNumberColors.includes('num-teal')) data.purchasedNumberColors.push('num-teal');
+        ensureStarterPackUnlocked(data);
     }
     
     if (!data.unlockedPack2) data.unlockedPack2 = [];
@@ -761,7 +775,7 @@ function ensureStarterPackUnlocked(data: StoredData) {
   if (!data.enabledSkills) data.enabledSkills = [];
   if (!data.purchasedSoundPacks) data.purchasedSoundPacks = ['snd-zen'];
 
-  for (const skillId of ['skill-scribe', 'skill-scan']) {
+  for (const skillId of ['skill-focus', 'skill-scribe', 'skill-scan']) {
     if (!data.purchasedSkills.includes(skillId)) {
       data.purchasedSkills.push(skillId);
     }
@@ -1617,6 +1631,82 @@ export const Storage = {
   getLevelProgress: (difficulty: string, levelId: number): LevelProgress | undefined => {
     const key = `${difficulty}-${levelId}`;
     return getStoredData().progress[key];
+  },
+
+  getHintEconomy: (difficulty: Difficulty, levelId: number) => {
+    const data = getStoredData();
+    const key = `${difficulty}-${levelId}`;
+    const hintsUsed = Math.max(0, Math.floor(data.hintUsageByPuzzle?.[key] ?? 0));
+    return {
+      hintsUsed,
+      cost: getHintCost(hintsUsed),
+    };
+  },
+
+  consumeHint: (
+    difficulty: Difficulty,
+    levelId: number,
+    expectedHintsUsed: number,
+  ) => {
+    const data = getStoredData();
+    const key = `${difficulty}-${levelId}`;
+    const usage = data.hintUsageByPuzzle ?? {};
+    const hintsUsed = Math.max(0, Math.floor(usage[key] ?? 0));
+    const expected = Math.max(0, Math.floor(expectedHintsUsed));
+    const cost = getHintCost(hintsUsed);
+
+    if (hintsUsed !== expected) {
+      return {
+        success: false as const,
+        reason: 'stale' as const,
+        points: data.points,
+        hintsUsed,
+        cost,
+        nextCost: cost,
+        charged: 0,
+      };
+    }
+
+    if (data.points < cost) {
+      return {
+        success: false as const,
+        reason: 'insufficient-points' as const,
+        points: data.points,
+        hintsUsed,
+        cost,
+        nextCost: cost,
+        charged: 0,
+      };
+    }
+
+    data.points -= cost;
+    const nextHintsUsed = hintsUsed + 1;
+    data.hintUsageByPuzzle = {
+      ...usage,
+      [key]: nextHintsUsed,
+    };
+
+    if (!saveData(data)) {
+      return {
+        success: false as const,
+        reason: 'save-failed' as const,
+        points: getStoredData().points,
+        hintsUsed: Storage.getHintEconomy(difficulty, levelId).hintsUsed,
+        cost,
+        nextCost: getHintCost(hintsUsed),
+        charged: 0,
+      };
+    }
+
+    return {
+      success: true as const,
+      reason: 'consumed' as const,
+      points: data.points,
+      hintsUsed: nextHintsUsed,
+      cost,
+      nextCost: getHintCost(nextHintsUsed),
+      charged: cost,
+    };
   },
 
   saveLevelScanEconomy: (

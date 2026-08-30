@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Difficulty, AppSettings, Board, MoveLogEntry, CellValue } from '../types';
 import { useSudokuBoard } from '../hooks/useSudokuBoard';
 import { useGameSkills } from '../hooks/useGameSkills';
 import { useGameTimer } from '../hooks/useGameTimer';
 import { SudokuGrid } from './game/SudokuGrid';
-import { GameControls } from './game/GameControls';
+import { GameControls, type HintNotice } from './game/GameControls';
+import { HintTheater } from './game/HintTheater';
 import { NumberPad } from './game/NumberPad';
 import { WinModal } from './game/WinModal';
 import { generateReplayVideo, ReplayMove } from '../utils/replay';
@@ -13,7 +14,18 @@ import { hasPlayerBoardInput, Storage } from '../utils/storage';
 import { sounds } from '../utils/sound';
 import { Icons } from './ui/Icons';
 import { DiamondBalancePill } from './ui/DiamondBalancePill';
-import { formatTimeShort, getScanRefillCost } from '../utils/constants';
+import { formatTimeShort, getHintCost, getScanRefillCost } from '../utils/constants';
+import {
+  boardHintSignature,
+  cloneHintBoard,
+  createHintPlan,
+  type HintPlan,
+} from '../utils/hints';
+import {
+  createDevHintPreview,
+  scopeDevHintPreview,
+  type DevHintPreview,
+} from '../utils/devHintPreview';
 import { motion, AnimatePresence } from 'framer-motion';
 import { App as CapacitorApp } from '@capacitor/app';
 
@@ -31,6 +43,7 @@ interface SudokuGameProps {
   backgroundClass: string;
   numberColor: string;
   purchasedSkills: string[];
+  devHintPreview?: DevHintPreview;
 }
 
 const SCAN_ERROR_MESSAGES = [
@@ -84,6 +97,22 @@ interface PillMessage {
   holdMs: number;
 }
 
+interface PreparedHint {
+  puzzleKey: string;
+  board: Board;
+  plan: HintPlan;
+  signature: string;
+  expectedHintsUsed: number;
+}
+
+interface ActiveHint {
+  puzzleKey: string;
+  board: Board;
+  plan: HintPlan;
+}
+
+const EMPTY_HINT_SET = new Set<string>();
+
 const shuffledCopy = (messages: string[]) => {
   const shuffled = [...messages];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -106,7 +135,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   isSettingsOpen,
   backgroundClass,
   numberColor,
-  purchasedSkills
+  purchasedSkills,
+  devHintPreview,
 }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [isEraseMode, setIsEraseMode] = useState(false);
@@ -121,6 +151,53 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const [isGeneratingReplay, setIsGeneratingReplay] = useState(false);
   const [replayUrl, setReplayUrl] = useState<string | null>(null);
   const [showReplay, setShowReplay] = useState(false);
+
+  const puzzleKey = `${difficulty}-${levelId}`;
+  const activeDevHintPreview = scopeDevHintPreview(
+      devHintPreview,
+      difficulty,
+      levelId,
+  );
+  const devHintState = useMemo<ActiveHint | null>(() => {
+      if (!import.meta.env.DEV || !activeDevHintPreview) return null;
+      return {
+          ...createDevHintPreview(activeDevHintPreview),
+          puzzleKey,
+      };
+  }, [activeDevHintPreview, puzzleKey]);
+  const [hintUses, setHintUses] = useState(() => (
+      Storage.getHintEconomy(difficulty, levelId).hintsUsed
+  ));
+  const [isHintPreparing, setIsHintPreparing] = useState(false);
+  const [activeHint, setActiveHint] = useState<ActiveHint | null>(() => devHintState);
+  const [hintFrameIndex, setHintFrameIndex] = useState(0);
+  const [hintNotice, setHintNotice] = useState<HintNotice | null>(null);
+  const hintTransactionRef = useRef(false);
+  const hintPlacementRef = useRef(false);
+  const shouldRestoreHintFocusRef = useRef(false);
+  const isHintTheaterOpen = activeHint !== null;
+  const presentHintNotice = useCallback((notice: HintNotice) => {
+      hintTransactionRef.current = false;
+      setIsHintPreparing(false);
+      setHintNotice(notice);
+  }, []);
+  const dismissHintNotice = useCallback(() => {
+      hintTransactionRef.current = false;
+      setIsHintPreparing(false);
+      setHintNotice(null);
+  }, []);
+
+  useEffect(() => {
+      if (devHintState) {
+          setHintUses(0);
+          return;
+      }
+      const unsubscribe = Storage.subscribe((data) => {
+          const key = `${difficulty}-${levelId}`;
+          setHintUses(Math.max(0, Math.floor(data.hintUsageByPuzzle?.[key] ?? 0)));
+      });
+      return () => { unsubscribe(); };
+  }, [devHintState, difficulty, levelId]);
 
   const [animatingSections, setAnimatingSections] = useState<Set<string>>(new Set());
   const [nudgeCue, setNudgeCue] = useState<{r: number, c: number, key: number} | null>(null);
@@ -159,7 +236,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       isPaused,
       isCompleted,
       isEnding,
-      isSettingsOpen,
+      isSettingsOpen || isHintTheaterOpen,
       0
   );
 
@@ -172,6 +249,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       scanRefillsPurchasedVal?: number,
       scanAchievementElapsedSeconds?: number
   ) => {
+      if (devHintState) return;
       if (gameFinishedRef.current || isCompleted || isEnding) return;
       // A fresh or fully reset board is not a resumable game. Avoid creating
       // Continue Game entries for merely opening a puzzle, and remove an old
@@ -341,6 +419,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       // atomic and rejects duplicate completion calls in the same render frame.
       if (gameFinishedRef.current || isCompleted || isEnding) return;
       gameFinishedRef.current = true;
+      setActiveHint(null);
+      setHintNotice(null);
       setIsEnding(true);
       // Let the final number render in its selected style first, then smoothly
       // settle every player-entered number into the completed-board color.
@@ -359,6 +439,18 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           case Difficulty.Hard: points = 20; break;
           case Difficulty.Intense: points = 30; break;
           case Difficulty.Impossible: points = 50; break;
+      }
+
+      // The local Hint preview is a fully playable sandbox. Let it reach the
+      // normal completed state without awarding diamonds or changing the
+      // player's real Hard-level progress, stats, or achievements.
+      if (devHintState) {
+          setEarnedPoints(0);
+          window.setTimeout(() => {
+              setIsEnding(false);
+              setIsCompleted(true);
+          }, 350);
+          return;
       }
       
       setEarnedPoints(points);
@@ -435,6 +527,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       initializeBoard,
       handleCellClick,
       handleNumberInput,
+      placeNumberAt,
       handleUndo,
       handleErase,
       checkCompletion,
@@ -485,6 +578,219 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       isGameLocked: () => gameFinishedRef.current,
   });
 
+  useEffect(() => {
+      if (activeHint || !shouldRestoreHintFocusRef.current) return;
+      shouldRestoreHintFocusRef.current = false;
+      const frame = window.requestAnimationFrame(() => {
+          const target = document.querySelector<HTMLElement>('[data-hint-button]')
+              ?? document.querySelector<HTMLElement>('[aria-label="Back to levels"]');
+          target?.focus();
+      });
+      return () => window.cancelAnimationFrame(frame);
+  }, [activeHint]);
+
+  const closeHintUi = useCallback((restoreFocus = true) => {
+      shouldRestoreHintFocusRef.current = restoreFocus;
+      setActiveHint(null);
+      setHintNotice(null);
+      setIsHintPreparing(false);
+      hintTransactionRef.current = false;
+      // Keep the placement lock through the unmount. The next Hint resets it
+      // when its fresh plan opens, preventing a rapid double-tap from reusing
+      // the stale final-frame handler.
+  }, []);
+
+  const handleHintPlaceNumber = useCallback(() => {
+      if (
+          hintPlacementRef.current
+          || gameFinishedRef.current
+          || !activeHint
+          || hintFrameIndex !== activeHint.plan.frames.length - 1
+      ) return;
+      if (activeHint.puzzleKey !== puzzleKey) {
+          closeHintUi(false);
+          return;
+      }
+      hintPlacementRef.current = true;
+
+      const { row, col, value } = activeHint.plan.target;
+      const boardIsStillFrozen = boardHintSignature(board) === boardHintSignature(activeHint.board);
+      const placed = boardIsStillFrozen && placeNumberAt(
+          row,
+          col,
+          value,
+          isPaused,
+          isCompleted || isEnding,
+      );
+
+      if (!placed) {
+          shouldRestoreHintFocusRef.current = true;
+          setActiveHint(null);
+          setHintFrameIndex(0);
+          presentHintNotice({
+              kind: 'error',
+              message: 'The board changed. Tap Hint to try again.',
+          });
+          return;
+      }
+
+      setIsEraseMode(false);
+      closeHintUi(true);
+  }, [
+      activeHint,
+      board,
+      closeHintUi,
+      hintFrameIndex,
+      isCompleted,
+      isEnding,
+      isPaused,
+      placeNumberAt,
+      presentHintNotice,
+      puzzleKey,
+  ]);
+
+  const showPreparedHint = useCallback((prepared: PreparedHint) => {
+      // Revalidate both the visible board and the logical plan immediately
+      // before the atomic charge, even though Hint now opens with one tap.
+      if (prepared.puzzleKey !== puzzleKey) {
+          presentHintNotice({ kind: 'error', message: 'The puzzle changed. Tap Hint again.' });
+          return;
+      }
+      if (boardHintSignature(board) !== prepared.signature) {
+          presentHintNotice({ kind: 'error', message: 'The puzzle changed. Tap Hint again.' });
+          return;
+      }
+
+      const freshResult = createHintPlan(board, solvedBoard);
+      if (freshResult.status !== 'ready') {
+          presentHintNotice({ kind: 'error', message: 'Hint could not open. Nothing was charged.' });
+          return;
+      }
+
+      const samePlan = JSON.stringify(freshResult.plan) === JSON.stringify(prepared.plan);
+      if (!samePlan) {
+          presentHintNotice({ kind: 'error', message: 'A better move appeared. Tap Hint again.' });
+          return;
+      }
+
+      if (!devHintState) {
+          const consumption = Storage.consumeHint(difficulty, levelId, prepared.expectedHintsUsed);
+          if (!consumption.success) {
+              const economy = Storage.getHintEconomy(difficulty, levelId);
+              setHintUses(economy.hintsUsed);
+              presentHintNotice(consumption.reason === 'insufficient-points'
+                  ? { kind: 'insufficient' }
+                  : {
+                      kind: 'error',
+                      message: consumption.reason === 'stale'
+                          ? 'The price changed. Check it and tap Hint again.'
+                          : 'Hint could not open. Nothing was charged.',
+                  });
+              return;
+          }
+
+          setHintUses(consumption.hintsUsed);
+          onPointsChanged(consumption.points);
+      }
+
+      setHintNotice(null);
+      pendingPillRef.current = null;
+      pillMessageRef.current = null;
+      isPillExitingRef.current = false;
+      setPillMessage(null);
+      setNudgeCue(null);
+      setHintFrameIndex(0);
+      hintPlacementRef.current = false;
+      setActiveHint({
+          puzzleKey: prepared.puzzleKey,
+          board: prepared.board,
+          plan: freshResult.plan,
+      });
+      sounds.playSelectionHaptic();
+  }, [board, devHintState, difficulty, levelId, onPointsChanged, presentHintNotice, puzzleKey, solvedBoard]);
+
+  const handleHintRequest = useCallback(() => {
+      if (
+          hintTransactionRef.current
+          || gameFinishedRef.current
+          || isPaused
+          || isCompleted
+          || isEnding
+          || isScanning
+          || isHintTheaterOpen
+          || board.length !== 9
+          || solvedBoard.length !== 9
+      ) return;
+
+      hintTransactionRef.current = true;
+      setHintNotice(null);
+      setIsHintPreparing(true);
+      sounds.playClick();
+
+      try {
+          const result = createHintPlan(board, solvedBoard);
+          if (result.status === 'wrong-board') {
+              presentHintNotice({
+                  kind: 'wrong-board',
+                  canUseScan: purchasedSkills.includes('skill-scan') && scanUses > 0,
+              });
+              return;
+          }
+          if (result.status === 'complete') {
+              presentHintNotice({ kind: 'complete' });
+              return;
+          }
+          if (result.status === 'unsupported') {
+              presentHintNotice({ kind: 'unsupported' });
+              return;
+          }
+          if (result.status !== 'ready') {
+              presentHintNotice({
+                  kind: 'error',
+                  message: 'Hint could not open. Nothing was charged.',
+              });
+              return;
+          }
+
+          const prepared: PreparedHint = {
+              puzzleKey,
+              board: cloneHintBoard(board),
+              plan: result.plan,
+              signature: boardHintSignature(board),
+              // Charge against the price the player actually saw. If cloud or
+              // another session changed usage meanwhile, consumeHint rejects
+              // this stale count and the player can confirm the refreshed price.
+              expectedHintsUsed: devHintState ? 0 : hintUses,
+          };
+
+          showPreparedHint(prepared);
+      } catch {
+          presentHintNotice({
+              kind: 'error',
+              message: 'Hint could not open. Nothing was charged.',
+          });
+      } finally {
+          setIsHintPreparing(false);
+      }
+  }, [
+      board,
+      devHintState,
+      difficulty,
+      isCompleted,
+      isEnding,
+      isHintTheaterOpen,
+      isPaused,
+      isScanning,
+      hintUses,
+      levelId,
+      presentHintNotice,
+      purchasedSkills,
+      puzzleKey,
+      scanUses,
+      showPreparedHint,
+      solvedBoard,
+  ]);
+
   // Keep lifecycle listeners stable while always saving the latest render's
   // board, timer, move log, and remaining skill uses.
   saveCurrentProgressRef.current = () => {
@@ -530,8 +836,14 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       halfwayTrackingReadyRef.current = false;
       notesReadyShownRef.current = false;
       gameFinishedRef.current = false;
-      const progress = Storage.getLevelProgress(difficulty, levelId);
-      if (progress && progress.status === 'in-progress' && progress.boardState) {
+      const progress = devHintState
+          ? null
+          : Storage.getLevelProgress(difficulty, levelId);
+      if (devHintState) {
+          hasUsedNotesRef.current = false;
+          initializeBoard(cloneHintBoard(devHintState.board));
+          setTimer(0);
+      } else if (progress && progress.status === 'in-progress' && progress.boardState) {
           hasUsedNotesRef.current = progress.hasUsedNotes === true
               || progress.boardState.some(row => row.some(cell => !cell.isFixed && cell.notes.length > 0));
           initializeBoard(progress.boardState, progress.moveLog, progress.hasMadeMistake);
@@ -547,6 +859,14 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       // reset and therefore has no resumable board snapshot.
       setScanUses(progress?.scanUses ?? 3);
       setScanRefillsPurchased(progress?.scanRefillsPurchased ?? 0);
+      setHintUses(devHintState ? 0 : Storage.getHintEconomy(difficulty, levelId).hintsUsed);
+      setActiveHint(devHintState);
+      setHintFrameIndex(0);
+      setHintNotice(null);
+      setIsHintPreparing(false);
+      hintTransactionRef.current = false;
+      hintPlacementRef.current = false;
+      shouldRestoreHintFocusRef.current = false;
       setIsCompleted(false);
       setIsEnding(false);
       setAreCompletionNumbersLocked(false);
@@ -558,7 +878,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setAnimatingSections(new Set());
 
       const editableCells = initialBoardRef.current.flat().filter(cell => !cell.isFixed).length;
-      const currentBoard = progress?.boardState ?? initialBoardRef.current;
+      const currentBoard = devHintState?.board ?? progress?.boardState ?? initialBoardRef.current;
       const filledEditableCells = currentBoard.flat().filter(cell => !cell.isFixed && cell.value !== null).length;
       halfwayShownRef.current = editableCells > 0 && filledEditableCells >= Math.ceil(editableCells / 2);
       
@@ -571,7 +891,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           clearTimeout(hintTimer);
           clearTimeout(trackingTimer);
       };
-  }, [difficulty, levelId, initializeBoard, setTimer, setScanUses, setScanRefillsPurchased]);
+  }, [difficulty, levelId, initializeBoard, setTimer, setScanUses, setScanRefillsPurchased, devHintState]);
 
   useEffect(() => {
       if (
@@ -607,7 +927,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           isPaused ||
           isCompleted ||
           isEnding ||
-          isSettingsOpen
+          isSettingsOpen ||
+          isHintTheaterOpen
       ) return;
 
       const boardSignature = board
@@ -665,7 +986,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           window.clearTimeout(showTimer);
           if (clearTimer !== undefined) window.clearTimeout(clearTimer);
       };
-  }, [board, purchasedSkills, isPaused, isCompleted, isEnding, isSettingsOpen, nudgeActivityVersion]);
+  }, [board, purchasedSkills, isPaused, isCompleted, isEnding, isSettingsOpen, isHintTheaterOpen, nudgeActivityVersion]);
 
   const generateReplay = () => {
         if (isGeneratingReplay || replayUrl) return;
@@ -778,7 +1099,14 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       // allowance and refill-price ladder. Previously spent diamonds remain
       // spent and are never refunded here.
       restartTimerRef.current = window.setTimeout(() => {
-          Storage.clearLevelProgress(difficulty, levelId, true);
+          if (!devHintState) Storage.clearLevelProgress(difficulty, levelId, true);
+          setActiveHint(null);
+          setHintFrameIndex(0);
+          setHintNotice(null);
+          setIsHintPreparing(false);
+          hintTransactionRef.current = false;
+          hintPlacementRef.current = false;
+          shouldRestoreHintFocusRef.current = false;
           initializeBoard();
           setTimer(0);
           setScanUses(3);
@@ -835,6 +1163,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   };
   
   const handleBackgroundClick = (e: React.MouseEvent) => {
+      if (isHintTheaterOpen) return;
       if (e.target === e.currentTarget) {
           setSelectedCell(null);
       }
@@ -856,14 +1185,14 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   }, [nudgeCue]);
 
   const onCellClickWrapper = useCallback((e: React.MouseEvent, r: number, c: number) => {
-      if (gameFinishedRef.current) return;
+      if (gameFinishedRef.current || isHintTheaterOpen) return;
       if (
           nudgeCue?.r === r &&
           nudgeCue?.c === c &&
           !countedNudgeCuesRef.current.has(nudgeCue.key)
       ) {
           countedNudgeCuesRef.current.add(nudgeCue.key);
-          Storage.recordNudgeCellClick();
+          if (!devHintState) Storage.recordNudgeCellClick();
       }
       setNudgeCue(current => current?.r === r && current?.c === c ? null : current);
       if (settings.digitFirst && isEraseMode) {
@@ -871,28 +1200,28 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           return;
       }
       handleCellClick(r, c, isPaused, isCompleted || isEnding);
-  }, [handleCellClick, handleErase, isPaused, isCompleted, isEnding, settings.digitFirst, isEraseMode, nudgeCue]);
+  }, [handleCellClick, handleErase, isPaused, isCompleted, isEnding, settings.digitFirst, isEraseMode, nudgeCue, isHintTheaterOpen]);
 
   const onCellLongPressWrapper = useCallback((r: number, c: number) => {
-      if (gameFinishedRef.current || !settings.digitFirst || !isPencilMode || activeNumber === null) return;
+      if (gameFinishedRef.current || isHintTheaterOpen || !settings.digitFirst || !isPencilMode || activeNumber === null) return;
       handleCellClick(r, c, isPaused, isCompleted || isEnding, true);
-  }, [handleCellClick, isPaused, isCompleted, isEnding, settings.digitFirst, isPencilMode, activeNumber]);
+  }, [handleCellClick, isPaused, isCompleted, isEnding, settings.digitFirst, isPencilMode, activeNumber, isHintTheaterOpen]);
 
   const onCellExploreWrapper = useCallback((r: number, c: number) => {
-      if (gameFinishedRef.current || isPaused || isCompleted || isEnding) return;
+      if (gameFinishedRef.current || isHintTheaterOpen || isPaused || isCompleted || isEnding) return;
       setSelectedCell([r, c]);
-  }, [isPaused, isCompleted, isEnding, setSelectedCell]);
+  }, [isPaused, isCompleted, isEnding, setSelectedCell, isHintTheaterOpen]);
 
   const onNumberClickWrapper = useCallback((e: React.MouseEvent, n: number) => {
-      if (gameFinishedRef.current) return;
+      if (gameFinishedRef.current || isHintTheaterOpen) return;
       setIsEraseMode(false);
       handleNumberInput(n, isPaused, isCompleted || isEnding);
-  }, [handleNumberInput, isPaused, isCompleted, isEnding]);
+  }, [handleNumberInput, isPaused, isCompleted, isEnding, isHintTheaterOpen]);
 
   const onNumberLongPressWrapper = useCallback((_e: React.MouseEvent, n: number) => {
-      if (gameFinishedRef.current) return;
+      if (gameFinishedRef.current || isHintTheaterOpen) return;
       handleNumberInput(n, isPaused, isCompleted || isEnding, true);
-  }, [handleNumberInput, isPaused, isCompleted, isEnding]);
+  }, [handleNumberInput, isPaused, isCompleted, isEnding, isHintTheaterOpen]);
 
   const handleBackToLevels = () => {
       if (gameFinishedRef.current) return;
@@ -904,11 +1233,26 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 
   return (
     <>
+      <AnimatePresence>
+          {activeHint && (
+              <motion.div
+                  key="hint-backdrop"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="fixed inset-0 z-[300] bg-stone-900/40 dark:bg-black/60 backdrop-blur-[2px]"
+                  aria-hidden="true"
+              />
+          )}
+      </AnimatePresence>
+
       <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
           className="w-full flex justify-center px-6 md:px-0 pt-4 md:pt-7 pb-4 md:pb-5 relative z-40 shrink-0"
+          aria-hidden={isHintTheaterOpen || undefined}
       >
           <div className="w-full max-w-md md:max-w-[700px] flex items-center justify-between relative">
               {/* Left Column: Back Button */}
@@ -947,14 +1291,14 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                       </button>
                   )}
                   <button onClick={() => {
-                      if (gameFinishedRef.current) return;
+                      if (gameFinishedRef.current || isHintTheaterOpen) return;
                       sounds.playClick();
                       setIsPaused(true);
                   }} aria-label="Pause game" className="p-2 md:p-2.5 rounded-full transition text-t-icon active:scale-95">
                       <Icons.Pause className="w-6 h-6 md:w-7 md:h-7" />
                   </button>
                   <button onClick={() => {
-                      if (gameFinishedRef.current) return;
+                      if (gameFinishedRef.current || isHintTheaterOpen) return;
                       sounds.playClick();
                       onSettingsOpen();
                   }} aria-label="Game settings" className="p-2 md:p-2.5 rounded-full transition text-t-icon active:scale-95">
@@ -975,10 +1319,10 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
              initial={{ opacity: 0, scale: 0.96 }}
              animate={{ opacity: 1, scale: 1 }}
              transition={{ duration: 0.5, delay: 0.08, type: "spring", stiffness: 100, damping: 15 }}
-             className="w-full flex justify-center relative overflow-visible"
+             className={`w-full flex justify-center relative overflow-visible ${activeHint ? 'z-[310]' : ''}`}
          >
             <AnimatePresence mode="wait" onExitComplete={handlePillExitComplete}>
-                {pillMessage && (
+                {pillMessage && !activeHint && (
                     <motion.div
                         key={pillMessage.id}
                         initial={{ y: 44, opacity: 0 }}
@@ -1014,31 +1358,54 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                 )}
             </AnimatePresence>
 
-            <div className="relative z-10 w-full flex justify-center" onPointerDown={registerNudgeActivity}>
+            <div
+                className="relative z-10 w-full flex justify-center"
+                onPointerDown={activeHint ? undefined : registerNudgeActivity}
+                aria-hidden={activeHint ? true : undefined}
+            >
                 <SudokuGrid
-                    board={board}
-                    selectedCell={selectedCell}
-                    activeNumber={activeNumber}
-                    conflicts={conflicts}
-                    guardRejectedCell={guardRejectedCell}
-                    nudgeCue={nudgeCue}
-                    isScanning={isScanning}
-                    isScanSuccess={isScanSuccess}
-                    animatingSections={animatingSections}
+                    board={activeHint?.board ?? board}
+                    selectedCell={activeHint ? null : selectedCell}
+                    activeNumber={activeHint ? null : activeNumber}
+                    conflicts={activeHint ? EMPTY_HINT_SET : conflicts}
+                    guardRejectedCell={activeHint ? null : guardRejectedCell}
+                    nudgeCue={activeHint ? null : nudgeCue}
+                    isScanning={activeHint ? false : isScanning}
+                    isScanSuccess={activeHint ? false : isScanSuccess}
+                    animatingSections={activeHint ? EMPTY_HINT_SET : animatingSections}
                     settings={settings}
-                    numberColor={numberColor}
+                    numberColor={activeHint ? 'text-stone-700 dark:text-stone-300' : numberColor}
                     onCellClick={onCellClickWrapper}
                     onCellExplore={onCellExploreWrapper}
-                    enableDragExplore={!settings.digitFirst}
+                    enableDragExplore={!activeHint && !settings.digitFirst}
                     onCellLongPress={onCellLongPressWrapper}
-                    enableCellLongPress={settings.digitFirst && isPencilMode && activeNumber !== null}
-                    hideNotes={isFocusMode}
-                    lockPlayerNumbers={areCompletionNumbersLocked}
+                    enableCellLongPress={!activeHint && settings.digitFirst && isPencilMode && activeNumber !== null}
+                    hideNotes={activeHint ? true : isFocusMode}
+                    lockPlayerNumbers={activeHint ? true : areCompletionNumbersLocked}
+                    interactive={!activeHint}
+                    hintFrame={activeHint?.plan.frames[hintFrameIndex]}
                 />
             </div>
          </motion.div>
 
+         {activeHint && (
+             <div
+                 className="fixed inset-x-0 bottom-0 z-[320] w-full flex items-end justify-center pointer-events-none"
+                 onClick={(event) => event.stopPropagation()}
+             >
+                 <div className="w-full flex justify-center pointer-events-auto">
+                     <HintTheater
+                         plan={activeHint.plan}
+                         frameIndex={hintFrameIndex}
+                         onFrameIndexChange={setHintFrameIndex}
+                         onPlaceNumber={handleHintPlaceNumber}
+                     />
+                 </div>
+             </div>
+         )}
+
          {/* Number Pad */}
+         {!activeHint && (
          <motion.div 
              initial={{ opacity: 0, y: 15 }}
              animate={{ opacity: 1, y: 0 }}
@@ -1054,10 +1421,12 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                 numberColor={numberColor}
                 onNumberClick={onNumberClickWrapper}
                 onNumberLongPress={onNumberLongPressWrapper}
-            />
+             />
          </motion.div>
+         )}
 
          {/* Game Controls - Increased spacing (mt-10) */}
+         {!activeHint && (
          <motion.div 
              initial={{ opacity: 0, y: 15 }}
              animate={{ opacity: 1, y: 0 }}
@@ -1131,12 +1500,27 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                  currentPoints={currentPoints}
                  isScanning={isScanning}
                  scanCooldown={scanCooldown}
+                 hintCost={devHintState ? 0 : getHintCost(hintUses)}
+                 hintDisabled={
+                     isPaused
+                     || isCompleted
+                     || isEnding
+                     || isScanning
+                     || isHintTheaterOpen
+                     || board.length !== 9
+                     || solvedBoard.length !== 9
+                 }
+                 isHintPreparing={isHintPreparing}
+                 hintNotice={hintNotice}
+                 onHintRequest={handleHintRequest}
+                 onDismissHintNotice={dismissHintNotice}
                  onScan={() => {
                      if (gameFinishedRef.current) return;
                      handleScan(isPaused, isCompleted || isEnding);
                  }}
                  onPurchaseScanRefill={() => {
                      if (gameFinishedRef.current || isPaused || isCompleted || isEnding || scanUses > 0) return false;
+                     if (devHintState) return false;
                      const result = Storage.purchaseScanRefill(difficulty, levelId);
                      if (!result.success) return false;
 
@@ -1154,8 +1538,10 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                  onDevSolve={settings.devAutoSolve ? handleDevSolve : undefined}
              />
          </motion.div>
+         )}
          
          {/* Deselect Text - Increased spacing (mt-8) */}
+         {!activeHint && (
          <motion.div 
              initial={{ opacity: 0 }}
              animate={{ opacity: showStartHint ? 1 : 0 }}
@@ -1164,6 +1550,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
          >
              <span className="text-xs font-light text-stone-500 dark:text-stone-400 tracking-wide">Tap here to deselect</span>
          </motion.div>
+         )}
       </div>
 
       <AnimatePresence>
@@ -1260,7 +1647,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
               generateReplayEnabled={settings.generateReplay}
               onReplay={(e) => {
                   e.stopPropagation();
-                  Storage.recordReplayWatch(`${difficulty}-${levelId}`);
+                  if (!devHintState) Storage.recordReplayWatch(`${difficulty}-${levelId}`);
                   setShowReplay(true);
               }}
               onShareReplay={handleShareReplay}

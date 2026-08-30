@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Board, Cell, AppSettings } from '../../types';
 import SudokuCell from './SudokuCell';
+import { HintGridOverlay } from './HintGridOverlay';
+import type { HintVisualFrame } from '../../utils/hints';
 
 interface SudokuGridProps {
     board: Board;
@@ -21,6 +23,9 @@ interface SudokuGridProps {
     enableCellLongPress: boolean;
     hideNotes?: boolean;
     lockPlayerNumbers?: boolean;
+    interactive?: boolean;
+    squareSizeOverride?: string;
+    hintFrame?: HintVisualFrame;
 }
 
 export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
@@ -41,7 +46,10 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     onCellLongPress,
     enableCellLongPress,
     hideNotes = false,
-    lockPlayerNumbers = false
+    lockPlayerNumbers = false,
+    interactive = true,
+    squareSizeOverride,
+    hintFrame,
 }) => {
     const gridAreaRef = useRef<HTMLDivElement | null>(null);
     const [isDragExploring, setIsDragExploring] = useState(false);
@@ -75,7 +83,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     };
 
     const handleGridPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-        if (!enableDragExplore) return;
+        if (!interactive || !enableDragExplore) return;
         if (!e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return;
         suppressNextClickRef.current = false;
         dragRef.current = {
@@ -89,7 +97,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     };
 
     const handleGridPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-        if (!enableDragExplore) return;
+        if (!interactive || !enableDragExplore) return;
         const drag = dragRef.current;
         if (!drag.active || drag.pointerId !== e.pointerId) return;
 
@@ -125,6 +133,11 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     };
 
     const handleGridClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!interactive) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
         if (!suppressNextClickRef.current) return;
         suppressNextClickRef.current = false;
         e.preventDefault();
@@ -132,7 +145,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     };
 
     // Phones remain width-limited while tablets can use a little more of their canvas.
-    const squareSize = 'min(96vw, 53dvh, 560px)';
+    const squareSize = squareSizeOverride ?? 'min(96vw, 53dvh, 560px)';
     const mainFontSize = `calc(${squareSize} / 9 * 0.6)`;
     const noteFontSize = `calc(${squareSize} / 9 * 0.22)`;
     const noteLineHeight = `calc(${squareSize} / 9 * 0.25)`;
@@ -145,6 +158,13 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
         }
         return null;
     }, [activeNumber, selectedCell, board]);
+
+    const hintSourceCells = useMemo(() => new Set(
+        (hintFrame?.sourceCells ?? []).map(cell => `${cell.row}:${cell.col}`)
+    ), [hintFrame]);
+    const hintSupportSourceCells = useMemo(() => new Set(
+        (hintFrame?.supportSourceCells ?? []).map(cell => `${cell.row}:${cell.col}`)
+    ), [hintFrame]);
 
     const getSectionOverlayStyle = (sectionId: string) => {
         if (sectionId === 'full-board') {
@@ -189,7 +209,8 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     return (
         <div className="flex-none w-full flex flex-col items-center justify-start min-h-0 px-0 pb-2 pt-[10px]">
             <div 
-                className="bg-[var(--grid-thick)] rounded-lg overflow-hidden relative flex-none"
+                data-sudoku-grid-root
+                className={`bg-[var(--grid-thick)] rounded-lg overflow-hidden relative flex-none ${interactive ? '' : 'sudoku-grid-readonly'}`}
                 onPointerDown={handleGridPointerDown}
                 onPointerMove={handleGridPointerMove}
                 onPointerUp={handleGridPointerUp}
@@ -207,7 +228,8 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                     isolation: 'isolate',
                     backfaceVisibility: 'hidden',
                     WebkitBackfaceVisibility: 'hidden',
-                    touchAction: 'none'
+                    touchAction: interactive ? 'none' : 'pan-y',
+                    cursor: interactive ? undefined : 'default',
                 }}
             >
             
@@ -384,7 +406,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                                 isGuardRejected={guardRejectedCell?.row === rIndex && guardRejectedCell?.col === cIndex}
                                 settings={settings}
                                 numberColor={numberColor}
-                                onCellClick={onCellClick}
+                                onCellClick={interactive ? onCellClick : () => {}}
                                 onCellLongPress={onCellLongPress}
                                 enableLongPress={enableCellLongPress}
                                 mainFontSize={mainFontSize}
@@ -392,11 +414,22 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                                 noteLineHeight={noteLineHeight}
                                 hideNotes={hideNotes}
                                 lockPlayerNumbers={lockPlayerNumbers}
+                                isHintSource={hintSourceCells.has(`${rIndex}:${cIndex}`)}
+                                isHintSupportSource={hintSupportSourceCells.has(`${rIndex}:${cIndex}`)}
                                 onlyContent={true}
                             />
                         );
                     }))}
                 </div>
+
+                {hintFrame && (
+                    <HintGridOverlay
+                        frame={hintFrame}
+                        mainFontSize={mainFontSize}
+                        noteFontSize={noteFontSize}
+                        noteLineHeight={noteLineHeight}
+                    />
+                )}
             </div>
             
             {/* Crisp vector overlay outer border on top of grid lines and cell backgrounds */}

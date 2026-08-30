@@ -26,6 +26,8 @@ interface SudokuCellProps {
     noteLineHeight: string;
     hideNotes?: boolean;
     lockPlayerNumbers?: boolean;
+    isHintSource?: boolean;
+    isHintSupportSource?: boolean;
     onlyBackground?: boolean;
     onlyContent?: boolean;
 }
@@ -54,6 +56,8 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     noteLineHeight,
     hideNotes = false,
     lockPlayerNumbers = false,
+    isHintSource = false,
+    isHintSupportSource = false,
     onlyBackground = false,
     onlyContent = false
 }) => {
@@ -104,7 +108,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     else if (r === 8 && c === 0) cornerClass = 'rounded-bl-[6px] ';
     else if (r === 8 && c === 8) cornerClass = 'rounded-br-[6px] ';
 
-    let classes = `w-full h-full flex items-center justify-center cursor-pointer select-none relative sudoku-cell ${cornerClass}`;
+    let classes = `w-full h-full flex items-center justify-center cursor-pointer select-none relative sudoku-cell ${cornerClass}${isHintSource ? 'sudoku-cell--hint-source ' : ''}${isHintSupportSource ? 'sudoku-cell--hint-support ' : ''}`;
     
     let bgClass = ''; 
 
@@ -179,12 +183,6 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
         {!onlyContent && (
             <>
                 <div className={`absolute inset-0 ${bgClass} ${cornerClass} sudoku-cell-bg pointer-events-none z-0`} />
-                {isSelected && isMarkedWrong && (
-                    <div
-                        className={`absolute inset-0 ${cornerClass} pointer-events-none z-10 shadow-[inset_0_0_0_3px_rgba(59,130,246,0.95)] dark:shadow-[inset_0_0_0_3px_rgba(96,165,250,1)]`}
-                        aria-hidden="true"
-                    />
-                )}
                 {isNudgeCue && (
                     <div className={`nudge-cell-cue absolute inset-0 ${cornerClass} pointer-events-none z-10`} aria-hidden="true" />
                 )}
@@ -202,7 +200,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
                     <span
                         key={`value-${cell.value}`}
                         data-premium-number={cell.value}
-                        className={`leading-none pt-[0.1em] relative z-20 inline-block sudoku-player-number ${!isError && !isConflict && !isMarkedWrong ? numberColor : ''} ${lockPlayerNumbers ? 'sudoku-player-number-locked' : ''}`}
+                        className={`leading-none pt-[0.1em] relative z-20 inline-block sudoku-player-number ${!isError && !isConflict && !isMarkedWrong ? (isHintSource ? 'sudoku-player-number--hint-source' : isHintSupportSource ? 'sudoku-player-number--hint-support' : numberColor) : ''} ${lockPlayerNumbers ? 'sudoku-player-number-locked' : ''}`}
                     >
                         {cell.value}
                     </span>

@@ -133,6 +133,17 @@ export const getScanRefillCost = (refillsPurchased: number): number => (
     )]
 );
 
+// Hint sessions get progressively more valuable, with every use after the
+// second capped at the same predictable price.
+export const HINT_PRICES = [5, 20, 40] as const;
+
+export const getHintCost = (hintsUsed: number): number => (
+    HINT_PRICES[Math.min(
+        Math.max(0, Math.floor(hintsUsed)),
+        HINT_PRICES.length - 1
+    )]
+);
+
 export const getDifficultyPoints = (diff: Difficulty) => {
     switch(diff) {
         case Difficulty.SuperEasy: return 5;
@@ -281,8 +292,8 @@ export const SOUND_PACKS = [
 export const SKILLS = [
     { id: 'skill-nudge', name: 'Light', cost: 100, icon: Icons.Nudge, class: 'text-amber-500', bgClass: 'bg-amber-50/60 dark:bg-amber-900/10', description: 'Passive skill. Highlights a helpful last empty cell based on your inputs.' },
     { id: 'skill-focus', name: 'Focus', cost: 200, icon: Icons.Focus, class: '', bgClass: 'bg-blue-50/60 dark:bg-blue-900/10', description: 'Active skill. Temporarily hides every note for a clearer view.' },
-    { id: 'skill-scribe', name: 'Guard', cost: 300, icon: Icons.Guard, class: '', bgClass: 'bg-blue-50/60 dark:bg-blue-900/10', description: 'Passive skill. Blocks notes that conflict with your current board.' },
-    { id: 'skill-scan', name: 'Scan', cost: 400, icon: Icons.Scan, class: 'text-red-500', bgClass: 'bg-red-50/60 dark:bg-red-900/10', description: 'Spot errors instantly. Includes 3 free uses per puzzle.' },
+    { id: 'skill-scribe', name: 'Guard', cost: 200, icon: Icons.Guard, class: '', bgClass: 'bg-blue-50/60 dark:bg-blue-900/10', description: 'Passive skill. Blocks notes that conflict with your current board.' },
+    { id: 'skill-scan', name: 'Scan', cost: 200, icon: Icons.Scan, class: 'text-red-500', bgClass: 'bg-red-50/60 dark:bg-red-900/10', description: 'Spot errors instantly. Includes 3 free uses per puzzle.' },
 ];
 
 export const DIAMOND_OFFERS: DiamondOffer[] = [
@@ -303,8 +314,8 @@ export const DIAMOND_OFFERS: DiamondOffer[] = [
         productId: 'com.oku.sudoku.iap.starterpack',
         title: 'Starter Pack',
         subtitle: 'Everything you need to begin',
-        diamonds: 600,
-        includes: ['Guard & Scan Skills Unlocked', 'Piano Sound Pack Unlocked', 'Teal Number Style Unlocked'],
+        diamonds: 800,
+        includes: ['Focus, Guard & Scan Skills Unlocked', 'Piano Sound Pack Unlocked', 'Teal Number Style Unlocked'],
         badge: 'BEST VALUE',
         priceLabel: '$2.99',
         type: 'starter',

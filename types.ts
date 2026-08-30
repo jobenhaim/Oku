@@ -88,6 +88,8 @@ export interface StoredData {
   settings: AppSettings;
   points: number;
   progress: Record<string, LevelProgress>; // key: "Difficulty-LevelID"
+  /** Successful Hint Theater sessions per puzzle, used to derive the capped price. */
+  hintUsageByPuzzle?: Record<string, number>;
   normalPuzzleCatalogVersion?: number; // Safely resets stale in-progress Normal boards after catalogue updates
   purchasedBackgrounds: string[];
   selectedBackground: string | null;

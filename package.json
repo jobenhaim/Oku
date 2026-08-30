@@ -1,6 +1,6 @@
 {
   "name": "oku",
-  "version": "3.9.23",
+  "version": "4.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,6 +11,8 @@
     "test:storage-consistency": "node scripts/test-storage-consistency.mjs",
     "test:cloud-save": "node scripts/test-cloud-save.mjs",
     "test:auth-safety": "node scripts/test-auth-safety.mjs",
+    "test:hints": "node scripts/test-hints.mjs",
+    "audit:hints": "node scripts/audit-hint-user-paths.mjs",
     "audit:sudoku": "node scripts/audit-sudoku.mjs",
     "audit:sudoku:impossible": "node scripts/audit-impossible-sudoku.mjs",
     "mine:sudoku": "node scripts/mine-sudoku-catalog.mjs",

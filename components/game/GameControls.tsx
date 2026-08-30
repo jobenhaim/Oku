@@ -4,6 +4,13 @@ import { Icons } from '../ui/Icons';
 import { sounds } from '../../utils/sound';
 import { AnimatePresence, motion } from 'framer-motion';
 
+export type HintNotice =
+    | { kind: 'wrong-board'; canUseScan: boolean }
+    | { kind: 'insufficient' }
+    | { kind: 'unsupported' }
+    | { kind: 'complete' }
+    | { kind: 'error'; message?: string };
+
 interface GameControlsProps {
     canUndo: boolean;
     canErase: boolean;
@@ -23,6 +30,12 @@ interface GameControlsProps {
     scanCooldown: boolean;
     onScan: (e: React.MouseEvent) => void;
     onPurchaseScanRefill: () => boolean;
+    hintCost: number;
+    hintDisabled: boolean;
+    isHintPreparing: boolean;
+    hintNotice: HintNotice | null;
+    onHintRequest: () => void;
+    onDismissHintNotice: () => void;
     onDevSolve?: () => void;
 }
 
@@ -44,6 +57,12 @@ export const GameControls: React.FC<GameControlsProps> = ({
     scanCooldown,
     onScan,
     onPurchaseScanRefill,
+    hintCost,
+    hintDisabled,
+    isHintPreparing,
+    hintNotice,
+    onHintRequest,
+    onDismissHintNotice,
     onDevSolve
 }) => {
     const [showScanRefill, setShowScanRefill] = useState(false);
@@ -64,6 +83,46 @@ export const GameControls: React.FC<GameControlsProps> = ({
         return () => document.removeEventListener('pointerdown', handleOutsidePress);
     }, [showScanRefill]);
 
+    useEffect(() => {
+        if (!hintNotice) return;
+        setShowScanRefill(false);
+        const dismissTimer = window.setTimeout(onDismissHintNotice, 5200);
+        return () => window.clearTimeout(dismissTimer);
+    }, [hintNotice, onDismissHintNotice]);
+
+    const hintNoticeContent = (() => {
+        if (!hintNotice) return null;
+        switch (hintNotice.kind) {
+            case 'wrong-board':
+                return {
+                    title: 'A number is incorrect',
+                    body: hintNotice.canUseScan
+                        ? 'Use Scan to find it.'
+                        : 'Check the numbers you placed.',
+                };
+            case 'insufficient':
+                return {
+                    title: 'Not enough diamonds',
+                    body: null,
+                };
+            case 'unsupported':
+                return {
+                    title: 'No Hint found yet',
+                    body: 'Try another move first. Nothing was charged.',
+                };
+            case 'complete':
+                return {
+                    title: 'Puzzle already filled',
+                    body: 'There is nothing left to Hint.',
+                };
+            default:
+                return {
+                    title: 'Hint unavailable',
+                    body: hintNotice.message ?? 'Try again. Nothing was charged.',
+                };
+        }
+    })();
+
     // Helper for common enabled/disabled styles
     const getBaseButtonStyle = (isEnabled: boolean) => 
         isEnabled 
@@ -78,12 +137,12 @@ export const GameControls: React.FC<GameControlsProps> = ({
 
     return (
         <div className="flex flex-col gap-4 md:gap-5 relative">
-            <div className="flex justify-between w-full relative">
+            <div className="flex items-start justify-between gap-1 w-full relative">
                 {/* Focus Skill Button */}
                 {purchasedSkills.includes('skill-focus') && (
                     <button
                         onClick={(e) => { e.stopPropagation(); onToggleFocus(e); }}
-                        className={`flex flex-col items-center gap-1 md:gap-1.5 active:scale-95 transition cursor-pointer ${
+                        className={`flex-1 min-w-0 flex flex-col items-center gap-1 md:gap-1.5 active:scale-95 transition cursor-pointer ${
                             isFocusMode ? 'text-blue-700 dark:text-blue-300' : 'text-stone-900 dark:text-stone-100'
                         }`}
                     >
@@ -104,7 +163,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
 
                 {/* Scan Skill Button */}
                 {purchasedSkills.includes('skill-scan') && (
-                    <div ref={scanRefillRef} className="relative flex flex-col items-center">
+                    <div ref={scanRefillRef} className="relative flex-1 min-w-0 flex flex-col items-center">
                         <button 
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -129,7 +188,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
                                     {scanUses}
                                 </div>
                             ) : (
-                                <div className="absolute -top-4 -right-5 min-w-9 h-7 px-1.5 rounded-full flex items-center justify-center gap-0.5 text-[13px] font-bold leading-none shadow-sm z-10 bg-blue-600 text-white">
+                                <div className="absolute -top-5 -right-5 min-w-9 h-7 px-1.5 rounded-full flex items-center justify-center gap-0.5 text-[13px] font-bold leading-none shadow-sm z-10 bg-blue-600 text-white">
                                     <span>{scanRefillCost}</span>
                                     <Icons.Diamond className="w-3 h-3 fill-current" />
                                 </div>
@@ -202,7 +261,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
                 <button 
                     onClick={onUndo} 
                     disabled={!canUndo}
-                    className={`flex flex-col items-center gap-1 md:gap-1.5 transition ${getBaseButtonStyle(canUndo)}`}
+                    className={`flex-1 min-w-0 flex flex-col items-center gap-1 md:gap-1.5 transition ${getBaseButtonStyle(canUndo)}`}
                 >
                     <div className={`p-3 md:p-4 rounded-full shadow-sm transition-colors ${getBaseContainerStyle(canUndo)}`}>
                         <Icons.Undo className={`w-5 h-5 md:w-6 md:h-6 scale-125 ${canUndo ? 'text-stone-700 dark:text-stone-300' : 'text-stone-300 dark:text-stone-600'}`} />
@@ -213,7 +272,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
                 {/* PENCIL BUTTON */}
                 <button 
                     onClick={onTogglePencil} 
-                    className={`flex flex-col items-center gap-1 md:gap-1.5 active:scale-95 transition cursor-pointer ${isPencilMode ? 'text-blue-700 dark:text-blue-300' : 'text-stone-900 dark:text-stone-100'}`}
+                    className={`flex-1 min-w-0 flex flex-col items-center gap-1 md:gap-1.5 active:scale-95 transition cursor-pointer ${isPencilMode ? 'text-blue-700 dark:text-blue-300' : 'text-stone-900 dark:text-stone-100'}`}
                 >
                     {/* Removed borders */}
                     <div className={`p-3 md:p-4 rounded-full shadow-sm transition-colors ${
@@ -230,7 +289,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
                 <button 
                     onClick={onErase} 
                     disabled={!canErase}
-                    className={`flex flex-col items-center gap-1 md:gap-1.5 transition ${getBaseButtonStyle(canErase)} ${isEraseMode ? 'text-blue-700 dark:text-blue-300' : ''}`}
+                    className={`flex-1 min-w-0 flex flex-col items-center gap-1 md:gap-1.5 transition ${getBaseButtonStyle(canErase)} ${isEraseMode ? 'text-blue-700 dark:text-blue-300' : ''}`}
                 >
                     <div className={`p-3 md:p-4 rounded-full shadow-sm transition-colors ${
                         isEraseMode
@@ -247,6 +306,106 @@ export const GameControls: React.FC<GameControlsProps> = ({
                     </div>
                     <span className="text-sm md:text-base font-medium">Erase</span>
                 </button>
+
+                {/* Hint is a core teaching tool, available on every puzzle. */}
+                <div className="relative flex-1 min-w-0 flex flex-col items-center">
+                    <button
+                        type="button"
+                        data-hint-button
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            if (hintDisabled || isHintPreparing) return;
+                            onHintRequest();
+                        }}
+                        disabled={hintDisabled || isHintPreparing}
+                        aria-busy={isHintPreparing}
+                        aria-expanded={hintNotice !== null}
+                        aria-controls={hintNotice ? 'hint-notice-bubble' : undefined}
+                        className={`w-full min-w-0 flex flex-col items-center gap-1 md:gap-1.5 transition ${getBaseButtonStyle(!hintDisabled && !isHintPreparing)}`}
+                        aria-label={isHintPreparing
+                            ? 'Preparing Hint'
+                            : hintCost === 0
+                                ? 'Start free Hint'
+                                : `Start Hint, costs ${hintCost} diamonds`}
+                    >
+                        <div className={`p-3 md:p-4 rounded-full shadow-sm transition-all duration-300 relative flex items-center justify-center ${getBaseContainerStyle(!hintDisabled && !isHintPreparing)}`}>
+                            {isHintPreparing ? (
+                                <span className="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-stone-300 border-t-blue-500 animate-spin" aria-hidden="true" />
+                            ) : (
+                                <Icons.Lightbulb className="w-5 h-5 md:w-6 md:h-6 scale-125 text-stone-700 dark:text-stone-300" />
+                            )}
+                            <div className="absolute -top-5 -right-2 min-w-9 h-7 px-1.5 rounded-full flex items-center justify-center gap-0.5 text-[12px] font-bold leading-none shadow-sm z-10 bg-blue-600 text-white">
+                                {hintCost === 0 ? (
+                                    <span>Free</span>
+                                ) : (
+                                    <>
+                                        <span>{hintCost}</span>
+                                        <Icons.Diamond className="w-3 h-3 fill-current" />
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                        <span className="text-sm md:text-base font-medium">Hint</span>
+                    </button>
+
+                    <AnimatePresence>
+                        {hintNotice && hintNoticeContent && (
+                            <div className="absolute top-[calc(100%+8px)] right-0 z-[170] pointer-events-none">
+                                <motion.div
+                                    id="hint-notice-bubble"
+                                    key={`${hintNotice.kind}-${hintNoticeContent.title}-${hintNoticeContent.body}`}
+                                    initial={{ opacity: 0, y: 5, scale: 0.96 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 4, scale: 0.97 }}
+                                    transition={{ duration: 0.15, ease: 'easeOut' }}
+                                    className="relative w-[218px] md:w-[250px] rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3.5 py-3 text-left shadow-md dark:shadow-black/30"
+                                    role="status"
+                                    aria-live="polite"
+                                    aria-atomic="true"
+                                >
+                                    <div className={`flex gap-2.5 ${
+                                        hintNotice.kind === 'insufficient'
+                                            ? 'items-center justify-center'
+                                            : 'items-start'
+                                    }`}>
+                                        <div className={`${hintNotice.kind === 'insufficient' ? '' : 'mt-0.5'} flex h-7 w-7 shrink-0 items-center justify-center rounded-xl ${
+                                            hintNotice.kind === 'wrong-board'
+                                                ? 'bg-red-50 text-red-500 dark:bg-red-950/50'
+                                                : hintNotice.kind === 'insufficient'
+                                                    ? 'bg-blue-50 text-blue-500 dark:bg-blue-950/50'
+                                                    : hintNotice.kind === 'complete'
+                                                        ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-950/50'
+                                                        : 'bg-stone-100 text-stone-500 dark:bg-stone-700 dark:text-stone-300'
+                                        }`} aria-hidden="true">
+                                            {hintNotice.kind === 'wrong-board' ? (
+                                                <Icons.Scan className="h-4 w-4" />
+                                            ) : hintNotice.kind === 'insufficient' ? (
+                                                <Icons.Diamond className="h-4 w-4 fill-current" />
+                                            ) : hintNotice.kind === 'complete' ? (
+                                                <Icons.Check className="h-4 w-4" />
+                                            ) : hintNotice.kind === 'unsupported' ? (
+                                                <Icons.Sparkles className="h-4 w-4" />
+                                            ) : (
+                                                <Icons.Info className="h-4 w-4" />
+                                            )}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="text-[13px] md:text-sm font-bold leading-tight text-t-primary">
+                                                {hintNoticeContent.title}
+                                            </div>
+                                            {hintNoticeContent.body && (
+                                                <div className="mt-1 text-[11px] md:text-xs font-medium leading-snug text-t-secondary">
+                                                    {hintNoticeContent.body}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="absolute bottom-full right-7 h-0 w-0 border-x-[7px] border-b-[7px] border-x-transparent border-b-white dark:border-b-stone-800" aria-hidden="true" />
+                                </motion.div>
+                            </div>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
 
             {/* Dev Auto Solve Button - Absolutely positioned to prevent layout shift */}

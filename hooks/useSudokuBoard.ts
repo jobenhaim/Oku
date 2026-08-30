@@ -419,6 +419,36 @@ export const useSudokuBoard = ({
     if (!shouldUsePencil && newCell.value) checkCompletion(newBoard);
   }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, onNumberPlaced, removeNotesFromPeers, checkCompletion, isBoardComplete, showGuardRejection, rememberBoardForUndo]);
 
+  const placeNumberAt = useCallback((
+      row: number,
+      col: number,
+      value: number,
+      isPaused: boolean,
+      isCompleted: boolean,
+  ) => {
+      const currentBoard = boardRef.current;
+      const currentCell = currentBoard[row]?.[col];
+      if (
+          isPaused
+          || isCompleted
+          || !currentCell
+          || currentCell.isFixed
+          || currentCell.isRevealed
+          || currentCell.value !== null
+          || solvedBoard[row]?.[col] !== value
+      ) return false;
+
+      // Route Hint placement through the ordinary number-input path so Undo,
+      // move logs, note cleanup, persistence, section effects, and completion
+      // all behave exactly like a player-entered number.
+      selectedCellRef.current = [row, col];
+      activeNumberRef.current = null;
+      setSelectedCell([row, col]);
+      setActiveNumber(null);
+      handleNumberInput(value, isPaused, isCompleted, true);
+      return true;
+  }, [handleNumberInput, solvedBoard]);
+
   const handleUndo = useCallback((isPaused: boolean, isCompleted: boolean) => {
     if (isPaused || isCompleted) return;
     setHistory(prevHistory => {
@@ -512,6 +542,7 @@ export const useSudokuBoard = ({
       initializeBoard,
       handleCellClick,
       handleNumberInput,
+      placeNumberAt,
       handleUndo,
       handleErase,
       checkCompletion,

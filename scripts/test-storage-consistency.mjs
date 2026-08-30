@@ -19,7 +19,15 @@ globalThis.localStorage = {
 };
 
 const bundle = await build({
-    entryPoints: ['utils/storage.ts'],
+    stdin: {
+        contents: `
+            export { Storage } from './utils/storage.ts';
+            export { SKILLS, DIAMOND_OFFERS } from './utils/constants.ts';
+        `,
+        resolveDir: process.cwd(),
+        sourcefile: 'storage-consistency-entry.ts',
+        loader: 'ts',
+    },
     bundle: true,
     format: 'esm',
     platform: 'node',
@@ -48,7 +56,21 @@ const bundle = await build({
     }],
 });
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`;
-const { Storage } = await import(moduleUrl);
+const { Storage, SKILLS, DIAMOND_OFFERS } = await import(moduleUrl);
+
+const skillPrices = Object.fromEntries(SKILLS.map(({ name, cost }) => [name, cost]));
+assert.deepEqual(
+    { Focus: skillPrices.Focus, Guard: skillPrices.Guard, Scan: skillPrices.Scan },
+    { Focus: 200, Guard: 200, Scan: 200 },
+    'Focus, Guard, and Scan should share one accessible unlock price'
+);
+
+const starterOffer = DIAMOND_OFFERS.find(({ id }) => id === 'starter_pack');
+assert.ok(starterOffer, 'the Starter Pack offer should exist');
+assert.equal(starterOffer.diamonds, 800);
+assert.match(starterOffer.includes.join(' '), /Focus/);
+assert.match(starterOffer.includes.join(' '), /Guard/);
+assert.match(starterOffer.includes.join(' '), /Scan/);
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -199,6 +221,81 @@ assert.equal(Storage.getStoredData().progress['Easy-3'].boardState, undefined);
 assert.equal(Storage.getStoredData().progress['Easy-3'].scanUses, 2);
 assert.equal(Storage.getStoredData().achievementCounters.scansUsed, 1);
 
+// Hint usage and its diamond charge are one durable transaction. Every puzzle
+// follows 5 / 20 / 40 with the price capped at 40 for every later use.
+const hintSeed = Storage.createDefaultData();
+hintSeed.points = 200;
+await installSnapshot(hintSeed);
+
+assert.deepEqual(Storage.getHintEconomy('Normal', 12), {
+    hintsUsed: 0,
+    cost: 5,
+});
+
+const expectedHintCharges = [5, 20, 40, 40, 40];
+const expectedNextHintCosts = [20, 40, 40, 40, 40];
+let expectedHintPoints = 200;
+
+for (let hintsUsed = 0; hintsUsed < expectedHintCharges.length; hintsUsed += 1) {
+    const charge = expectedHintCharges[hintsUsed];
+    expectedHintPoints -= charge;
+
+    const consumption = await observeMutation(() => (
+        Storage.consumeHint('Normal', 12, hintsUsed)
+    ));
+    assert.equal(consumption.result.success, true);
+    assert.equal(consumption.result.reason, 'consumed');
+    assert.equal(consumption.result.charged, charge);
+    assert.equal(consumption.result.points, expectedHintPoints);
+    assert.equal(consumption.result.hintsUsed, hintsUsed + 1);
+    assert.equal(consumption.result.nextCost, expectedNextHintCosts[hintsUsed]);
+    assert.equal(consumption.notifications, 1, 'a successful Hint should publish one complete snapshot');
+
+    const durableHint = await readNativeSnapshot();
+    assert.equal(durableHint.points, expectedHintPoints);
+    assert.equal(durableHint.hintUsageByPuzzle['Normal-12'], hintsUsed + 1);
+}
+
+assert.equal(Storage.getStoredData().points, 55);
+assert.deepEqual(Storage.getHintEconomy('Normal', 12), {
+    hintsUsed: 5,
+    cost: 40,
+});
+
+// A stale direct request/double press must not silently accept a newly changed
+// price or consume a second Hint.
+const beforeStaleHint = clone(Storage.getStoredData());
+const staleHint = await observeMutation(() => (
+    Storage.consumeHint('Normal', 12, 4)
+));
+assert.equal(staleHint.result.success, false);
+assert.equal(staleHint.result.reason, 'stale');
+assert.equal(staleHint.result.charged, 0);
+assert.equal(staleHint.result.points, 55);
+assert.equal(staleHint.result.hintsUsed, 5);
+assert.equal(staleHint.result.cost, 40);
+assert.equal(staleHint.notifications, 0);
+assert.deepEqual(Storage.getStoredData(), beforeStaleHint);
+
+// Insufficient diamonds are also an exact no-op: neither the balance nor the
+// per-puzzle usage counter (or mutation timestamp) may move.
+const insufficientHintSeed = Storage.createDefaultData();
+insufficientHintSeed.points = 4;
+insufficientHintSeed.hintUsageByPuzzle = { 'Easy-8': 1 };
+await installSnapshot(insufficientHintSeed);
+const beforeInsufficientHint = clone(Storage.getStoredData());
+const insufficientHint = await observeMutation(() => (
+    Storage.consumeHint('Easy', 8, 1)
+));
+assert.equal(insufficientHint.result.success, false);
+assert.equal(insufficientHint.result.reason, 'insufficient-points');
+assert.equal(insufficientHint.result.charged, 0);
+assert.equal(insufficientHint.result.points, 4);
+assert.equal(insufficientHint.result.hintsUsed, 1);
+assert.equal(insufficientHint.result.cost, 20);
+assert.equal(insufficientHint.notifications, 0);
+assert.deepEqual(Storage.getStoredData(), beforeInsufficientHint);
+
 // Pepino's queued gift and its diamond reward are consumed as one mutation.
 const pepinoSeed = Storage.createDefaultData();
 pepinoSeed.points = 50;
@@ -272,6 +369,93 @@ const duplicateCoupon = await observeMutation(() => Storage.redeemCoupon('HAHA50
 assert.equal(didApply(duplicateCoupon.result), false);
 assert.equal(duplicateCoupon.notifications, 0);
 assert.equal(Storage.getStoredData().points, 5000);
+
+// The Starter Pack's consumable reward and every permanent entitlement are
+// fulfilled atomically. Re-delivering its Store transaction must do nothing.
+const starterSeed = Storage.createDefaultData();
+starterSeed.points = 25;
+await installSnapshot(starterSeed);
+const starterPurchase = await observeMutation(() => Storage.fulfillStorePurchase({
+    transactionId: 'starter-transaction',
+    diamonds: starterOffer.diamonds,
+    unlock: 'starter',
+}));
+assert.equal(didApply(starterPurchase.result), true);
+assert.equal(starterPurchase.notifications, 1);
+
+const assertStarterEntitlements = (data) => {
+    assert.equal(data.starterPackPurchased, true);
+    for (const skillId of ['skill-focus', 'skill-scribe', 'skill-scan']) {
+        assert.ok(data.purchasedSkills.includes(skillId), `${skillId} should be owned`);
+        assert.ok(data.enabledSkills.includes(skillId), `${skillId} should be enabled`);
+    }
+    assert.ok(data.purchasedSoundPacks.includes('snd-piano'));
+    assert.ok(data.purchasedNumberColors.includes('num-teal'));
+    assert.equal(new Set(data.purchasedSkills).size, data.purchasedSkills.length);
+    assert.equal(new Set(data.enabledSkills).size, data.enabledSkills.length);
+};
+
+const purchasedStarter = Storage.getStoredData();
+assertStarterEntitlements(purchasedStarter);
+assert.equal(purchasedStarter.points, 825);
+assert.equal(purchasedStarter.stats.totalDiamondsEarned, 800);
+assert.equal(purchasedStarter.stats.diamondsEarnedBySource.purchases, 800);
+assert.deepEqual(purchasedStarter.processedPurchaseTransactions, ['starter-transaction']);
+assertStarterEntitlements(await readNativeSnapshot());
+
+const beforeDuplicateStarter = clone(Storage.getStoredData());
+const duplicateStarter = await observeMutation(() => Storage.fulfillStorePurchase({
+    transactionId: 'starter-transaction',
+    diamonds: starterOffer.diamonds,
+    unlock: 'starter',
+}));
+assert.equal(didApply(duplicateStarter.result), false);
+assert.equal(duplicateStarter.notifications, 0);
+assert.deepEqual(Storage.getStoredData(), beforeDuplicateStarter);
+
+// Restoring a permanent Starter entitlement recovers every permanent reward,
+// including Focus, but never re-awards its 800 consumable diamonds.
+const starterRestoreSeed = Storage.createDefaultData();
+starterRestoreSeed.points = 7;
+await installSnapshot(starterRestoreSeed);
+const starterRestore = await observeMutation(() => Storage.restorePermanentPurchases({
+    premiumOwned: false,
+    starterOwned: true,
+    books2AllOwned: false,
+    books3AllOwned: false,
+    booksForeverOwned: false,
+    transactionIds: ['starter-restore'],
+}));
+assert.equal(starterRestore.notifications, 1);
+const restoredStarter = Storage.getStoredData();
+assertStarterEntitlements(restoredStarter);
+assert.equal(restoredStarter.points, 7);
+assert.equal(restoredStarter.stats.totalDiamondsEarned, 0);
+assert.equal(restoredStarter.stats.diamondsEarnedBySource.purchases, undefined);
+
+const restoredStarterModifiedAt = restoredStarter.lastModifiedAt;
+const repeatedStarterRestore = await observeMutation(() => Storage.restorePermanentPurchases({
+    premiumOwned: false,
+    starterOwned: true,
+    books2AllOwned: false,
+    books3AllOwned: false,
+    booksForeverOwned: false,
+    transactionIds: ['starter-restore'],
+}));
+assert.equal(repeatedStarterRestore.notifications, 0);
+assert.equal(Storage.getStoredData().lastModifiedAt, restoredStarterModifiedAt);
+
+// Existing owners receive newly added permanent Starter benefits on migration
+// without receiving another diamond grant or losing historical benefits.
+const legacyStarter = Storage.createDefaultData();
+legacyStarter.points = 11;
+legacyStarter.starterPackPurchased = true;
+legacyStarter.purchasedSkills = ['skill-scribe', 'skill-scan'];
+legacyStarter.enabledSkills = ['skill-scribe', 'skill-scan'];
+await installRawSnapshots({ local: legacyStarter, native: null });
+const migratedStarter = Storage.getStoredData();
+assertStarterEntitlements(migratedStarter);
+assert.equal(migratedStarter.points, 11);
 
 // RevenueCat checks ownership at every startup. Re-applying an identical
 // ownership snapshot must not make an otherwise stale device look newer than

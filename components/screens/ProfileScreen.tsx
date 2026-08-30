@@ -658,8 +658,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                                 {profile.username || 'Anonymous'}
                             </button>
                         )}
-                        <span className="mt-3 md:mt-4 px-4 md:px-5 py-2 md:py-2.5 rounded-full bg-white dark:bg-white border border-stone-800 dark:border-stone-800 text-sm md:text-base font-bold text-blue-700 dark:text-blue-700">
-                            {currentTitle}
+                        <span className="oku-profile-title-badge mt-3 md:mt-4 px-4 md:px-5 py-2 md:py-2.5 rounded-full text-sm md:text-base font-bold">
+                            <span>{currentTitle}</span>
                         </span>
                     </section>
 
