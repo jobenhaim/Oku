@@ -1149,7 +1149,7 @@ html, body {
 .hint-grid-note--possible {
   color: #78716c;
   font-weight: 500;
-  opacity: 0.86;
+  opacity: 1;
 }
 
 /*
@@ -1188,9 +1188,9 @@ html, body {
   content: '';
   position: absolute;
   left: 11%;
-  top: calc(50% - 0.5px);
+  top: calc(50% - 0.75px);
   width: 78%;
-  height: 1px;
+  height: 1.5px;
   border-radius: 999px;
   background: #78716c;
   transform: rotate(-45deg);
@@ -1199,7 +1199,8 @@ html, body {
 .hint-grid-note--remaining,
 .hint-grid-note--locked {
   color: #15803d;
-  font-weight: 600;
+  font-weight: 700;
+  opacity: 1;
 }
 
 .hint-grid-note--remaining {
@@ -1221,7 +1222,7 @@ html, body {
 
 .dark .hint-grid-note--possible {
   color: #a8a29e;
-  opacity: 0.9;
+  opacity: 1;
 }
 
 .dark .hint-grid-note--chain-a {

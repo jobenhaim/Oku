@@ -685,7 +685,7 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                 assert.ok(isSameCoordinateSet(coordinateSet(frame.spotlightCells), coordinateSet([notes])));
                 assert.ok(notes.marks.every(mark => mark.tone === 'locked'));
                 assert.equal(frame.title, `This cell is ${values[0]} or ${values[1]}`);
-                assert.equal(frame.body, 'We do not know which one yet.');
+                assert.equal(frame.body, "We don't know which one yet.");
                 break;
             }
             case 'xy-wing-first-wing':
@@ -701,11 +701,21 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                 assert.equal(frame.guideStrokeTone, 'soft');
                 assert.equal(frame.spotlightCells.length, 1);
                 assert.ok(isPeer(pivotNotes, wingNotes));
+                assert.equal(pivotNotes.marks.filter(mark => mark.tone === 'locked').length, 1);
+                assert.equal(pivotNotes.marks.find(mark => mark.tone === 'locked').value, shared);
                 assert.equal(wingNotes.marks.filter(mark => mark.tone === 'locked').length, 1);
-                assert.equal(wingNotes.marks.find(mark => mark.tone === 'locked').value, z);
+                assert.equal(wingNotes.marks.find(mark => mark.tone === 'locked').value, shared);
+                assert.equal(wingNotes.marks.find(mark => mark.value === z).tone, 'possible');
+                if (!isFirst) {
+                    assert.ok(frame.candidateNoteSets[1].marks.every(mark => mark.tone === 'possible'));
+                }
                 assert.equal(
                     frame.title,
-                    `${isFirst ? 'One wing' : 'The other wing'} is ${shared} or ${z}`,
+                    `${isFirst ? 'This wing' : 'The other wing'} is ${shared} or ${z}`,
+                );
+                assert.equal(
+                    frame.body,
+                    `The ${shared} in both cells links them through this ${displayUnitName(frame.guideUnits[0])}.`,
                 );
                 break;
             }
@@ -719,9 +729,16 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                 assert.equal(frame.title, `Either way, one wing must be ${z}`);
                 assert.equal(frame.eliminationStyle, 'candidate-slash');
                 assert.equal(frame.fillEliminatedCells, true);
+                assert.ok(frame.guideUnits.length > 0);
+                assert.equal(frame.guideStrokeTone, 'soft');
                 assert.equal(pivotValues.length, 2);
                 assert.equal(firstValues.length, 2);
                 assert.equal(secondValues.length, 2);
+                assert.ok(pivotNotes.marks.every(mark => mark.tone === 'possible'));
+                assert.equal(firstWing.marks.find(mark => mark.value === z).tone, 'locked');
+                assert.equal(secondWing.marks.find(mark => mark.value === z).tone, 'locked');
+                assert.ok(firstWing.marks.filter(mark => mark.value !== z).every(mark => mark.tone === 'possible'));
+                assert.ok(secondWing.marks.filter(mark => mark.value !== z).every(mark => mark.tone === 'possible'));
                 assert.ok(isPeer(pivotNotes, firstWing));
                 assert.ok(isPeer(pivotNotes, secondWing));
                 assert.ok(eliminated.length > 0);
@@ -729,6 +746,11 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                     mark.value === z && isPeer(mark, firstWing) && isPeer(mark, secondWing)
                 )));
                 assert.ok(frame.candidateMarks.every(mark => mark.tone === 'eliminated'));
+                assert.equal(frame.body, plan.derivedResult === 'naked'
+                    ? `The shaded cell sees both wings, so ${z} cannot go here. Cross it out; only ${targetValue} remains.`
+                    : eliminated.length === 1
+                        ? `The ${z} in the shaded cell sees both wings, so cross it out.`
+                        : `Every shaded ${z} sees both wings, so cross them out.`);
                 break;
             }
             case 'xy-wing-answer':
@@ -2491,6 +2513,9 @@ test('keeps productive direct and chained XY-Wing previews exact and mutation-fr
             pivot: { row: 3, col: 7, values: [8, 9] },
             firstWing: { row: 2, col: 7, values: [2, 8] },
             secondWing: { row: 5, col: 8, values: [2, 9] },
+            firstGuide: { kind: 'column', index: 7 },
+            secondGuide: { kind: 'box', index: 5 },
+            removalGuides: [{ kind: 'box', index: 2 }, { kind: 'column', index: 8 }],
             elimination: {
                 row: 2,
                 col: 8,
@@ -2509,6 +2534,9 @@ test('keeps productive direct and chained XY-Wing previews exact and mutation-fr
             pivot: { row: 5, col: 5, values: [1, 5] },
             firstWing: { row: 5, col: 6, values: [1, 8] },
             secondWing: { row: 3, col: 3, values: [5, 8] },
+            firstGuide: { kind: 'row', index: 5 },
+            secondGuide: { kind: 'box', index: 4 },
+            removalGuides: [{ kind: 'row', index: 5 }, { kind: 'box', index: 4 }],
             elimination: {
                 row: 5,
                 col: 3,
@@ -2555,34 +2583,57 @@ test('keeps productive direct and chained XY-Wing previews exact and mutation-fr
         assertPresentationContract(result.plan, fixture.preview);
 
         const [pivotFrame, firstFrame, secondFrame, removeFrame] = result.plan.frames;
+        const z = fixture.elimination.removedValues[0];
+        const firstShared = fixture.firstWing.values.find(value => fixture.pivot.values.includes(value));
+        const secondShared = fixture.secondWing.values.find(value => fixture.pivot.values.includes(value));
+        const expectedNoteSet = (coordinate, emphasizedValues) => ({
+            row: coordinate.row,
+            col: coordinate.col,
+            marks: coordinate.values.map(value => ({
+                value,
+                tone: emphasizedValues.includes(value) ? 'locked' : 'possible',
+            })),
+        });
         assert.deepEqual(pivotFrame.candidateNoteSets, [{
             row: fixture.pivot.row,
             col: fixture.pivot.col,
             marks: fixture.pivot.values.map(value => ({ value, tone: 'locked' })),
         }]);
-        assert.deepEqual(firstFrame.candidateNoteSets.at(-1), {
-            row: fixture.firstWing.row,
-            col: fixture.firstWing.col,
-            marks: fixture.firstWing.values.map(value => ({
-                value,
-                tone: value === fixture.elimination.removedValues[0] ? 'locked' : 'possible',
-            })),
-        });
-        assert.deepEqual(secondFrame.candidateNoteSets.at(-1), {
-            row: fixture.secondWing.row,
-            col: fixture.secondWing.col,
-            marks: fixture.secondWing.values.map(value => ({
-                value,
-                tone: value === fixture.elimination.removedValues[0] ? 'locked' : 'possible',
-            })),
-        });
+        assert.deepEqual(pivotFrame.guideUnits, undefined);
+        assert.deepEqual(firstFrame.candidateNoteSets, [
+            expectedNoteSet(fixture.pivot, [firstShared]),
+            expectedNoteSet(fixture.firstWing, [firstShared]),
+        ]);
+        assert.deepEqual(firstFrame.guideUnits, [fixture.firstGuide]);
+        assert.deepEqual(secondFrame.candidateNoteSets, [
+            expectedNoteSet(fixture.pivot, [secondShared]),
+            expectedNoteSet(fixture.firstWing, []),
+            expectedNoteSet(fixture.secondWing, [secondShared]),
+        ]);
+        assert.deepEqual(secondFrame.guideUnits, [fixture.secondGuide]);
+        assert.deepEqual(removeFrame.candidateNoteSets, [
+            expectedNoteSet(fixture.pivot, []),
+            expectedNoteSet(fixture.firstWing, [z]),
+            expectedNoteSet(fixture.secondWing, [z]),
+        ]);
+        assert.deepEqual(removeFrame.guideUnits, fixture.removalGuides);
+        assert.equal(removeFrame.guideStrokeTone, 'soft');
         assert.ok(isPeer(fixture.pivot, fixture.firstWing));
         assert.ok(isPeer(fixture.pivot, fixture.secondWing));
         assert.equal(isPeer(fixture.firstWing, fixture.secondWing), false);
         assert.ok(isPeer(fixture.elimination, fixture.firstWing));
         assert.ok(isPeer(fixture.elimination, fixture.secondWing));
         assert.equal(removeFrame.eliminationStyle, 'candidate-slash');
-        assert.ok(removeFrame.candidateMarks.every(mark => mark.tone === 'eliminated'));
+        assert.deepEqual(removeFrame.candidateMarks, [{
+            row: fixture.elimination.row,
+            col: fixture.elimination.col,
+            value: z,
+            tone: 'eliminated',
+        }]);
+        assert.equal(
+            removeFrame.accessibleDetail,
+            `If the pivot is ${firstShared}, the ${firstShared}/${z} wing must be ${z}. If the pivot is ${secondShared}, the ${secondShared}/${z} wing must be ${z}. Therefore the ${z} at row ${fixture.elimination.row + 1}, column ${fixture.elimination.col + 1} can be crossed out because that cell sees both wings.`,
+        );
         assert.equal(
             fixture.solution[fixture.elimination.row][fixture.elimination.col]
                 === fixture.elimination.removedValues[0],
@@ -2657,14 +2708,40 @@ test('keeps productive direct and chained XY-Wing previews exact and mutation-fr
     }
     assert.deepEqual([...simulatedPlacements(XY_WING_CHAIN_PUZZLE, afterLocked)], []);
     const xyFindFrame = chainResult.plan.frames[2];
-    assert.deepEqual(xyFindFrame.candidateNoteSets.map(noteSet => ({
-        row: noteSet.row,
-        col: noteSet.col,
-        values: noteSet.marks.map(mark => mark.value),
-    })), [
-        { row: 3, col: 3, values: [3, 4] },
-        { row: 3, col: 6, values: [3, 8] },
-        { row: 8, col: 3, values: [4, 8] },
+    const xyRemoveFrame = chainResult.plan.frames[3];
+    const expectedChainNotes = [
+        { row: 3, col: 3, marks: [{ value: 3, tone: 'possible' }, { value: 4, tone: 'possible' }] },
+        { row: 3, col: 6, marks: [{ value: 3, tone: 'possible' }, { value: 8, tone: 'locked' }] },
+        { row: 8, col: 3, marks: [{ value: 4, tone: 'possible' }, { value: 8, tone: 'locked' }] },
+    ];
+    assert.deepEqual(xyFindFrame.candidateNoteSets, expectedChainNotes);
+    assert.deepEqual(xyFindFrame.spotlightCells, [
+        { row: 3, col: 3 },
+        { row: 3, col: 6 },
+        { row: 8, col: 3 },
+    ]);
+    assert.deepEqual(xyFindFrame.sourceCells, [{ row: 3, col: 3 }]);
+    assert.deepEqual(xyFindFrame.guideUnits, undefined);
+    assert.equal(xyFindFrame.title, 'Now this 3/4 cell links two wings');
+    assert.equal(
+        xyFindFrame.body,
+        'One wing is 3/8 and the other is 4/8. Either way, one wing must be 8.',
+    );
+    assert.deepEqual(xyRemoveFrame.candidateNoteSets, expectedChainNotes);
+    assert.deepEqual(xyRemoveFrame.spotlightCells, []);
+    assert.deepEqual(xyRemoveFrame.sourceCells, [{ row: 3, col: 6 }, { row: 8, col: 3 }]);
+    assert.deepEqual(xyRemoveFrame.guideUnits, [
+        { kind: 'column', index: 6 },
+        { kind: 'row', index: 8 },
+    ]);
+    assert.equal(xyRemoveFrame.guideStrokeTone, 'soft');
+    assert.equal(xyRemoveFrame.title, 'So 8 cannot go here');
+    assert.equal(
+        xyRemoveFrame.body,
+        'This cell sees both wings. Cross out this 8; now only one place remains for 8.',
+    );
+    assert.deepEqual(xyRemoveFrame.candidateMarks, [
+        { row: 8, col: 6, value: 8, tone: 'eliminated' },
     ]);
     assert.ok(isPeer(xyFindFrame.candidateNoteSets[0], xyFindFrame.candidateNoteSets[1]));
     assert.ok(isPeer(xyFindFrame.candidateNoteSets[0], xyFindFrame.candidateNoteSets[2]));

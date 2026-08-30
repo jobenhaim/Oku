@@ -2323,6 +2323,30 @@ const sharedPeerUnit = (left: HintCoordinate, right: HintCoordinate): HintUnit =
     return { kind: 'column', index: left.col, cells: getUnitCells('column', left.col) };
 };
 
+const uniqueGuideUnits = (units: HintGuideUnit[]): HintGuideUnit[] => {
+    const guides = new Map<string, HintGuideUnit>();
+    units.forEach(unit => {
+        const guide = { kind: unit.kind, index: unit.index };
+        guides.set(`${guide.kind}:${guide.index}`, guide);
+    });
+    return [...guides.values()];
+};
+
+const makeXYWingNoteSet = (
+    coordinate: HintCoordinate,
+    values: readonly number[],
+    emphasizedValues: readonly number[],
+): HintCandidateNoteSet => {
+    const emphasized = new Set(emphasizedValues);
+    return {
+        ...coordinate,
+        marks: [...values].sort((a, b) => a - b).map(value => ({
+            value,
+            tone: emphasized.has(value) ? 'locked' : 'possible',
+        })),
+    };
+};
+
 const findXYWingPatterns = (
     board: NumericBoard,
     candidates: CandidateGrid,
@@ -2485,25 +2509,24 @@ const makeXYWingPlan = (
     const match = matches[0];
     if (!match) return null;
 
-    const pivotNotes: HintCandidateNoteSet = {
-        ...match.pivot,
-        marks: [match.x, match.y].map(value => ({ value, tone: 'locked' })),
-    };
-    const wingNotes: HintCandidateNoteSet[] = [
-        {
-            ...match.xWing,
-            marks: [match.x, match.z].sort((a, b) => a - b).map(value => ({
-                value,
-                tone: value === match.z ? 'locked' : 'possible',
-            })),
-        },
-        {
-            ...match.yWing,
-            marks: [match.y, match.z].sort((a, b) => a - b).map(value => ({
-                value,
-                tone: value === match.z ? 'locked' : 'possible',
-            })),
-        },
+    const pivotFrameNotes = makeXYWingNoteSet(
+        match.pivot,
+        [match.x, match.y],
+        [match.x, match.y],
+    );
+    const firstWingFrameNotes: HintCandidateNoteSet[] = [
+        makeXYWingNoteSet(match.pivot, [match.x, match.y], [match.x]),
+        makeXYWingNoteSet(match.xWing, [match.x, match.z], [match.x]),
+    ];
+    const secondWingFrameNotes: HintCandidateNoteSet[] = [
+        makeXYWingNoteSet(match.pivot, [match.x, match.y], [match.y]),
+        makeXYWingNoteSet(match.xWing, [match.x, match.z], []),
+        makeXYWingNoteSet(match.yWing, [match.y, match.z], [match.y]),
+    ];
+    const removalFrameNotes: HintCandidateNoteSet[] = [
+        makeXYWingNoteSet(match.pivot, [match.x, match.y], []),
+        makeXYWingNoteSet(match.xWing, [match.x, match.z], [match.z]),
+        makeXYWingNoteSet(match.yWing, [match.y, match.z], [match.z]),
     ];
     const eliminatedMarks: HintCandidateMark[] = match.eliminations.map(elimination => ({
         row: elimination.row,
@@ -2513,6 +2536,10 @@ const makeXYWingPlan = (
     }));
     const firstWingUnit = sharedPeerUnit(match.pivot, match.xWing);
     const secondWingUnit = sharedPeerUnit(match.pivot, match.yWing);
+    const removalGuideUnits = uniqueGuideUnits(match.eliminations.flatMap(elimination => [
+        sharedPeerUnit(elimination, match.xWing),
+        sharedPeerUnit(elimination, match.yWing),
+    ]));
     const hiddenResultOtherCells = match.resultKind === 'hidden'
         ? match.resultUnit.cells.filter(cell => (
             board[cell.row][cell.col] === 0
@@ -2551,34 +2578,34 @@ const makeXYWingPlan = (
                 id: 'xy-wing-pivot',
                 techniqueLabel: 'XY-Wing',
                 title: `This cell is ${match.x} or ${match.y}`,
-                body: 'We do not know which one yet.',
+                body: "We don't know which one yet.",
                 accessibleDetail: `The pivot at ${describeCoordinate(match.pivot)} has candidates ${match.x} and ${match.y}.`,
                 spotlightCells: [match.pivot],
-                candidateNoteSets: [pivotNotes],
+                candidateNoteSets: [pivotFrameNotes],
                 dimUnrelated: true,
             },
             {
                 id: 'xy-wing-first-wing',
                 techniqueLabel: 'XY-Wing',
-                title: `One wing is ${match.x} or ${match.z}`,
-                body: `It shares ${match.x} with the first cell in this ${unitName(firstWingUnit)}.`,
+                title: `This wing is ${match.x} or ${match.z}`,
+                body: `The ${match.x} in both cells links them through this ${unitName(firstWingUnit)}.`,
                 accessibleDetail: `The first wing at ${describeCoordinate(match.xWing)} has candidates ${match.x} and ${match.z}, and shares this ${unitName(firstWingUnit)} with the pivot at ${describeCoordinate(match.pivot)}.`,
                 spotlightCells: [match.xWing],
                 guideUnits: [{ kind: firstWingUnit.kind, index: firstWingUnit.index }],
                 guideStrokeTone: 'soft',
-                candidateNoteSets: [pivotNotes, wingNotes[0]],
+                candidateNoteSets: firstWingFrameNotes,
                 dimUnrelated: true,
             },
             {
                 id: 'xy-wing-second-wing',
                 techniqueLabel: 'XY-Wing',
                 title: `The other wing is ${match.y} or ${match.z}`,
-                body: `It shares ${match.y} with the first cell in this ${unitName(secondWingUnit)}.`,
+                body: `The ${match.y} in both cells links them through this ${unitName(secondWingUnit)}.`,
                 accessibleDetail: `The second wing at ${describeCoordinate(match.yWing)} has candidates ${match.y} and ${match.z}, and shares this ${unitName(secondWingUnit)} with the pivot at ${describeCoordinate(match.pivot)}.`,
                 spotlightCells: [match.yWing],
                 guideUnits: [{ kind: secondWingUnit.kind, index: secondWingUnit.index }],
                 guideStrokeTone: 'soft',
-                candidateNoteSets: [pivotNotes, ...wingNotes],
+                candidateNoteSets: secondWingFrameNotes,
                 dimUnrelated: true,
             },
             {
@@ -2586,11 +2613,17 @@ const makeXYWingPlan = (
                 techniqueLabel: 'XY-Wing',
                 title: `Either way, one wing must be ${match.z}`,
                 body: match.resultKind === 'naked'
-                    ? `The shaded cell shares a row, column, or box with both wings. Cross out ${match.z}; only ${match.target.value} remains.`
-                    : `${match.eliminations.length === 1 ? 'The gray candidate shares' : 'Each gray candidate shares'} a row, column, or box with both wings, so cross out ${match.z}.`,
-                accessibleDetail: `If the pivot is ${match.x}, the ${match.x}/${match.z} wing must be ${match.z}. If the pivot is ${match.y}, the ${match.y}/${match.z} wing must be ${match.z}. Therefore ${match.z} is eliminated from ${describeCoordinates(match.eliminations)}, which see both wings.`,
+                    ? `The shaded cell sees both wings, so ${match.z} cannot go here. Cross it out; only ${match.target.value} remains.`
+                    : match.eliminations.length === 1
+                        ? `The ${match.z} in the shaded cell sees both wings, so cross it out.`
+                        : `Every shaded ${match.z} sees both wings, so cross them out.`,
+                accessibleDetail: match.eliminations.length === 1
+                    ? `If the pivot is ${match.x}, the ${match.x}/${match.z} wing must be ${match.z}. If the pivot is ${match.y}, the ${match.y}/${match.z} wing must be ${match.z}. Therefore the ${match.z} at ${describeCoordinate(match.eliminations[0])} can be crossed out because that cell sees both wings.`
+                    : `If the pivot is ${match.x}, the ${match.x}/${match.z} wing must be ${match.z}. If the pivot is ${match.y}, the ${match.y}/${match.z} wing must be ${match.z}. Therefore ${match.z} can be crossed out at ${describeCoordinates(match.eliminations)} because those cells see both wings.`,
                 spotlightCells: [match.xWing, match.yWing],
-                candidateNoteSets: [pivotNotes, ...wingNotes],
+                guideUnits: removalGuideUnits,
+                guideStrokeTone: 'soft',
+                candidateNoteSets: removalFrameNotes,
                 candidateMarks: eliminatedMarks,
                 candidateTransition: match.resultKind === 'naked'
                     ? {
@@ -2986,12 +3019,7 @@ const coloringCausalKeys = (
 };
 
 const uniqueColoringGuides = (links: SimpleColoringLink[]): HintGuideUnit[] => {
-    const guides = new Map<string, HintGuideUnit>();
-    links.forEach(({ unit }) => {
-        const guide = { kind: unit.kind, index: unit.index };
-        guides.set(`${guide.kind}:${guide.index}`, guide);
-    });
-    return [...guides.values()];
+    return uniqueGuideUnits(links.map(({ unit }) => unit));
 };
 
 const makeSimpleColoringPlan = (
@@ -3956,27 +3984,9 @@ const makeMultiStepPlan = (
         if (deduction.technique === 'xyWing') {
             const { pattern, eliminations } = deduction;
             const sourceNoteSets: HintCandidateNoteSet[] = [
-                {
-                    ...pattern.pivot,
-                    marks: [pattern.x, pattern.y].map(value => ({
-                        value,
-                        tone: 'locked' as const,
-                    })),
-                },
-                {
-                    ...pattern.xWing,
-                    marks: [pattern.x, pattern.z].sort((a, b) => a - b).map(value => ({
-                        value,
-                        tone: value === pattern.z ? 'locked' as const : 'possible' as const,
-                    })),
-                },
-                {
-                    ...pattern.yWing,
-                    marks: [pattern.y, pattern.z].sort((a, b) => a - b).map(value => ({
-                        value,
-                        tone: value === pattern.z ? 'locked' as const : 'possible' as const,
-                    })),
-                },
+                makeXYWingNoteSet(pattern.pivot, [pattern.x, pattern.y], []),
+                makeXYWingNoteSet(pattern.xWing, [pattern.x, pattern.z], [pattern.z]),
+                makeXYWingNoteSet(pattern.yWing, [pattern.y, pattern.z], [pattern.z]),
             ];
             const eliminatedMarks: HintCandidateMark[] = eliminations.map(elimination => ({
                 row: elimination.row,
@@ -3984,12 +3994,19 @@ const makeMultiStepPlan = (
                 value: pattern.z,
                 tone: 'eliminated',
             }));
+            const removalGuideUnits = uniqueGuideUnits(eliminations.flatMap(elimination => [
+                sharedPeerUnit(elimination, pattern.xWing),
+                sharedPeerUnit(elimination, pattern.yWing),
+            ]));
             const finalTargetDelta = result.placement.resultKind === 'naked' && isFinalDeduction
                 ? eliminations.find(elimination => (
                     elimination.row === result.placement.target.row
                     && elimination.col === result.placement.target.col
                 ))
                 : undefined;
+            const eliminationLead = eliminations.length === 1
+                ? `This cell sees both wings. Cross out this ${pattern.z}`
+                : `These cells see both wings. Cross out ${pattern.z} from each one`;
 
             frames.push(
                 {
@@ -3998,7 +4015,7 @@ const makeMultiStepPlan = (
                     title: index === 0
                         ? `This ${pattern.x}/${pattern.y} cell links two wings`
                         : `Now this ${pattern.x}/${pattern.y} cell links two wings`,
-                    body: `One wing is ${pattern.x}/${pattern.z}; the other is ${pattern.y}/${pattern.z}. Either way, one wing must be ${pattern.z}.`,
+                    body: `One wing is ${pattern.x}/${pattern.z} and the other is ${pattern.y}/${pattern.z}. Either way, one wing must be ${pattern.z}.`,
                     accessibleDetail: `The pivot at ${describeCoordinate(pattern.pivot)} sees ${describeCoordinate(pattern.xWing)} and ${describeCoordinate(pattern.yWing)}.`,
                     spotlightCells: [pattern.pivot, pattern.xWing, pattern.yWing],
                     sourceCells: [pattern.pivot],
@@ -4008,17 +4025,23 @@ const makeMultiStepPlan = (
                 {
                     id: `chain-${stepNumber}-xy-wing-remove`,
                     techniqueLabel: 'XY-Wing',
-                    title: `So shared ${pattern.z}s can be crossed out`,
+                    title: eliminations.length === 1
+                        ? `So ${pattern.z} cannot go here`
+                        : `So ${pattern.z} cannot go in these cells`,
                     body: isFinalDeduction
                         ? result.placement.resultKind === 'naked'
-                            ? `Both wings see the gray ${pattern.z}. Cross it out, and only ${result.placement.target.value} remains.`
-                            : `Both wings see the gray ${pattern.z}. Cross it out, leaving one place for ${result.placement.target.value}.`
-                        : `Any cell that sees both wings cannot contain ${pattern.z}.`,
+                            ? `${eliminationLead}; only ${result.placement.target.value} remains${eliminations.length === 1 ? '' : ' in the outlined cell'}.`
+                            : `${eliminationLead}; now only one place remains for ${result.placement.target.value}.`
+                        : eliminations.length === 1
+                            ? `This cell sees both wings, so cross out this ${pattern.z}.`
+                            : `These cells see both wings, so cross out ${pattern.z} from each one.`,
                     accessibleDetail: `The XY-Wing eliminates ${pattern.z} from ${describeCoordinates(eliminations)}.`,
                     spotlightCells: finalTargetDelta
                         ? [{ row: finalTargetDelta.row, col: finalTargetDelta.col }]
                         : [],
                     sourceCells: [pattern.xWing, pattern.yWing],
+                    guideUnits: removalGuideUnits,
+                    guideStrokeTone: 'soft',
                     candidateNoteSets: sourceNoteSets,
                     candidateMarks: eliminatedMarks,
                     candidateTransition: finalTargetDelta
