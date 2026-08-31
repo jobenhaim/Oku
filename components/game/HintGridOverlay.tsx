@@ -160,14 +160,22 @@ const pathForSegments = (segments: HintStrokeSegment[]) => segments
 
 const HintStrokeLayer: React.FC<{
     segments: HintStrokeSegment[];
-    tone?: 'default' | 'soft';
-}> = ({ segments, tone = 'default' }) => {
+    tone?: 'source' | 'soft' | 'support' | 'result';
+}> = ({ segments, tone = 'source' }) => {
     const outerSegments = segments.filter(segment => segment.fixed === 0 || segment.fixed === 9);
     const innerSegments = segments.filter(segment => segment.fixed !== 0 && segment.fixed !== 9);
+    const strokeClass = tone === 'soft'
+        ? 'hint-grid-strokes--soft'
+        : tone === 'support'
+            ? 'hint-grid-strokes--support'
+        : tone === 'result'
+            ? 'hint-grid-strokes--result'
+            : '';
+    const innerStrokeWidth = tone === 'result' ? 2 : 1;
 
     return (
         <svg
-            className={`hint-grid-strokes ${tone === 'soft' ? 'hint-grid-strokes--soft' : ''}`}
+            className={`hint-grid-strokes ${strokeClass}`}
             viewBox="0 0 9 9"
             preserveAspectRatio="none"
             focusable="false"
@@ -177,7 +185,7 @@ const HintStrokeLayer: React.FC<{
                     d={pathForSegments(innerSegments)}
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="1"
+                    strokeWidth={innerStrokeWidth}
                     vectorEffect="non-scaling-stroke"
                     shapeRendering="crispEdges"
                     strokeLinecap="square"
@@ -206,8 +214,11 @@ export const HintGridOverlay: React.FC<HintGridOverlayProps> = ({
     noteFontSize,
     noteLineHeight,
 }) => {
-    const isColorChainFrame = frame.id.startsWith('color-chain-');
-    const guideCellsAreFocus = !isColorChainFrame || frame.id === 'color-chain-rule';
+    const isColorChainFrame = frame.id.startsWith('color-chain-')
+        || frame.id.startsWith('candidate-color-');
+    const guideCellsAreFocus = !isColorChainFrame
+        || frame.id === 'color-chain-rule'
+        || frame.id === 'candidate-color-rule';
     const visual = useMemo(() => ({
         spotlight: new Set(frame.spotlightCells.map(keyFor)),
         unit: new Set((frame.unitCells ?? []).map(keyFor)),
@@ -230,6 +241,7 @@ export const HintGridOverlay: React.FC<HintGridOverlayProps> = ({
         noteSets: new Map(
             (frame.candidateNoteSets ?? []).map(noteSet => [keyFor(noteSet), noteSet] as const)
         ),
+        candidateUpdates: new Set((frame.candidateUpdateCells ?? []).map(keyFor)),
         target: frame.target ? keyFor(frame.target) : null,
     }), [frame]);
 
@@ -242,7 +254,11 @@ export const HintGridOverlay: React.FC<HintGridOverlayProps> = ({
     const strokeLayers = useMemo(() => {
         const guideRectangles: HintGridRect[] = (frame.guideUnits ?? []).map(rectForUnit);
         const softRectangles: HintGridRect[] = [];
+        const supportRectangles: HintGridRect[] = [];
         const emphasisRectangles: HintGridRect[] = [];
+        const resultRectangles: HintGridRect[] = [];
+        const resultKeys = new Set((frame.candidateUpdateCells ?? []).map(keyFor));
+        if (frame.target) resultKeys.add(keyFor(frame.target));
         const unitRect = rectForCells(frame.unitCells ?? []);
         if (unitRect) {
             if (frame.unitStrokeTone === 'soft') softRectangles.push(unitRect);
@@ -250,21 +266,29 @@ export const HintGridOverlay: React.FC<HintGridOverlayProps> = ({
         }
 
         if (!spotlightIsWholeUnit) {
-            frame.spotlightCells.forEach(cell => emphasisRectangles.push({
-                top: cell.row,
-                right: cell.col + 1,
-                bottom: cell.row + 1,
-                left: cell.col,
-            }));
+            frame.spotlightCells
+                .filter(cell => !resultKeys.has(keyFor(cell)))
+                .forEach(cell => emphasisRectangles.push({
+                    top: cell.row,
+                    right: cell.col + 1,
+                    bottom: cell.row + 1,
+                    left: cell.col,
+                }));
         }
         if (frame.target) {
-            emphasisRectangles.push({
+            resultRectangles.push({
                 top: frame.target.row,
                 right: frame.target.col + 1,
                 bottom: frame.target.row + 1,
                 left: frame.target.col,
             });
         }
+        (frame.candidateUpdateCells ?? []).forEach(cell => resultRectangles.push({
+            top: cell.row,
+            right: cell.col + 1,
+            bottom: cell.row + 1,
+            left: cell.col,
+        }));
         (frame.candidateMarks ?? [])
             .filter(candidate => candidate.tone === 'possible' && !isColorChainFrame)
             .forEach(candidate => emphasisRectangles.push({
@@ -275,11 +299,14 @@ export const HintGridOverlay: React.FC<HintGridOverlayProps> = ({
             }));
 
         if (frame.guideStrokeTone === 'soft') softRectangles.push(...guideRectangles);
+        else if (frame.guideStrokeTone === 'support') supportRectangles.push(...guideRectangles);
         else emphasisRectangles.push(...guideRectangles);
 
         return {
             guide: createStrokeSegments(softRectangles),
+            support: createStrokeSegments(supportRectangles),
             emphasis: createStrokeSegments(emphasisRectangles),
+            result: createStrokeSegments(resultRectangles),
         };
     }, [frame, isColorChainFrame, spotlightIsWholeUnit]);
 
@@ -312,6 +339,7 @@ export const HintGridOverlay: React.FC<HintGridOverlayProps> = ({
                     const isTransition = visual.transition === key;
                     const isBreakdown = visual.breakdown === key;
                     const noteSet = visual.noteSets.get(key);
+                    const isCandidateUpdate = visual.candidateUpdates.has(key);
                     const isRelevant = isSpotlight
                         || isUnit
                         || isContext
@@ -321,6 +349,7 @@ export const HintGridOverlay: React.FC<HintGridOverlayProps> = ({
                         || isTarget
                         || isTransition
                         || isBreakdown
+                        || isCandidateUpdate
                         || Boolean(candidate)
                         || Boolean(noteSet);
 
@@ -337,7 +366,7 @@ export const HintGridOverlay: React.FC<HintGridOverlayProps> = ({
                                 candidate?.tone === 'eliminated' && frame.fillEliminatedCells ? 'hint-grid-cell--elimination-focus' : ''
                             } ${isTarget ? 'hint-grid-cell--target' : ''} ${
                                 isTarget && frame.fillTargetCell ? 'hint-grid-cell--target-filled' : ''
-                            }`}
+                            } ${isCandidateUpdate ? 'hint-grid-cell--candidate-update' : ''}`}
                         >
                             {noteSet && (
                                 <HintNoteLayer
@@ -413,7 +442,11 @@ export const HintGridOverlay: React.FC<HintGridOverlayProps> = ({
             {strokeLayers.guide.length > 0 && (
                 <HintStrokeLayer segments={strokeLayers.guide} tone="soft" />
             )}
+            {strokeLayers.support.length > 0 && (
+                <HintStrokeLayer segments={strokeLayers.support} tone="support" />
+            )}
             <HintStrokeLayer segments={strokeLayers.emphasis} />
+            <HintStrokeLayer segments={strokeLayers.result} tone="result" />
 
         </div>
     );

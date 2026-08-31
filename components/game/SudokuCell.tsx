@@ -16,6 +16,7 @@ interface SudokuCellProps {
     highlight: boolean;
     isGuardRejected?: boolean;
     isNudgeCue?: boolean;
+    isHintUpdated?: boolean;
     settings: AppSettings;
     numberColor: string;
     onCellClick: (e: React.MouseEvent, r: number, c: number) => void;
@@ -24,6 +25,7 @@ interface SudokuCellProps {
     mainFontSize: string;
     noteFontSize: string;
     noteLineHeight: string;
+    highlightedValue?: number | null;
     hideNotes?: boolean;
     lockPlayerNumbers?: boolean;
     isHintSource?: boolean;
@@ -46,6 +48,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     highlight,
     isGuardRejected = false,
     isNudgeCue = false,
+    isHintUpdated = false,
     settings,
     numberColor,
     onCellClick,
@@ -54,6 +57,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     mainFontSize,
     noteFontSize,
     noteLineHeight,
+    highlightedValue = null,
     hideNotes = false,
     lockPlayerNumbers = false,
     isHintSource = false,
@@ -186,6 +190,9 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
                 {isNudgeCue && (
                     <div className={`nudge-cell-cue absolute inset-0 ${cornerClass} pointer-events-none z-10`} aria-hidden="true" />
                 )}
+                {isHintUpdated && (
+                    <div className={`hint-candidate-update-pulse absolute inset-0 ${cornerClass} pointer-events-none z-10`} aria-hidden="true" />
+                )}
             </>
         )}
         
@@ -220,7 +227,12 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
                         return (
                             <div key={n} className="flex items-center justify-center leading-none" style={{ fontSize: noteFontSize, lineHeight: noteLineHeight }}>
                                 <span
-                                    className="text-stone-500 dark:text-stone-400 font-medium"
+                                    data-candidate-number={n}
+                                    data-candidate-highlighted={highlightedValue === n ? 'true' : undefined}
+                                    className={highlightedValue === n
+                                        ? 'font-extrabold text-stone-900 dark:text-stone-100'
+                                        : 'font-medium text-stone-500 dark:text-stone-400'
+                                    }
                                 >{n}</span>
                             </div>
                         )

@@ -1,7 +1,8 @@
 
-import { AppSettings, Board, LevelProgress, StoredData, PepinoState, Difficulty, PermanentPurchaseOwnership, StorePurchaseUnlock, DiamondEarnSource, PlayerProfile } from '../types';
+import { AppSettings, Board, LevelProgress, StoredData, PepinoState, Difficulty, PermanentPurchaseOwnership, StorePurchaseUnlock, DiamondEarnSource, PlayerProfile, HintCandidateProgress } from '../types';
 import { Preferences } from '@capacitor/preferences';
 import { getHintCost, getScanRefillCost } from './constants';
+import { hasValidHintCandidateProgressIntegrity } from './hints';
 import {
   isActiveAccount,
   parseActiveProfile,
@@ -21,6 +22,42 @@ export const PROFILE_ACCOUNT_INTRO_KEY = 'oku_profile_account_intro_seen_v1';
 export const hasPlayerBoardInput = (board?: Board) => Boolean(board?.some(row =>
     row.some(cell => !cell.isFixed && (cell.value !== null || cell.notes.length > 0))
 ));
+
+const sanitizeHintCandidateProgress = (value: unknown): HintCandidateProgress | undefined => {
+    if (!hasValidHintCandidateProgressIntegrity(value)) return undefined;
+    const exclusions = value.exclusions.map(exclusion => ({ ...exclusion })).sort((left, right) => (
+        left.row - right.row || left.col - right.col || left.value - right.value
+    ));
+
+    return {
+        version: 1,
+        boardSignature: value.boardSignature,
+        exclusions,
+        integrity: value.integrity,
+    };
+};
+
+const storedBoardSignature = (value: unknown): string | null => {
+    if (!Array.isArray(value) || value.length !== 9) return null;
+    const rows: string[] = [];
+    for (const rawRow of value) {
+        if (!Array.isArray(rawRow) || rawRow.length !== 9) return null;
+        let rowSignature = '';
+        for (const rawCell of rawRow) {
+            if (!rawCell || typeof rawCell !== 'object') return null;
+            const cellValue = (rawCell as { value?: unknown }).value;
+            if (cellValue === null) {
+                rowSignature += '0';
+            } else if (Number.isInteger(cellValue) && (cellValue as number) >= 1 && (cellValue as number) <= 9) {
+                rowSignature += String(cellValue);
+            } else {
+                return null;
+            }
+        }
+        rows.push(rowSignature);
+    }
+    return rows.join('/');
+};
 
 const DEFAULT_SETTINGS: AppSettings = {
   sound: true,
@@ -248,6 +285,7 @@ function getStoredData(): StoredData {
             progress.scribeUses = 4;
             progress.hasMadeMistake = false;
             progress.hasUsedNotes = false;
+            progress.hintCandidateProgress = undefined;
         }
         data.normalPuzzleCatalogVersion = NORMAL_PUZZLE_CATALOG_VERSION;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -330,6 +368,11 @@ function getStoredData(): StoredData {
         }
         progress.scanUses = Math.max(0, Math.floor(progress.scanUses ?? 3));
         progress.scanRefillsPurchased = Math.max(0, Math.floor(progress.scanRefillsPurchased ?? 0));
+        const candidateProgress = sanitizeHintCandidateProgress(progress.hintCandidateProgress);
+        progress.hintCandidateProgress = candidateProgress
+            && storedBoardSignature(progress.boardState) === candidateProgress.boardSignature
+            ? candidateProgress
+            : undefined;
         delete progress.autoUses;
     }
     
@@ -515,6 +558,7 @@ function getStoredData(): StoredData {
             progress.scanRefillsPurchased = 0;
             progress.revealUses = undefined;
             progress.scribeUses = 4;
+            progress.hintCandidateProgress = undefined;
         }
     }
     if ((data as any).puzzleCatalogVersion !== undefined) delete (data as any).puzzleCatalogVersion;
@@ -870,6 +914,7 @@ const applyLevelProgressMutation = (
     // exhaust WebView localStorage and make an otherwise successful save fail.
     storedProgress.boardState = undefined;
     storedProgress.moveLog = undefined;
+    storedProgress.hintCandidateProgress = undefined;
   }
   data.progress[key] = storedProgress;
   return { changed: true, completedNow };
@@ -912,6 +957,7 @@ const applyDifficultyCompletion = (data: StoredData, difficulty: Difficulty) => 
       bestTime: existing?.bestTime !== undefined ? Math.min(existing.bestTime, 60) : 60,
       boardState: undefined,
       moveLog: undefined,
+      hintCandidateProgress: undefined,
       scanUses: existing?.scanUses ?? 3,
       scribeUses: existing?.scribeUses ?? 4,
     };
@@ -1621,7 +1667,14 @@ export const Storage = {
   getLastPlayedGame: (): LevelProgress | undefined => {
     const data = getStoredData();
     const inProgressGames = Object.values(data.progress).filter(p =>
-        p.status === 'in-progress' && hasPlayerBoardInput(p.boardState)
+        p.status === 'in-progress'
+        && Array.isArray(p.boardState)
+        && p.boardState.length === 9
+        && p.boardState.every(row => Array.isArray(row) && row.length === 9)
+        && (
+            hasPlayerBoardInput(p.boardState)
+            || Boolean(p.hintCandidateProgress?.exclusions.length)
+        )
     );
     if (inProgressGames.length === 0) return undefined;
     inProgressGames.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));

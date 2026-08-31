@@ -1,6 +1,10 @@
-import type { Board } from '../types';
+import type {
+    Board,
+    HintCandidateExclusion,
+    HintCandidateProgress,
+} from '../types';
 
-export type HintTechnique = 'nakedSingle' | 'hiddenSingle' | 'lockedCandidate' | 'nakedPair' | 'hiddenPair' | 'nakedTriple' | 'xWing' | 'xyWing' | 'simpleColoring' | 'multiStep';
+export type HintTechnique = 'nakedSingle' | 'hiddenSingle' | 'lockedCandidate' | 'nakedPair' | 'hiddenPair' | 'nakedTriple' | 'hiddenTriple' | 'xWing' | 'swordfish' | 'xyWing' | 'simpleColoring' | 'multiStep';
 export type HintUnitKind = 'row' | 'column' | 'box';
 
 export interface HintCoordinate {
@@ -45,16 +49,53 @@ export interface HintCandidateDelta extends HintCoordinate {
     afterCandidates: number[];
 }
 
+export interface HintVisibleNoteUpdate extends HintCoordinate {
+    beforeNotes: number[];
+    afterNotes: number[];
+}
+
 export interface HintGuideUnit {
     kind: HintUnitKind;
     index: number;
 }
+
+export interface HintTextPart {
+    text: string;
+    tone?: 'candidate' | 'source' | 'support' | 'secondary' | 'remaining' | 'removed';
+    emphasis?: boolean;
+}
+
+type HintTextTone = NonNullable<HintTextPart['tone']>;
+
+const candidateValuePart = (
+    value: number,
+    tone: HintTextTone = 'source',
+): HintTextPart => ({
+    text: `${value}`,
+    tone,
+    emphasis: true,
+});
+
+const candidateValueParts = (
+    values: readonly number[],
+    tone: HintTextTone = 'source',
+): HintTextPart[] => values.flatMap((value, index) => {
+    if (index === 0) return [candidateValuePart(value, tone)];
+    const separator = values.length === 2
+        ? ' and '
+        : index === values.length - 1
+            ? ', and '
+            : ', ';
+    return [{ text: separator }, candidateValuePart(value, tone)];
+});
 
 export interface HintVisualFrame {
     id: string;
     techniqueLabel?: string;
     title: string;
     body: string;
+    titleParts?: HintTextPart[];
+    bodyParts?: HintTextPart[];
     accessibleDetail?: string;
     spotlightCells: HintCoordinate[];
     unitCells?: HintCoordinate[];
@@ -62,7 +103,7 @@ export interface HintVisualFrame {
     sourceCells?: HintCoordinate[];
     supportSourceCells?: HintCoordinate[];
     guideUnits?: HintGuideUnit[];
-    guideStrokeTone?: 'normal' | 'soft';
+    guideStrokeTone?: 'normal' | 'soft' | 'support';
     unitStrokeTone?: 'normal' | 'soft';
     eliminationStyle?: 'cell-x' | 'candidate-slash';
     fillEliminatedCells?: boolean;
@@ -71,6 +112,7 @@ export interface HintVisualFrame {
     candidateTransition?: HintCandidateTransition;
     candidateBreakdown?: HintCandidateBreakdown;
     candidateNoteSets?: HintCandidateNoteSet[];
+    candidateUpdateCells?: HintCoordinate[];
     remainingDigit?: number;
     target?: HintCoordinate & { value: number };
     dimUnrelated?: boolean;
@@ -78,19 +120,37 @@ export interface HintVisualFrame {
 
 export interface HintDeduction {
     id: string;
-    technique: 'lockedCandidate' | 'nakedPair' | 'hiddenPair' | 'nakedTriple' | 'xWing' | 'xyWing';
+    technique: 'lockedCandidate' | 'nakedPair' | 'hiddenPair' | 'nakedTriple' | 'hiddenTriple' | 'xWing' | 'swordfish' | 'xyWing' | 'simpleColoring';
     techniqueLabel: string;
     candidateEliminations: HintCandidateDelta[];
 }
 
-export interface HintPlan {
+interface HintPlanBase {
     technique: HintTechnique;
     techniqueLabel: string;
-    target: HintCoordinate & { value: number };
     frames: HintVisualFrame[];
-    derivedResult?: 'naked' | 'hidden';
     candidateEliminations?: HintCandidateDelta[];
     deductions?: HintDeduction[];
+}
+
+export interface HintPlacementPlan extends HintPlanBase {
+    outcome: 'placement';
+    target: HintCoordinate & { value: number };
+    derivedResult?: 'naked' | 'hidden';
+}
+
+export interface HintCandidatePlan extends HintPlanBase {
+    outcome: 'candidate';
+    candidateEliminations: HintCandidateDelta[];
+    noteUpdates: HintVisibleNoteUpdate[];
+}
+
+export type HintPlan = HintPlacementPlan | HintCandidatePlan;
+
+export interface HintPlanOptions {
+    candidateProgress?: HintCandidateProgress | null;
+    /** Deterministic local-preview override; normal gameplay leaves this unset. */
+    preferredTechnique?: Exclude<HintTechnique, 'nakedSingle' | 'hiddenSingle' | 'multiStep'>;
 }
 
 export type HintPlanResult =
@@ -240,6 +300,232 @@ const getCandidateGrid = (board: NumericBoard): number[][][] => (
     ))
 );
 
+const compareCandidateExclusions = (
+    left: HintCandidateExclusion,
+    right: HintCandidateExclusion,
+) => left.row - right.row || left.col - right.col || left.value - right.value;
+
+const normalizeCandidateExclusions = (
+    exclusions: HintCandidateExclusion[],
+): HintCandidateExclusion[] => {
+    const seen = new Set<string>();
+    return [...exclusions]
+        .filter(exclusion => (
+            Number.isInteger(exclusion.row)
+            && exclusion.row >= 0
+            && exclusion.row < 9
+            && Number.isInteger(exclusion.col)
+            && exclusion.col >= 0
+            && exclusion.col < 9
+            && Number.isInteger(exclusion.value)
+            && exclusion.value >= 1
+            && exclusion.value <= 9
+        ))
+        .sort(compareCandidateExclusions)
+        .filter(exclusion => {
+            const key = `${exclusion.row}:${exclusion.col}:${exclusion.value}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        })
+        .map(exclusion => ({ ...exclusion }));
+};
+
+const HINT_BOARD_SIGNATURE_PATTERN = /^[0-9]{9}(\/[0-9]{9}){8}$/;
+const HINT_CANDIDATE_PROGRESS_INTEGRITY_PATTERN = /^h1-[0-9a-f]{16}$/;
+
+const hasStrictCandidateExclusions = (
+    value: unknown,
+): value is HintCandidateExclusion[] => {
+    if (!Array.isArray(value)) return false;
+    const seen = new Set<string>();
+    return value.every(raw => {
+        if (!raw || typeof raw !== 'object') return false;
+        const exclusion = raw as Partial<HintCandidateExclusion>;
+        if (
+            !Number.isInteger(exclusion.row)
+            || (exclusion.row as number) < 0
+            || (exclusion.row as number) > 8
+            || !Number.isInteger(exclusion.col)
+            || (exclusion.col as number) < 0
+            || (exclusion.col as number) > 8
+            || !Number.isInteger(exclusion.value)
+            || (exclusion.value as number) < 1
+            || (exclusion.value as number) > 9
+        ) return false;
+        const key = `${exclusion.row}:${exclusion.col}:${exclusion.value}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+};
+
+const candidateProgressHashPart = (payload: string, seed: number) => {
+    let hash = seed >>> 0;
+    for (let index = 0; index < payload.length; index++) {
+        hash ^= payload.charCodeAt(index);
+        hash = Math.imul(hash, 0x01000193);
+        hash ^= hash >>> 13;
+    }
+    return (hash >>> 0).toString(16).padStart(8, '0');
+};
+
+/**
+ * Deterministic, Firestore-safe digest for solver-owned candidate proof. This
+ * is an integrity checksum, not an authentication mechanism: it catches stale,
+ * partial, or manually edited persisted ledgers before they influence a Hint.
+ */
+export const computeHintCandidateProgressIntegrity = (
+    boardSignature: string,
+    exclusions: HintCandidateExclusion[],
+    version: 1 = 1,
+) => {
+    const canonicalExclusions = normalizeCandidateExclusions(exclusions)
+        .map(exclusion => `${exclusion.row}:${exclusion.col}:${exclusion.value}`)
+        .join(',');
+    const payload = `${version}|${boardSignature}|${canonicalExclusions}`;
+    return `h1-${candidateProgressHashPart(payload, 0x811c9dc5)}${candidateProgressHashPart(payload, 0x9e3779b9)}`;
+};
+
+/** Validate the full persisted proof before any exclusion is consumed. */
+export const hasValidHintCandidateProgressIntegrity = (
+    value: unknown,
+): value is HintCandidateProgress => {
+    if (!value || typeof value !== 'object') return false;
+    const progress = value as Partial<HintCandidateProgress>;
+    if (
+        progress.version !== 1
+        || typeof progress.boardSignature !== 'string'
+        || !HINT_BOARD_SIGNATURE_PATTERN.test(progress.boardSignature)
+        || !hasStrictCandidateExclusions(progress.exclusions)
+        || typeof progress.integrity !== 'string'
+        || !HINT_CANDIDATE_PROGRESS_INTEGRITY_PATTERN.test(progress.integrity)
+    ) return false;
+    return progress.integrity === computeHintCandidateProgressIntegrity(
+        progress.boardSignature,
+        progress.exclusions,
+        progress.version,
+    );
+};
+
+const makeHintCandidateProgress = (
+    boardSignature: string,
+    exclusions: HintCandidateExclusion[],
+): HintCandidateProgress => {
+    const normalizedExclusions = normalizeCandidateExclusions(exclusions);
+    return {
+        version: 1,
+        boardSignature,
+        exclusions: normalizedExclusions,
+        integrity: computeHintCandidateProgressIntegrity(boardSignature, normalizedExclusions),
+    };
+};
+
+const parseBoardSignature = (signature: string): NumericBoard | null => {
+    const rows = signature.split('/');
+    if (rows.length !== 9 || rows.some(row => !/^\d{9}$/.test(row))) return null;
+    return rows.map(row => [...row].map(value => Number(value)));
+};
+
+const numericBoardSignature = (board: NumericBoard) => (
+    board.map(row => row.join('')).join('/')
+);
+
+const isMonotonicBoardAdvance = (
+    previous: NumericBoard,
+    current: NumericBoard,
+    solvedBoard: number[][],
+) => {
+    for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+            const before = previous[row][col];
+            const after = current[row][col];
+            if (before !== 0 && before !== after) return false;
+            if (before === 0 && after !== 0 && after !== solvedBoard[row][col]) return false;
+        }
+    }
+    return true;
+};
+
+const hasSafeCandidateGrid = (
+    board: NumericBoard,
+    solvedBoard: number[][],
+    candidates: CandidateGrid,
+) => candidates.every((rowCandidates, row) => rowCandidates.every((cellCandidates, col) => (
+    board[row][col] !== 0
+        ? cellCandidates.length === 0
+        : cellCandidates.length > 0 && cellCandidates.includes(solvedBoard[row][col])
+)));
+
+const candidateGridFromProgress = (
+    board: NumericBoard,
+    progress: HintCandidateProgress,
+): CandidateGrid => {
+    const candidates = getCandidateGrid(board);
+    for (const exclusion of progress.exclusions) {
+        candidates[exclusion.row][exclusion.col] = candidates[exclusion.row][exclusion.col]
+            .filter(value => value !== exclusion.value);
+    }
+    return candidates;
+};
+
+/** Create an empty, Firestore-safe logical-candidate ledger for this board. */
+export const createHintCandidateProgress = (board: Board): HintCandidateProgress => (
+    makeHintCandidateProgress(numericBoardSignature(toNumericBoard(board)), [])
+);
+
+/**
+ * Reconcile solver-owned candidate progress with placed values. Correct forward
+ * play keeps still-relevant exclusions; erasing/changing a value resets them.
+ * Player notes never participate in this decision.
+ */
+export const reconcileHintCandidateProgress = (
+    board: Board,
+    solvedBoard: number[][],
+    progress?: HintCandidateProgress | null,
+): HintCandidateProgress => {
+    const numericBoard = toNumericBoard(board);
+    const boardSignature = numericBoardSignature(numericBoard);
+    if (
+        !progress
+        || !hasValidHintCandidateProgressIntegrity(progress)
+        || !isNineByNine(solvedBoard)
+        || !isValidSolution(solvedBoard)
+    ) {
+        return makeHintCandidateProgress(boardSignature, []);
+    }
+
+    const previousBoard = parseBoardSignature(progress.boardSignature);
+    if (
+        !previousBoard
+        || (
+            progress.boardSignature !== boardSignature
+            && !isMonotonicBoardAdvance(previousBoard, numericBoard, solvedBoard)
+        )
+    ) {
+        return makeHintCandidateProgress(boardSignature, []);
+    }
+
+    const legalCandidates = getCandidateGrid(numericBoard);
+    const exclusions = normalizeCandidateExclusions(progress.exclusions).filter(exclusion => (
+        numericBoard[exclusion.row][exclusion.col] === 0
+        && legalCandidates[exclusion.row][exclusion.col].includes(exclusion.value)
+        && solvedBoard[exclusion.row][exclusion.col] !== exclusion.value
+    ));
+    const reconciled = makeHintCandidateProgress(boardSignature, exclusions);
+    const candidates = candidateGridFromProgress(numericBoard, reconciled);
+    return hasSafeCandidateGrid(numericBoard, solvedBoard, candidates)
+        ? reconciled
+        : makeHintCandidateProgress(boardSignature, []);
+};
+
+/** Stable key useful for save deduplication and memoized Hint planning. */
+export const hintCandidateProgressSignature = (progress: HintCandidateProgress) => (
+    `${progress.version}|${progress.boardSignature}|${normalizeCandidateExclusions(progress.exclusions)
+        .map(exclusion => `${exclusion.row}:${exclusion.col}:${exclusion.value}`)
+        .join(',')}|${hasValidHintCandidateProgressIntegrity(progress) ? progress.integrity : 'invalid'}`
+);
+
 const findBlocker = (
     board: NumericBoard,
     row: number,
@@ -377,6 +663,7 @@ const makeNakedSinglePlan = (
         const guideUnit = { kind: unit.kind, index: unit.index };
         const name = unitName(unit);
         return {
+            outcome: 'placement',
             technique: 'nakedSingle',
             techniqueLabel: 'Full house',
             target,
@@ -394,6 +681,10 @@ const makeNakedSinglePlan = (
                     id: 'unit-completion-answer',
                     title: `The only number left is ${value}`,
                     body: `Every other number already appears in this ${name}.`,
+                    titleParts: [
+                        { text: 'The only number left is ' },
+                        candidateValuePart(value, 'remaining'),
+                    ],
                     accessibleDetail: `${value} is the missing number for ${describeCoordinate(target)}.`,
                     spotlightCells: [],
                     guideUnits: [guideUnit],
@@ -404,6 +695,10 @@ const makeNakedSinglePlan = (
                     id: 'unit-completion-place',
                     title: `This cell must be ${value}`,
                     body: `It completes the ${name}.`,
+                    titleParts: [
+                        { text: 'This cell must be ' },
+                        candidateValuePart(value, 'remaining'),
+                    ],
                     accessibleDetail: `Place ${value} at ${describeCoordinate(target)}.`,
                     spotlightCells: [{ row, col }],
                     guideUnits: [guideUnit],
@@ -417,7 +712,67 @@ const makeNakedSinglePlan = (
     }
 
     const candidateBreakdown = makeCandidateBreakdown(board, row, col, value);
-    if (!candidateBreakdown) return null;
+    if (!candidateBreakdown) {
+        const legalCandidates = getCandidates(board, row, col);
+        const logicallyRemoved = legalCandidates.filter(candidate => (
+            !candidates[row][col].includes(candidate)
+        ));
+        if (logicallyRemoved.length === 0) return null;
+        const noteSet: HintCandidateNoteSet = {
+            row,
+            col,
+            marks: legalCandidates.map(candidate => ({
+                value: candidate,
+                tone: candidate === value ? 'remaining' : 'removed',
+            })),
+        };
+        return {
+            outcome: 'placement',
+            technique: 'nakedSingle',
+            techniqueLabel: 'Naked single',
+            target,
+            frames: [
+                {
+                    id: 'candidate-single-look',
+                    title: 'Look at this cell',
+                    body: 'Your earlier candidate update narrowed its choices.',
+                    accessibleDetail: `The solver-owned candidate progress applies to ${describeCoordinate(target)}.`,
+                    spotlightCells: [{ row, col }],
+                    dimUnrelated: true,
+                },
+                {
+                    id: 'candidate-single-remains',
+                    title: `Only ${value} remains`,
+                    body: `The crossed-out candidates were ruled out earlier.`,
+                    titleParts: [
+                        { text: 'Only ' },
+                        candidateValuePart(value, 'remaining'),
+                        { text: ' remains' },
+                    ],
+                    accessibleDetail: `Earlier logical deductions removed ${formatCandidateValues(logicallyRemoved)}, leaving only ${value} at ${describeCoordinate(target)}.`,
+                    spotlightCells: [{ row, col }],
+                    candidateNoteSets: [noteSet],
+                    eliminationStyle: 'candidate-slash',
+                    fillEliminatedCells: false,
+                    dimUnrelated: true,
+                },
+                {
+                    id: 'candidate-single-answer',
+                    title: `This cell must be ${value}`,
+                    body: 'It is the only candidate left.',
+                    titleParts: [
+                        { text: 'This cell must be ' },
+                        candidateValuePart(value, 'remaining'),
+                    ],
+                    accessibleDetail: `Place ${value} at ${describeCoordinate(target)}.`,
+                    spotlightCells: [{ row, col }],
+                    candidateMarks: [{ row, col, value, tone: 'answer' }],
+                    target,
+                    dimUnrelated: true,
+                },
+            ],
+        };
+    }
     const blockedMarks = candidateBreakdown.marks.filter((mark): mark is Extract<
         HintCandidateBreakdownMark,
         { tone: 'blocked' }
@@ -425,6 +780,7 @@ const makeNakedSinglePlan = (
     const sourceCells = uniqueCoordinates(blockedMarks.map(mark => mark.blockedBy));
 
     return {
+        outcome: 'placement',
         technique: 'nakedSingle',
         techniqueLabel: 'Naked single',
         target,
@@ -440,7 +796,12 @@ const makeNakedSinglePlan = (
             {
                 id: 'naked-rule-out',
                 title: `Only ${value} can fit`,
-                body: "Each gray candidate is blocked by a green number in this cell's row, column, or box.",
+                body: "Each other candidate is blocked by a placed number in this cell's row, column, or box.",
+                titleParts: [
+                    { text: 'Only ' },
+                    candidateValuePart(value, 'remaining'),
+                    { text: ' can fit' },
+                ],
                 spotlightCells: [{ row, col }],
                 guideUnits: [
                     { kind: 'row', index: row },
@@ -459,6 +820,10 @@ const makeNakedSinglePlan = (
                 id: 'naked-answer',
                 title: `This cell must be ${value}`,
                 body: 'It is the only number that fits.',
+                titleParts: [
+                    { text: 'This cell must be ' },
+                    candidateValuePart(value, 'remaining'),
+                ],
                 accessibleDetail: `Place ${value} at ${describeCoordinate(target)}.`,
                 spotlightCells: [{ row, col }],
                 candidateMarks: [{ row, col, value, tone: 'answer' }],
@@ -528,8 +893,17 @@ const makeHiddenSinglePlan = (
             .map(cell => findBlocker(board, cell.row, cell.col, value))
             .filter((cell): cell is HintCoordinate => cell !== null)
     );
+    const logicallyRemovedCells = otherEmptyCells.filter(cell => (
+        getCandidates(board, cell.row, cell.col).includes(value)
+        && !candidates[cell.row][cell.col].includes(value)
+    ));
+    const hasLogicalRemovals = logicallyRemovedCells.length > 0;
+    const placedBlockedCells = otherEmptyCells.filter(cell => (
+        !logicallyRemovedCells.some(removed => coordinateKey(removed) === coordinateKey(cell))
+    ));
 
     return {
+        outcome: 'placement',
         technique: 'hiddenSingle',
         techniqueLabel: 'Hidden single',
         target,
@@ -538,6 +912,10 @@ const makeHiddenSinglePlan = (
                 id: 'hidden-look',
                 title: `Look at this ${unitName(unit)}`,
                 body: `${value} is missing from this ${unitName(unit)}.`,
+                bodyParts: [
+                    candidateValuePart(value),
+                    { text: ` is missing from this ${unitName(unit)}.` },
+                ],
                 accessibleDetail: `The highlighted ${unitName(unit)} does not contain ${value}.`,
                 spotlightCells: [],
                 unitCells: unit.cells,
@@ -546,8 +924,27 @@ const makeHiddenSinglePlan = (
             {
                 id: 'hidden-blocked',
                 title: `Only one place for ${value}`,
-                body: `The green ${value}s rule out every gray ${value}.`,
-                accessibleDetail: `Existing ${value}s block ${describeCoordinates(otherEmptyCells)}, leaving ${describeCoordinate(target)} as the only place for ${value} in this ${unitName(unit)}.`,
+                body: hasLogicalRemovals
+                    ? `Placed numbers and earlier candidate updates rule out every other ${value}.`
+                    : `The placed ${value}s rule out every other cell in this ${unitName(unit)}.`,
+                titleParts: [
+                    { text: 'Only one place for ' },
+                    candidateValuePart(value),
+                ],
+                bodyParts: hasLogicalRemovals
+                    ? [
+                        { text: 'Placed numbers and earlier candidate updates rule out every other ' },
+                        candidateValuePart(value, 'removed'),
+                        { text: '.' },
+                    ]
+                    : [
+                        { text: 'The placed ' },
+                        candidateValuePart(value),
+                        { text: `s rule out every other cell in this ${unitName(unit)}.` },
+                    ],
+                accessibleDetail: hasLogicalRemovals
+                    ? `Earlier deductions remove ${value} from ${describeCoordinates(logicallyRemovedCells)}${placedBlockedCells.length > 0 ? `, while placed ${value}s block ${describeCoordinates(placedBlockedCells)}` : ''}. That leaves ${describeCoordinate(target)} as the only place for ${value} in this ${unitName(unit)}.`
+                    : `Existing ${value}s block ${describeCoordinates(otherEmptyCells)}, leaving ${describeCoordinate(target)} as the only place for ${value} in this ${unitName(unit)}.`,
                 spotlightCells: [{ row, col }],
                 contextCells: unit.cells,
                 sourceCells,
@@ -561,6 +958,11 @@ const makeHiddenSinglePlan = (
                 id: 'hidden-answer',
                 title: 'Only this cell remains',
                 body: `So ${value} belongs here.`,
+                bodyParts: [
+                    { text: 'So ' },
+                    candidateValuePart(value, 'remaining'),
+                    { text: ' belongs here.' },
+                ],
                 accessibleDetail: `Place ${value} at ${describeCoordinate(target)}; it is the only cell left for ${value} in this ${unitName(unit)}.`,
                 spotlightCells: [{ row, col }],
                 candidateMarks: [{ row, col, value, tone: 'answer' }],
@@ -860,6 +1262,7 @@ const makeLockedCandidatePlan = (
         : 'the outlined cells';
 
     return {
+        outcome: 'placement',
         technique: 'lockedCandidate',
         techniqueLabel: 'Locked candidates',
         target: match.target,
@@ -913,7 +1316,7 @@ const makeLockedCandidatePlan = (
                     : `Only one place remains for ${match.target.value}`,
                 body: match.resultKind === 'naked'
                     ? `${match.target.value} belongs in this cell.`
-                    : `Every gray ${match.target.value} is blocked, so ${match.target.value} belongs in the green cell.`,
+                    : `Every other ${match.target.value} is ruled out, so ${match.target.value} belongs in the outlined cell.`,
                 accessibleDetail: match.resultKind === 'naked'
                     ? `Candidate ${match.value} is ruled out at ${describeCoordinate(match.target)}, leaving only ${match.target.value}.`
                     : `Placed ${match.target.value}s rule out ${describeCoordinates(hiddenResultPreBlockedCells)}. The locked candidates rule out ${describeCoordinates(causalEliminatedMarks)}, leaving ${describeCoordinate(match.target)}.`,
@@ -1189,6 +1592,7 @@ const makeNakedPairPlan = (
     const answerMark: HintCandidateMark = { ...match.target, tone: 'answer' };
 
     return {
+        outcome: 'placement',
         technique: 'nakedPair',
         techniqueLabel: 'Naked pair',
         target: match.target,
@@ -1217,7 +1621,7 @@ const makeNakedPairPlan = (
                     ? `The pair reserves ${firstValue} and ${secondValue}`
                     : `Now look at this ${unitName(match.resultUnit)}`,
                 body: match.resultKind === 'naked'
-                    ? `Cross out ${removedLabel} in the cell with gray notes. Only ${match.target.value} remains.`
+                    ? `Cross out ${removedLabel} in the cell where those candidates are shown. Only ${match.target.value} remains.`
                     : `The pair rules out ${match.target.value} in ${eliminatedCellPhrase}.`,
                 accessibleDetail: match.resultKind === 'naked'
                     ? `The pair reserves ${firstValue} and ${secondValue} in this ${unitName(match.unit)}. Removing ${removedLabel} from ${describeCoordinate(match.target)} leaves ${match.target.value}.`
@@ -1248,7 +1652,7 @@ const makeNakedPairPlan = (
                     : `Only one place remains for ${match.target.value}`,
                 body: match.resultKind === 'naked'
                     ? `${match.target.value} belongs in this cell.`
-                    : `Every gray ${match.target.value} is blocked, so ${match.target.value} belongs in the green cell.`,
+                    : `Every other ${match.target.value} is ruled out, so ${match.target.value} belongs in the outlined cell.`,
                 accessibleDetail: match.resultKind === 'naked'
                     ? `Place ${match.target.value} at ${describeCoordinate(match.target)}.`
                     : `The pair rules out ${describeCoordinates(causalEliminatedMarks)}. Placed ${match.target.value}s rule out ${describeCoordinates(hiddenResultPreBlockedCells)}, leaving ${describeCoordinate(match.target)}.`,
@@ -1351,6 +1755,89 @@ const findHiddenPairPatterns = (
     return patterns;
 };
 
+interface HiddenTriplePattern {
+    unit: HintUnit;
+    tripleCells: [HintCoordinate, HintCoordinate, HintCoordinate];
+    tripleValues: [number, number, number];
+    eliminations: HintCandidateDelta[];
+}
+
+const findHiddenTriplePatterns = (
+    board: NumericBoard,
+    candidates: CandidateGrid,
+): HiddenTriplePattern[] => {
+    const patterns: HiddenTriplePattern[] = [];
+
+    for (const unit of ALL_UNITS) {
+        for (let firstValue = 1; firstValue <= 7; firstValue++) {
+            for (let secondValue = firstValue + 1; secondValue <= 8; secondValue++) {
+                for (let thirdValue = secondValue + 1; thirdValue <= 9; thirdValue++) {
+                    const tripleValues: [number, number, number] = [
+                        firstValue,
+                        secondValue,
+                        thirdValue,
+                    ];
+                    const tripleCells = unit.cells.filter(cell => (
+                        board[cell.row][cell.col] === 0
+                        && tripleValues.some(value => (
+                            candidates[cell.row][cell.col].includes(value)
+                        ))
+                    )).sort(compareCoordinates);
+                    if (
+                        tripleCells.length !== 3
+                        || !tripleValues.every(value => tripleCells.some(cell => (
+                            candidates[cell.row][cell.col].includes(value)
+                        )))
+                    ) continue;
+
+                    const typedCells = tripleCells as HiddenTriplePattern['tripleCells'];
+                    const eliminations = typedCells.map(cell => {
+                        const beforeCandidates = [...candidates[cell.row][cell.col]];
+                        const afterCandidates = beforeCandidates.filter(value => (
+                            tripleValues.includes(value)
+                        ));
+                        return {
+                            ...cell,
+                            beforeCandidates,
+                            removedValues: beforeCandidates.filter(value => (
+                                !tripleValues.includes(value)
+                            )),
+                            afterCandidates,
+                        };
+                    }).filter(elimination => elimination.removedValues.length > 0);
+                    if (
+                        eliminations.length === 0
+                        || eliminations.some(elimination => (
+                            elimination.afterCandidates.length === 0
+                        ))
+                    ) continue;
+
+                    patterns.push({
+                        unit,
+                        tripleCells: typedCells,
+                        tripleValues,
+                        eliminations,
+                    });
+                }
+            }
+        }
+    }
+
+    return patterns.sort((left, right) => (
+        left.eliminations.length - right.eliminations.length
+        || left.eliminations.reduce((sum, item) => sum + item.removedValues.length, 0)
+        - right.eliminations.reduce((sum, item) => sum + item.removedValues.length, 0)
+        || UNIT_KIND_PRIORITY[left.unit.kind] - UNIT_KIND_PRIORITY[right.unit.kind]
+        || left.unit.index - right.unit.index
+        || left.tripleValues[0] - right.tripleValues[0]
+        || left.tripleValues[1] - right.tripleValues[1]
+        || left.tripleValues[2] - right.tripleValues[2]
+        || compareCoordinates(left.tripleCells[0], right.tripleCells[0])
+        || compareCoordinates(left.tripleCells[1], right.tripleCells[1])
+        || compareCoordinates(left.tripleCells[2], right.tripleCells[2])
+    ));
+};
+
 const applyHiddenPairPattern = (
     candidates: CandidateGrid,
     pattern: HiddenPairPattern,
@@ -1445,8 +1932,8 @@ const makeHiddenPairPlan = (
     )))].sort((left, right) => left - right);
     const removalLabel = formatCandidateValues(removedValues);
     const removalInstruction = removedValues.length === 1
-        ? `Cross out the gray ${removalLabel}.`
-        : `Cross out the gray notes for ${removalLabel}.`;
+        ? `Cross out ${removalLabel} where it is shown.`
+        : `Cross out ${removalLabel} where they are shown.`;
     const causalMarks: HintCandidateMark[] = match.causalEliminations.map(elimination => ({
         row: elimination.row,
         col: elimination.col,
@@ -1484,6 +1971,7 @@ const makeHiddenPairPlan = (
     const answerMark: HintCandidateMark = { ...match.target, tone: 'answer' };
 
     return {
+        outcome: 'placement',
         technique: 'hiddenPair',
         techniqueLabel: 'Hidden pair',
         target: match.target,
@@ -1520,7 +2008,7 @@ const makeHiddenPairPlan = (
                 id: 'hidden-pair-answer',
                 techniqueLabel: 'Hidden single',
                 title: `Only one place remains for ${match.target.value}`,
-                body: `Every gray ${match.target.value} is blocked, so ${match.target.value} belongs in the green cell.`,
+                body: `Every other ${match.target.value} is ruled out, so ${match.target.value} belongs in the outlined cell.`,
                 accessibleDetail: `The hidden pair rules out ${describeCoordinates(causalMarks)}.${preBlockedDetail} That leaves ${describeCoordinate(match.target)}.`,
                 spotlightCells: [{ row: match.target.row, col: match.target.col }],
                 unitCells: match.resultUnit.cells,
@@ -1806,11 +2294,12 @@ const makeNakedTriplePlan = (
         ? ` Placed ${match.target.value}s rule out ${describeCoordinates(hiddenResultPreBlockedCells)}.`
         : '';
     const eliminatedCandidatePhrase = causalEliminatedMarks.length === 1
-        ? `the gray ${match.target.value}`
-        : `the gray ${match.target.value}s`;
+        ? `${match.target.value} where it is shown`
+        : `${match.target.value}s where they are shown`;
     const answerMark: HintCandidateMark = { ...match.target, tone: 'answer' };
 
     return {
+        outcome: 'placement',
         technique: 'nakedTriple',
         techniqueLabel: 'Naked triple',
         target: match.target,
@@ -1836,7 +2325,7 @@ const makeNakedTriplePlan = (
                     ? `The triple reserves ${tripleLabel}`
                     : `Now look at this ${unitName(match.resultUnit)}`,
                 body: match.resultKind === 'naked'
-                    ? `Cross out ${removedLabel} in the cell with gray notes. Only ${match.target.value} remains.`
+                    ? `Cross out ${removedLabel} in the cell where those candidates are shown. Only ${match.target.value} remains.`
                     : `Cross out ${eliminatedCandidatePhrase}. That leaves one place for ${match.target.value}.`,
                 accessibleDetail: match.resultKind === 'naked'
                     ? `The triple reserves ${tripleLabel} in this ${unitName(match.unit)}. Removing ${removedLabel} from ${describeCoordinate(match.target)} leaves ${match.target.value}.`
@@ -1871,7 +2360,7 @@ const makeNakedTriplePlan = (
                     : `Only one place remains for ${match.target.value}`,
                 body: match.resultKind === 'naked'
                     ? `${match.target.value} belongs in this cell.`
-                    : `Every gray ${match.target.value} is blocked, so ${match.target.value} belongs in the green cell.`,
+                    : `Every other ${match.target.value} is ruled out, so ${match.target.value} belongs in the outlined cell.`,
                 accessibleDetail: match.resultKind === 'naked'
                     ? `Place ${match.target.value} at ${describeCoordinate(match.target)}.`
                     : `The triple rules out ${describeCoordinates(causalEliminatedMarks)}.${preBlockedDetail} That leaves ${describeCoordinate(match.target)}.`,
@@ -2063,6 +2552,126 @@ const findXWingPatterns = (
     ));
 };
 
+interface SwordfishPattern {
+    orientation: XWingOrientation;
+    value: number;
+    baseUnits: [HintUnit, HintUnit, HintUnit];
+    coverUnits: [HintUnit, HintUnit, HintUnit];
+    sourceCells: HintCoordinate[];
+    eliminations: HintCandidateDelta[];
+}
+
+const findSwordfishPatterns = (
+    board: NumericBoard,
+    candidates: CandidateGrid,
+): SwordfishPattern[] => {
+    const patterns: SwordfishPattern[] = [];
+
+    for (const orientation of ['row', 'column'] as const) {
+        const baseKind: HintUnitKind = orientation;
+        const coverKind: HintUnitKind = orientation === 'row' ? 'column' : 'row';
+
+        for (const value of DIGITS) {
+            const eligibleBases = Array.from({ length: 9 }, (_, baseIndex) => ({
+                baseIndex,
+                coverIndexes: Array.from({ length: 9 }, (_, index) => index)
+                    .filter(coverIndex => {
+                        const cell = xWingCoordinate(orientation, baseIndex, coverIndex);
+                        return (
+                            board[cell.row][cell.col] === 0
+                            && candidates[cell.row][cell.col].includes(value)
+                        );
+                    }),
+            })).filter(entry => (
+                entry.coverIndexes.length >= 2 && entry.coverIndexes.length <= 3
+            ));
+
+            for (let first = 0; first < eligibleBases.length - 2; first++) {
+                for (let second = first + 1; second < eligibleBases.length - 1; second++) {
+                    for (let third = second + 1; third < eligibleBases.length; third++) {
+                        const entries = [
+                            eligibleBases[first],
+                            eligibleBases[second],
+                            eligibleBases[third],
+                        ];
+                        const coverIndexes = [...new Set(entries.flatMap(entry => (
+                            entry.coverIndexes
+                        )))].sort((left, right) => left - right);
+                        if (coverIndexes.length !== 3) continue;
+
+                        const baseIndexes = new Set(entries.map(entry => entry.baseIndex));
+                        const eliminations: HintCandidateDelta[] = [];
+                        for (const coverIndex of coverIndexes) {
+                            for (let baseIndex = 0; baseIndex < 9; baseIndex++) {
+                                if (baseIndexes.has(baseIndex)) continue;
+                                const cell = xWingCoordinate(
+                                    orientation,
+                                    baseIndex,
+                                    coverIndex,
+                                );
+                                if (
+                                    board[cell.row][cell.col] !== 0
+                                    || !candidates[cell.row][cell.col].includes(value)
+                                ) continue;
+                                const beforeCandidates = [...candidates[cell.row][cell.col]];
+                                eliminations.push({
+                                    ...cell,
+                                    beforeCandidates,
+                                    removedValues: [value],
+                                    afterCandidates: beforeCandidates.filter(candidate => (
+                                        candidate !== value
+                                    )),
+                                });
+                            }
+                        }
+                        eliminations.sort(compareCoordinates);
+                        if (
+                            eliminations.length === 0
+                            || eliminations.some(elimination => (
+                                elimination.afterCandidates.length === 0
+                            ))
+                        ) continue;
+
+                        const sourceCells = entries.flatMap(entry => (
+                            entry.coverIndexes.map(coverIndex => (
+                                xWingCoordinate(orientation, entry.baseIndex, coverIndex)
+                            ))
+                        )).sort(compareCoordinates);
+                        patterns.push({
+                            orientation,
+                            value,
+                            baseUnits: entries.map(entry => ({
+                                kind: baseKind,
+                                index: entry.baseIndex,
+                                cells: getUnitCells(baseKind, entry.baseIndex),
+                            })) as SwordfishPattern['baseUnits'],
+                            coverUnits: coverIndexes.map(coverIndex => ({
+                                kind: coverKind,
+                                index: coverIndex,
+                                cells: getUnitCells(coverKind, coverIndex),
+                            })) as SwordfishPattern['coverUnits'],
+                            sourceCells,
+                            eliminations,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    return patterns.sort((left, right) => (
+        (left.orientation === 'row' ? 0 : 1) - (right.orientation === 'row' ? 0 : 1)
+        || left.value - right.value
+        || left.baseUnits[0].index - right.baseUnits[0].index
+        || left.baseUnits[1].index - right.baseUnits[1].index
+        || left.baseUnits[2].index - right.baseUnits[2].index
+        || left.coverUnits[0].index - right.coverUnits[0].index
+        || left.coverUnits[1].index - right.coverUnits[1].index
+        || left.coverUnits[2].index - right.coverUnits[2].index
+        || left.eliminations.length - right.eliminations.length
+    ));
+};
+
 const applyXWingPattern = (
     candidates: CandidateGrid,
     pattern: XWingPattern,
@@ -2206,6 +2815,7 @@ const makeXWingPlan = (
     const answerMark: HintCandidateMark = { ...match.target, tone: 'answer' };
 
     return {
+        outcome: 'placement',
         technique: 'xWing',
         techniqueLabel: 'X-Wing',
         target: match.target,
@@ -2230,7 +2840,7 @@ const makeXWingPlan = (
                 title: `So ${match.value} cannot go elsewhere in these ${coverName}`,
                 body: match.resultKind === 'naked'
                     ? `Cross out the slashed ${match.value}s. Only ${match.target.value} remains in the outlined cell.`
-                    : `Cross out the gray ${match.value}s. That leaves one place for ${match.target.value}.`,
+                    : `Cross out the slashed ${match.value}s. That leaves one place for ${match.target.value}.`,
                 accessibleDetail: `The four corner candidates force ${match.value} into both highlighted ${coverName}, eliminating ${match.value} from ${describeCoordinates(match.eliminations)}.`,
                 spotlightCells: match.resultKind === 'naked'
                     ? [{ row: match.target.row, col: match.target.col }]
@@ -2262,7 +2872,7 @@ const makeXWingPlan = (
                     : `Only one place remains for ${match.target.value}`,
                 body: match.resultKind === 'naked'
                     ? `${match.target.value} belongs in this cell.`
-                    : `Every gray ${match.target.value} is blocked, so ${match.target.value} belongs in the green cell.`,
+                    : `Every other ${match.target.value} is ruled out, so ${match.target.value} belongs in the outlined cell.`,
                 accessibleDetail: match.resultKind === 'naked'
                     ? `The X-Wing removes ${match.value} from ${describeCoordinate(match.target)}, leaving ${match.target.value}.`
                     : `The X-Wing leaves ${describeCoordinate(match.target)} as the only place for ${match.target.value} in this ${unitName(match.resultUnit)}.`,
@@ -2576,6 +3186,7 @@ const makeXYWingPlan = (
     const answerMark: HintCandidateMark = { ...match.target, tone: 'answer' };
 
     return {
+        outcome: 'placement',
         technique: 'xyWing',
         techniqueLabel: 'XY-Wing',
         target: match.target,
@@ -2656,7 +3267,7 @@ const makeXYWingPlan = (
                     : `Only one place remains for ${match.target.value}`,
                 body: match.resultKind === 'naked'
                     ? `${match.target.value} belongs in this cell.`
-                    : `Every gray ${match.target.value} is blocked, so ${match.target.value} belongs in the green cell.`,
+                    : `Every other ${match.target.value} is ruled out, so ${match.target.value} belongs in the outlined cell.`,
                 accessibleDetail: match.resultKind === 'naked'
                     ? `The XY-Wing removes ${match.z} from ${describeCoordinate(match.target)}, leaving ${match.target.value}.`
                     : `The XY-Wing leaves ${describeCoordinate(match.target)} as the only place for ${match.target.value} in this ${unitName(match.resultUnit)}.`,
@@ -2923,6 +3534,7 @@ const shortestColoringPath = (
 };
 
 const MAX_COLOR_CHAIN_CELLS = 8;
+const MAX_CANDIDATE_COLOR_CHAIN_CELLS = 9;
 
 const coloringTrapWitnesses = (
     pattern: SimpleColoringPattern,
@@ -2996,7 +3608,7 @@ const connectColoringPaths = (
 };
 
 const coloringCausalKeys = (
-    match: SimpleColoringMatch,
+    match: SimpleColoringPattern,
     eliminations: HintCandidateDelta[],
 ): Set<string> | null => {
     if (match.rule === 'wrap') {
@@ -3235,6 +3847,7 @@ const makeSimpleColoringPlan = (
         .join(' and ');
 
     return {
+        outcome: 'placement',
         technique: 'simpleColoring',
         techniqueLabel: 'Simple coloring',
         target: match.target,
@@ -3294,7 +3907,7 @@ const makeSimpleColoringPlan = (
                     : `Now ${match.target.value} has one place in this ${unitName(match.resultUnit)}`,
                 body: match.resultKind === 'naked'
                     ? `Only ${match.target.value} remains in the outlined cell.`
-                    : `The gray ${match.target.value}s are blocked.`,
+                    : `Those ${match.target.value} candidates are ruled out.`,
                 accessibleDetail: `The visible color-chain proof eliminates ${match.value} from ${describeCoordinates(focusEliminations)}.`,
                 spotlightCells: match.resultKind === 'naked'
                     ? [{ row: match.target.row, col: match.target.col }]
@@ -3322,7 +3935,7 @@ const makeSimpleColoringPlan = (
                     : `Only one place remains for ${match.target.value}`,
                 body: match.resultKind === 'naked'
                     ? `${match.target.value} belongs in this cell.`
-                    : `Every gray ${match.target.value} is blocked, so ${match.target.value} belongs in the green cell.`,
+                    : `Every other ${match.target.value} is ruled out, so ${match.target.value} belongs in the outlined cell.`,
                 accessibleDetail: match.resultKind === 'naked'
                     ? `Crossing out ${match.value} leaves only ${match.target.value} at ${describeCoordinate(match.target)}.`
                     : `The color-chain eliminations leave ${describeCoordinate(match.target)} as the only place for ${match.target.value} in ${unitName(match.resultUnit)} ${match.resultUnit.index + 1}.`,
@@ -3403,6 +4016,30 @@ type MultiStepDeduction =
     | MultiStepTripleDeduction
     | MultiStepXWingDeduction
     | MultiStepXYWingDeduction;
+
+interface CandidateColoringDeduction {
+    technique: 'simpleColoring';
+    pattern: SimpleColoringPattern;
+    eliminations: HintCandidateDelta[];
+}
+
+interface CandidateHiddenTripleDeduction {
+    technique: 'hiddenTriple';
+    pattern: HiddenTriplePattern;
+    eliminations: HintCandidateDelta[];
+}
+
+interface CandidateSwordfishDeduction {
+    technique: 'swordfish';
+    pattern: SwordfishPattern;
+    eliminations: HintCandidateDelta[];
+}
+
+type CandidateDeduction =
+    | MultiStepDeduction
+    | CandidateHiddenTripleDeduction
+    | CandidateSwordfishDeduction
+    | CandidateColoringDeduction;
 
 interface MultiStepSearchResult {
     deductions: MultiStepDeduction[];
@@ -3589,6 +4226,112 @@ const findMultiStepDeductions = (
     ];
 };
 
+const findCandidateDeductions = (
+    board: NumericBoard,
+    candidates: CandidateGrid,
+): CandidateDeduction[] => {
+    const existingDeductions = findMultiStepDeductions(board, candidates);
+    const hiddenTripleDeductions: CandidateHiddenTripleDeduction[] = (
+        findHiddenTriplePatterns(board, candidates).map(pattern => ({
+            technique: 'hiddenTriple' as const,
+            pattern,
+            eliminations: pattern.eliminations.map(cloneCandidateDelta),
+        }))
+    );
+    const swordfishDeductions: CandidateSwordfishDeduction[] = (
+        findSwordfishPatterns(board, candidates).map(pattern => ({
+            technique: 'swordfish' as const,
+            pattern,
+            eliminations: pattern.eliminations.map(cloneCandidateDelta),
+        }))
+    );
+    const coloringDeductions: CandidateColoringDeduction[] = findSimpleColoringPatterns(
+        board,
+        candidates,
+    ).flatMap(pattern => {
+        // A single visibly proven removal keeps a color-chain explanation
+        // readable even when the same coloring rule has several consequences.
+        const prepared = pattern.eliminations.map(elimination => {
+            const causalKeys = coloringCausalKeys(pattern, [elimination]);
+            return causalKeys && causalKeys.size <= MAX_CANDIDATE_COLOR_CHAIN_CELLS
+                ? { elimination, causalKeys }
+                : null;
+        }).filter((item): item is {
+            elimination: HintCandidateDelta;
+            causalKeys: Set<string>;
+        } => item !== null).sort((left, right) => (
+            left.causalKeys.size - right.causalKeys.size
+            || compareCoordinates(left.elimination, right.elimination)
+        ));
+        return prepared[0]
+            ? [{
+                technique: 'simpleColoring' as const,
+                pattern,
+                eliminations: [cloneCandidateDelta(prepared[0].elimination)],
+            }]
+            : [];
+    }).sort((left, right) => (
+        left.pattern.colorCells.flat().length - right.pattern.colorCells.flat().length
+        || left.pattern.links.length - right.pattern.links.length
+        || (left.pattern.rule === 'trap' ? 0 : 1) - (right.pattern.rule === 'trap' ? 0 : 1)
+        || left.pattern.value - right.pattern.value
+        || compareCoordinates(left.eliminations[0], right.eliminations[0])
+    ));
+
+    return [
+        ...existingDeductions.filter(deduction => (
+            deduction.technique === 'lockedCandidate'
+            || deduction.technique === 'nakedPair'
+            || deduction.technique === 'hiddenPair'
+            || deduction.technique === 'nakedTriple'
+        )),
+        ...hiddenTripleDeductions,
+        ...existingDeductions.filter(deduction => deduction.technique === 'xWing'),
+        ...swordfishDeductions,
+        ...existingDeductions.filter(deduction => deduction.technique === 'xyWing'),
+        ...coloringDeductions,
+    ];
+};
+
+const makeVisibleNoteUpdates = (
+    board: Board,
+    eliminations: HintCandidateDelta[],
+): HintVisibleNoteUpdate[] => {
+    const updates = new Map<string, HintVisibleNoteUpdate>();
+    for (const elimination of eliminations) {
+        const cell = board[elimination.row]?.[elimination.col];
+        if (!cell || cell.value !== null) continue;
+        const key = coordinateKey(elimination);
+        const previous = updates.get(key);
+        const beforeNotes = previous?.beforeNotes ?? [...new Set(
+            (Array.isArray(cell.notes) ? cell.notes : []).filter(value => (
+                Number.isInteger(value) && value >= 1 && value <= 9
+            )),
+        )].sort((left, right) => left - right);
+        const workingNotes = previous?.afterNotes ?? beforeNotes;
+        const filteredNotes = workingNotes.filter(value => (
+            !elimination.removedValues.includes(value)
+        ));
+        const afterNotes = workingNotes.length === 0 || filteredNotes.length === 0
+            ? [...elimination.afterCandidates]
+            : filteredNotes;
+        if (
+            beforeNotes.length === afterNotes.length
+            && beforeNotes.every((value, index) => value === afterNotes[index])
+        ) {
+            updates.delete(key);
+            continue;
+        }
+        updates.set(key, {
+            row: elimination.row,
+            col: elimination.col,
+            beforeNotes,
+            afterNotes: [...afterNotes],
+        });
+    }
+    return [...updates.values()].sort(compareCoordinates);
+};
+
 const findPlacementAfterDeduction = (
     board: NumericBoard,
     before: CandidateGrid,
@@ -3732,6 +4475,1017 @@ const formatCandidateValues = (values: number[]) => {
     return `${values.slice(0, -1).join(', ')}, and ${values[values.length - 1]}`;
 };
 
+const candidateDeductionLabel = (deduction: CandidateDeduction) => {
+    if (deduction.technique === 'lockedCandidate') return 'Locked candidates';
+    if (deduction.technique === 'nakedPair') return 'Naked pair';
+    if (deduction.technique === 'hiddenPair') return 'Hidden pair';
+    if (deduction.technique === 'nakedTriple') return 'Naked triple';
+    if (deduction.technique === 'hiddenTriple') return 'Hidden triple';
+    if (deduction.technique === 'xWing') return 'X-Wing';
+    if (deduction.technique === 'swordfish') return 'Swordfish';
+    if (deduction.technique === 'xyWing') return 'XY-Wing';
+    return 'Simple coloring';
+};
+
+const candidateDeductionMetadata = (
+    deductions: CandidateDeduction[],
+): HintDeduction[] => deductions.map((deduction, index) => ({
+    id: `candidate-${index + 1}-${deduction.technique}`,
+    technique: deduction.technique,
+    techniqueLabel: candidateDeductionLabel(deduction),
+    candidateEliminations: deduction.eliminations.map(cloneCandidateDelta),
+}));
+
+const eliminationNoteSets = (
+    eliminations: HintCandidateDelta[],
+): HintCandidateNoteSet[] => eliminations.map(elimination => ({
+    row: elimination.row,
+    col: elimination.col,
+    marks: elimination.beforeCandidates.map(value => ({
+        value,
+        tone: elimination.removedValues.includes(value)
+            ? 'removed' as const
+            : 'remaining' as const,
+    })),
+}));
+
+const eliminationMarks = (
+    eliminations: HintCandidateDelta[],
+): HintCandidateMark[] => eliminations.flatMap(elimination => (
+    elimination.removedValues.map(value => ({
+        row: elimination.row,
+        col: elimination.col,
+        value,
+        tone: 'eliminated' as const,
+    }))
+));
+
+const candidateUpdateBody = (eliminations: HintCandidateDelta[]) => {
+    const removed = [...new Set(eliminations.flatMap(item => item.removedValues))]
+        .sort((left, right) => left - right);
+    const places = eliminations.length === 1 ? 'this cell' : 'the outlined cells';
+    return `Cross out ${formatCandidateValues(removed)} in ${places}. Oku will update these candidates for you.`;
+};
+
+const candidateUpdateBodyParts = (
+    eliminations: HintCandidateDelta[],
+): HintTextPart[] => {
+    const removed = [...new Set(eliminations.flatMap(item => item.removedValues))]
+        .sort((left, right) => left - right);
+    const places = eliminations.length === 1 ? 'this cell' : 'the outlined cells';
+    return [
+        { text: 'Cross out ' },
+        ...candidateValueParts(removed, 'removed'),
+        { text: ` in ${places}. ` },
+        { text: 'Oku will update these candidates for you.', tone: 'secondary' },
+    ];
+};
+
+const makeCandidateDeductionPlan = (
+    candidates: CandidateGrid,
+    deduction: CandidateDeduction,
+    appliedDeductions: CandidateDeduction[],
+    noteUpdates: HintVisibleNoteUpdate[],
+): HintCandidatePlan | null => {
+    const label = candidateDeductionLabel(deduction);
+    const eliminations = deduction.eliminations.map(cloneCandidateDelta);
+    const allEliminations = appliedDeductions.flatMap(item => (
+        item.eliminations.map(cloneCandidateDelta)
+    ));
+    const removedNoteSets = eliminationNoteSets(eliminations);
+    const removedMarks = eliminationMarks(eliminations);
+    const removalCells = eliminations.map(({ row, col }) => ({ row, col }));
+    let frames: HintVisualFrame[];
+
+    if (deduction.technique === 'lockedCandidate') {
+        const { pattern } = deduction;
+        const sourceName = unitName(pattern.sourceUnit);
+        const intersectingName = unitName(pattern.intersectingUnit);
+        const lockedMarks: HintCandidateMark[] = pattern.lockedCells.map(cell => ({
+            ...cell,
+            value: pattern.value,
+            tone: 'locked',
+        }));
+        frames = [
+            {
+                id: 'candidate-locked-find',
+                techniqueLabel: label,
+                title: `Only ${pattern.lockedCells.length} places for ${pattern.value}`,
+                body: `In this ${sourceName}, ${pattern.value} can only go in these cells.`,
+                titleParts: [
+                    { text: `Only ${pattern.lockedCells.length} places for ` },
+                    candidateValuePart(pattern.value),
+                ],
+                bodyParts: [
+                    { text: `In this ${sourceName}, ` },
+                    candidateValuePart(pattern.value),
+                    { text: ' can only go in these cells.' },
+                ],
+                accessibleDetail: `Candidate ${pattern.value} can only go at ${describeCoordinates(pattern.lockedCells)} in this ${sourceName}.`,
+                spotlightCells: pattern.lockedCells,
+                unitCells: pattern.sourceUnit.cells,
+                candidateMarks: lockedMarks,
+                dimUnrelated: true,
+            },
+            {
+                id: 'candidate-locked-update',
+                techniqueLabel: label,
+                title: `Remove ${pattern.value} from this ${intersectingName}`,
+                body: candidateUpdateBody(eliminations),
+                titleParts: [
+                    { text: 'Remove ' },
+                    candidateValuePart(pattern.value, 'removed'),
+                    { text: ` from this ${intersectingName}` },
+                ],
+                bodyParts: candidateUpdateBodyParts(eliminations),
+                accessibleDetail: `Because every possible ${pattern.value} in the ${sourceName} lies in this ${intersectingName}, remove ${pattern.value} from ${describeCoordinates(eliminations)}.`,
+                spotlightCells: removalCells,
+                contextCells: pattern.sourceUnit.cells,
+                guideUnits: [{
+                    kind: pattern.intersectingUnit.kind,
+                    index: pattern.intersectingUnit.index,
+                }],
+                guideStrokeTone: 'normal',
+                candidateMarks: [...lockedMarks, ...removedMarks],
+                candidateNoteSets: removedNoteSets,
+                candidateUpdateCells: removalCells,
+                eliminationStyle: 'candidate-slash',
+                fillEliminatedCells: false,
+                dimUnrelated: true,
+            },
+        ];
+    } else if (deduction.technique === 'nakedPair') {
+        const { pattern } = deduction;
+        const pairLabel = formatCandidateValues(pattern.pairValues);
+        const pairNoteSets: HintCandidateNoteSet[] = pattern.pairCells.map(cell => ({
+            ...cell,
+            marks: pattern.pairValues.map(value => ({ value, tone: 'locked' as const })),
+        }));
+        frames = [
+            {
+                id: 'candidate-pair-find',
+                techniqueLabel: label,
+                title: 'These cells share two choices',
+                body: `They must contain ${pairLabel}, in either order.`,
+                bodyParts: [
+                    { text: 'They must contain ' },
+                    ...candidateValueParts(pattern.pairValues),
+                    { text: ', in either order.' },
+                ],
+                accessibleDetail: `${describeCoordinates(pattern.pairCells)} contain only candidates ${pairLabel} in this ${unitName(pattern.unit)}.`,
+                spotlightCells: pattern.pairCells,
+                unitCells: pattern.unit.cells,
+                unitStrokeTone: 'soft',
+                candidateNoteSets: pairNoteSets,
+                dimUnrelated: true,
+            },
+            {
+                id: 'candidate-pair-update',
+                techniqueLabel: label,
+                title: `The pair reserves ${pairLabel}`,
+                body: candidateUpdateBody(eliminations),
+                titleParts: [
+                    { text: 'The pair reserves ' },
+                    ...candidateValueParts(pattern.pairValues),
+                ],
+                bodyParts: candidateUpdateBodyParts(eliminations),
+                accessibleDetail: `The naked pair removes ${pairLabel} from ${describeCoordinates(eliminations)} in the same ${unitName(pattern.unit)}.`,
+                spotlightCells: removalCells,
+                guideUnits: [{ kind: pattern.unit.kind, index: pattern.unit.index }],
+                guideStrokeTone: 'normal',
+                candidateNoteSets: [...pairNoteSets, ...removedNoteSets],
+                candidateMarks: removedMarks,
+                candidateUpdateCells: removalCells,
+                eliminationStyle: 'candidate-slash',
+                fillEliminatedCells: false,
+                dimUnrelated: true,
+            },
+        ];
+    } else if (deduction.technique === 'hiddenPair') {
+        const { pattern } = deduction;
+        const pairLabel = formatCandidateValues(pattern.pairValues);
+        const beforeNoteSets: HintCandidateNoteSet[] = pattern.pairCells.map(cell => ({
+            ...cell,
+            marks: candidates[cell.row][cell.col].map(value => ({
+                value,
+                tone: pattern.pairValues.includes(value)
+                    ? 'locked' as const
+                    : 'possible' as const,
+            })),
+        }));
+        frames = [
+            {
+                id: 'candidate-hidden-pair-find',
+                techniqueLabel: label,
+                title: `${pairLabel} have only two places`,
+                body: `In this ${unitName(pattern.unit)}, both numbers must use these two cells.`,
+                titleParts: [
+                    ...candidateValueParts(pattern.pairValues),
+                    { text: ' have only two places' },
+                ],
+                accessibleDetail: `Candidates ${pairLabel} occur only at ${describeCoordinates(pattern.pairCells)} in this ${unitName(pattern.unit)}.`,
+                spotlightCells: pattern.pairCells,
+                unitCells: pattern.unit.cells,
+                unitStrokeTone: 'soft',
+                candidateNoteSets: beforeNoteSets,
+                dimUnrelated: true,
+            },
+            {
+                id: 'candidate-hidden-pair-update',
+                techniqueLabel: label,
+                title: `Keep only ${pairLabel} here`,
+                body: candidateUpdateBody(eliminations),
+                titleParts: [
+                    { text: 'Keep only ' },
+                    ...candidateValueParts(pattern.pairValues, 'remaining'),
+                    { text: ' here' },
+                ],
+                bodyParts: candidateUpdateBodyParts(eliminations),
+                accessibleDetail: `Because these two cells are reserved for ${pairLabel}, remove the other candidates from ${describeCoordinates(eliminations)}.`,
+                spotlightCells: pattern.pairCells,
+                unitCells: pattern.unit.cells,
+                unitStrokeTone: 'soft',
+                candidateNoteSets: removedNoteSets,
+                candidateMarks: removedMarks,
+                candidateUpdateCells: removalCells,
+                eliminationStyle: 'candidate-slash',
+                fillEliminatedCells: false,
+                dimUnrelated: true,
+            },
+        ];
+    } else if (deduction.technique === 'hiddenTriple') {
+        const { pattern } = deduction;
+        const tripleLabel = formatCandidateValues(pattern.tripleValues);
+        const beforeNoteSets: HintCandidateNoteSet[] = pattern.tripleCells.map(cell => ({
+            ...cell,
+            marks: candidates[cell.row][cell.col].map(value => ({
+                value,
+                tone: pattern.tripleValues.includes(value)
+                    ? 'locked' as const
+                    : 'possible' as const,
+            })),
+        }));
+        frames = [
+            {
+                id: 'candidate-hidden-triple-find',
+                techniqueLabel: label,
+                title: `${tripleLabel} have only three places`,
+                body: `In this ${unitName(pattern.unit)}, all three numbers must use these cells.`,
+                titleParts: [
+                    ...candidateValueParts(pattern.tripleValues),
+                    { text: ' have only three places' },
+                ],
+                accessibleDetail: `Candidates ${tripleLabel} occur only at ${describeCoordinates(pattern.tripleCells)} in this ${unitName(pattern.unit)}.`,
+                spotlightCells: pattern.tripleCells,
+                unitCells: pattern.unit.cells,
+                unitStrokeTone: 'soft',
+                candidateNoteSets: beforeNoteSets,
+                dimUnrelated: true,
+            },
+            {
+                id: 'candidate-hidden-triple-update',
+                techniqueLabel: label,
+                title: `Keep only ${tripleLabel} here`,
+                body: candidateUpdateBody(eliminations),
+                titleParts: [
+                    { text: 'Keep only ' },
+                    ...candidateValueParts(pattern.tripleValues, 'remaining'),
+                    { text: ' here' },
+                ],
+                bodyParts: candidateUpdateBodyParts(eliminations),
+                accessibleDetail: `Because these three cells are reserved for ${tripleLabel}, remove the other candidates from ${describeCoordinates(eliminations)}.`,
+                spotlightCells: pattern.tripleCells,
+                unitCells: pattern.unit.cells,
+                unitStrokeTone: 'soft',
+                candidateNoteSets: removedNoteSets,
+                candidateMarks: removedMarks,
+                candidateUpdateCells: removalCells,
+                eliminationStyle: 'candidate-slash',
+                fillEliminatedCells: false,
+                dimUnrelated: true,
+            },
+        ];
+    } else if (deduction.technique === 'nakedTriple') {
+        const { pattern } = deduction;
+        const tripleLabel = formatCandidateValues(pattern.tripleValues);
+        const tripleNoteSets: HintCandidateNoteSet[] = pattern.tripleCells.map((cell, index) => ({
+            ...cell,
+            marks: pattern.tripleCandidates[index].map(value => ({
+                value,
+                tone: 'locked' as const,
+            })),
+        }));
+        frames = [
+            {
+                id: 'candidate-triple-find',
+                techniqueLabel: label,
+                title: 'These three cells share three choices',
+                body: `Together, they must contain ${tripleLabel}, in some order.`,
+                bodyParts: [
+                    { text: 'Together, they must contain ' },
+                    ...candidateValueParts(pattern.tripleValues),
+                    { text: ', in some order.' },
+                ],
+                accessibleDetail: `${describeCoordinates(pattern.tripleCells)} share only ${tripleLabel} in this ${unitName(pattern.unit)}.`,
+                spotlightCells: pattern.tripleCells,
+                unitCells: pattern.unit.cells,
+                unitStrokeTone: 'soft',
+                candidateNoteSets: tripleNoteSets,
+                dimUnrelated: true,
+            },
+            {
+                id: 'candidate-triple-update',
+                techniqueLabel: label,
+                title: `The triple reserves ${tripleLabel}`,
+                body: candidateUpdateBody(eliminations),
+                titleParts: [
+                    { text: 'The triple reserves ' },
+                    ...candidateValueParts(pattern.tripleValues),
+                ],
+                bodyParts: candidateUpdateBodyParts(eliminations),
+                accessibleDetail: `The naked triple removes ${formatCandidateValues([...new Set(eliminations.flatMap(item => item.removedValues))].sort((a, b) => a - b))} from ${describeCoordinates(eliminations)}.`,
+                spotlightCells: removalCells,
+                guideUnits: [{ kind: pattern.unit.kind, index: pattern.unit.index }],
+                guideStrokeTone: 'normal',
+                candidateNoteSets: [...tripleNoteSets, ...removedNoteSets],
+                candidateMarks: removedMarks,
+                candidateUpdateCells: removalCells,
+                eliminationStyle: 'candidate-slash',
+                fillEliminatedCells: false,
+                dimUnrelated: true,
+            },
+        ];
+    } else if (deduction.technique === 'xWing') {
+        const { pattern } = deduction;
+        const baseName = pattern.orientation === 'row' ? 'rows' : 'columns';
+        const coverName = pattern.orientation === 'row' ? 'columns' : 'rows';
+        const cornerMarks: HintCandidateMark[] = pattern.cornerCells.map(cell => ({
+            ...cell,
+            value: pattern.value,
+            tone: 'locked',
+        }));
+        frames = [
+            {
+                id: 'candidate-x-wing-find',
+                techniqueLabel: label,
+                title: `Look at the possible ${pattern.value}s`,
+                body: `In both ${baseName}, ${pattern.value} can only go in the same two ${coverName}.`,
+                titleParts: [
+                    { text: 'Look at the possible ' },
+                    candidateValuePart(pattern.value),
+                    { text: 's' },
+                ],
+                bodyParts: [
+                    { text: `In both ${baseName}, ` },
+                    candidateValuePart(pattern.value),
+                    { text: ` can only go in the same two ${coverName}.` },
+                ],
+                accessibleDetail: `Candidate ${pattern.value} appears only at ${describeCoordinates(pattern.cornerCells)} in these two ${baseName}.`,
+                spotlightCells: pattern.cornerCells,
+                guideUnits: pattern.baseUnits.map(unit => ({ kind: unit.kind, index: unit.index })),
+                guideStrokeTone: 'normal',
+                candidateMarks: cornerMarks,
+                dimUnrelated: true,
+            },
+            {
+                id: 'candidate-x-wing-update',
+                techniqueLabel: label,
+                title: `Remove ${pattern.value} from these ${coverName}`,
+                body: candidateUpdateBody(eliminations),
+                titleParts: [
+                    { text: 'Remove ' },
+                    candidateValuePart(pattern.value, 'removed'),
+                    { text: ` from these ${coverName}` },
+                ],
+                bodyParts: candidateUpdateBodyParts(eliminations),
+                accessibleDetail: `The four corners force ${pattern.value} into both highlighted ${coverName}, so remove it from ${describeCoordinates(eliminations)}.`,
+                spotlightCells: removalCells,
+                contextCells: pattern.baseUnits.flatMap(unit => unit.cells),
+                guideUnits: pattern.coverUnits.map(unit => ({ kind: unit.kind, index: unit.index })),
+                guideStrokeTone: 'normal',
+                candidateMarks: [...cornerMarks, ...removedMarks],
+                candidateNoteSets: removedNoteSets,
+                candidateUpdateCells: removalCells,
+                eliminationStyle: 'candidate-slash',
+                fillEliminatedCells: false,
+                dimUnrelated: true,
+            },
+        ];
+    } else if (deduction.technique === 'swordfish') {
+        const { pattern } = deduction;
+        const baseName = pattern.orientation === 'row' ? 'rows' : 'columns';
+        const baseSingular = pattern.orientation === 'row' ? 'row' : 'column';
+        const coverName = pattern.orientation === 'row' ? 'columns' : 'rows';
+        const coverSingular = pattern.orientation === 'row' ? 'column' : 'row';
+        const baseIndexes = formatCandidateValues(pattern.baseUnits.map(unit => unit.index + 1));
+        const coverIndexes = formatCandidateValues(pattern.coverUnits.map(unit => unit.index + 1));
+        const capitalizedBaseName = `${baseName[0].toUpperCase()}${baseName.slice(1)}`;
+        const sourceMarks: HintCandidateMark[] = pattern.sourceCells.map(cell => ({
+            ...cell,
+            value: pattern.value,
+            tone: 'locked',
+        }));
+        frames = [
+            {
+                id: 'candidate-swordfish-find',
+                techniqueLabel: label,
+                title: `${pattern.value} is limited to three ${coverName}`,
+                body: `In each outlined ${baseSingular}, ${pattern.value} can only go in these same three ${coverName}.`,
+                titleParts: [
+                    candidateValuePart(pattern.value),
+                    { text: ` is limited to three ${coverName}` },
+                ],
+                bodyParts: [
+                    { text: `In each outlined ${baseSingular}, ` },
+                    candidateValuePart(pattern.value),
+                    { text: ` can only go in these same three ${coverName}.` },
+                ],
+                accessibleDetail: `In ${baseName} ${baseIndexes}, candidate ${pattern.value} appears only at ${describeCoordinates(pattern.sourceCells)}, all within ${coverName} ${coverIndexes}.`,
+                spotlightCells: pattern.sourceCells,
+                guideUnits: pattern.baseUnits.map(unit => ({
+                    kind: unit.kind,
+                    index: unit.index,
+                })),
+                guideStrokeTone: 'normal',
+                candidateMarks: sourceMarks,
+                dimUnrelated: true,
+            },
+            {
+                id: 'candidate-swordfish-reserve',
+                techniqueLabel: label,
+                title: `One ${pattern.value} must land in each ${coverSingular}`,
+                body: `The three ${baseName} need three ${pattern.value}s. A ${coverSingular} can hold only one, so all three ${coverName} are used.`,
+                titleParts: [
+                    { text: 'One ' },
+                    candidateValuePart(pattern.value),
+                    { text: ` must land in each ${coverSingular}` },
+                ],
+                bodyParts: [
+                    { text: `The three ${baseName} need three ` },
+                    candidateValuePart(pattern.value),
+                    { text: `s. A ${coverSingular} can hold only one, so all three ${coverName} are used.` },
+                ],
+                accessibleDetail: `${capitalizedBaseName} ${baseIndexes} each require one ${pattern.value}. Because a ${coverSingular} cannot contain two ${pattern.value}s, the placements occupy ${coverName} ${coverIndexes}, one per ${coverSingular}.`,
+                spotlightCells: [],
+                guideUnits: pattern.coverUnits.map(unit => ({
+                    kind: unit.kind,
+                    index: unit.index,
+                })),
+                guideStrokeTone: 'support',
+                candidateMarks: sourceMarks,
+                dimUnrelated: true,
+            },
+            {
+                id: 'candidate-swordfish-update',
+                techniqueLabel: label,
+                title: `Cross out the other ${pattern.value} candidates`,
+                body: `In these ${coverName}, any ${pattern.value} outside the source ${baseName} is impossible. Oku will update the outlined cells.`,
+                titleParts: [
+                    { text: 'Cross out the other ' },
+                    candidateValuePart(pattern.value, 'removed'),
+                    { text: ' candidates' },
+                ],
+                bodyParts: [
+                    { text: `In these ${coverName}, any ` },
+                    candidateValuePart(pattern.value, 'removed'),
+                    { text: ` outside the source ${baseName} is impossible. ` },
+                    { text: 'Oku will update the outlined cells.', tone: 'secondary' },
+                ],
+                accessibleDetail: `Remove candidate ${pattern.value} from ${describeCoordinates(eliminations)}. These cells are in ${coverName} ${coverIndexes}, but outside the source ${baseName} ${baseIndexes}.`,
+                spotlightCells: removalCells,
+                guideUnits: pattern.coverUnits.map(unit => ({
+                    kind: unit.kind,
+                    index: unit.index,
+                })),
+                guideStrokeTone: 'soft',
+                candidateMarks: [...sourceMarks, ...removedMarks],
+                candidateNoteSets: removedNoteSets,
+                candidateUpdateCells: removalCells,
+                eliminationStyle: 'candidate-slash',
+                fillEliminatedCells: false,
+                dimUnrelated: true,
+            },
+        ];
+    } else if (deduction.technique === 'xyWing') {
+        const { pattern } = deduction;
+        const firstUnit = sharedPeerUnit(pattern.pivot, pattern.xWing);
+        const secondUnit = sharedPeerUnit(pattern.pivot, pattern.yWing);
+        const pivotNotes = makeXYWingNoteSet(
+            pattern.pivot,
+            [pattern.x, pattern.y],
+            [pattern.x, pattern.y],
+        );
+        const firstPivotNotes = makeXYWingNoteSet(
+            pattern.pivot,
+            [pattern.x, pattern.y],
+            [pattern.x],
+        );
+        const firstNotes = makeXYWingNoteSet(
+            pattern.xWing,
+            [pattern.x, pattern.z],
+            [pattern.x],
+        );
+        const secondPivotNotes = makeXYWingNoteSet(
+            pattern.pivot,
+            [pattern.x, pattern.y],
+            [pattern.y],
+        );
+        const secondNotes = makeXYWingNoteSet(
+            pattern.yWing,
+            [pattern.y, pattern.z],
+            [pattern.y],
+        );
+        const updatePivotNotes = makeXYWingNoteSet(
+            pattern.pivot,
+            [pattern.x, pattern.y],
+            [],
+        );
+        const updateFirstNotes = makeXYWingNoteSet(
+            pattern.xWing,
+            [pattern.x, pattern.z],
+            [pattern.z],
+        );
+        const updateSecondNotes = makeXYWingNoteSet(
+            pattern.yWing,
+            [pattern.y, pattern.z],
+            [pattern.z],
+        );
+        const removalGuides = uniqueGuideUnits(eliminations.flatMap(elimination => [
+            sharedPeerUnit(elimination, pattern.xWing),
+            sharedPeerUnit(elimination, pattern.yWing),
+        ]));
+        frames = [
+            {
+                id: 'candidate-xy-wing-pivot',
+                techniqueLabel: label,
+                title: `This cell is ${pattern.x} or ${pattern.y}`,
+                body: "We don't know which one yet.",
+                titleParts: [
+                    { text: 'This cell is ' },
+                    candidateValuePart(pattern.x),
+                    { text: ' or ' },
+                    candidateValuePart(pattern.y),
+                ],
+                accessibleDetail: `The pivot at ${describeCoordinate(pattern.pivot)} has candidates ${pattern.x} and ${pattern.y}.`,
+                spotlightCells: [pattern.pivot],
+                candidateNoteSets: [pivotNotes],
+                dimUnrelated: true,
+            },
+            {
+                id: 'candidate-xy-wing-first',
+                techniqueLabel: label,
+                title: `This wing is ${pattern.x} or ${pattern.z}`,
+                body: `It shares ${pattern.x} with the pivot through this ${unitName(firstUnit)}.`,
+                titleParts: [
+                    { text: 'This wing is ' },
+                    candidateValuePart(pattern.x),
+                    { text: ' or ' },
+                    candidateValuePart(pattern.z, 'candidate'),
+                ],
+                bodyParts: [
+                    { text: 'It shares ' },
+                    candidateValuePart(pattern.x),
+                    { text: ` with the pivot through this ${unitName(firstUnit)}.` },
+                ],
+                accessibleDetail: `The first wing at ${describeCoordinate(pattern.xWing)} shares candidate ${pattern.x} with the pivot.`,
+                spotlightCells: [pattern.pivot, pattern.xWing],
+                guideUnits: [{ kind: firstUnit.kind, index: firstUnit.index }],
+                guideStrokeTone: 'normal',
+                candidateNoteSets: [firstPivotNotes, firstNotes],
+                dimUnrelated: true,
+            },
+            {
+                id: 'candidate-xy-wing-second',
+                techniqueLabel: label,
+                title: `The other wing is ${pattern.y} or ${pattern.z}`,
+                body: `It shares ${pattern.y} with the pivot through this ${unitName(secondUnit)}.`,
+                titleParts: [
+                    { text: 'The other wing is ' },
+                    candidateValuePart(pattern.y),
+                    { text: ' or ' },
+                    candidateValuePart(pattern.z, 'candidate'),
+                ],
+                bodyParts: [
+                    { text: 'It shares ' },
+                    candidateValuePart(pattern.y),
+                    { text: ` with the pivot through this ${unitName(secondUnit)}.` },
+                ],
+                accessibleDetail: `The second wing at ${describeCoordinate(pattern.yWing)} shares candidate ${pattern.y} with the pivot.`,
+                spotlightCells: [pattern.pivot, pattern.yWing],
+                guideUnits: [{ kind: secondUnit.kind, index: secondUnit.index }],
+                guideStrokeTone: 'normal',
+                candidateNoteSets: [secondPivotNotes, secondNotes],
+                dimUnrelated: true,
+            },
+            {
+                id: 'candidate-xy-wing-update',
+                techniqueLabel: label,
+                title: `Either way, one wing must be ${pattern.z}`,
+                body: candidateUpdateBody(eliminations),
+                titleParts: [
+                    { text: 'Either way, one wing must be ' },
+                    candidateValuePart(pattern.z),
+                ],
+                bodyParts: candidateUpdateBodyParts(eliminations),
+                accessibleDetail: `Every outlined cell sees both wings, so candidate ${pattern.z} can be removed from ${describeCoordinates(eliminations)}.`,
+                spotlightCells: removalCells,
+                sourceCells: [pattern.xWing, pattern.yWing],
+                guideUnits: removalGuides,
+                guideStrokeTone: 'normal',
+                candidateNoteSets: [
+                    updatePivotNotes,
+                    updateFirstNotes,
+                    updateSecondNotes,
+                    ...removedNoteSets,
+                ],
+                candidateMarks: removedMarks,
+                candidateUpdateCells: removalCells,
+                eliminationStyle: 'candidate-slash',
+                fillEliminatedCells: false,
+                dimUnrelated: true,
+            },
+        ];
+    } else {
+        const { pattern } = deduction;
+        const causalKeys = coloringCausalKeys(pattern, eliminations);
+        if (!causalKeys || causalKeys.size > MAX_CANDIDATE_COLOR_CHAIN_CELLS) return null;
+        const rawColors = pattern.colorCells.map(cells => (
+            cells.filter(cell => causalKeys.has(coordinateKey(cell)))
+        )) as [HintCoordinate[], HintCoordinate[]];
+        const conflictColor = pattern.rule === 'wrap' && pattern.conflictCells
+            ? pattern.colorCells[0].some(cell => (
+                coordinateKey(cell) === coordinateKey(pattern.conflictCells![0])
+            )) ? 0 : 1
+            : null;
+        const colorCells: [HintCoordinate[], HintCoordinate[]] = conflictColor === 0
+            ? [rawColors[1], rawColors[0]]
+            : rawColors;
+        const circleKeys = new Set(colorCells[0].map(coordinateKey));
+        const coloredMark = (cell: HintCoordinate): HintCandidateMark => ({
+            ...cell,
+            value: pattern.value,
+            tone: circleKeys.has(coordinateKey(cell)) ? 'locked' : 'possible',
+        });
+        const coloredMarks = colorCells.flatMap(cells => cells.map(coloredMark));
+        const causalLinks = pattern.links.filter(link => (
+            causalKeys.has(coordinateKey(link.first))
+            && causalKeys.has(coordinateKey(link.second))
+        ));
+        const startLink = causalLinks[0];
+        if (!startLink) return null;
+        const focus = eliminations[0];
+        const ruleGuides = pattern.rule === 'wrap' && pattern.conflictCells
+            ? [sharedPeerUnit(pattern.conflictCells[0], pattern.conflictCells[1])]
+            : (() => {
+                const witnesses = coloringTrapWitnesses(pattern, focus);
+                return witnesses ? [
+                    sharedPeerUnit(focus, witnesses.first),
+                    sharedPeerUnit(focus, witnesses.second),
+                ] : [];
+            })();
+        frames = [
+            {
+                id: 'candidate-color-start',
+                techniqueLabel: label,
+                title: `Only two places for ${pattern.value}`,
+                body: `One must be ${pattern.value}. We mark one with a circle and one with a square.`,
+                titleParts: [
+                    { text: 'Only two places for ' },
+                    candidateValuePart(pattern.value, 'candidate'),
+                ],
+                bodyParts: [
+                    { text: 'One must be ' },
+                    candidateValuePart(pattern.value, 'candidate'),
+                    { text: '. We mark one with a ' },
+                    { text: 'circle', tone: 'source', emphasis: true },
+                    { text: ' and one with a ' },
+                    { text: 'square', tone: 'support', emphasis: true },
+                    { text: '.' },
+                ],
+                accessibleDetail: `This ${unitName(startLink.unit)} has exactly two places for ${pattern.value}: ${describeCoordinate(startLink.first)} and ${describeCoordinate(startLink.second)}.`,
+                spotlightCells: [],
+                guideUnits: [{ kind: startLink.unit.kind, index: startLink.unit.index }],
+                guideStrokeTone: 'normal',
+                candidateMarks: [coloredMark(startLink.first), coloredMark(startLink.second)],
+                dimUnrelated: true,
+            },
+            {
+                id: 'candidate-color-chain',
+                techniqueLabel: label,
+                title: 'Follow the alternating chain',
+                body: `The possible ${pattern.value}s alternate between circles and squares.`,
+                bodyParts: [
+                    { text: 'The possible ' },
+                    candidateValuePart(pattern.value, 'candidate'),
+                    { text: 's alternate between ' },
+                    { text: 'circles', tone: 'source', emphasis: true },
+                    { text: ' and ' },
+                    { text: 'squares', tone: 'support', emphasis: true },
+                    { text: '.' },
+                ],
+                accessibleDetail: `The relevant chain alternates through ${describeCoordinates(colorCells.flat())}.`,
+                spotlightCells: [],
+                candidateMarks: coloredMarks,
+                dimUnrelated: true,
+            },
+            {
+                id: 'candidate-color-rule',
+                techniqueLabel: label,
+                title: pattern.rule === 'trap'
+                    ? `This ${pattern.value} sees both groups`
+                    : `Two square ${pattern.value}s see each other`,
+                body: pattern.rule === 'trap'
+                    ? 'One circle or square group must be true, so this outside candidate is false.'
+                    : `Both cannot be true, so every square ${pattern.value} is false.`,
+                titleParts: pattern.rule === 'trap'
+                    ? [
+                        { text: 'This ' },
+                        candidateValuePart(pattern.value, 'candidate'),
+                        { text: ' sees both groups' },
+                    ]
+                    : [
+                        { text: 'Two ' },
+                        { text: 'square ', tone: 'support', emphasis: true },
+                        candidateValuePart(pattern.value, 'support'),
+                        { text: 's see each other' },
+                    ],
+                bodyParts: pattern.rule === 'trap'
+                    ? [
+                        { text: 'One ' },
+                        { text: 'circle', tone: 'source', emphasis: true },
+                        { text: ' or ' },
+                        { text: 'square', tone: 'support', emphasis: true },
+                        { text: ' group must be true, so this outside candidate is false.' },
+                    ]
+                    : [
+                        { text: 'Both cannot be true, so every ' },
+                        { text: 'square ', tone: 'support', emphasis: true },
+                        candidateValuePart(pattern.value, 'support'),
+                        { text: ' is false.' },
+                    ],
+                accessibleDetail: pattern.rule === 'trap'
+                    ? `The ${pattern.value} at ${describeCoordinate(focus)} sees one circle and one square. One group must be true, so this candidate is false.`
+                    : `The two conflicting square ${pattern.value}s at ${describeCoordinates(pattern.conflictCells ?? [])} see each other, so the square group is false.`,
+                spotlightCells: pattern.rule === 'trap'
+                    ? removalCells
+                    : pattern.conflictCells ?? [],
+                guideUnits: uniqueGuideUnits(ruleGuides),
+                guideStrokeTone: 'normal',
+                candidateMarks: coloredMarks,
+                candidateNoteSets: pattern.rule === 'trap'
+                    ? [{
+                        row: focus.row,
+                        col: focus.col,
+                        marks: [{ value: pattern.value, tone: 'possible' }],
+                    }]
+                    : undefined,
+                dimUnrelated: true,
+            },
+            {
+                id: 'candidate-color-update',
+                techniqueLabel: label,
+                title: `Cross out ${pattern.value}`,
+                body: `Remove it from the outlined cell. Oku will update these candidates for you.`,
+                titleParts: [
+                    { text: 'Cross out ' },
+                    candidateValuePart(pattern.value, 'removed'),
+                ],
+                bodyParts: [
+                    { text: 'Remove it from the outlined cell. ' },
+                    { text: 'Oku will update these candidates for you.', tone: 'secondary' },
+                ],
+                accessibleDetail: `The color-chain proof removes ${pattern.value} from ${describeCoordinates(eliminations)}.`,
+                spotlightCells: removalCells,
+                candidateMarks: removedMarks,
+                candidateNoteSets: removedNoteSets,
+                candidateUpdateCells: removalCells,
+                eliminationStyle: 'candidate-slash',
+                fillEliminatedCells: false,
+                dimUnrelated: true,
+            },
+        ];
+    }
+
+    return {
+        outcome: 'candidate',
+        technique: deduction.technique,
+        techniqueLabel: label,
+        candidateEliminations: allEliminations,
+        noteUpdates,
+        deductions: candidateDeductionMetadata(appliedDeductions),
+        frames,
+    };
+};
+
+const isApplicableCandidateDeduction = (
+    board: NumericBoard,
+    solvedBoard: number[][],
+    candidates: CandidateGrid,
+    deduction: CandidateDeduction,
+) => {
+    if (deduction.eliminations.length === 0) return false;
+    for (const elimination of deduction.eliminations) {
+        if (
+            elimination.row < 0
+            || elimination.row >= 9
+            || elimination.col < 0
+            || elimination.col >= 9
+            || board[elimination.row][elimination.col] !== 0
+        ) return false;
+        const before = candidates[elimination.row][elimination.col];
+        if (
+            before.length !== elimination.beforeCandidates.length
+            || !before.every((value, index) => value === elimination.beforeCandidates[index])
+        ) return false;
+        const removedValues = [...new Set(elimination.removedValues)]
+            .sort((left, right) => left - right);
+        if (
+            removedValues.length === 0
+            || removedValues.some(value => !before.includes(value))
+            || removedValues.includes(solvedBoard[elimination.row][elimination.col])
+        ) return false;
+        const expectedAfter = before.filter(value => !removedValues.includes(value));
+        if (
+            expectedAfter.length === 0
+            || expectedAfter.length !== elimination.afterCandidates.length
+            || !expectedAfter.every((value, index) => value === elimination.afterCandidates[index])
+        ) return false;
+    }
+    return hasSafeCandidateGrid(
+        board,
+        solvedBoard,
+        applyCandidateDeltas(candidates, deduction.eliminations),
+    );
+};
+
+const makeCandidateProgressPlan = (
+    board: Board,
+    numericBoard: NumericBoard,
+    solvedBoard: number[][],
+    initialCandidates: CandidateGrid,
+    preferredTechnique?: HintPlanOptions['preferredTechnique'],
+): HintPlan | null => {
+    let candidates = cloneCandidateGrid(initialCandidates);
+    const appliedDeductions: CandidateDeduction[] = [];
+    const visited = new Set([candidateGridSignature(candidates)]);
+
+    // This is not a speculative search. It only carries deterministic, safe
+    // deductions that would otherwise make no visible change to player notes.
+    for (let step = 0; step < 32; step += 1) {
+        if (appliedDeductions.length > 0) {
+            const placement = makeNakedSinglePlan(numericBoard, candidates)
+                ?? makeHiddenSinglePlan(numericBoard, candidates);
+            if (placement?.outcome === 'placement') {
+                return {
+                    ...placement,
+                    candidateEliminations: appliedDeductions.flatMap(deduction => (
+                        deduction.eliminations.map(cloneCandidateDelta)
+                    )),
+                    deductions: candidateDeductionMetadata(appliedDeductions),
+                };
+            }
+        }
+
+        const deductions = findCandidateDeductions(numericBoard, candidates)
+            .filter(deduction => isApplicableCandidateDeduction(
+                numericBoard,
+                solvedBoard,
+                candidates,
+                deduction,
+            ));
+        const eligibleDeductions = preferredTechnique
+            ? deductions.filter(deduction => deduction.technique === preferredTechnique)
+            : deductions;
+        if (eligibleDeductions.length === 0) return null;
+
+        for (const deduction of eligibleDeductions) {
+            const noteUpdates = makeVisibleNoteUpdates(board, deduction.eliminations);
+            if (noteUpdates.length === 0) continue;
+            return makeCandidateDeductionPlan(
+                candidates,
+                deduction,
+                [...appliedDeductions, deduction],
+                noteUpdates,
+            );
+        }
+
+        const carried = eligibleDeductions[0];
+        appliedDeductions.push(carried);
+        candidates = applyCandidateDeltas(candidates, carried.eliminations);
+        const signature = candidateGridSignature(candidates);
+        if (visited.has(signature)) return null;
+        visited.add(signature);
+    }
+    return null;
+};
+
+/**
+ * Atomically validate and apply the solver deductions carried by a candidate
+ * Hint. A stale/tampered plan returns null and never partially mutates state.
+ */
+export const applyHintCandidateProgress = (
+    board: Board,
+    solvedBoard: number[][],
+    progress: HintCandidateProgress | null | undefined,
+    plan: HintPlan,
+): HintCandidateProgress | null => {
+    if (
+        !plan.candidateEliminations
+        || plan.candidateEliminations.length === 0
+        || (plan.outcome === 'candidate' && plan.noteUpdates.length === 0)
+        || !isNineByNine(board)
+        || !board.every(row => row.every(isValidCell))
+        || !isNineByNine(solvedBoard)
+        || !isValidSolution(solvedBoard)
+    ) return null;
+
+    if (plan.outcome === 'candidate') {
+        const expectedUpdates = makeVisibleNoteUpdates(board, plan.candidateEliminations);
+        if (
+            expectedUpdates.length !== plan.noteUpdates.length
+            || expectedUpdates.some((expected, index) => {
+                const actual = plan.noteUpdates[index];
+                return (
+                    !actual
+                    || actual.row !== expected.row
+                    || actual.col !== expected.col
+                    || actual.beforeNotes.length !== expected.beforeNotes.length
+                    || !actual.beforeNotes.every((value, noteIndex) => (
+                        value === expected.beforeNotes[noteIndex]
+                    ))
+                    || actual.afterNotes.length !== expected.afterNotes.length
+                    || !actual.afterNotes.every((value, noteIndex) => (
+                        value === expected.afterNotes[noteIndex]
+                    ))
+                );
+            })
+        ) return null;
+    }
+
+    const numericBoard = toNumericBoard(board);
+    const reconciled = reconcileHintCandidateProgress(board, solvedBoard, progress);
+    let candidates = candidateGridFromProgress(numericBoard, reconciled);
+    const newExclusions: HintCandidateExclusion[] = [];
+
+    for (const elimination of plan.candidateEliminations) {
+        if (
+            !Number.isInteger(elimination.row)
+            || elimination.row < 0
+            || elimination.row >= 9
+            || !Number.isInteger(elimination.col)
+            || elimination.col < 0
+            || elimination.col >= 9
+            || numericBoard[elimination.row][elimination.col] !== 0
+        ) return null;
+        const before = candidates[elimination.row][elimination.col];
+        if (
+            before.length !== elimination.beforeCandidates.length
+            || !before.every((value, index) => value === elimination.beforeCandidates[index])
+        ) return null;
+        const removedValues = [...new Set(elimination.removedValues)]
+            .sort((left, right) => left - right);
+        if (
+            removedValues.length === 0
+            || removedValues.some(value => !before.includes(value))
+            || removedValues.includes(solvedBoard[elimination.row][elimination.col])
+        ) return null;
+        const expectedAfter = before.filter(value => !removedValues.includes(value));
+        if (
+            expectedAfter.length === 0
+            || expectedAfter.length !== elimination.afterCandidates.length
+            || !expectedAfter.every((value, index) => value === elimination.afterCandidates[index])
+        ) return null;
+        candidates = applyCandidateDeltas(candidates, [{
+            ...elimination,
+            beforeCandidates: [...before],
+            removedValues,
+            afterCandidates: expectedAfter,
+        }]);
+        removedValues.forEach(value => newExclusions.push({
+            row: elimination.row,
+            col: elimination.col,
+            value,
+        }));
+    }
+
+    if (!hasSafeCandidateGrid(numericBoard, solvedBoard, candidates)) return null;
+    return makeHintCandidateProgress(
+        numericBoardSignature(numericBoard),
+        [
+            ...reconciled.exclusions,
+            ...newExclusions,
+        ],
+    );
+};
+
+/** Candidate-plan convenience wrapper for the common UI integration path. */
+export const applyHintCandidatePlan = (
+    board: Board,
+    solvedBoard: number[][],
+    progress: HintCandidateProgress | null | undefined,
+    plan: HintCandidatePlan,
+) => applyHintCandidateProgress(board, solvedBoard, progress, plan);
+
 const multiStepDeductionSourceCells = (
     deduction: MultiStepDeduction,
 ): HintCoordinate[] => {
@@ -3806,6 +5560,18 @@ const makeMultiStepPlan = (
                     body: index === 0
                         ? `In this ${sourceName}, ${pattern.value} can only go in these cells.`
                         : `With the previous notes crossed out, ${pattern.value} can only go in these cells.`,
+                    titleParts: [
+                        { text: index === 0 ? 'Only ' : 'Now only ' },
+                        { text: `${placeCount} places for ` },
+                        candidateValuePart(pattern.value),
+                    ],
+                    bodyParts: [
+                        { text: index === 0
+                            ? `In this ${sourceName}, `
+                            : 'With the previous notes crossed out, ' },
+                        candidateValuePart(pattern.value),
+                        { text: ' can only go in these cells.' },
+                    ],
                     accessibleDetail: `Candidate ${pattern.value} can only go at ${describeCoordinates(pattern.lockedCells)}.`,
                     spotlightCells: [],
                     unitCells: pattern.sourceUnit.cells,
@@ -3818,9 +5584,35 @@ const makeMultiStepPlan = (
                     title: `These ${pattern.value}s share this ${intersectingName}`,
                     body: isFinalDeduction
                         ? result.placement.resultKind === 'naked'
-                            ? `Cross out the slashed ${pattern.value}s. Only ${result.placement.target.value} remains in the outlined cell.`
+                            ? `Cross out the other ${pattern.value} candidates. Only ${result.placement.target.value} remains in the outlined cell.`
                             : `Cross out ${pattern.value} in ${victim}. Now ${result.placement.target.value} has one place in this ${unitName(result.placement.resultUnit)}.`
                         : `So ${pattern.value} cannot go in ${victim}.`,
+                    titleParts: [
+                        { text: 'These ' },
+                        candidateValuePart(pattern.value),
+                        { text: `s share this ${intersectingName}` },
+                    ],
+                    bodyParts: isFinalDeduction
+                        ? result.placement.resultKind === 'naked'
+                            ? [
+                                { text: 'Cross out the other ' },
+                                candidateValuePart(pattern.value, 'removed'),
+                                { text: ' candidates. Only ' },
+                                candidateValuePart(result.placement.target.value, 'remaining'),
+                                { text: ' remains in the outlined cell.' },
+                            ]
+                            : [
+                                { text: 'Cross out ' },
+                                candidateValuePart(pattern.value, 'removed'),
+                                { text: ` in ${victim}. Now ` },
+                                candidateValuePart(result.placement.target.value, 'remaining'),
+                                { text: ` has one place in this ${unitName(result.placement.resultUnit)}.` },
+                            ]
+                        : [
+                            { text: 'So ' },
+                            candidateValuePart(pattern.value, 'removed'),
+                            { text: ` cannot go in ${victim}.` },
+                        ],
                     accessibleDetail: `The locked ${pattern.value}s eliminate ${pattern.value} from ${describeCoordinates(eliminations)}.`,
                     spotlightCells: finalTargetDelta
                         ? [{ row: finalTargetDelta.row, col: finalTargetDelta.col }]
@@ -3877,8 +5669,8 @@ const makeMultiStepPlan = (
                 elimination.removedValues
             )))].sort((left, right) => left - right);
             const removalInstruction = removedValues.length === 1
-                ? `Cross out the gray ${removedValues[0]}`
-                : `Cross out the gray notes for ${formatCandidateValues(removedValues)}`;
+                ? `Cross out ${removedValues[0]} where it is shown`
+                : `Cross out ${formatCandidateValues(removedValues)} where they are shown`;
 
             frames.push(
                 {
@@ -3890,6 +5682,13 @@ const makeMultiStepPlan = (
                     body: index === 0
                         ? `They must contain ${firstValue} and ${secondValue}, in either order.`
                         : `With the previous notes crossed out, they must contain ${firstValue} and ${secondValue}.`,
+                    bodyParts: [
+                        { text: index === 0
+                            ? 'They must contain '
+                            : 'With the previous notes crossed out, they must contain ' },
+                        ...candidateValueParts(pattern.pairValues),
+                        { text: index === 0 ? ', in either order.' : '.' },
+                    ],
                     accessibleDetail: `In this ${unitName(pattern.unit)}, ${describeCoordinate(pattern.pairCells[0])} and ${describeCoordinate(pattern.pairCells[1])} each have only candidates ${firstValue} and ${secondValue}.`,
                     spotlightCells: pattern.pairCells,
                     unitCells: pattern.unit.cells,
@@ -3906,6 +5705,30 @@ const makeMultiStepPlan = (
                             ? `${removalInstruction}. Only ${result.placement.target.value} remains in the outlined cell.`
                             : `${removalInstruction}. Now ${result.placement.target.value} has one place in this ${unitName(result.placement.resultUnit)}.`
                         : `${removalInstruction}.`,
+                    titleParts: [
+                        { text: 'The pair reserves ' },
+                        ...candidateValueParts(pattern.pairValues),
+                    ],
+                    bodyParts: [
+                        { text: 'Cross out ' },
+                        ...candidateValueParts(removedValues, 'removed'),
+                        { text: removedValues.length === 1
+                            ? ' where it is shown'
+                            : ' where they are shown' },
+                        ...(isFinalDeduction
+                            ? result.placement.resultKind === 'naked'
+                                ? [
+                                    { text: '. Only ' },
+                                    candidateValuePart(result.placement.target.value, 'remaining'),
+                                    { text: ' remains in the outlined cell.' },
+                                ]
+                                : [
+                                    { text: '. Now ' },
+                                    candidateValuePart(result.placement.target.value, 'remaining'),
+                                    { text: ` has one place in this ${unitName(result.placement.resultUnit)}.` },
+                                ]
+                            : [{ text: '.' }]),
+                    ],
                     accessibleDetail: `The pair eliminates ${formatCandidateValues(removedValues)} from ${describeCoordinates(eliminations)}.`,
                     spotlightCells: isFinalDeduction && result.placement.resultKind === 'naked'
                         ? [{ row: result.placement.target.row, col: result.placement.target.col }]
@@ -3954,6 +5777,18 @@ const makeMultiStepPlan = (
                     body: index === 0
                         ? `In both ${baseName}, ${pattern.value} can only go in the same two ${coverName}.`
                         : `With the previous notes crossed out, the same two ${coverName} remain in both ${baseName}.`,
+                    titleParts: [
+                        { text: index === 0 ? 'Look at the possible ' : 'Now look at the possible ' },
+                        candidateValuePart(pattern.value),
+                        { text: 's' },
+                    ],
+                    bodyParts: index === 0
+                        ? [
+                            { text: `In both ${baseName}, ` },
+                            candidateValuePart(pattern.value),
+                            { text: ` can only go in the same two ${coverName}.` },
+                        ]
+                        : undefined,
                     accessibleDetail: `Candidate ${pattern.value} appears only at ${describeCoordinates(pattern.cornerCells)} in these two ${baseName}.`,
                     spotlightCells: pattern.cornerCells,
                     guideUnits: pattern.baseUnits.map(unit => ({
@@ -3970,9 +5805,32 @@ const makeMultiStepPlan = (
                     title: `So ${pattern.value} cannot go elsewhere in these ${coverName}`,
                     body: isFinalDeduction
                         ? result.placement.resultKind === 'naked'
-                            ? `Cross out the slashed ${pattern.value}s. Only ${result.placement.target.value} remains in the outlined cell.`
-                            : `Cross out the gray ${pattern.value}s. Now ${result.placement.target.value} has one place in this ${unitName(result.placement.resultUnit)}.`
-                        : `Cross out the gray ${pattern.value}s.`,
+                            ? `Cross out the other ${pattern.value} candidates. Only ${result.placement.target.value} remains in the outlined cell.`
+                            : `Cross out the other ${pattern.value} candidates. Now ${result.placement.target.value} has one place in this ${unitName(result.placement.resultUnit)}.`
+                        : `Cross out the other ${pattern.value} candidates.`,
+                    titleParts: [
+                        { text: 'So ' },
+                        candidateValuePart(pattern.value, 'removed'),
+                        { text: ` cannot go elsewhere in these ${coverName}` },
+                    ],
+                    bodyParts: [
+                        { text: 'Cross out the other ' },
+                        candidateValuePart(pattern.value, 'removed'),
+                        { text: ' candidates.' },
+                        ...(isFinalDeduction
+                            ? result.placement.resultKind === 'naked'
+                                ? [
+                                    { text: ' Only ' },
+                                    candidateValuePart(result.placement.target.value, 'remaining'),
+                                    { text: ' remains in the outlined cell.' },
+                                ]
+                                : [
+                                    { text: ' Now ' },
+                                    candidateValuePart(result.placement.target.value, 'remaining'),
+                                    { text: ` has one place in this ${unitName(result.placement.resultUnit)}.` },
+                                ]
+                            : []),
+                    ],
                     accessibleDetail: `The X-Wing eliminates ${pattern.value} from ${describeCoordinates(eliminations)}.`,
                     spotlightCells: finalTargetDelta
                         ? [{ row: finalTargetDelta.row, col: finalTargetDelta.col }]
@@ -4027,6 +5885,16 @@ const makeMultiStepPlan = (
             const eliminationLead = eliminations.length === 1
                 ? `This cell sees both wings. Cross out this ${pattern.z}`
                 : `These cells see both wings. Cross out ${pattern.z} from each one`;
+            const eliminationLeadParts: HintTextPart[] = eliminations.length === 1
+                ? [
+                    { text: 'This cell sees both wings. Cross out this ' },
+                    candidateValuePart(pattern.z, 'removed'),
+                ]
+                : [
+                    { text: 'These cells see both wings. Cross out ' },
+                    candidateValuePart(pattern.z, 'removed'),
+                    { text: ' from each one' },
+                ];
 
             frames.push(
                 {
@@ -4036,6 +5904,26 @@ const makeMultiStepPlan = (
                         ? `This ${pattern.x}/${pattern.y} cell links two wings`
                         : `Now this ${pattern.x}/${pattern.y} cell links two wings`,
                     body: `One wing is ${pattern.x}/${pattern.z} and the other is ${pattern.y}/${pattern.z}. Either way, one wing must be ${pattern.z}.`,
+                    titleParts: [
+                        { text: index === 0 ? 'This ' : 'Now this ' },
+                        candidateValuePart(pattern.x, 'candidate'),
+                        { text: '/' },
+                        candidateValuePart(pattern.y, 'candidate'),
+                        { text: ' cell links two wings' },
+                    ],
+                    bodyParts: [
+                        { text: 'One wing is ' },
+                        candidateValuePart(pattern.x, 'candidate'),
+                        { text: '/' },
+                        candidateValuePart(pattern.z),
+                        { text: ' and the other is ' },
+                        candidateValuePart(pattern.y, 'candidate'),
+                        { text: '/' },
+                        candidateValuePart(pattern.z),
+                        { text: '. Either way, one wing must be ' },
+                        candidateValuePart(pattern.z),
+                        { text: '.' },
+                    ],
                     accessibleDetail: `The pivot at ${describeCoordinate(pattern.pivot)} sees ${describeCoordinate(pattern.xWing)} and ${describeCoordinate(pattern.yWing)}.`,
                     spotlightCells: [pattern.pivot, pattern.xWing, pattern.yWing],
                     sourceCells: [pattern.pivot],
@@ -4055,6 +5943,40 @@ const makeMultiStepPlan = (
                         : eliminations.length === 1
                             ? `This cell sees both wings, so cross out this ${pattern.z}.`
                             : `These cells see both wings, so cross out ${pattern.z} from each one.`,
+                    titleParts: [
+                        { text: 'So ' },
+                        candidateValuePart(pattern.z, 'removed'),
+                        { text: eliminations.length === 1
+                            ? ' cannot go here'
+                            : ' cannot go in these cells' },
+                    ],
+                    bodyParts: isFinalDeduction
+                        ? result.placement.resultKind === 'naked'
+                            ? [
+                                ...eliminationLeadParts,
+                                { text: '; only ' },
+                                candidateValuePart(result.placement.target.value, 'remaining'),
+                                { text: eliminations.length === 1
+                                    ? ' remains.'
+                                    : ' remains in the outlined cell.' },
+                            ]
+                            : [
+                                ...eliminationLeadParts,
+                                { text: '; now only one place remains for ' },
+                                candidateValuePart(result.placement.target.value, 'remaining'),
+                                { text: '.' },
+                            ]
+                        : eliminations.length === 1
+                            ? [
+                                { text: 'This cell sees both wings, so cross out this ' },
+                                candidateValuePart(pattern.z, 'removed'),
+                                { text: '.' },
+                            ]
+                            : [
+                                { text: 'These cells see both wings, so cross out ' },
+                                candidateValuePart(pattern.z, 'removed'),
+                                { text: ' from each one.' },
+                            ],
                     accessibleDetail: `The XY-Wing eliminates ${pattern.z} from ${describeCoordinates(eliminations)}.`,
                     spotlightCells: finalTargetDelta
                         ? [{ row: finalTargetDelta.row, col: finalTargetDelta.col }]
@@ -4133,8 +6055,8 @@ const makeMultiStepPlan = (
                 elimination.removedValues
             )))].sort((left, right) => left - right);
             const removalInstruction = removedValues.length === 1
-                ? `Cross out the gray ${removedValues[0]}`
-                : `Cross out the gray notes for ${formatCandidateValues(removedValues)}`;
+                ? `Cross out ${removedValues[0]} where it is shown`
+                : `Cross out ${formatCandidateValues(removedValues)} where they are shown`;
             const finalHiddenUnit = isFinalDeduction && result.placement.resultKind === 'hidden'
                 ? result.placement.resultUnit
                 : null;
@@ -4156,8 +6078,8 @@ const makeMultiStepPlan = (
                 }),
             );
             const finalHiddenVictim = finalHiddenEliminations.length === 1
-                ? `the gray ${result.placement.target.value}`
-                : `the gray ${result.placement.target.value}s`;
+                ? `${result.placement.target.value} where it is shown`
+                : `${result.placement.target.value}s where they are shown`;
 
             frames.push(
                 {
@@ -4169,6 +6091,13 @@ const makeMultiStepPlan = (
                     body: index === 0
                         ? `Together, they must contain ${tripleLabel}, in some order.`
                         : `With the previous notes crossed out, together they can only be ${tripleLabel}.`,
+                    bodyParts: [
+                        { text: index === 0
+                            ? 'Together, they must contain '
+                            : 'With the previous notes crossed out, together they can only be ' },
+                        ...candidateValueParts(pattern.tripleValues),
+                        { text: index === 0 ? ', in some order.' : '.' },
+                    ],
                     accessibleDetail: `In this ${unitName(pattern.unit)}, ${describeCoordinates(pattern.tripleCells)} share only candidates ${tripleLabel}.`,
                     spotlightCells: pattern.tripleCells,
                     unitCells: pattern.unit.cells,
@@ -4187,6 +6116,36 @@ const makeMultiStepPlan = (
                         : isFinalDeduction && result.placement.resultKind === 'naked'
                             ? `${removalInstruction}. Only ${result.placement.target.value} remains in the outlined cell.`
                             : `${removalInstruction}.`,
+                    titleParts: finalHiddenUnit
+                        ? undefined
+                        : [
+                            { text: 'The triple reserves ' },
+                            ...candidateValueParts(pattern.tripleValues),
+                        ],
+                    bodyParts: finalHiddenUnit
+                        ? [
+                            { text: 'Cross out ' },
+                            candidateValuePart(result.placement.target.value, 'removed'),
+                            { text: finalHiddenEliminations.length === 1
+                                ? ' where it is shown. That leaves one place for '
+                                : 's where they are shown. That leaves one place for ' },
+                            candidateValuePart(result.placement.target.value, 'remaining'),
+                            { text: '.' },
+                        ]
+                        : [
+                            { text: 'Cross out ' },
+                            ...candidateValueParts(removedValues, 'removed'),
+                            { text: removedValues.length === 1
+                                ? ' where it is shown'
+                                : ' where they are shown' },
+                            ...(isFinalDeduction && result.placement.resultKind === 'naked'
+                                ? [
+                                    { text: '. Only ' },
+                                    candidateValuePart(result.placement.target.value, 'remaining'),
+                                    { text: ' remains in the outlined cell.' },
+                                ]
+                                : [{ text: '.' }]),
+                        ],
                     accessibleDetail: finalHiddenUnit
                         ? `The triple eliminates ${result.placement.target.value} from ${describeCoordinates(finalHiddenEliminations)}, leaving one place in this ${unitName(finalHiddenUnit)}.`
                         : `The triple eliminates ${formatCandidateValues(removedValues)} from ${describeCoordinates(displayedEliminations)}.`,
@@ -4256,8 +6215,8 @@ const makeMultiStepPlan = (
             ? result.placement.resultUnit
             : null;
         const removalInstruction = removedValues.length === 1
-            ? `Cross out the gray ${removedValues[0]}.`
-            : `Cross out the gray notes for ${formatCandidateValues(removedValues)}.`;
+            ? `Cross out ${removedValues[0]} where it is shown.`
+            : `Cross out ${formatCandidateValues(removedValues)} where they are shown.`;
 
         frames.push(
             {
@@ -4269,6 +6228,11 @@ const makeMultiStepPlan = (
                 body: index === 0
                     ? `In this ${unitName(pattern.unit)}, both must go in these two cells.`
                     : 'With the previous notes crossed out, both must go in these two cells.',
+                titleParts: [
+                    ...(index === 0 ? [] : [{ text: 'Now ' }]),
+                    ...candidateValueParts(pattern.pairValues),
+                    { text: ' have only two places' },
+                ],
                 accessibleDetail: `Candidates ${firstValue} and ${secondValue} can appear only at ${describeCoordinates(pattern.pairCells)} in this ${unitName(pattern.unit)}.`,
                 spotlightCells: pattern.pairCells,
                 unitCells: pattern.unit.cells,
@@ -4284,7 +6248,28 @@ const makeMultiStepPlan = (
                     : `So only ${firstValue} and ${secondValue} stay here`,
                 body: finalResultUnit
                     ? `${removalInstruction} That leaves one place for ${result.placement.target.value}.`
-                    : `Cross out ${formatCandidateValues(removedValues)} in the gray notes.`,
+                    : removalInstruction,
+                titleParts: finalResultUnit
+                    ? undefined
+                    : [
+                        { text: 'So only ' },
+                        ...candidateValueParts(pattern.pairValues, 'remaining'),
+                        { text: ' stay here' },
+                    ],
+                bodyParts: [
+                    { text: 'Cross out ' },
+                    ...candidateValueParts(removedValues, 'removed'),
+                    { text: removedValues.length === 1
+                        ? ' where it is shown.'
+                        : ' where they are shown.' },
+                    ...(finalResultUnit
+                        ? [
+                            { text: ' That leaves one place for ' },
+                            candidateValuePart(result.placement.target.value, 'remaining'),
+                            { text: '.' },
+                        ]
+                        : []),
+                ],
                 accessibleDetail: `Keeping only ${firstValue} and ${secondValue} removes ${formatCandidateValues(removedValues)} from ${describeCoordinates(eliminations)}.`,
                 spotlightCells: finalResultUnit ? [] : pattern.pairCells,
                 unitCells: finalResultUnit?.cells ?? pattern.unit.cells,
@@ -4306,6 +6291,15 @@ const makeMultiStepPlan = (
             techniqueLabel: 'Naked single',
             title: `Only ${placement.target.value} remains`,
             body: `${placement.target.value} belongs in this cell.`,
+            titleParts: [
+                { text: 'Only ' },
+                candidateValuePart(placement.target.value, 'remaining'),
+                { text: ' remains' },
+            ],
+            bodyParts: [
+                candidateValuePart(placement.target.value, 'remaining'),
+                { text: ' belongs in this cell.' },
+            ],
             accessibleDetail: `Place ${placement.target.value} at ${describeCoordinate(placement.target)}.`,
             spotlightCells: [{ row: placement.target.row, col: placement.target.col }],
             candidateMarks: [answerMark],
@@ -4336,7 +6330,18 @@ const makeMultiStepPlan = (
             id: 'chain-answer',
             techniqueLabel: 'Hidden single',
             title: `Only one place remains for ${placement.target.value}`,
-            body: `Every gray ${placement.target.value} is blocked, so ${placement.target.value} belongs in the green cell.`,
+            body: `Every other ${placement.target.value} is ruled out, so ${placement.target.value} belongs in the outlined cell.`,
+            titleParts: [
+                { text: 'Only one place remains for ' },
+                candidateValuePart(placement.target.value, 'remaining'),
+            ],
+            bodyParts: [
+                { text: 'Every other ' },
+                candidateValuePart(placement.target.value, 'removed'),
+                { text: ' is ruled out, so ' },
+                candidateValuePart(placement.target.value, 'remaining'),
+                { text: ' belongs in the outlined cell.' },
+            ],
             accessibleDetail: `The chained deductions leave ${describeCoordinate(placement.target)} as the only place for ${placement.target.value} in this ${unitName(placement.resultUnit)}.`,
             spotlightCells: [{ row: placement.target.row, col: placement.target.col }],
             unitCells: placement.resultUnit.cells,
@@ -4362,8 +6367,9 @@ const makeMultiStepPlan = (
         deduction.eliminations.map(cloneCandidateDelta)
     ));
     return {
+        outcome: 'placement',
         technique: 'multiStep',
-        techniqueLabel: 'Step by step',
+        techniqueLabel: 'Logical chain',
         target: placement.target,
         derivedResult: placement.resultKind,
         candidateEliminations,
@@ -4388,10 +6394,15 @@ const makeMultiStepPlan = (
 };
 
 /**
- * Build a read-only explanation from the visible board. Player notes are
- * intentionally ignored: candidates come only from placed values.
+ * Build an explanation from placed values plus solver-owned candidate progress.
+ * Player notes affect only whether an update will be visible; they are never
+ * trusted as logical input.
  */
-export const createHintPlan = (board: Board, solvedBoard: number[][]): HintPlanResult => {
+export const createHintPlan = (
+    board: Board,
+    solvedBoard: number[][],
+    options: HintPlanOptions = {},
+): HintPlanResult => {
     if (!isNineByNine(board) || !isNineByNine(solvedBoard)) return { status: 'invalid' };
     if (!board.every(row => row.every(isValidCell))) return { status: 'invalid' };
     if (!isValidSolution(solvedBoard as number[][])) return { status: 'invalid' };
@@ -4409,7 +6420,12 @@ export const createHintPlan = (board: Board, solvedBoard: number[][]): HintPlanR
     const numericBoard = toNumericBoard(board);
     if (numericBoard.every(row => row.every(Boolean))) return { status: 'complete' };
 
-    const candidates = getCandidateGrid(numericBoard);
+    const candidateProgress = reconcileHintCandidateProgress(
+        board,
+        solvedBoard,
+        options.candidateProgress,
+    );
+    const candidates = candidateGridFromProgress(numericBoard, candidateProgress);
     if (candidates.some((row, rowIndex) => row.some((cell, colIndex) => (
         numericBoard[rowIndex][colIndex] === 0 && cell.length === 0
     )))) {
@@ -4418,16 +6434,19 @@ export const createHintPlan = (board: Board, solvedBoard: number[][]): HintPlanR
 
     const plan = makeNakedSinglePlan(numericBoard, candidates)
         ?? makeHiddenSinglePlan(numericBoard, candidates)
-        ?? makeLockedCandidatePlan(numericBoard, candidates)
-        ?? makeNakedPairPlan(numericBoard, candidates)
-        ?? makeHiddenPairPlan(numericBoard, candidates)
-        ?? makeNakedTriplePlan(numericBoard, candidates)
-        ?? makeXWingPlan(numericBoard, candidates)
-        ?? makeXYWingPlan(numericBoard, candidates)
-        ?? makeSimpleColoringPlan(numericBoard, candidates)
+        ?? makeCandidateProgressPlan(
+            board,
+            numericBoard,
+            solvedBoard,
+            candidates,
+            options.preferredTechnique,
+        )
         ?? makeMultiStepPlan(numericBoard, candidates);
     if (!plan) return { status: 'unsupported' };
-    if (solvedBoard[plan.target.row][plan.target.col] !== plan.target.value) {
+    if (
+        plan.outcome === 'placement'
+        && solvedBoard[plan.target.row][plan.target.col] !== plan.target.value
+    ) {
         return { status: 'invalid' };
     }
     if (
@@ -4436,6 +6455,15 @@ export const createHintPlan = (board: Board, solvedBoard: number[][]): HintPlanR
             mark.tone === 'eliminated'
             && solvedBoard[mark.row][mark.col] === mark.value
         )))
+    ) {
+        return { status: 'invalid' };
+    }
+    if (
+        plan.outcome === 'candidate'
+        && (
+            plan.noteUpdates.length === 0
+            || plan.candidateEliminations.length === 0
+        )
     ) {
         return { status: 'invalid' };
     }

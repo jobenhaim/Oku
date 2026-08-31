@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import type { HintPlan } from '../../utils/hints';
+import type { HintPlan, HintTextPart } from '../../utils/hints';
 import { Icons } from '../ui/Icons';
 import { sounds } from '../../utils/sound';
 
@@ -8,7 +8,7 @@ interface HintTheaterProps {
     plan: HintPlan;
     frameIndex: number;
     onFrameIndexChange: (index: number) => void;
-    onPlaceNumber: () => void;
+    onCompleteHint: () => void;
 }
 
 const useModalFocusTrap = (onEscape?: () => void) => {
@@ -56,11 +56,33 @@ const useModalFocusTrap = (onEscape?: () => void) => {
 
 const HINT_DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
+const HintCopy: React.FC<{
+    fallback: string;
+    parts?: HintTextPart[];
+}> = ({ fallback, parts }) => {
+    const renderedParts = parts?.length ? parts : [{ text: fallback }];
+
+    return (
+        <>
+            {renderedParts.map((part, index) => (
+                <span
+                    key={`${index}-${part.text}`}
+                    className={`hint-copy-part ${part.tone ? `hint-copy-part--${part.tone}` : ''} ${
+                        part.emphasis ? 'hint-copy-part--emphasis' : ''
+                    }`}
+                >
+                    {part.text}
+                </span>
+            ))}
+        </>
+    );
+};
+
 export const HintTheater: React.FC<HintTheaterProps> = ({
     plan,
     frameIndex,
     onFrameIndexChange,
-    onPlaceNumber,
+    onCompleteHint,
 }) => {
     const reduceMotion = useReducedMotion();
     const dialogRef = useModalFocusTrap();
@@ -88,7 +110,7 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
 
     const advance = () => {
         if (isLastFrame) {
-            onPlaceNumber();
+            onCompleteHint();
             return;
         }
         sounds.playClick();
@@ -152,18 +174,24 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
                 </div>
 
                 <div className="mt-3 text-center">
-                    <div className="grid min-h-[80px] md:min-h-[94px]">
+                    <div className="grid min-h-[96px] md:min-h-[110px]">
                         {plan.frames.map(candidateFrame => (
                             <div
                                 key={`measure-${candidateFrame.id}`}
                                 className="invisible pointer-events-none col-start-1 row-start-1 flex flex-col justify-center"
                                 aria-hidden="true"
                             >
-                                <div className="text-[1.35rem] md:text-[1.6rem] font-bold tracking-tight leading-tight">
-                                    {candidateFrame.title}
+                                <div className="text-[clamp(1.5rem,5.4vw,1.85rem)] font-extrabold tracking-tight leading-[1.1]">
+                                    <HintCopy
+                                        fallback={candidateFrame.title}
+                                        parts={candidateFrame.titleParts}
+                                    />
                                 </div>
-                                <div className="mt-1.5 text-sm md:text-base font-medium leading-relaxed">
-                                    {candidateFrame.body}
+                                <div className="mt-2 text-[clamp(1rem,3.8vw,1.125rem)] font-medium leading-[1.35]">
+                                    <HintCopy
+                                        fallback={candidateFrame.body}
+                                        parts={candidateFrame.bodyParts}
+                                    />
                                 </div>
                             </div>
                         ))}
@@ -179,11 +207,11 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
                                 aria-live="polite"
                                 aria-atomic="true"
                             >
-                                <h2 id="hint-theater-title" className="text-[1.35rem] md:text-[1.6rem] font-bold text-t-primary tracking-tight leading-tight">
-                                    {frame.title}
+                                <h2 id="hint-theater-title" className="text-[clamp(1.5rem,5.4vw,1.85rem)] font-extrabold text-t-primary tracking-tight leading-[1.1]">
+                                    <HintCopy fallback={frame.title} parts={frame.titleParts} />
                                 </h2>
-                                <p id="hint-theater-body" className="mt-1.5 text-sm md:text-base font-medium leading-relaxed text-t-secondary">
-                                    {frame.body}
+                                <p id="hint-theater-body" className="mt-2 text-[clamp(1rem,3.8vw,1.125rem)] font-medium leading-[1.35] text-stone-500 dark:text-stone-400">
+                                    <HintCopy fallback={frame.body} parts={frame.bodyParts} />
                                 </p>
                                 {frame.accessibleDetail && (
                                     <p id="hint-theater-detail" className="sr-only">
@@ -235,7 +263,11 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
                         onClick={advance}
                         className="h-12 md:h-[52px] flex-1 rounded-2xl bg-stone-900 dark:bg-blue-600 text-white font-bold active:scale-[0.98] transition flex items-center justify-center gap-2"
                     >
-                        {isLastFrame ? `Place ${plan.target.value}` : 'Next'}
+                        {isLastFrame
+                            ? plan.outcome === 'placement'
+                                ? `Place ${plan.target.value}`
+                                : 'Update candidates'
+                            : 'Next'}
                         {!isLastFrame && <Icons.Next className="w-4 h-4" />}
                     </button>
                 </div>

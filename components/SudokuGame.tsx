@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Difficulty, AppSettings, Board, MoveLogEntry, CellValue } from '../types';
+import { Difficulty, AppSettings, Board, MoveLogEntry, CellValue, HintCandidateProgress } from '../types';
 import { useSudokuBoard } from '../hooks/useSudokuBoard';
 import { useGameSkills } from '../hooks/useGameSkills';
 import { useGameTimer } from '../hooks/useGameTimer';
@@ -16,7 +16,8 @@ import { Icons } from './ui/Icons';
 import { DiamondBalancePill } from './ui/DiamondBalancePill';
 import { formatTimeShort, getHintCost, getScanRefillCost } from '../utils/constants';
 import {
-  boardHintSignature,
+  applyHintCandidateProgress,
+  applyHintCandidatePlan,
   cloneHintBoard,
   createHintPlan,
   type HintPlan,
@@ -109,9 +110,14 @@ interface ActiveHint {
   puzzleKey: string;
   board: Board;
   plan: HintPlan;
+  candidateProgress?: HintCandidateProgress | null;
 }
 
 const EMPTY_HINT_SET = new Set<string>();
+
+const boardHintPresentationSignature = (board: Board) => board.map(row => row.map(cell => (
+    `${cell.value ?? 0}:${[...(cell.notes ?? [])].sort((left, right) => left - right).join('')}`
+)).join('|')).join('/');
 
 const shuffledCopy = (messages: string[]) => {
   const shuffled = [...messages];
@@ -200,6 +206,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   }, [devHintState, difficulty, levelId]);
 
   const [animatingSections, setAnimatingSections] = useState<Set<string>>(new Set());
+  const [hintUpdatedCells, setHintUpdatedCells] = useState<Set<string>>(new Set());
   const [nudgeCue, setNudgeCue] = useState<{r: number, c: number, key: number} | null>(null);
   const [nudgeActivityVersion, setNudgeActivityVersion] = useState(0);
   const [showStartHint, setShowStartHint] = useState(false);
@@ -225,9 +232,11 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const nudgeCueIdRef = useRef(0);
   const saveCurrentProgressRef = useRef<() => void>(() => {});
   const hasMadeMistakeRef = useRef<() => boolean>(() => false);
+  const currentHintCandidateProgressRef = useRef<HintCandidateProgress | null>(null);
   const lastLifecycleSaveAtRef = useRef(0);
   const gameFinishedRef = useRef(false);
   const restartTimerRef = useRef<number | null>(null);
+  const hintUpdatePulseTimerRef = useRef<number | null>(null);
   const isGuardActive = purchasedSkills.includes('skill-scribe');
   
   // Timer hook
@@ -247,7 +256,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       moveLog?: MoveLogEntry[],
       hasMadeMistake?: boolean,
       scanRefillsPurchasedVal?: number,
-      scanAchievementElapsedSeconds?: number
+      scanAchievementElapsedSeconds?: number,
+      hintCandidateProgressVal?: HintCandidateProgress | null,
   ) => {
       if (devHintState) return;
       if (gameFinishedRef.current || isCompleted || isEnding) return;
@@ -255,7 +265,10 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       // Continue Game entries for merely opening a puzzle, and remove an old
       // in-progress snapshot when the player returns the board to its start.
       if (currentBoard.length !== 9) return;
-      if (!hasPlayerBoardInput(currentBoard)) {
+      const candidateProgressToSave = hintCandidateProgressVal === undefined
+          ? currentHintCandidateProgressRef.current
+          : hintCandidateProgressVal;
+      if (!hasPlayerBoardInput(currentBoard) && !candidateProgressToSave) {
           Storage.saveLevelScanEconomy(
               difficulty,
               levelId,
@@ -281,6 +294,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
               : scanRefillsPurchased,
           hasMadeMistake: hasMadeMistake ?? hasMadeMistakeRef.current(),
           hasUsedNotes: hasUsedNotesRef.current,
+          hintCandidateProgress: candidateProgressToSave ?? undefined,
       } as const;
 
       if (scanAchievementElapsedSeconds !== undefined) {
@@ -310,6 +324,23 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                   return next;
               });
           }, 2000);
+      }
+  }, []);
+
+  const pulseHintCandidateUpdates = useCallback((cells: Array<{ row: number; col: number }>) => {
+      if (hintUpdatePulseTimerRef.current !== null) {
+          window.clearTimeout(hintUpdatePulseTimerRef.current);
+      }
+      setHintUpdatedCells(new Set(cells.map(cell => `${cell.row}:${cell.col}`)));
+      hintUpdatePulseTimerRef.current = window.setTimeout(() => {
+          hintUpdatePulseTimerRef.current = null;
+          setHintUpdatedCells(new Set());
+      }, 1300);
+  }, []);
+
+  useEffect(() => () => {
+      if (hintUpdatePulseTimerRef.current !== null) {
+          window.clearTimeout(hintUpdatePulseTimerRef.current);
       }
   }, []);
 
@@ -510,6 +541,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const {
       board,
       setBoard,
+      hintCandidateProgress,
       solvedBoard,
       initialBoardRef,
       history,
@@ -528,6 +560,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       handleCellClick,
       handleNumberInput,
       placeNumberAt,
+      applyHintCandidateUpdate,
       handleUndo,
       handleErase,
       checkCompletion,
@@ -538,14 +571,25 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       settings,
       guardEnabled: isGuardActive,
       onComplete: handleGameComplete,
-      onBoardChange: (newBoard, currentMoveLog, hasMadeMistake) => {
-          if (!hasUsedNotesRef.current && newBoard.some(row => row.some(cell => !cell.isFixed && cell.notes.length > 0))) {
+      onBoardChange: (newBoard, currentMoveLog, hasMadeMistake, candidateProgress, source) => {
+          currentHintCandidateProgressRef.current = candidateProgress;
+          if (source === 'player-note' && !hasUsedNotesRef.current) {
               hasUsedNotesRef.current = true;
           }
-          saveProgress(newBoard, undefined, undefined, currentMoveLog, hasMadeMistake);
+          saveProgress(
+              newBoard,
+              undefined,
+              undefined,
+              currentMoveLog,
+              hasMadeMistake,
+              undefined,
+              undefined,
+              candidateProgress,
+          );
       },
       onSectionComplete: handleSectionComplete,
   });
+  currentHintCandidateProgressRef.current = hintCandidateProgress;
   hasMadeMistakeRef.current = hasMadeMistake;
 
   // Switching input styles must also clear the numpad's selected digit.
@@ -564,6 +608,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       isScanning,
       isScanSuccess,
       scanCooldown,
+      cancelScan,
       handleScan,
   } = useGameSkills({
       board,
@@ -600,7 +645,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       // the stale final-frame handler.
   }, []);
 
-  const handleHintPlaceNumber = useCallback(() => {
+  const handleHintComplete = useCallback(() => {
       if (
           hintPlacementRef.current
           || gameFinishedRef.current
@@ -613,16 +658,90 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       }
       hintPlacementRef.current = true;
 
+      const boardIsStillFrozen = boardHintPresentationSignature(board)
+          === boardHintPresentationSignature(activeHint.board);
+      if (!boardIsStillFrozen) {
+          shouldRestoreHintFocusRef.current = true;
+          setActiveHint(null);
+          setHintFrameIndex(0);
+          presentHintNotice({
+              kind: 'error',
+              message: 'The board changed. Tap Hint to try again.',
+          });
+          return;
+      }
+
+      if (activeHint.plan.outcome === 'candidate') {
+          const nextProgress = applyHintCandidatePlan(
+              board,
+              solvedBoard,
+              hintCandidateProgress,
+              activeHint.plan,
+          );
+          const update = nextProgress
+              ? applyHintCandidateUpdate(
+                  activeHint.plan.noteUpdates,
+                  nextProgress,
+                  isPaused,
+                  isCompleted || isEnding,
+              )
+              : { applied: false, updatedCells: [] };
+          if (!update.applied) {
+              shouldRestoreHintFocusRef.current = true;
+              setActiveHint(null);
+              setHintFrameIndex(0);
+              presentHintNotice({
+                  kind: 'error',
+                  message: 'The candidates changed. Tap Hint to try again.',
+              });
+              return;
+          }
+
+          // Candidate updates are a real board action, just like placing a
+          // number. Confirm the successful mutation with the active sound
+          // pack and one medium haptic; stale/failed updates stay silent.
+          sounds.playPlacementTap();
+          pulseHintCandidateUpdates(update.updatedCells);
+          setIsEraseMode(false);
+          if (isFocusMode) {
+              setIsFocusMode(false);
+              enqueuePill({
+                  text: 'Notes visible',
+                  type: 'notes',
+                  holdMs: 2500,
+              }, true);
+          }
+          closeHintUi(true);
+          return;
+      }
+
       const { row, col, value } = activeHint.plan.target;
-      const boardIsStillFrozen = boardHintSignature(board) === boardHintSignature(activeHint.board);
-      const placed = boardIsStillFrozen && placeNumberAt(
+      const carriedProgress = activeHint.plan.candidateEliminations?.length
+          ? applyHintCandidateProgress(
+              board,
+              solvedBoard,
+              hintCandidateProgress,
+              activeHint.plan,
+          )
+          : undefined;
+      if (activeHint.plan.candidateEliminations?.length && !carriedProgress) {
+          shouldRestoreHintFocusRef.current = true;
+          setActiveHint(null);
+          setHintFrameIndex(0);
+          presentHintNotice({
+              kind: 'error',
+              message: 'The candidates changed. Tap Hint to try again.',
+          });
+          return;
+      }
+      const placed = placeNumberAt(
           row,
           col,
           value,
           isPaused,
           isCompleted || isEnding,
+          carriedProgress ?? undefined,
       );
-
       if (!placed) {
           shouldRestoreHintFocusRef.current = true;
           setActiveHint(null);
@@ -644,9 +763,15 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       isCompleted,
       isEnding,
       isPaused,
+      applyHintCandidateUpdate,
+      enqueuePill,
+      hintCandidateProgress,
+      isFocusMode,
       placeNumberAt,
       presentHintNotice,
+      pulseHintCandidateUpdates,
       puzzleKey,
+      solvedBoard,
   ]);
 
   const showPreparedHint = useCallback((prepared: PreparedHint) => {
@@ -656,12 +781,12 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           presentHintNotice({ kind: 'error', message: 'The puzzle changed. Tap Hint again.' });
           return;
       }
-      if (boardHintSignature(board) !== prepared.signature) {
+      if (boardHintPresentationSignature(board) !== prepared.signature) {
           presentHintNotice({ kind: 'error', message: 'The puzzle changed. Tap Hint again.' });
           return;
       }
 
-      const freshResult = createHintPlan(board, solvedBoard);
+      const freshResult = createHintPlan(board, solvedBoard, { candidateProgress: hintCandidateProgress });
       if (freshResult.status !== 'ready') {
           presentHintNotice({ kind: 'error', message: 'Hint could not open. Nothing was charged.' });
           return;
@@ -706,8 +831,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           board: prepared.board,
           plan: freshResult.plan,
       });
-      sounds.playSelectionHaptic();
-  }, [board, devHintState, difficulty, levelId, onPointsChanged, presentHintNotice, puzzleKey, solvedBoard]);
+  }, [board, devHintState, difficulty, hintCandidateProgress, levelId, onPointsChanged, presentHintNotice, puzzleKey, solvedBoard]);
 
   const handleHintRequest = useCallback(() => {
       if (
@@ -728,7 +852,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       sounds.playClick();
 
       try {
-          const result = createHintPlan(board, solvedBoard);
+          const result = createHintPlan(board, solvedBoard, { candidateProgress: hintCandidateProgress });
           if (result.status === 'wrong-board') {
               presentHintNotice({
                   kind: 'wrong-board',
@@ -756,7 +880,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
               puzzleKey,
               board: cloneHintBoard(board),
               plan: result.plan,
-              signature: boardHintSignature(board),
+              signature: boardHintPresentationSignature(board),
               // Charge against the price the player actually saw. If cloud or
               // another session changed usage meanwhile, consumeHint rejects
               // this stale count and the player can confirm the refreshed price.
@@ -782,6 +906,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       isPaused,
       isScanning,
       hintUses,
+      hintCandidateProgress,
       levelId,
       presentHintNotice,
       purchasedSkills,
@@ -836,17 +961,34 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       halfwayTrackingReadyRef.current = false;
       notesReadyShownRef.current = false;
       gameFinishedRef.current = false;
+      cancelScan();
       const progress = devHintState
           ? null
           : Storage.getLevelProgress(difficulty, levelId);
       if (devHintState) {
           hasUsedNotesRef.current = false;
-          initializeBoard(cloneHintBoard(devHintState.board));
+          initializeBoard(
+              cloneHintBoard(devHintState.board),
+              undefined,
+              false,
+              devHintState.candidateProgress,
+          );
           setTimer(0);
       } else if (progress && progress.status === 'in-progress' && progress.boardState) {
-          hasUsedNotesRef.current = progress.hasUsedNotes === true
-              || progress.boardState.some(row => row.some(cell => !cell.isFixed && cell.notes.length > 0));
-          initializeBoard(progress.boardState, progress.moveLog, progress.hasMadeMistake);
+          hasUsedNotesRef.current = progress.hasUsedNotes !== undefined
+              ? progress.hasUsedNotes
+              : (
+                  !progress.hintCandidateProgress
+                  && progress.boardState.some(row => row.some(cell => (
+                      !cell.isFixed && cell.notes.length > 0
+                  )))
+              );
+          initializeBoard(
+              progress.boardState,
+              progress.moveLog,
+              progress.hasMadeMistake,
+              progress.hintCandidateProgress,
+          );
           setTimer(progress.timeElapsed);
           
       } else {
@@ -876,6 +1018,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setReplayUrl(null);
       setShowReplay(false);
       setAnimatingSections(new Set());
+      setHintUpdatedCells(new Set());
 
       const editableCells = initialBoardRef.current.flat().filter(cell => !cell.isFixed).length;
       const currentBoard = devHintState?.board ?? progress?.boardState ?? initialBoardRef.current;
@@ -891,7 +1034,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           clearTimeout(hintTimer);
           clearTimeout(trackingTimer);
       };
-  }, [difficulty, levelId, initializeBoard, setTimer, setScanUses, setScanRefillsPurchased, devHintState]);
+  }, [difficulty, levelId, initializeBoard, setTimer, setScanUses, setScanRefillsPurchased, cancelScan, devHintState]);
 
   useEffect(() => {
       if (
@@ -1092,6 +1235,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   const handleRestart = () => {
       if (isRestarting) return;
       sounds.playClick();
+      cancelScan();
       setIsRestarting(true);
 
       // Let the current attempt fade away before rebuilding the puzzle. A
@@ -1185,7 +1329,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
   }, [nudgeCue]);
 
   const onCellClickWrapper = useCallback((e: React.MouseEvent, r: number, c: number) => {
-      if (gameFinishedRef.current || isHintTheaterOpen) return;
+      if (gameFinishedRef.current || isHintTheaterOpen || isScanning) return;
       if (
           nudgeCue?.r === r &&
           nudgeCue?.c === c &&
@@ -1200,34 +1344,48 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           return;
       }
       handleCellClick(r, c, isPaused, isCompleted || isEnding);
-  }, [handleCellClick, handleErase, isPaused, isCompleted, isEnding, settings.digitFirst, isEraseMode, nudgeCue, isHintTheaterOpen]);
+  }, [handleCellClick, handleErase, isPaused, isCompleted, isEnding, settings.digitFirst, isEraseMode, nudgeCue, isHintTheaterOpen, isScanning]);
 
   const onCellLongPressWrapper = useCallback((r: number, c: number) => {
-      if (gameFinishedRef.current || isHintTheaterOpen || !settings.digitFirst || !isPencilMode || activeNumber === null) return;
+      if (gameFinishedRef.current || isHintTheaterOpen || isScanning || !settings.digitFirst || !isPencilMode || activeNumber === null) return;
       handleCellClick(r, c, isPaused, isCompleted || isEnding, true);
-  }, [handleCellClick, isPaused, isCompleted, isEnding, settings.digitFirst, isPencilMode, activeNumber, isHintTheaterOpen]);
+  }, [handleCellClick, isPaused, isCompleted, isEnding, settings.digitFirst, isPencilMode, activeNumber, isHintTheaterOpen, isScanning]);
 
   const onCellExploreWrapper = useCallback((r: number, c: number) => {
-      if (gameFinishedRef.current || isHintTheaterOpen || isPaused || isCompleted || isEnding) return;
+      if (gameFinishedRef.current || isHintTheaterOpen || isScanning || isPaused || isCompleted || isEnding) return;
       setSelectedCell([r, c]);
-  }, [isPaused, isCompleted, isEnding, setSelectedCell, isHintTheaterOpen]);
+  }, [isPaused, isCompleted, isEnding, setSelectedCell, isHintTheaterOpen, isScanning]);
 
   const onNumberClickWrapper = useCallback((e: React.MouseEvent, n: number) => {
-      if (gameFinishedRef.current || isHintTheaterOpen) return;
+      if (gameFinishedRef.current || isHintTheaterOpen || isScanning) return;
       setIsEraseMode(false);
       handleNumberInput(n, isPaused, isCompleted || isEnding);
-  }, [handleNumberInput, isPaused, isCompleted, isEnding, isHintTheaterOpen]);
+  }, [handleNumberInput, isPaused, isCompleted, isEnding, isHintTheaterOpen, isScanning]);
 
   const onNumberLongPressWrapper = useCallback((_e: React.MouseEvent, n: number) => {
-      if (gameFinishedRef.current || isHintTheaterOpen) return;
+      if (gameFinishedRef.current || isHintTheaterOpen || isScanning) return;
       handleNumberInput(n, isPaused, isCompleted || isEnding, true);
-  }, [handleNumberInput, isPaused, isCompleted, isEnding, isHintTheaterOpen]);
+  }, [handleNumberInput, isPaused, isCompleted, isEnding, isHintTheaterOpen, isScanning]);
 
   const handleBackToLevels = () => {
       if (gameFinishedRef.current) return;
+      const cancelledPendingScan = cancelScan();
+      // A purchased refill is committed before its Scan animation starts.
+      // When Back cancels that animation, keep the persisted, unconsumed use
+      // instead of overwriting it with the pre-purchase React render.
+      const persistedProgress = cancelledPendingScan && !devHintState
+          ? Storage.getLevelProgress(difficulty, levelId)
+          : null;
       // Board actions already save progress. This exit save also captures time
       // spent thinking since the player's last move without writing every second.
-      saveProgress(board, scanUses, undefined, moveLog.current);
+      saveProgress(
+          board,
+          persistedProgress?.scanUses ?? scanUses,
+          undefined,
+          moveLog.current,
+          undefined,
+          persistedProgress?.scanRefillsPurchased ?? scanRefillsPurchased,
+      );
       onBack();
   };
 
@@ -1291,17 +1449,17 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                       </button>
                   )}
                   <button onClick={() => {
-                      if (gameFinishedRef.current || isHintTheaterOpen) return;
+                      if (gameFinishedRef.current || isHintTheaterOpen || isScanning) return;
                       sounds.playClick();
                       setIsPaused(true);
-                  }} aria-label="Pause game" className="p-2 md:p-2.5 rounded-full transition text-t-icon active:scale-95">
+                  }} aria-label="Pause game" aria-disabled={isScanning || undefined} className="p-2 md:p-2.5 rounded-full transition text-t-icon active:scale-95">
                       <Icons.Pause className="w-6 h-6 md:w-7 md:h-7" />
                   </button>
                   <button onClick={() => {
-                      if (gameFinishedRef.current || isHintTheaterOpen) return;
+                      if (gameFinishedRef.current || isHintTheaterOpen || isScanning) return;
                       sounds.playClick();
                       onSettingsOpen();
-                  }} aria-label="Game settings" className="p-2 md:p-2.5 rounded-full transition text-t-icon active:scale-95">
+                  }} aria-label="Game settings" aria-disabled={isScanning || undefined} className="p-2 md:p-2.5 rounded-full transition text-t-icon active:scale-95">
                       <Icons.Settings className="w-6 h-6 md:w-7 md:h-7" />
                   </button>
               </div>
@@ -1377,13 +1535,14 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                     numberColor={activeHint ? 'text-stone-700 dark:text-stone-300' : numberColor}
                     onCellClick={onCellClickWrapper}
                     onCellExplore={onCellExploreWrapper}
-                    enableDragExplore={!activeHint && !settings.digitFirst}
+                    enableDragExplore={!activeHint && !isScanning && !settings.digitFirst}
                     onCellLongPress={onCellLongPressWrapper}
-                    enableCellLongPress={!activeHint && settings.digitFirst && isPencilMode && activeNumber !== null}
+                    enableCellLongPress={!activeHint && !isScanning && settings.digitFirst && isPencilMode && activeNumber !== null}
                     hideNotes={activeHint ? true : isFocusMode}
                     lockPlayerNumbers={activeHint ? true : areCompletionNumbersLocked}
-                    interactive={!activeHint}
+                    interactive={!activeHint && !isScanning}
                     hintFrame={activeHint?.plan.frames[hintFrameIndex]}
+                    hintUpdatedCells={activeHint ? EMPTY_HINT_SET : hintUpdatedCells}
                 />
             </div>
          </motion.div>
@@ -1398,7 +1557,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                          plan={activeHint.plan}
                          frameIndex={hintFrameIndex}
                          onFrameIndexChange={setHintFrameIndex}
-                         onPlaceNumber={handleHintPlaceNumber}
+                         onCompleteHint={handleHintComplete}
                      />
                  </div>
              </div>
@@ -1441,11 +1600,11 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                  isPencilMode={isPencilMode}
                  isFocusMode={isFocusMode}
                  onUndo={() => {
-                     if (gameFinishedRef.current) return;
+                     if (gameFinishedRef.current || isScanning) return;
                      handleUndo(isPaused, isCompleted || isEnding);
                  }}
                  onErase={() => {
-                     if (gameFinishedRef.current) return;
+                     if (gameFinishedRef.current || isScanning) return;
                      if (settings.digitFirst) {
                          sounds.playClick();
                          setIsEraseMode(current => !current);
@@ -1456,7 +1615,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                      handleErase(isPaused, isCompleted || isEnding);
                  }}
                  onTogglePencil={() => {
-                     if (gameFinishedRef.current || isEnding) return;
+                     if (gameFinishedRef.current || isEnding || isScanning) return;
                      sounds.playClick();
                      const nextPencilMode = !isPencilMode;
                      const isRevealingFocusedNotes = nextPencilMode && isFocusMode;
@@ -1481,7 +1640,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                      }
                  }}
                  onToggleFocus={() => {
-                     if (gameFinishedRef.current || isEnding) return;
+                     if (gameFinishedRef.current || isEnding || isScanning) return;
                      sounds.playClick();
                      const nextFocusMode = !isFocusMode;
                      setIsFocusMode(nextFocusMode);

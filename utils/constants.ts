@@ -133,9 +133,9 @@ export const getScanRefillCost = (refillsPurchased: number): number => (
     )]
 );
 
-// Hint sessions get progressively more valuable, with every use after the
+// Hint moves get progressively more valuable, with every use after the
 // second capped at the same predictable price.
-export const HINT_PRICES = [5, 20, 40] as const;
+export const HINT_PRICES = [5, 15, 30] as const;
 
 export const getHintCost = (hintsUsed: number): number => (
     HINT_PRICES[Math.min(

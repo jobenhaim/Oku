@@ -1055,7 +1055,7 @@ class SoundController {
         this.playPackClickTone();
 
         if (this.vibrationEnabled) {
-            Haptics.impact({ style: ImpactStyle.Light });
+            Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
         }
     }
 

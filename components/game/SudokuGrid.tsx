@@ -26,7 +26,10 @@ interface SudokuGridProps {
     interactive?: boolean;
     squareSizeOverride?: string;
     hintFrame?: HintVisualFrame;
+    hintUpdatedCells?: Set<string>;
 }
+
+const EMPTY_UPDATED_CELLS = new Set<string>();
 
 export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     board,
@@ -50,6 +53,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     interactive = true,
     squareSizeOverride,
     hintFrame,
+    hintUpdatedCells = EMPTY_UPDATED_CELLS,
 }) => {
     const gridAreaRef = useRef<HTMLDivElement | null>(null);
     const [isDragExploring, setIsDragExploring] = useState(false);
@@ -295,6 +299,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                                 highlight={settings.highlight}
                                 isGuardRejected={guardRejectedCell?.row === rIndex && guardRejectedCell?.col === cIndex}
                                 isNudgeCue={nudgeCue?.r === rIndex && nudgeCue?.c === cIndex}
+                                isHintUpdated={hintUpdatedCells.has(`${rIndex}:${cIndex}`)}
                                 settings={settings}
                                 numberColor={numberColor}
                                 onCellClick={() => {}}
@@ -412,6 +417,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
                                 mainFontSize={mainFontSize}
                                 noteFontSize={noteFontSize}
                                 noteLineHeight={noteLineHeight}
+                                highlightedValue={highlightedValue}
                                 hideNotes={hideNotes}
                                 lockPlayerNumbers={lockPlayerNumbers}
                                 isHintSource={hintSourceCells.has(`${rIndex}:${cIndex}`)}

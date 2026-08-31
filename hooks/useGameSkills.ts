@@ -1,4 +1,11 @@
-import React, { Dispatch, SetStateAction, useState } from 'react';
+import React, {
+    Dispatch,
+    SetStateAction,
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+} from 'react';
 import { Board, MoveLogEntry } from '../types';
 import { sounds } from '../utils/sound';
 import { Storage } from '../utils/storage';
@@ -37,6 +44,48 @@ export const useGameSkills = ({
     const [isScanning, setIsScanning] = useState(false);
     const [scanCooldown, setScanCooldown] = useState(false);
     const [isScanSuccess, setIsScanSuccess] = useState(false);
+    const scanTimerRef = useRef<number | null>(null);
+    const scanSuccessTimerRef = useRef<number | null>(null);
+    const scanRunTokenRef = useRef(0);
+    const isMountedRef = useRef(true);
+    const boardRef = useRef(board);
+    const solvedBoardRef = useRef(solvedBoard);
+    boardRef.current = board;
+    solvedBoardRef.current = solvedBoard;
+
+    const cancelScan = useCallback(() => {
+        const hadPendingScan = scanTimerRef.current !== null;
+        scanRunTokenRef.current += 1;
+        if (scanTimerRef.current !== null) {
+            window.clearTimeout(scanTimerRef.current);
+            scanTimerRef.current = null;
+        }
+        if (scanSuccessTimerRef.current !== null) {
+            window.clearTimeout(scanSuccessTimerRef.current);
+            scanSuccessTimerRef.current = null;
+        }
+        if (!isMountedRef.current) return hadPendingScan;
+        setIsScanning(false);
+        setScanCooldown(false);
+        setIsScanSuccess(false);
+        return hadPendingScan;
+    }, []);
+
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+            scanRunTokenRef.current += 1;
+            if (scanTimerRef.current !== null) {
+                window.clearTimeout(scanTimerRef.current);
+                scanTimerRef.current = null;
+            }
+            if (scanSuccessTimerRef.current !== null) {
+                window.clearTimeout(scanSuccessTimerRef.current);
+                scanSuccessTimerRef.current = null;
+            }
+        };
+    }, []);
 
     const handleScan = (
         isPaused: boolean,
@@ -45,12 +94,29 @@ export const useGameSkills = ({
         refillCountOverride?: number
     ) => {
         const availableUses = availableUsesOverride ?? scanUses;
-        if (availableUses <= 0 || isScanning || scanCooldown || isPaused || isCompleted || isGameLocked?.()) return;
+        if (
+            availableUses <= 0
+            || scanTimerRef.current !== null
+            || isScanning
+            || scanCooldown
+            || isPaused
+            || isCompleted
+            || isGameLocked?.()
+        ) return;
         const scanAchievementTime = elapsedSeconds;
+        const runToken = scanRunTokenRef.current + 1;
+        scanRunTokenRef.current = runToken;
+        if (scanSuccessTimerRef.current !== null) {
+            window.clearTimeout(scanSuccessTimerRef.current);
+            scanSuccessTimerRef.current = null;
+        }
+        setIsScanSuccess(false);
         setIsScanning(true);
         setScanCooldown(true);
         sounds.playScan();
-        window.setTimeout(() => {
+        scanTimerRef.current = window.setTimeout(() => {
+            scanTimerRef.current = null;
+            if (!isMountedRef.current || scanRunTokenRef.current !== runToken) return;
             // Completing the puzzle locks the board synchronously. A Scan that
             // began just before the final move must never overwrite that win
             // with a delayed in-progress save.
@@ -60,9 +126,15 @@ export const useGameSkills = ({
                 return;
             }
             let hasErrors = false;
-            const newBoard = board.map(row => row.map(cell => {
+            // Read the current board at completion. In normal play input is
+            // locked during the animation, but this also prevents a delayed
+            // callback from restoring a stale render if another safe state
+            // transition happened in the meantime.
+            const currentBoard = boardRef.current;
+            const currentSolution = solvedBoardRef.current;
+            const newBoard = currentBoard.map(row => row.map(cell => {
                 if (!cell.isFixed && cell.value !== null) {
-                    const isCorrect = cell.value === solvedBoard[cell.row][cell.col];
+                    const isCorrect = cell.value === currentSolution[cell.row][cell.col];
                     if (!isCorrect) {
                         hasErrors = true;
                         return { ...cell, isMarkedWrong: true };
@@ -91,7 +163,11 @@ export const useGameSkills = ({
             if (!hasErrors) {
                 setIsScanSuccess(true);
                 sounds.playCheck();
-                window.setTimeout(() => setIsScanSuccess(false), 1000);
+                scanSuccessTimerRef.current = window.setTimeout(() => {
+                    scanSuccessTimerRef.current = null;
+                    if (!isMountedRef.current || scanRunTokenRef.current !== runToken) return;
+                    setIsScanSuccess(false);
+                }, 1000);
             }
         }, 1200);
     };
@@ -104,6 +180,7 @@ export const useGameSkills = ({
         isScanning,
         isScanSuccess,
         scanCooldown,
+        cancelScan,
         handleScan
     };
 };

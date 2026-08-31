@@ -30,6 +30,34 @@ export interface MoveLogEntry {
   t: number;
 }
 
+/** A solver-proven candidate that no longer belongs in one empty cell. */
+export interface HintCandidateExclusion {
+  row: number;
+  col: number;
+  value: number;
+}
+
+/**
+ * Logical Hint progress is deliberately separate from player notes. The flat
+ * exclusion list remains Firestore-safe while the board signature prevents a
+ * deduction from leaking into a different puzzle state.
+ */
+export interface HintCandidateProgress {
+  version: 1;
+  boardSignature: string;
+  exclusions: HintCandidateExclusion[];
+  /** Deterministic integrity digest over the version, board, and exclusions. */
+  integrity: string;
+}
+
+/** The visible note patch paired with one solver-owned candidate deduction. */
+export interface HintCandidateNoteUpdate {
+  row: number;
+  col: number;
+  beforeNotes: number[];
+  afterNotes: number[];
+}
+
 export interface LevelProgress {
   levelId: number; // 1 to 30
   difficulty: Difficulty;
@@ -45,6 +73,7 @@ export interface LevelProgress {
   scribeUses?: number; // Legacy saved-game compatibility
   hasMadeMistake?: boolean; // Preserve flawless-run eligibility across resumes
   hasUsedNotes?: boolean; // Preserve note-based achievement eligibility across resumes
+  hintCandidateProgress?: HintCandidateProgress; // Solver-owned candidate deductions for the current board state
 }
 
 export interface AppSettings {

@@ -1,15 +1,34 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { Board, Difficulty, CellValue, AppSettings, MoveLogEntry } from '../types';
+import {
+  Board,
+  Difficulty,
+  CellValue,
+  AppSettings,
+  MoveLogEntry,
+  HintCandidateProgress,
+  HintCandidateNoteUpdate,
+} from '../types';
 import { generateLevel } from '../utils/sudoku';
 import { sounds } from '../utils/sound';
+import {
+  boardHintSignature,
+  hasValidHintCandidateProgressIntegrity,
+  reconcileHintCandidateProgress,
+} from '../utils/hints';
 
 interface UseSudokuBoardProps {
   difficulty: Difficulty;
   levelId: number;
   settings: AppSettings;
   guardEnabled?: boolean;
-  onBoardChange?: (board: Board, moveLog: MoveLogEntry[], hasMadeMistake: boolean) => void;
+  onBoardChange?: (
+    board: Board,
+    moveLog: MoveLogEntry[],
+    hasMadeMistake: boolean,
+    hintCandidateProgress: HintCandidateProgress | null,
+    source?: 'player' | 'player-note' | 'hint' | 'undo',
+  ) => void;
   onComplete?: (completedBoard: Board, moveLog: MoveLogEntry[], isPerfect: boolean) => void;
   onSectionComplete?: (sections: string[]) => void;
   onNumberPlaced?: (row: number, col: number) => void;
@@ -17,12 +36,26 @@ interface UseSudokuBoardProps {
 
 const UNDO_HISTORY_LIMIT = 100;
 
+interface UndoSnapshot {
+  board: Board;
+  hintCandidateProgress: HintCandidateProgress | null;
+}
+
 const cloneBoard = (board: Board): Board => (
     board.map(row => row.map(cell => ({
         ...cell,
         notes: [...cell.notes]
     })))
 );
+
+const cloneHintCandidateProgress = (
+    progress: HintCandidateProgress | null | undefined,
+): HintCandidateProgress | null => progress ? ({
+    version: 1,
+    boardSignature: progress.boardSignature,
+    exclusions: progress.exclusions.map(exclusion => ({ ...exclusion })),
+    integrity: progress.integrity,
+}) : null;
 
 const checkSectionCompletion = (board: Board, solvedBoard: number[][], r: number, c: number, difficulty: Difficulty) => {
     const sections: string[] = [];
@@ -86,7 +119,10 @@ export const useSudokuBoard = ({
   const [solvedBoard, setSolvedBoard] = useState<number[][]>([]);
   const initialBoardRef = useRef<Board>([]);
   
-  const [history, setHistory] = useState<Board[]>([]);
+  const [history, setHistory] = useState<UndoSnapshot[]>([]);
+  const historyRef = useRef<UndoSnapshot[]>([]);
+  historyRef.current = history;
+  const [hintCandidateProgress, setHintCandidateProgress] = useState<HintCandidateProgress | null>(null);
   const [isPencilMode, setIsPencilMode] = useState(false);
   
   const [selectedCell, setSelectedCell] = useState<[number, number] | null>(null);
@@ -99,6 +135,9 @@ export const useSudokuBoard = ({
   // Refs to always have the latest values of fast-changing states
   const boardRef = useRef(board);
   boardRef.current = board;
+
+  const hintCandidateProgressRef = useRef(hintCandidateProgress);
+  hintCandidateProgressRef.current = hintCandidateProgress;
 
   const isPencilModeRef = useRef(isPencilMode);
   isPencilModeRef.current = isPencilMode;
@@ -132,17 +171,31 @@ export const useSudokuBoard = ({
   }, []);
 
   const rememberBoardForUndo = useCallback((currentBoard: Board) => {
-      const snapshot = cloneBoard(currentBoard);
-      setHistory(previous => [
-          ...previous.slice(-(UNDO_HISTORY_LIMIT - 1)),
+      const snapshot: UndoSnapshot = {
+          board: cloneBoard(currentBoard),
+          hintCandidateProgress: cloneHintCandidateProgress(hintCandidateProgressRef.current),
+      };
+      const nextHistory = [
+          ...historyRef.current.slice(-(UNDO_HISTORY_LIMIT - 1)),
           snapshot
-      ]);
+      ];
+      historyRef.current = nextHistory;
+      setHistory(nextHistory);
   }, []);
   
-  const initializeBoard = useCallback((savedBoard?: Board, savedMoveLog?: MoveLogEntry[], savedHasMadeMistake = false) => {
+  const initializeBoard = useCallback((
+    savedBoard?: Board,
+    savedMoveLog?: MoveLogEntry[],
+    savedHasMadeMistake = false,
+    savedHintCandidateProgress?: HintCandidateProgress | null,
+  ) => {
+    historyRef.current = [];
     setHistory([]);
     setSelectedCell(null);
     setActiveNumber(null);
+    const restoredHintProgress = cloneHintCandidateProgress(savedHintCandidateProgress);
+    hintCandidateProgressRef.current = restoredHintProgress;
+    setHintCandidateProgress(restoredHintProgress);
     errorCountRef.current = savedHasMadeMistake ? 1 : 0;
     
     if (savedMoveLog) {
@@ -294,9 +347,20 @@ export const useSudokuBoard = ({
                      }
                  }
             }
+            const nextHintProgress = shouldUsePencil
+                ? hintCandidateProgressRef.current
+                : null;
+            hintCandidateProgressRef.current = nextHintProgress;
+            setHintCandidateProgress(nextHintProgress);
             boardRef.current = newBoard;
             setBoard(newBoard);
-            if (onBoardChange) onBoardChange(newBoard, moveLog.current, errorCountRef.current > 0);
+            if (onBoardChange) onBoardChange(
+                newBoard,
+                moveLog.current,
+                errorCountRef.current > 0,
+                cloneHintCandidateProgress(nextHintProgress),
+                shouldUsePencil ? 'player-note' : 'player',
+            );
             if (!shouldUsePencil && newCell.value) checkCompletion(newBoard);
         } else {
              sounds.playTap();
@@ -316,7 +380,13 @@ export const useSudokuBoard = ({
     }
   }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, onNumberPlaced, removeNotesFromPeers, checkCompletion, isBoardComplete, showGuardRejection, rememberBoardForUndo]);
 
-  const handleNumberInput = useCallback((num: number, isPaused: boolean, isCompleted: boolean, forcePlace: boolean = false) => {
+  const handleNumberInput = useCallback((
+      num: number,
+      isPaused: boolean,
+      isCompleted: boolean,
+      forcePlace: boolean = false,
+      hintProgressOverride?: HintCandidateProgress,
+  ) => {
     if (isPaused || isCompleted) return;
     
     const currentBoard = boardRef.current;
@@ -413,9 +483,26 @@ export const useSudokuBoard = ({
       }
     }
     
+    const nextHintProgress = shouldUsePencil
+        ? hintCandidateProgressRef.current
+        : (
+            hintProgressOverride !== undefined
+            && currentCell.value === null
+            && newCell.value === solvedBoard[r][c]
+        )
+            ? reconcileHintCandidateProgress(newBoard, solvedBoard, hintProgressOverride)
+            : null;
+    hintCandidateProgressRef.current = nextHintProgress;
+    setHintCandidateProgress(nextHintProgress);
     boardRef.current = newBoard;
     setBoard(newBoard);
-    if (onBoardChange) onBoardChange(newBoard, moveLog.current, errorCountRef.current > 0);
+    if (onBoardChange) onBoardChange(
+        newBoard,
+        moveLog.current,
+        errorCountRef.current > 0,
+        cloneHintCandidateProgress(nextHintProgress),
+        shouldUsePencil ? 'player-note' : 'player',
+    );
     if (!shouldUsePencil && newCell.value) checkCompletion(newBoard);
   }, [difficulty, solvedBoard, onBoardChange, onComplete, onSectionComplete, onNumberPlaced, removeNotesFromPeers, checkCompletion, isBoardComplete, showGuardRejection, rememberBoardForUndo]);
 
@@ -425,6 +512,7 @@ export const useSudokuBoard = ({
       value: number,
       isPaused: boolean,
       isCompleted: boolean,
+      hintProgressOverride?: HintCandidateProgress,
   ) => {
       const currentBoard = boardRef.current;
       const currentCell = currentBoard[row]?.[col];
@@ -445,21 +533,116 @@ export const useSudokuBoard = ({
       activeNumberRef.current = null;
       setSelectedCell([row, col]);
       setActiveNumber(null);
-      handleNumberInput(value, isPaused, isCompleted, true);
+      handleNumberInput(
+          value,
+          isPaused,
+          isCompleted,
+          true,
+          hintProgressOverride,
+      );
       return true;
   }, [handleNumberInput, solvedBoard]);
 
+  const applyHintCandidateUpdate = useCallback((
+      updates: HintCandidateNoteUpdate[],
+      nextProgress: HintCandidateProgress,
+      isPaused: boolean,
+      isCompleted: boolean,
+  ): { applied: boolean; updatedCells: Array<{ row: number; col: number }> } => {
+      const currentBoard = boardRef.current;
+      if (
+          isPaused
+          || isCompleted
+          || updates.length === 0
+          || currentBoard.length !== 9
+          || !hasValidHintCandidateProgressIntegrity(nextProgress)
+          || nextProgress.boardSignature !== boardHintSignature(currentBoard)
+      ) return { applied: false, updatedCells: [] };
+
+      const seen = new Set<string>();
+      const validUpdates = updates.every(update => {
+          const { row, col, beforeNotes, afterNotes } = update;
+          const key = `${row}:${col}`;
+          const cell = currentBoard[row]?.[col];
+          if (
+              !Number.isInteger(row)
+              || !Number.isInteger(col)
+              || row < 0
+              || row > 8
+              || col < 0
+              || col > 8
+              || seen.has(key)
+              || !cell
+              || cell.isFixed
+              || cell.isRevealed
+              || cell.value !== null
+          ) return false;
+          seen.add(key);
+          const normalize = (values: number[]) => [...new Set(values)]
+              .filter(value => Number.isInteger(value) && value >= 1 && value <= 9)
+              .sort((left, right) => left - right);
+          const currentNotes = normalize(cell.notes);
+          const expectedNotes = normalize(beforeNotes);
+          const replacementNotes = normalize(afterNotes);
+          return currentNotes.length === expectedNotes.length
+              && currentNotes.every((value, index) => value === expectedNotes[index])
+              && (
+                  replacementNotes.length !== currentNotes.length
+                  || replacementNotes.some((value, index) => value !== currentNotes[index])
+              );
+      });
+      if (!validUpdates) return { applied: false, updatedCells: [] };
+
+      rememberBoardForUndo(currentBoard);
+      const newBoard = cloneBoard(currentBoard);
+      updates.forEach(update => {
+          newBoard[update.row][update.col].notes = [...new Set(update.afterNotes)]
+              .sort((left, right) => left - right);
+      });
+      const storedProgress = cloneHintCandidateProgress(nextProgress);
+      if (!storedProgress) return { applied: false, updatedCells: [] };
+
+      boardRef.current = newBoard;
+      hintCandidateProgressRef.current = storedProgress;
+      setBoard(newBoard);
+      setHintCandidateProgress(storedProgress);
+      if (onBoardChange) onBoardChange(
+          newBoard,
+          moveLog.current,
+          errorCountRef.current > 0,
+          cloneHintCandidateProgress(storedProgress),
+          'hint',
+      );
+      return {
+          applied: true,
+          updatedCells: updates.map(({ row, col }) => ({ row, col })),
+      };
+  }, [onBoardChange, rememberBoardForUndo]);
+
   const handleUndo = useCallback((isPaused: boolean, isCompleted: boolean) => {
     if (isPaused || isCompleted) return;
-    setHistory(prevHistory => {
-        if (prevHistory.length === 0) return prevHistory;
-        sounds.playClick();
-        const previous = prevHistory[prevHistory.length - 1];
-        boardRef.current = previous;
-        setBoard(previous);
-        if (onBoardChange) onBoardChange(previous, moveLog.current, errorCountRef.current > 0);
-        return prevHistory.slice(0, -1);
-    });
+    const currentHistory = historyRef.current;
+    if (currentHistory.length === 0) return;
+
+    sounds.playClick();
+    const previous = currentHistory[currentHistory.length - 1];
+    const nextHistory = currentHistory.slice(0, -1);
+    const restoredBoard = cloneBoard(previous.board);
+    const restoredHintProgress = cloneHintCandidateProgress(previous.hintCandidateProgress);
+
+    historyRef.current = nextHistory;
+    boardRef.current = restoredBoard;
+    hintCandidateProgressRef.current = restoredHintProgress;
+    setHistory(nextHistory);
+    setBoard(restoredBoard);
+    setHintCandidateProgress(restoredHintProgress);
+    if (onBoardChange) onBoardChange(
+        restoredBoard,
+        moveLog.current,
+        errorCountRef.current > 0,
+        cloneHintCandidateProgress(restoredHintProgress),
+        'undo',
+    );
   }, [onBoardChange]);
 
   const handleErase = useCallback((isPaused: boolean, isCompleted: boolean, targetCell?: [number, number]) => {
@@ -478,14 +661,25 @@ export const useSudokuBoard = ({
     ) return;
 
     rememberBoardForUndo(currentBoard);
+    const nextHintProgress = currentCell.value === null
+        ? hintCandidateProgressRef.current
+        : null;
     const newBoard = cloneBoard(currentBoard);
     newBoard[r][c].value = null; 
     newBoard[r][c].notes = []; 
     newBoard[r][c].isError = false;
     newBoard[r][c].isMarkedWrong = false; 
+    hintCandidateProgressRef.current = nextHintProgress;
+    setHintCandidateProgress(nextHintProgress);
     boardRef.current = newBoard;
     setBoard(newBoard);
-    if (onBoardChange) onBoardChange(newBoard, moveLog.current, errorCountRef.current > 0);
+    if (onBoardChange) onBoardChange(
+        newBoard,
+        moveLog.current,
+        errorCountRef.current > 0,
+        cloneHintCandidateProgress(nextHintProgress),
+        'player',
+    );
   }, [onBoardChange, rememberBoardForUndo]);
 
   const conflicts = useMemo(() => {
@@ -525,6 +719,8 @@ export const useSudokuBoard = ({
   return {
       board,
       setBoard,
+      hintCandidateProgress,
+      setHintCandidateProgress,
       solvedBoard,
       initialBoardRef,
       history,
@@ -543,6 +739,7 @@ export const useSudokuBoard = ({
       handleCellClick,
       handleNumberInput,
       placeNumberAt,
+      applyHintCandidateUpdate,
       handleUndo,
       handleErase,
       checkCompletion,

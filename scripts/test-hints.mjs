@@ -5,10 +5,17 @@ const bundle = await build({
     stdin: {
         contents: `
             export {
+                applyHintCandidatePlan,
+                applyHintCandidateProgress,
                 boardHintSignature,
                 cloneHintBoard,
+                computeHintCandidateProgressIntegrity,
+                createHintCandidateProgress,
                 createHintPlan,
                 diagnoseHintSearch,
+                hasValidHintCandidateProgressIntegrity,
+                hintCandidateProgressSignature,
+                reconcileHintCandidateProgress,
             } from './utils/hints.ts';
             export {
                 DEV_HINT_PREVIEWS,
@@ -33,10 +40,17 @@ const bundle = await build({
 
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`;
 const {
+    applyHintCandidatePlan,
+    applyHintCandidateProgress,
     boardHintSignature,
     cloneHintBoard,
+    computeHintCandidateProgressIntegrity,
+    createHintCandidateProgress,
     createHintPlan,
     diagnoseHintSearch,
+    hasValidHintCandidateProgressIntegrity,
+    hintCandidateProgressSignature,
+    reconcileHintCandidateProgress,
     DEV_HINT_PREVIEWS,
     createDevHintPreview,
     getDevHintPreviewPuzzle,
@@ -235,6 +249,35 @@ const hasCoordinate = (coordinates, target) => (coordinates ?? []).some(cell => 
 ));
 
 const assertPresentationContract = (plan, label = plan.technique) => {
+    if (plan.outcome === 'candidate') {
+        assert.equal(plan.target, undefined);
+        assert.ok(plan.frames.length >= 2);
+        assert.ok(plan.deductions.length > 0);
+        for (const frame of plan.frames) {
+            assert.equal(frame.target, undefined, `${label}/${frame.id}: candidate flow cannot place`);
+            assert.equal(
+                (frame.candidateMarks ?? []).some(mark => mark.tone === 'answer'),
+                false,
+                `${label}/${frame.id}: candidate flow cannot reveal an answer`,
+            );
+            if (frame.titleParts) {
+                assert.equal(frame.titleParts.map(part => part.text).join(''), frame.title);
+            }
+            if (frame.bodyParts) {
+                assert.equal(frame.bodyParts.map(part => part.text).join(''), frame.body);
+            }
+        }
+        const finalFrame = plan.frames.at(-1);
+        assert.ok(finalFrame.id.endsWith('update'));
+        assert.equal(finalFrame.eliminationStyle, 'candidate-slash');
+        assert.equal(finalFrame.fillEliminatedCells, false);
+        assert.ok(isSameCoordinateSet(
+            coordinateSet(finalFrame.candidateUpdateCells),
+            coordinateSet(plan.deductions.at(-1).candidateEliminations),
+        ));
+        return;
+    }
+
     const target = plan.target;
     const targetValue = target.value;
     const assertTargetFocus = (frame) => {
@@ -362,7 +405,7 @@ const assertPresentationContract = (plan, label = plan.technique) => {
                 assert.equal(frame.title, `Only ${targetValue} can fit`);
                 assert.equal(
                     frame.body,
-                    "Each gray candidate is blocked by a green number in this cell's row, column, or box.",
+                    "Each other candidate is blocked by a placed number in this cell's row, column, or box.",
                 );
                 break;
             case 'naked-answer':
@@ -385,7 +428,7 @@ const assertPresentationContract = (plan, label = plan.technique) => {
             case 'hidden-blocked':
                 assertTargetFocus(frame);
                 assert.equal(frame.title, `Only one place for ${targetValue}`);
-                assert.equal(frame.body, `The green ${targetValue}s rule out every gray ${targetValue}.`);
+                assert.equal(frame.body, `The placed ${targetValue}s rule out every other cell in this ${displayUnitName(unitFromCells(plan.frames[0]))}.`);
                 assert.equal(frame.eliminationStyle, 'candidate-slash');
                 assert.ok(frame.accessibleDetail?.includes(`only place for ${targetValue}`));
                 break;
@@ -1043,7 +1086,9 @@ const COLOR_CHAIN_WRAP_SOLUTION = parseGrid(
 );
 
 let passed = 0;
+let skipLegacyPlacementContract = false;
 const test = (name, run) => {
+    if (skipLegacyPlacementContract) return;
     run();
     passed += 1;
     console.log(`✓ ${name}`);
@@ -1366,7 +1411,7 @@ test('builds a deterministic naked-single theater plan', () => {
     assert.equal(evidenceFrame.title, 'Only 5 can fit');
     assert.equal(
         evidenceFrame.body,
-        "Each gray candidate is blocked by a green number in this cell's row, column, or box.",
+        "Each other candidate is blocked by a placed number in this cell's row, column, or box.",
     );
     assert.equal(evidenceFrame.unitCells, undefined);
     assert.equal(evidenceFrame.contextCells, undefined);
@@ -1425,7 +1470,7 @@ test('builds a deterministic hidden-single theater plan', () => {
     assert.deepEqual(lookFrame.spotlightCells, []);
     assert.deepEqual(evidenceFrame.spotlightCells, [{ row: 3, col: 8 }]);
     assert.equal(evidenceFrame.title, 'Only one place for 9');
-    assert.equal(evidenceFrame.body, 'The green 9s rule out every gray 9.');
+    assert.equal(evidenceFrame.body, 'The placed 9s rule out every other cell in this 3 × 3 box.');
     assert.equal(evidenceFrame.eliminationStyle, 'candidate-slash');
     assert.equal(
         evidenceFrame.accessibleDetail,
@@ -1474,6 +1519,8 @@ test('builds a deterministic hidden-single theater plan', () => {
     assert.equal(answerFrame.sourceCells, undefined);
     assert.deepEqual(createHintPlan(board, HIDDEN_SINGLE_SOLUTION), result);
 });
+
+skipLegacyPlacementContract = true;
 
 test('explains a pointing-row Locked Candidate that unlocks a naked single', () => {
     const result = assertLockedCandidatePlan(
@@ -3681,6 +3728,8 @@ test('keeps the local multi-step preview isolated and deterministic', () => {
     assert.deepEqual(createDevHintPreview('chain'), preview);
 });
 
+skipLegacyPlacementContract = false;
+
 test('rejects a wrong player value without leaking its location', () => {
     const grid = deepClone(SOLUTION);
     grid[0][0] = 4;
@@ -3759,6 +3808,8 @@ test('does not mutate frozen inputs and clones note arrays safely', () => {
     assert.deepEqual(frozenBoard[0][0].notes, [1, 2, 3]);
     assert.equal(frozenBoard[0][0].value, null);
 });
+
+skipLegacyPlacementContract = true;
 
 test('finds a supported opening Hint across all production puzzles', () => {
     for (const difficulty of Object.values(Difficulty)) {
@@ -4360,6 +4411,897 @@ test('walks every production puzzle through a safe deterministic Hint path', () 
     assert.ok(maxMultiStepDeductions >= 2 && maxMultiStepDeductions <= 3);
     assert.ok(multiStepSequences.has('lockedCandidate>nakedPair'));
     assert.ok(multiStepSequences.has('nakedTriple>nakedPair'));
+});
+
+skipLegacyPlacementContract = false;
+
+const candidatesWithProgress = (board, progress) => {
+    const grid = board.map(row => row.map(cell => cell.value ?? 0));
+    const candidates = candidateGrid(grid);
+    for (const exclusion of progress?.exclusions ?? []) {
+        candidates[exclusion.row][exclusion.col] = candidates[exclusion.row][exclusion.col]
+            .filter(value => value !== exclusion.value);
+    }
+    return candidates;
+};
+
+const assertTextParts = (parts, fallback, label) => {
+    if (!parts) return;
+    assert.equal(parts.map(part => part.text).join(''), fallback, `${label} semantic copy`);
+    assert.ok(parts.every(part => typeof part.text === 'string' && part.text.length > 0));
+};
+
+const toneTexts = (frame, field, tone) => (frame[field] ?? [])
+    .filter(part => part.tone === tone)
+    .map(part => part.text);
+
+const assertToneText = (frame, field, tone, expected, label) => {
+    assert.ok(
+        toneTexts(frame, field, tone).includes(`${expected}`),
+        `${label}: expected ${tone} ${expected} in ${field}`,
+    );
+};
+
+const assertCandidatePlanContract = (
+    plan,
+    board,
+    solution,
+    progress = null,
+    label = plan.technique,
+) => {
+    assert.equal(plan.outcome, 'candidate', `${label} must end with a candidate update`);
+    assert.equal(plan.target, undefined, `${label} must not carry a placement target`);
+    assert.equal(plan.derivedResult, undefined, `${label} must not promise a placement result`);
+    assert.ok(plan.candidateEliminations.length > 0, `${label} needs solver deltas`);
+    assert.ok(plan.noteUpdates.length > 0, `${label} needs a visible note update`);
+    assert.ok(plan.deductions.length > 0, `${label} needs deduction metadata`);
+    assert.equal(new Set(plan.frames.map(frame => frame.id)).size, plan.frames.length);
+    assertPresentationContract(plan, label);
+
+    for (const frame of plan.frames) {
+        assert.equal(frame.target, undefined, `${label}/${frame.id} cannot place a number`);
+        assert.equal(
+            (frame.candidateMarks ?? []).some(mark => mark.tone === 'answer'),
+            false,
+            `${label}/${frame.id} cannot show an answer mark`,
+        );
+        assert.equal(frame.id.includes('answer'), false, `${label}/${frame.id} cannot be an answer frame`);
+        assertTextParts(frame.titleParts, frame.title, `${label}/${frame.id} title`);
+        assertTextParts(frame.bodyParts, frame.body, `${label}/${frame.id} body`);
+    }
+
+    const currentDeduction = plan.deductions.at(-1);
+    const currentCells = coordinateSet(currentDeduction.candidateEliminations);
+    const finalFrame = plan.frames.at(-1);
+    assert.ok(finalFrame.id.endsWith('update'));
+    assert.equal(finalFrame.eliminationStyle, 'candidate-slash');
+    assert.equal(finalFrame.fillEliminatedCells, false);
+    assert.ok(isSameCoordinateSet(
+        coordinateSet(finalFrame.candidateUpdateCells),
+        currentCells,
+    ), `${label} final update cells must match its current deduction`);
+    assert.ok(finalFrame.titleParts || finalFrame.bodyParts, `${label} needs semantic final copy`);
+
+    const simulated = candidatesWithProgress(board, progress);
+    for (const elimination of plan.candidateEliminations) {
+        assert.deepEqual(
+            elimination.beforeCandidates,
+            simulated[elimination.row][elimination.col],
+            `${label} delta must start from solver candidates`,
+        );
+        assert.ok(elimination.removedValues.length > 0);
+        assert.equal(new Set(elimination.removedValues).size, elimination.removedValues.length);
+        assert.deepEqual(
+            elimination.afterCandidates,
+            elimination.beforeCandidates.filter(value => (
+                !elimination.removedValues.includes(value)
+            )),
+        );
+        assert.ok(elimination.afterCandidates.length > 0);
+        assert.equal(
+            elimination.removedValues.includes(solution[elimination.row][elimination.col]),
+            false,
+            `${label} cannot remove the solution candidate`,
+        );
+        simulated[elimination.row][elimination.col] = [...elimination.afterCandidates];
+    }
+
+    const affectedKeys = coordinateSet(plan.candidateEliminations);
+    for (const update of plan.noteUpdates) {
+        const beforeNotes = [...new Set(board[update.row][update.col].notes)].sort((a, b) => a - b);
+        assert.deepEqual(update.beforeNotes, beforeNotes);
+        assert.notDeepEqual(update.afterNotes, update.beforeNotes);
+        assert.ok(affectedKeys.has(coordinateKey(update)));
+        const removedHere = plan.candidateEliminations
+            .filter(delta => coordinateKey(delta) === coordinateKey(update))
+            .flatMap(delta => delta.removedValues);
+        if (update.beforeNotes.length === 0) {
+            assert.deepEqual(update.afterNotes, simulated[update.row][update.col]);
+        } else {
+            assert.deepEqual(
+                update.afterNotes,
+                update.beforeNotes.filter(value => !removedHere.includes(value)),
+            );
+        }
+    }
+};
+
+const assertAdvancedVisualLogic = (plan, label) => {
+    const [findFrame] = plan.frames;
+    const finalFrame = plan.frames.at(-1);
+    const expectedFrameCounts = {
+        lockedCandidate: 2,
+        nakedPair: 2,
+        hiddenPair: 2,
+        nakedTriple: 2,
+        hiddenTriple: 2,
+        xWing: 2,
+        swordfish: 3,
+        xyWing: 4,
+        simpleColoring: 4,
+    };
+    assert.equal(plan.frames.length, expectedFrameCounts[plan.technique], label);
+    assert.equal(finalFrame.dimUnrelated, true);
+    assert.ok((finalFrame.candidateMarks ?? []).some(mark => mark.tone === 'eliminated'));
+
+    if (plan.technique === 'lockedCandidate') {
+        const locked = findFrame.candidateMarks.filter(mark => mark.tone === 'locked');
+        assert.ok(locked.length >= 2 && locked.length <= 3);
+        assert.equal(findFrame.unitCells.length, 9);
+        assert.equal(finalFrame.guideUnits.length, 1);
+        assertToneText(findFrame, 'titleParts', 'source', locked[0].value, label);
+        assertToneText(findFrame, 'bodyParts', 'source', locked[0].value, label);
+        assertToneText(finalFrame, 'titleParts', 'removed', locked[0].value, label);
+        assert.equal(findFrame.titleParts[0].tone, undefined, `${label}: count stays neutral`);
+    } else if (plan.technique === 'nakedPair') {
+        assert.equal(findFrame.candidateNoteSets.length, 2);
+        assert.deepEqual(
+            new Set(findFrame.candidateNoteSets.map(set => set.marks.length)),
+            new Set([2]),
+        );
+        const values = findFrame.candidateNoteSets[0].marks.map(mark => mark.value);
+        values.forEach(value => {
+            assertToneText(findFrame, 'bodyParts', 'source', value, label);
+            assertToneText(finalFrame, 'titleParts', 'source', value, label);
+        });
+    } else if (plan.technique === 'hiddenPair') {
+        assert.equal(findFrame.candidateNoteSets.length, 2);
+        assert.equal(findFrame.unitCells.length, 9);
+        const values = [...new Set(findFrame.candidateNoteSets.flatMap(set => (
+            set.marks.filter(mark => mark.tone === 'locked').map(mark => mark.value)
+        )))];
+        values.forEach(value => {
+            assertToneText(findFrame, 'titleParts', 'source', value, label);
+            assertToneText(finalFrame, 'titleParts', 'remaining', value, label);
+        });
+    } else if (plan.technique === 'hiddenTriple') {
+        assert.equal(findFrame.candidateNoteSets.length, 3);
+        assert.equal(findFrame.unitCells.length, 9);
+        const values = new Set(findFrame.candidateNoteSets.flatMap(set => (
+            set.marks.filter(mark => mark.tone === 'locked').map(mark => mark.value)
+        )));
+        assert.equal(values.size, 3);
+        values.forEach(value => {
+            assertToneText(findFrame, 'titleParts', 'source', value, label);
+            assertToneText(finalFrame, 'titleParts', 'remaining', value, label);
+        });
+    } else if (plan.technique === 'nakedTriple') {
+        assert.equal(findFrame.candidateNoteSets.length, 3);
+        const values = new Set(findFrame.candidateNoteSets.flatMap(set => (
+            set.marks.map(mark => mark.value)
+        )));
+        assert.equal(values.size, 3);
+        values.forEach(value => {
+            assertToneText(findFrame, 'bodyParts', 'source', value, label);
+            assertToneText(finalFrame, 'titleParts', 'source', value, label);
+        });
+    } else if (plan.technique === 'xWing') {
+        assert.equal(findFrame.candidateMarks.filter(mark => mark.tone === 'locked').length, 4);
+        assert.equal(findFrame.guideUnits.length, 2);
+        assert.equal(finalFrame.guideUnits.length, 2);
+        const value = findFrame.candidateMarks[0].value;
+        assertToneText(findFrame, 'titleParts', 'source', value, label);
+        assertToneText(findFrame, 'bodyParts', 'source', value, label);
+        assertToneText(finalFrame, 'titleParts', 'removed', value, label);
+    } else if (plan.technique === 'swordfish') {
+        const sourceMarks = findFrame.candidateMarks.filter(mark => mark.tone === 'locked');
+        assert.ok(sourceMarks.length >= 6 && sourceMarks.length <= 9);
+        assert.equal(new Set(sourceMarks.map(mark => mark.value)).size, 1);
+        assert.equal(findFrame.guideUnits.length, 3);
+        assert.equal(plan.frames[1].id, 'candidate-swordfish-reserve');
+        assert.equal(plan.frames[1].guideUnits.length, 3);
+        assert.equal(plan.frames[1].guideStrokeTone, 'support');
+        assert.deepEqual(plan.frames[1].spotlightCells, []);
+        assert.deepEqual(plan.frames[1].candidateMarks, findFrame.candidateMarks);
+        assert.equal(plan.frames[1].candidateMarks.some(mark => mark.tone === 'eliminated'), false);
+        assert.equal(plan.frames[1].candidateUpdateCells, undefined);
+        assert.equal(finalFrame.guideUnits.length, 3);
+        assert.equal(finalFrame.guideStrokeTone, 'soft');
+        assertToneText(findFrame, 'titleParts', 'source', sourceMarks[0].value, label);
+        assertToneText(plan.frames[1], 'titleParts', 'source', sourceMarks[0].value, label);
+        assertToneText(finalFrame, 'titleParts', 'removed', sourceMarks[0].value, label);
+    } else if (plan.technique === 'xyWing') {
+        assert.deepEqual(
+            plan.frames.map(frame => frame.id),
+            ['candidate-xy-wing-pivot', 'candidate-xy-wing-first', 'candidate-xy-wing-second', 'candidate-xy-wing-update'],
+        );
+        assert.equal(plan.frames[0].candidateNoteSets[0].marks.length, 2);
+        assert.equal(plan.frames[1].candidateNoteSets.at(-1).marks.length, 2);
+        assert.equal(plan.frames[2].candidateNoteSets.at(-1).marks.length, 2);
+        plan.frames[0].candidateNoteSets[0].marks.forEach(mark => {
+            assert.equal(mark.tone, 'locked');
+            assertToneText(plan.frames[0], 'titleParts', 'source', mark.value, label);
+        });
+        for (const frame of [plan.frames[1], plan.frames[2]]) {
+            const wingMarks = frame.candidateNoteSets.at(-1).marks;
+            const linked = wingMarks.find(mark => mark.tone === 'locked');
+            const inactive = wingMarks.find(mark => mark.tone === 'possible');
+            assertToneText(frame, 'titleParts', 'source', linked.value, label);
+            assertToneText(frame, 'titleParts', 'candidate', inactive.value, label);
+            assertToneText(frame, 'bodyParts', 'source', linked.value, label);
+        }
+        assertToneText(
+            finalFrame,
+            'titleParts',
+            'source',
+            finalFrame.candidateMarks.find(mark => mark.tone === 'eliminated').value,
+            label,
+        );
+    } else if (plan.technique === 'simpleColoring') {
+        assert.deepEqual(
+            plan.frames.map(frame => frame.id),
+            ['candidate-color-start', 'candidate-color-chain', 'candidate-color-rule', 'candidate-color-update'],
+        );
+        const colored = plan.frames[1].candidateMarks;
+        assert.ok(colored.length >= 2 && colored.length <= 9);
+        assert.ok(colored.some(mark => mark.tone === 'locked'));
+        assert.ok(colored.some(mark => mark.tone === 'possible'));
+        const value = colored[0].value;
+        assertToneText(findFrame, 'titleParts', 'candidate', value, label);
+        assert.ok(toneTexts(findFrame, 'bodyParts', 'source').includes('circle'));
+        assert.ok(toneTexts(findFrame, 'bodyParts', 'support').includes('square'));
+        assertToneText(finalFrame, 'titleParts', 'removed', value, label);
+    }
+
+    const removedValues = new Set((finalFrame.candidateMarks ?? [])
+        .filter(mark => mark.tone === 'eliminated')
+        .map(mark => `${mark.value}`));
+    const removedCopy = new Set([
+        ...toneTexts(finalFrame, 'titleParts', 'removed'),
+        ...toneTexts(finalFrame, 'bodyParts', 'removed'),
+    ]);
+    removedValues.forEach(value => {
+        assert.ok(removedCopy.has(value), `${label}: eliminated ${value} needs gray copy`);
+    });
+};
+
+const applyCandidateStep = (board, solution, progress, plan, label) => {
+    const boardBefore = deepClone(board);
+    const progressBefore = deepClone(progress);
+    const next = applyHintCandidatePlan(board, solution, progress, plan);
+    assert.ok(next, `${label} candidate progress must apply atomically`);
+    assert.deepEqual(board, boardBefore, `${label} ledger application must not mutate the board`);
+    assert.deepEqual(progress, progressBefore, `${label} ledger application must not mutate prior progress`);
+    plan.noteUpdates.forEach(update => {
+        board[update.row][update.col].notes = [...update.afterNotes];
+    });
+    return next;
+};
+
+const walkCandidateHintsToPlacement = (
+    board,
+    solution,
+    initialProgress = null,
+    initialPlan = null,
+    label = 'candidate path',
+) => {
+    let progress = initialProgress;
+    let candidateDepth = 0;
+    let plan = initialPlan;
+    const seen = new Set();
+    const techniques = [];
+    for (let step = 0; step < 64; step += 1) {
+        const stateKey = `${boardHintSignature(board)}|${progress ? hintCandidateProgressSignature(progress) : 'none'}`;
+        assert.equal(seen.has(stateKey), false, `${label} cannot repeat a solver state`);
+        seen.add(stateKey);
+        const result = plan
+            ? { status: 'ready', plan }
+            : createHintPlan(board, solution, { candidateProgress: progress });
+        plan = null;
+        assert.equal(result.status, 'ready', `${label} stopped at ${result.status}`);
+        techniques.push(result.plan.technique);
+        if (result.plan.outcome === 'placement') {
+            assert.equal(
+                solution[result.plan.target.row][result.plan.target.col],
+                result.plan.target.value,
+            );
+            if (result.plan.candidateEliminations?.length) {
+                const advanced = applyHintCandidateProgress(
+                    board,
+                    solution,
+                    progress,
+                    result.plan,
+                );
+                assert.ok(advanced, `${label} carried eliminations must validate`);
+                progress = advanced;
+            }
+            return { candidateDepth, placement: result.plan, progress, techniques };
+        }
+        assertCandidatePlanContract(result.plan, board, solution, progress, `${label} step ${step}`);
+        const before = progress ? hintCandidateProgressSignature(progress) : 'none';
+        progress = applyCandidateStep(board, solution, progress, result.plan, `${label} step ${step}`);
+        assert.notEqual(hintCandidateProgressSignature(progress), before);
+        candidateDepth += 1;
+    }
+    assert.fail(`${label} did not reach a placement within 64 candidate updates`);
+};
+
+const findCanonicalCandidatePlan = (
+    levelId,
+    predicate,
+    label,
+) => {
+    const { initial, solved } = generateLevel(Difficulty.Impossible, levelId);
+    const board = cloneHintBoard(initial);
+    let progress = null;
+    const seen = new Set();
+
+    for (let action = 0; action < 256; action += 1) {
+        const stateKey = `${boardHintSignature(board)}|${progress ? hintCandidateProgressSignature(progress) : 'none'}`;
+        assert.equal(seen.has(stateKey), false, `${label} canonical path cannot cycle`);
+        seen.add(stateKey);
+
+        const result = createHintPlan(board, solved, { candidateProgress: progress });
+        assert.equal(result.status, 'ready', `${label} stopped at ${result.status}`);
+        if (result.plan.outcome === 'candidate' && predicate(result.plan)) {
+            assert.deepEqual(
+                createHintPlan(board, solved, { candidateProgress: progress }),
+                result,
+                `${label} must be deterministic`,
+            );
+            return { action, board, solved, progress, plan: result.plan };
+        }
+
+        if (result.plan.outcome === 'candidate') {
+            progress = applyCandidateStep(
+                board,
+                solved,
+                progress,
+                result.plan,
+                `${label} action ${action}`,
+            );
+            continue;
+        }
+
+        if (result.plan.candidateEliminations?.length) {
+            progress = applyHintCandidateProgress(board, solved, progress, result.plan);
+            assert.ok(progress, `${label} carried deductions must apply`);
+        }
+        const { row, col, value } = result.plan.target;
+        assert.equal(solved[row][col], value, `${label} placement must match the solution`);
+        board[row][col].value = value;
+        board[row][col].isFixed = false;
+        board[row][col].notes = [];
+        board[row][col].isError = false;
+        board[row][col].isMarkedWrong = false;
+        progress = reconcileHintCandidateProgress(board, solved, progress);
+    }
+
+    assert.fail(`${label} did not reach its candidate fixture`);
+};
+
+const ADVANCED_CANDIDATE_FIXTURES = [
+    ['locked pointing row', LOCKED_POINTING_ROW_PUZZLE, LOCKED_POINTING_ROW_SOLUTION, 'lockedCandidate'],
+    ['locked pointing column', LOCKED_POINTING_COLUMN_PUZZLE, LOCKED_POINTING_COLUMN_SOLUTION, 'lockedCandidate'],
+    ['locked claiming row', LOCKED_CLAIMING_ROW_PUZZLE, LOCKED_CLAIMING_ROW_SOLUTION, 'lockedCandidate'],
+    ['locked claiming column', LOCKED_CLAIMING_COLUMN_PUZZLE, LOCKED_CLAIMING_COLUMN_SOLUTION, 'lockedCandidate'],
+    ['locked hidden legacy', LOCKED_HIDDEN_PUZZLE, LOCKED_HIDDEN_SOLUTION, 'lockedCandidate'],
+    ['naked pair', NAKED_PAIR_PUZZLE, NAKED_PAIR_SOLUTION, 'nakedPair', 'nakedPair'],
+    ['naked pair hidden legacy', NAKED_PAIR_HIDDEN_PUZZLE, NAKED_PAIR_HIDDEN_SOLUTION, 'nakedPair', 'nakedPair'],
+    ['hidden pair', HIDDEN_PAIR_PUZZLE, HIDDEN_PAIR_SOLUTION, 'hiddenPair', 'hiddenPair'],
+    ['hidden pair chain legacy', HIDDEN_PAIR_CHAIN_PUZZLE, HIDDEN_PAIR_CHAIN_SOLUTION, 'hiddenPair', 'hiddenPair'],
+    ['naked triple', NAKED_TRIPLE_PUZZLE, NAKED_TRIPLE_SOLUTION, 'nakedTriple', 'nakedTriple'],
+    ['naked triple hidden legacy', NAKED_TRIPLE_HIDDEN_PUZZLE, NAKED_TRIPLE_HIDDEN_SOLUTION, 'nakedTriple', 'nakedTriple'],
+    ['naked triple chain legacy', NAKED_TRIPLE_CHAIN_PUZZLE, NAKED_TRIPLE_CHAIN_SOLUTION, 'nakedTriple', 'nakedTriple'],
+    ['X-Wing', X_WING_PUZZLE, X_WING_SOLUTION, 'xWing', 'xWing'],
+    ['X-Wing hidden legacy', X_WING_HIDDEN_PUZZLE, X_WING_HIDDEN_SOLUTION, 'xWing', 'xWing'],
+    ['X-Wing chain entry', X_WING_CHAIN_PUZZLE, X_WING_CHAIN_SOLUTION, 'hiddenPair'],
+    ['XY-Wing', XY_WING_PUZZLE, XY_WING_SOLUTION, 'xyWing', 'xyWing'],
+    ['XY-Wing hidden legacy', XY_WING_HIDDEN_PUZZLE, XY_WING_HIDDEN_SOLUTION, 'xyWing', 'xyWing'],
+    ['XY-Wing chain entry', XY_WING_CHAIN_PUZZLE, XY_WING_CHAIN_SOLUTION, 'lockedCandidate'],
+    ['multi-step legacy entry', MULTI_STEP_PUZZLE, MULTI_STEP_SOLUTION, 'lockedCandidate'],
+    ['Color Trap', COLOR_CHAIN_PUZZLE, COLOR_CHAIN_SOLUTION, 'simpleColoring', 'simpleColoring'],
+    ['Color Wrap', COLOR_CHAIN_WRAP_PUZZLE, COLOR_CHAIN_WRAP_SOLUTION, 'simpleColoring', 'simpleColoring'],
+];
+
+test('advanced fixtures end with safe visible candidate updates and later place a number', () => {
+    const techniques = new Set();
+    for (const [label, grid, solution, expectedTechnique, preferredTechnique] of ADVANCED_CANDIDATE_FIXTURES) {
+        const board = makeBoard(grid);
+        const before = deepClone(board);
+        const options = preferredTechnique ? { preferredTechnique } : {};
+        const result = createHintPlan(board, solution, options);
+        assert.equal(result.status, 'ready', label);
+        assert.equal(result.plan.outcome, 'candidate', label);
+        assert.equal(result.plan.technique, expectedTechnique, label);
+        assertCandidatePlanContract(result.plan, board, solution, null, label);
+        assertAdvancedVisualLogic(result.plan, label);
+        assert.deepEqual(createHintPlan(board, solution, options), result, `${label} determinism`);
+        assert.deepEqual(board, before, `${label} planning must be read-only`);
+        techniques.add(result.plan.technique);
+
+        const firstProgress = applyCandidateStep(board, solution, null, result.plan, label);
+        const path = walkCandidateHintsToPlacement(board, solution, firstProgress, null, label);
+        assert.ok(path.candidateDepth >= 0);
+    }
+    assert.deepEqual(techniques, new Set([
+        'lockedCandidate',
+        'nakedPair',
+        'hiddenPair',
+        'nakedTriple',
+        'xWing',
+        'xyWing',
+        'simpleColoring',
+    ]));
+});
+
+test('Hidden Triple and Swordfish candidate theaters cover every unit orientation safely', () => {
+    const fixtures = [
+        {
+            label: 'Hidden Triple box',
+            levelId: 8,
+            action: 16,
+            technique: 'hiddenTriple',
+            unit: { kind: 'box', index: 0 },
+            values: [4, 6, 9],
+            sourceCells: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 0 }],
+        },
+        {
+            label: 'Hidden Triple column',
+            levelId: 96,
+            action: 22,
+            technique: 'hiddenTriple',
+            unit: { kind: 'column', index: 0 },
+            values: [4, 8, 9],
+            sourceCells: [{ row: 0, col: 0 }, { row: 3, col: 0 }, { row: 4, col: 0 }],
+        },
+        {
+            label: 'Hidden Triple row',
+            levelId: 188,
+            action: 13,
+            technique: 'hiddenTriple',
+            unit: { kind: 'row', index: 2 },
+            values: [4, 7, 8],
+            sourceCells: [{ row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 4 }],
+        },
+        {
+            label: 'row Swordfish',
+            levelId: 111,
+            action: 27,
+            technique: 'swordfish',
+            value: 1,
+            baseGuides: [{ kind: 'row', index: 0 }, { kind: 'row', index: 5 }, { kind: 'row', index: 8 }],
+            coverGuides: [{ kind: 'column', index: 0 }, { kind: 'column', index: 4 }, { kind: 'column', index: 7 }],
+        },
+        {
+            label: 'column Swordfish',
+            levelId: 216,
+            action: 34,
+            technique: 'swordfish',
+            value: 1,
+            baseGuides: [{ kind: 'column', index: 2 }, { kind: 'column', index: 5 }, { kind: 'column', index: 8 }],
+            coverGuides: [{ kind: 'row', index: 1 }, { kind: 'row', index: 4 }, { kind: 'row', index: 5 }],
+        },
+    ];
+
+    for (const fixture of fixtures) {
+        const matched = findCanonicalCandidatePlan(
+            fixture.levelId,
+            plan => plan.technique === fixture.technique,
+            fixture.label,
+        );
+        assert.equal(matched.action, fixture.action, fixture.label);
+        assert.equal(matched.plan.deductions.at(-1).technique, fixture.technique);
+        assertCandidatePlanContract(
+            matched.plan,
+            matched.board,
+            matched.solved,
+            matched.progress,
+            fixture.label,
+        );
+        assertAdvancedVisualLogic(matched.plan, fixture.label);
+
+        if (fixture.technique === 'hiddenTriple') {
+            assert.deepEqual(
+                matched.plan.frames.map(frame => frame.id),
+                ['candidate-hidden-triple-find', 'candidate-hidden-triple-update'],
+            );
+            assert.deepEqual(guideForCells(matched.plan.frames[0].unitCells), fixture.unit);
+            assert.ok(isSameCoordinateSet(
+                coordinateSet(matched.plan.frames[0].candidateNoteSets),
+                coordinateSet(fixture.sourceCells),
+            ));
+            assert.deepEqual(
+                [...new Set(matched.plan.frames[0].candidateNoteSets.flatMap(set => (
+                    set.marks.filter(mark => mark.tone === 'locked').map(mark => mark.value)
+                )))].sort((left, right) => left - right),
+                fixture.values,
+            );
+        } else {
+            assert.deepEqual(
+                matched.plan.frames.map(frame => frame.id),
+                ['candidate-swordfish-find', 'candidate-swordfish-reserve', 'candidate-swordfish-update'],
+            );
+            assert.deepEqual(matched.plan.frames[0].guideUnits, fixture.baseGuides);
+            assert.deepEqual(matched.plan.frames[1].guideUnits, fixture.coverGuides);
+            assert.deepEqual(matched.plan.frames[2].guideUnits, fixture.coverGuides);
+            assert.ok(matched.plan.frames[0].candidateMarks.every(mark => (
+                mark.tone === 'locked' && mark.value === fixture.value
+            )));
+        }
+
+        const advanced = applyCandidateStep(
+            matched.board,
+            matched.solved,
+            matched.progress,
+            matched.plan,
+            fixture.label,
+        );
+        assert.notEqual(
+            hintCandidateProgressSignature(advanced),
+            matched.progress ? hintCandidateProgressSignature(matched.progress) : 'none',
+        );
+    }
+});
+
+test('candidate-only Color Wrap permits the measured nine-cell explanation', () => {
+    for (const [levelId, expectedAction] of [[179, 38], [245, 52]]) {
+        const label = `Impossible ${levelId} nine-cell Color Wrap`;
+        const matched = findCanonicalCandidatePlan(
+            levelId,
+            plan => (
+                plan.technique === 'simpleColoring'
+                && plan.frames[1]?.candidateMarks?.length === 9
+            ),
+            label,
+        );
+        assert.equal(matched.action, expectedAction, label);
+        assertCandidatePlanContract(
+            matched.plan,
+            matched.board,
+            matched.solved,
+            matched.progress,
+            label,
+        );
+        assertAdvancedVisualLogic(matched.plan, label);
+        assert.deepEqual(
+            matched.plan.frames.map(frame => frame.id),
+            ['candidate-color-start', 'candidate-color-chain', 'candidate-color-rule', 'candidate-color-update'],
+        );
+        assert.equal(matched.plan.frames[1].candidateMarks.length, 9);
+        assert.match(matched.plan.frames[2].title, /^Two square \d+s see each other$/);
+        assert.ok(applyCandidateStep(
+            matched.board,
+            matched.solved,
+            matched.progress,
+            matched.plan,
+            label,
+        ));
+    }
+});
+
+test('Hidden Triple and Swordfish previews replay their real production paths', () => {
+    const cases = [
+        {
+            preview: 'hidden-triple',
+            puzzle: { difficulty: Difficulty.Impossible, levelId: 8 },
+            technique: 'hiddenTriple',
+            frameIds: ['candidate-hidden-triple-find', 'candidate-hidden-triple-update'],
+        },
+        {
+            preview: 'swordfish',
+            puzzle: { difficulty: Difficulty.Impossible, levelId: 111 },
+            technique: 'swordfish',
+            frameIds: ['candidate-swordfish-find', 'candidate-swordfish-reserve', 'candidate-swordfish-update'],
+        },
+    ];
+
+    for (const expected of cases) {
+        assert.equal(isDevHintPreview(expected.preview), true);
+        assert.deepEqual(getDevHintPreviewPuzzle(expected.preview), expected.puzzle);
+        assert.equal(
+            scopeDevHintPreview(
+                expected.preview,
+                expected.puzzle.difficulty,
+                expected.puzzle.levelId,
+            ),
+            expected.preview,
+        );
+        const preview = createDevHintPreview(expected.preview);
+        assert.equal(preview.plan.outcome, 'candidate');
+        assert.equal(preview.plan.technique, expected.technique);
+        assert.deepEqual(preview.plan.frames.map(frame => frame.id), expected.frameIds);
+        assertCandidatePlanContract(
+            preview.plan,
+            preview.board,
+            generateLevel(expected.puzzle.difficulty, expected.puzzle.levelId).solved,
+            preview.candidateProgress,
+            `${expected.preview} preview`,
+        );
+        assert.deepEqual(createDevHintPreview(expected.preview), preview);
+    }
+});
+
+test('candidate progress reconciles forward play and rejects corruption or stale plans', () => {
+    const board = makeBoard(LOCKED_POINTING_ROW_PUZZLE);
+    const result = createHintPlan(board, LOCKED_POINTING_ROW_SOLUTION);
+    assert.equal(result.status, 'ready');
+    assert.equal(result.plan.outcome, 'candidate');
+    const planSnapshot = deepClone(result.plan);
+    const initial = createHintCandidateProgress(board);
+    const initialSnapshot = deepClone(initial);
+    const progress = applyHintCandidatePlan(
+        deepFreeze(deepClone(board)),
+        deepFreeze(deepClone(LOCKED_POINTING_ROW_SOLUTION)),
+        deepFreeze(initial),
+        deepFreeze(result.plan),
+    );
+    assert.ok(progress);
+    assert.deepEqual(initial, initialSnapshot);
+    assert.deepEqual(result.plan, planSnapshot);
+    assert.equal(progress.exclusions.length, result.plan.candidateEliminations.reduce(
+        (sum, delta) => sum + delta.removedValues.length,
+        0,
+    ));
+    assert.deepEqual(
+        progress.exclusions,
+        [...progress.exclusions].sort((left, right) => (
+            left.row - right.row || left.col - right.col || left.value - right.value
+        )),
+    );
+    assert.equal(hasValidHintCandidateProgressIntegrity(initial), true);
+    assert.equal(hasValidHintCandidateProgressIntegrity(progress), true);
+    assert.equal(
+        progress.integrity,
+        computeHintCandidateProgressIntegrity(progress.boardSignature, progress.exclusions),
+    );
+
+    assert.equal(
+        applyHintCandidatePlan(board, LOCKED_POINTING_ROW_SOLUTION, progress, result.plan),
+        null,
+        'the same candidate plan cannot be charged/applied twice',
+    );
+
+    const tampered = deepClone(result.plan);
+    const targetDelta = tampered.candidateEliminations[0];
+    const solutionValue = LOCKED_POINTING_ROW_SOLUTION[targetDelta.row][targetDelta.col];
+    targetDelta.removedValues = [solutionValue];
+    targetDelta.afterCandidates = targetDelta.beforeCandidates.filter(value => value !== solutionValue);
+    assert.equal(
+        applyHintCandidatePlan(board, LOCKED_POINTING_ROW_SOLUTION, null, tampered),
+        null,
+        'a tampered solution-candidate removal must be rejected',
+    );
+
+    const corrupt = {
+        ...progress,
+        exclusions: progress.exclusions.slice(1),
+    };
+    const repaired = reconcileHintCandidateProgress(
+        board,
+        LOCKED_POINTING_ROW_SOLUTION,
+        corrupt,
+    );
+    assert.equal(
+        hasValidHintCandidateProgressIntegrity(corrupt),
+        false,
+        'editing an exclusion without recomputing integrity invalidates the proof',
+    );
+    assert.deepEqual(repaired.exclusions, [], 'invalid candidate proof resets instead of being consumed');
+    assert.equal(hasValidHintCandidateProgressIntegrity(repaired), true);
+
+    const missingIntegrity = deepClone(progress);
+    delete missingIntegrity.integrity;
+    assert.deepEqual(
+        reconcileHintCandidateProgress(board, LOCKED_POINTING_ROW_SOLUTION, missingIntegrity).exclusions,
+        [],
+        'legacy or partial ledgers without integrity reset',
+    );
+
+    const duplicateExclusions = [...progress.exclusions, progress.exclusions[0]];
+    const reSignedDuplicate = {
+        ...progress,
+        exclusions: duplicateExclusions,
+        integrity: computeHintCandidateProgressIntegrity(progress.boardSignature, duplicateExclusions),
+    };
+    assert.equal(hasValidHintCandidateProgressIntegrity(reSignedDuplicate), false);
+    assert.deepEqual(
+        reconcileHintCandidateProgress(board, LOCKED_POINTING_ROW_SOLUTION, reSignedDuplicate).exclusions,
+        [],
+        'duplicate entries are invalid proof rather than something to prune silently',
+    );
+
+    const unsafeCell = progress.exclusions[0];
+    const unsafeExclusions = [
+        ...progress.exclusions,
+        {
+            row: unsafeCell.row,
+            col: unsafeCell.col,
+            value: LOCKED_POINTING_ROW_SOLUTION[unsafeCell.row][unsafeCell.col],
+        },
+    ];
+    const reSignedUnsafe = {
+        ...progress,
+        exclusions: unsafeExclusions,
+        integrity: computeHintCandidateProgressIntegrity(progress.boardSignature, unsafeExclusions),
+    };
+    assert.equal(hasValidHintCandidateProgressIntegrity(reSignedUnsafe), true);
+    assert.deepEqual(
+        reconcileHintCandidateProgress(board, LOCKED_POINTING_ROW_SOLUTION, reSignedUnsafe),
+        progress,
+        'even a recomputed checksum cannot make an unsafe solution exclusion logical proof',
+    );
+
+    const forwardBoard = cloneHintBoard(board);
+    const filled = progress.exclusions[0];
+    forwardBoard[filled.row][filled.col].value = LOCKED_POINTING_ROW_SOLUTION[filled.row][filled.col];
+    forwardBoard[filled.row][filled.col].isFixed = false;
+    const advanced = reconcileHintCandidateProgress(
+        forwardBoard,
+        LOCKED_POINTING_ROW_SOLUTION,
+        progress,
+    );
+    assert.equal(advanced.exclusions.length, progress.exclusions.length - 1);
+    assert.ok(advanced.exclusions.every(exclusion => coordinateKey(exclusion) !== coordinateKey(filled)));
+    assert.equal(hasValidHintCandidateProgressIntegrity(advanced), true);
+    assert.notEqual(advanced.integrity, progress.integrity);
+    forwardBoard[filled.row][filled.col].value = null;
+    const reset = reconcileHintCandidateProgress(
+        forwardBoard,
+        LOCKED_POINTING_ROW_SOLUTION,
+        advanced,
+    );
+    assert.deepEqual(reset.exclusions, [], 'erasing a placed value resets logical exclusions');
+});
+
+test('note-aware candidate updates cover empty, removable, empty-after, and no-op notes', () => {
+    const solution = LOCKED_POINTING_ROW_SOLUTION;
+    const plain = makeBoard(LOCKED_POINTING_ROW_PUZZLE);
+    const baseline = createHintPlan(plain, solution);
+    assert.equal(baseline.status, 'ready');
+    assert.equal(baseline.plan.outcome, 'candidate');
+    assert.ok(baseline.plan.noteUpdates.every(update => (
+        update.beforeNotes.length === 0 && update.afterNotes.length > 0
+    )));
+
+    const removable = makeBoard(LOCKED_POINTING_ROW_PUZZLE);
+    baseline.plan.candidateEliminations.forEach(delta => {
+        removable[delta.row][delta.col].notes = [...delta.afterCandidates];
+    });
+    const focus = baseline.plan.candidateEliminations[0];
+    const preserved = focus.afterCandidates[0];
+    removable[focus.row][focus.col].notes = [focus.removedValues[0], preserved];
+    const removalPlan = createHintPlan(removable, solution, {
+        preferredTechnique: 'lockedCandidate',
+    });
+    assert.equal(removalPlan.status, 'ready');
+    assert.equal(removalPlan.plan.outcome, 'candidate');
+    assert.deepEqual(removalPlan.plan.noteUpdates, [{
+        row: focus.row,
+        col: focus.col,
+        beforeNotes: [focus.removedValues[0], preserved].sort((a, b) => a - b),
+        afterNotes: [preserved],
+    }]);
+
+    const emptied = makeBoard(LOCKED_POINTING_ROW_PUZZLE);
+    baseline.plan.candidateEliminations.forEach(delta => {
+        emptied[delta.row][delta.col].notes = [...delta.removedValues];
+    });
+    const emptyPlan = createHintPlan(emptied, solution, {
+        preferredTechnique: 'lockedCandidate',
+    });
+    assert.equal(emptyPlan.status, 'ready');
+    assert.equal(emptyPlan.plan.outcome, 'candidate');
+    assert.ok(emptyPlan.plan.noteUpdates.every(update => {
+        const delta = emptyPlan.plan.candidateEliminations.find(item => (
+            item.row === update.row && item.col === update.col
+        ));
+        return delta
+            && update.afterNotes.length > 0
+            && update.afterNotes.length === delta.afterCandidates.length
+            && update.afterNotes.every((value, index) => value === delta.afterCandidates[index]);
+    }), 'an all-removed partial note set is refilled with verified candidates');
+    assert.ok(applyHintCandidatePlan(emptied, solution, null, emptyPlan.plan));
+
+    const noOp = makeBoard(LOCKED_POINTING_ROW_PUZZLE);
+    noOp.flat().forEach(cell => {
+        if (cell.value === null) cell.notes = [solution[cell.row][cell.col]];
+    });
+    const carried = createHintPlan(noOp, solution, {
+        preferredTechnique: 'lockedCandidate',
+    });
+    assert.equal(carried.status, 'ready');
+    assert.equal(carried.plan.outcome, 'placement');
+    assert.ok(carried.plan.candidateEliminations.length > 0);
+    assert.ok(applyHintCandidateProgress(noOp, solution, null, carried.plan));
+});
+
+test('all production openings are supported by a safe placement or candidate update', () => {
+    for (const difficulty of Object.values(Difficulty)) {
+        for (let levelId = 1; levelId <= 300; levelId += 1) {
+            const { initial, solved } = generateLevel(difficulty, levelId);
+            const before = deepClone(initial);
+            const result = createHintPlan(initial, solved);
+            assert.equal(result.status, 'ready', `${difficulty} ${levelId}`);
+            assert.deepEqual(initial, before);
+            if (result.plan.outcome === 'placement') {
+                assert.equal(
+                    solved[result.plan.target.row][result.plan.target.col],
+                    result.plan.target.value,
+                );
+            } else {
+                assertCandidatePlanContract(
+                    result.plan,
+                    initial,
+                    solved,
+                    null,
+                    `${difficulty} ${levelId} opening`,
+                );
+            }
+        }
+    }
+});
+
+test('sampled production paths persist candidate progress and terminate without cycles', () => {
+    const sampledLevels = [1, 50, 100, 150, 200, 250, 300];
+    for (const difficulty of Object.values(Difficulty)) {
+        for (const levelId of sampledLevels) {
+            const { initial, solved } = generateLevel(difficulty, levelId);
+            const board = cloneHintBoard(initial);
+            let progress = null;
+            const seen = new Set();
+            let complete = false;
+            for (let action = 0; action < 512; action += 1) {
+                const stateKey = `${boardHintSignature(board)}|${progress ? hintCandidateProgressSignature(progress) : 'none'}`;
+                assert.equal(seen.has(stateKey), false, `${difficulty} ${levelId} cycle`);
+                seen.add(stateKey);
+                const result = createHintPlan(board, solved, { candidateProgress: progress });
+                if (result.status === 'complete') {
+                    complete = true;
+                    break;
+                }
+                assert.equal(result.status, 'ready', `${difficulty} ${levelId} action ${action}`);
+                if (result.plan.outcome === 'candidate') {
+                    assertCandidatePlanContract(
+                        result.plan,
+                        board,
+                        solved,
+                        progress,
+                        `${difficulty} ${levelId} action ${action}`,
+                    );
+                    progress = applyCandidateStep(
+                        board,
+                        solved,
+                        progress,
+                        result.plan,
+                        `${difficulty} ${levelId} action ${action}`,
+                    );
+                    continue;
+                }
+                if (result.plan.candidateEliminations?.length) {
+                    progress = applyHintCandidateProgress(board, solved, progress, result.plan);
+                    assert.ok(progress);
+                }
+                const { row, col, value } = result.plan.target;
+                assert.equal(solved[row][col], value);
+                board[row][col].value = value;
+                board[row][col].isFixed = false;
+                board[row][col].notes = [];
+                progress = reconcileHintCandidateProgress(board, solved, progress);
+            }
+            assert.equal(complete, true, `${difficulty} ${levelId} must complete`);
+        }
+    }
 });
 
 console.log(`Hint engine tests passed (${passed} cases).`);

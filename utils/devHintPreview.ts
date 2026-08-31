@@ -1,5 +1,17 @@
-import { Difficulty, type Board, type CellValue } from '../types';
-import { cloneHintBoard, createHintPlan, type HintPlan } from './hints';
+import {
+    Difficulty,
+    type Board,
+    type CellValue,
+    type HintCandidateProgress,
+} from '../types';
+import {
+    applyHintCandidatePlan,
+    cloneHintBoard,
+    createHintPlan,
+    reconcileHintCandidateProgress,
+    type HintPlan,
+} from './hints';
+import { generateLevel } from './sudoku';
 
 export const DEV_HINT_PREVIEWS = [
     'last-number',
@@ -14,9 +26,11 @@ export const DEV_HINT_PREVIEWS = [
     'triple',
     'triple-hidden',
     'triple-chain',
+    'hidden-triple',
     'x-wing',
     'x-wing-hidden',
     'x-wing-chain',
+    'swordfish',
     'xy-wing',
     'xy-wing-hidden',
     'xy-wing-chain',
@@ -34,6 +48,7 @@ export const isDevHintPreview = (value: string | null): value is DevHintPreview 
 export interface DevHintPreviewState {
     board: Board;
     plan: HintPlan;
+    candidateProgress: HintCandidateProgress | null;
 }
 
 const PREVIEW_PUZZLES: Record<DevHintPreview, { difficulty: Difficulty; levelId: number }> = {
@@ -49,9 +64,11 @@ const PREVIEW_PUZZLES: Record<DevHintPreview, { difficulty: Difficulty; levelId:
     triple: { difficulty: Difficulty.Intense, levelId: 145 },
     'triple-hidden': { difficulty: Difficulty.Impossible, levelId: 74 },
     'triple-chain': { difficulty: Difficulty.Intense, levelId: 99 },
+    'hidden-triple': { difficulty: Difficulty.Impossible, levelId: 8 },
     'x-wing': { difficulty: Difficulty.Impossible, levelId: 153 },
     'x-wing-hidden': { difficulty: Difficulty.Impossible, levelId: 130 },
     'x-wing-chain': { difficulty: Difficulty.Impossible, levelId: 65 },
+    swordfish: { difficulty: Difficulty.Impossible, levelId: 111 },
     'xy-wing': { difficulty: Difficulty.Intense, levelId: 84 },
     'xy-wing-hidden': { difficulty: Difficulty.Intense, levelId: 248 },
     'xy-wing-chain': { difficulty: Difficulty.Intense, levelId: 287 },
@@ -312,6 +329,7 @@ const makeBoard = (grid: number[][]): Board => grid.map((row, rowIndex) => (
  * can return to normal, playable in-memory gameplay after placing the number.
  */
 export const createDevHintPreview = (preview: DevHintPreview): DevHintPreviewState => {
+    type StaticDevHintPreview = Exclude<DevHintPreview, 'hidden-triple' | 'swordfish'>;
     const fixtures = {
         'last-number': {
             puzzle: LAST_NUMBER_PUZZLE,
@@ -373,7 +391,7 @@ export const createDevHintPreview = (preview: DevHintPreview): DevHintPreviewSta
             puzzle: HIDDEN_PAIR_CHAIN_PUZZLE,
             solution: HIDDEN_PAIR_CHAIN_SOLUTION,
             technique: 'multiStep' as const,
-            techniqueLabel: 'Step by step',
+            techniqueLabel: 'Logical chain',
             derivedResult: 'hidden' as const,
         },
         triple: {
@@ -394,7 +412,7 @@ export const createDevHintPreview = (preview: DevHintPreview): DevHintPreviewSta
             puzzle: NAKED_TRIPLE_CHAIN_PUZZLE,
             solution: NAKED_TRIPLE_CHAIN_SOLUTION,
             technique: 'multiStep' as const,
-            techniqueLabel: 'Step by step',
+            techniqueLabel: 'Logical chain',
             derivedResult: 'naked' as const,
         },
         'x-wing': {
@@ -415,7 +433,7 @@ export const createDevHintPreview = (preview: DevHintPreview): DevHintPreviewSta
             puzzle: X_WING_CHAIN_PUZZLE,
             solution: X_WING_CHAIN_SOLUTION,
             technique: 'multiStep' as const,
-            techniqueLabel: 'Step by step',
+            techniqueLabel: 'Logical chain',
             derivedResult: 'naked' as const,
         },
         'xy-wing': {
@@ -436,7 +454,7 @@ export const createDevHintPreview = (preview: DevHintPreview): DevHintPreviewSta
             puzzle: XY_WING_CHAIN_PUZZLE,
             solution: XY_WING_CHAIN_SOLUTION,
             technique: 'multiStep' as const,
-            techniqueLabel: 'Step by step',
+            techniqueLabel: 'Logical chain',
             derivedResult: 'hidden' as const,
         },
         'color-chain': {
@@ -457,31 +475,110 @@ export const createDevHintPreview = (preview: DevHintPreview): DevHintPreviewSta
             puzzle: MULTI_STEP_PUZZLE,
             solution: MULTI_STEP_SOLUTION,
             technique: 'multiStep' as const,
-            techniqueLabel: 'Step by step',
+            techniqueLabel: 'Logical chain',
             derivedResult: 'naked' as const,
         },
-    } satisfies Record<DevHintPreview, {
+    } satisfies Record<StaticDevHintPreview, {
         puzzle: string;
         solution: string;
         technique: HintPlan['technique'];
         techniqueLabel: string;
-        derivedResult: HintPlan['derivedResult'];
+        derivedResult: 'naked' | 'hidden' | undefined;
     }>;
-    const fixture = fixtures[preview];
+    const canonicalTechnique = preview === 'hidden-triple'
+        ? 'hiddenTriple' as const
+        : preview === 'swordfish'
+            ? 'swordfish' as const
+            : null;
+    const fixture = canonicalTechnique
+        ? null
+        : fixtures[preview as StaticDevHintPreview];
+    const desiredTechnique = canonicalTechnique
+        ?? (preview === 'hidden-pair-chain'
+            ? 'hiddenPair'
+            : preview === 'triple-chain'
+                ? 'nakedTriple'
+                : preview === 'x-wing-chain'
+                    || preview === 'xy-wing-chain'
+                    || preview === 'chain'
+                        ? null
+                        : fixture!.technique);
+    const generated = canonicalTechnique
+        ? generateLevel(
+            getDevHintPreviewPuzzle(preview).difficulty,
+            getDevHintPreviewPuzzle(preview).levelId,
+        )
+        : null;
+    const solution = generated?.solved ?? parseGrid(fixture!.solution);
+    const board = generated?.initial
+        ? cloneHintBoard(generated.initial)
+        : makeBoard(parseGrid(fixture!.puzzle));
+    let candidateProgress: HintCandidateProgress | null = null;
+    let candidateMoves = 0;
 
-    const board = makeBoard(parseGrid(fixture.puzzle));
-    const result = createHintPlan(board, parseGrid(fixture.solution));
-    if (
-        result.status !== 'ready'
-        || result.plan.technique !== fixture.technique
-        || result.plan.techniqueLabel !== fixture.techniqueLabel
-        || result.plan.derivedResult !== fixture.derivedResult
-    ) {
-        throw new Error(`${preview} Hint preview fixture is no longer supported`);
+    // Candidate-ending Hints intentionally reveal the easiest current move.
+    // Walk earlier moves in-memory so every legacy preview URL still opens the
+    // named technique without changing real progress or storage.
+    for (let step = 0; step < 256; step += 1) {
+        const result = createHintPlan(board, solution, {
+            candidateProgress,
+            preferredTechnique: canonicalTechnique
+                ? undefined
+                : desiredTechnique === 'nakedSingle'
+                || desiredTechnique === 'hiddenSingle'
+                || desiredTechnique === 'multiStep'
+                || desiredTechnique === null
+                    ? undefined
+                    : desiredTechnique,
+        });
+        if (result.status !== 'ready') {
+            throw new Error(`${preview} Hint preview stopped at ${result.status}`);
+        }
+        const isRequestedTechnique = desiredTechnique !== null
+            && result.plan.technique === desiredTechnique;
+        const isStagedPlacement = desiredTechnique === null
+            && candidateMoves >= 2
+            && result.plan.outcome === 'placement';
+        if (isRequestedTechnique || isStagedPlacement) {
+            return {
+                board: cloneHintBoard(board),
+                plan: result.plan,
+                candidateProgress,
+            };
+        }
+
+        if (result.plan.outcome === 'candidate') {
+            const nextProgress = applyHintCandidatePlan(
+                board,
+                solution,
+                candidateProgress,
+                result.plan,
+            );
+            if (!nextProgress) {
+                throw new Error(`${preview} candidate preview could not advance`);
+            }
+            result.plan.noteUpdates.forEach(update => {
+                board[update.row][update.col].notes = [...update.afterNotes];
+            });
+            candidateProgress = nextProgress;
+            candidateMoves += 1;
+            continue;
+        }
+
+        const { row, col, value } = result.plan.target;
+        board[row][col] = {
+            ...board[row][col],
+            value: value as CellValue,
+            isFixed: false,
+            notes: [],
+            isError: false,
+        };
+        candidateProgress = reconcileHintCandidateProgress(
+            board,
+            solution,
+            candidateProgress,
+        );
     }
 
-    return {
-        board: cloneHintBoard(board),
-        plan: result.plan,
-    };
+    throw new Error(`${preview} Hint preview exceeded its logical-step limit`);
 };

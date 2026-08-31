@@ -23,6 +23,7 @@ const bundle = await build({
         contents: `
             export { Storage } from './utils/storage.ts';
             export { SKILLS, DIAMOND_OFFERS } from './utils/constants.ts';
+            export { computeHintCandidateProgressIntegrity } from './utils/hints.ts';
         `,
         resolveDir: process.cwd(),
         sourcefile: 'storage-consistency-entry.ts',
@@ -56,7 +57,12 @@ const bundle = await build({
     }],
 });
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`;
-const { Storage, SKILLS, DIAMOND_OFFERS } = await import(moduleUrl);
+const {
+    Storage,
+    SKILLS,
+    DIAMOND_OFFERS,
+    computeHintCandidateProgressIntegrity,
+} = await import(moduleUrl);
 
 const skillPrices = Object.fromEntries(SKILLS.map(({ name, cost }) => [name, cost]));
 assert.deepEqual(
@@ -73,6 +79,23 @@ assert.match(starterOffer.includes.join(' '), /Guard/);
 assert.match(starterOffer.includes.join(' '), /Scan/);
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
+
+const EMPTY_BOARD_SIGNATURE = '000000000/000000000/000000000/000000000/000000000/000000000/000000000/000000000/000000000';
+const makeEmptyStoredBoard = () => Array.from({ length: 9 }, (_, row) => (
+    Array.from({ length: 9 }, (_, col) => ({
+        row,
+        col,
+        value: null,
+        notes: [],
+        isFixed: false,
+    }))
+));
+const makeSignedCandidateProgress = (boardSignature, exclusions) => ({
+    version: 1,
+    boardSignature,
+    exclusions,
+    integrity: computeHintCandidateProgressIntegrity(boardSignature, exclusions),
+});
 
 const installSnapshot = async (snapshot) => {
     await Storage.flushPendingWrites();
@@ -127,6 +150,11 @@ completionSeed.progress['Hard-10'] = {
     scanRefillsPurchased: 0,
     hasMadeMistake: false,
     hasUsedNotes: true,
+    boardState: makeEmptyStoredBoard(),
+    hintCandidateProgress: makeSignedCandidateProgress(
+        EMPTY_BOARD_SIGNATURE,
+        [{ row: 0, col: 0, value: 2 }],
+    ),
 };
 completionSeed.stats = {
     totalGamesWon: 9,
@@ -173,6 +201,7 @@ assert.equal(completed.progress['Hard-10'].status, 'completed');
 assert.equal(completed.progress['Hard-10'].bestTime, 75);
 assert.equal(completed.progress['Hard-10'].boardState, undefined);
 assert.equal(completed.progress['Hard-10'].moveLog, undefined);
+assert.equal(completed.progress['Hard-10'].hintCandidateProgress, undefined);
 assert.equal(completed.pepino.pendingGiftCount, 1);
 assert.equal(completed.pepino.hasPendingGift, true);
 
@@ -221,8 +250,94 @@ assert.equal(Storage.getStoredData().progress['Easy-3'].boardState, undefined);
 assert.equal(Storage.getStoredData().progress['Easy-3'].scanUses, 2);
 assert.equal(Storage.getStoredData().achievementCounters.scansUsed, 1);
 
+// Solver-owned candidate progress survives reloads only when its checksum and
+// board signature both match. Invalid, stale, or manually edited proof resets
+// instead of silently contributing candidate eliminations.
+const candidateProgressSeed = Storage.createDefaultData();
+const candidateExclusions = [
+    { row: 0, col: 1, value: 4 },
+    { row: 0, col: 0, value: 2 },
+];
+candidateProgressSeed.progress['Impossible-1'] = {
+    levelId: 1,
+    difficulty: 'Impossible',
+    status: 'in-progress',
+    timeElapsed: 30,
+    lastPlayed: 123,
+    boardState: makeEmptyStoredBoard(),
+    hintCandidateProgress: makeSignedCandidateProgress(
+        EMPTY_BOARD_SIGNATURE,
+        candidateExclusions,
+    ),
+};
+await installRawSnapshots({ local: candidateProgressSeed, native: null });
+const migratedCandidateProgress = Storage.getStoredData().progress['Impossible-1'];
+assert.deepEqual(migratedCandidateProgress.hintCandidateProgress, {
+    version: 1,
+    boardSignature: EMPTY_BOARD_SIGNATURE,
+    exclusions: [
+        { row: 0, col: 0, value: 2 },
+        { row: 0, col: 1, value: 4 },
+    ],
+    integrity: computeHintCandidateProgressIntegrity(EMPTY_BOARD_SIGNATURE, candidateExclusions),
+});
+assert.equal(Storage.getLastPlayedGame()?.levelId, 1);
+assert.equal(Storage.getLastPlayedGame()?.difficulty, 'Impossible');
+
+const tamperedCandidateProgressSeed = clone(candidateProgressSeed);
+tamperedCandidateProgressSeed.progress['Impossible-1'].hintCandidateProgress.exclusions.push({
+    row: 0,
+    col: 2,
+    value: 6,
+});
+await installRawSnapshots({ local: tamperedCandidateProgressSeed, native: null });
+assert.equal(
+    Storage.getStoredData().progress['Impossible-1'].hintCandidateProgress,
+    undefined,
+    'a changed exclusion list with its old checksum must be discarded',
+);
+assert.equal(Storage.getLastPlayedGame(), undefined, 'invalid proof alone must not make a puzzle resumable');
+
+const unsignedCandidateProgressSeed = clone(candidateProgressSeed);
+delete unsignedCandidateProgressSeed.progress['Impossible-1'].hintCandidateProgress.integrity;
+await installRawSnapshots({ local: unsignedCandidateProgressSeed, native: null });
+assert.equal(
+    Storage.getStoredData().progress['Impossible-1'].hintCandidateProgress,
+    undefined,
+    'missing candidate integrity must be discarded',
+);
+
+const staleCandidateProgressSeed = clone(candidateProgressSeed);
+const staleSignature = `1${EMPTY_BOARD_SIGNATURE.slice(1)}`;
+staleCandidateProgressSeed.progress['Impossible-1'].hintCandidateProgress = makeSignedCandidateProgress(
+    staleSignature,
+    candidateExclusions,
+);
+await installRawSnapshots({ local: staleCandidateProgressSeed, native: null });
+assert.equal(
+    Storage.getStoredData().progress['Impossible-1'].hintCandidateProgress,
+    undefined,
+    'candidate proof signed for a different board state must be discarded',
+);
+
+const malformedCandidateProgressSeed = clone(candidateProgressSeed);
+const malformedExclusions = [
+    ...candidateExclusions,
+    { row: 9, col: 0, value: 3 },
+];
+malformedCandidateProgressSeed.progress['Impossible-1'].hintCandidateProgress = makeSignedCandidateProgress(
+    EMPTY_BOARD_SIGNATURE,
+    malformedExclusions,
+);
+await installRawSnapshots({ local: malformedCandidateProgressSeed, native: null });
+assert.equal(
+    Storage.getStoredData().progress['Impossible-1'].hintCandidateProgress,
+    undefined,
+    'structurally malformed exclusions must fail closed even with a recomputed checksum',
+);
+
 // Hint usage and its diamond charge are one durable transaction. Every puzzle
-// follows 5 / 20 / 40 with the price capped at 40 for every later use.
+// follows 5 / 15 / 30 with the price capped at 30 for every later use.
 const hintSeed = Storage.createDefaultData();
 hintSeed.points = 200;
 await installSnapshot(hintSeed);
@@ -232,8 +347,8 @@ assert.deepEqual(Storage.getHintEconomy('Normal', 12), {
     cost: 5,
 });
 
-const expectedHintCharges = [5, 20, 40, 40, 40];
-const expectedNextHintCosts = [20, 40, 40, 40, 40];
+const expectedHintCharges = [5, 15, 30, 30, 30];
+const expectedNextHintCosts = [15, 30, 30, 30, 30];
 let expectedHintPoints = 200;
 
 for (let hintsUsed = 0; hintsUsed < expectedHintCharges.length; hintsUsed += 1) {
@@ -256,10 +371,10 @@ for (let hintsUsed = 0; hintsUsed < expectedHintCharges.length; hintsUsed += 1) 
     assert.equal(durableHint.hintUsageByPuzzle['Normal-12'], hintsUsed + 1);
 }
 
-assert.equal(Storage.getStoredData().points, 55);
+assert.equal(Storage.getStoredData().points, 90);
 assert.deepEqual(Storage.getHintEconomy('Normal', 12), {
     hintsUsed: 5,
-    cost: 40,
+    cost: 30,
 });
 
 // A stale direct request/double press must not silently accept a newly changed
@@ -271,9 +386,9 @@ const staleHint = await observeMutation(() => (
 assert.equal(staleHint.result.success, false);
 assert.equal(staleHint.result.reason, 'stale');
 assert.equal(staleHint.result.charged, 0);
-assert.equal(staleHint.result.points, 55);
+assert.equal(staleHint.result.points, 90);
 assert.equal(staleHint.result.hintsUsed, 5);
-assert.equal(staleHint.result.cost, 40);
+assert.equal(staleHint.result.cost, 30);
 assert.equal(staleHint.notifications, 0);
 assert.deepEqual(Storage.getStoredData(), beforeStaleHint);
 
@@ -292,7 +407,7 @@ assert.equal(insufficientHint.result.reason, 'insufficient-points');
 assert.equal(insufficientHint.result.charged, 0);
 assert.equal(insufficientHint.result.points, 4);
 assert.equal(insufficientHint.result.hintsUsed, 1);
-assert.equal(insufficientHint.result.cost, 20);
+assert.equal(insufficientHint.result.cost, 15);
 assert.equal(insufficientHint.notifications, 0);
 assert.deepEqual(Storage.getStoredData(), beforeInsufficientHint);
 
