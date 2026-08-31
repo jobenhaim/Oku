@@ -9,11 +9,13 @@ const bundle = await build({
                 applyHintCandidateProgress,
                 boardHintSignature,
                 cloneHintBoard,
+                colorHintCellReferences,
                 computeHintCandidateProgressIntegrity,
                 createHintCandidateProgress,
                 createHintPlan,
                 diagnoseHintSearch,
                 hasValidHintCandidateProgressIntegrity,
+                hintCellReferenceToneForFrame,
                 hintCandidateProgressSignature,
                 reconcileHintCandidateProgress,
             } from './utils/hints.ts';
@@ -44,11 +46,13 @@ const {
     applyHintCandidateProgress,
     boardHintSignature,
     cloneHintBoard,
+    colorHintCellReferences,
     computeHintCandidateProgressIntegrity,
     createHintCandidateProgress,
     createHintPlan,
     diagnoseHintSearch,
     hasValidHintCandidateProgressIntegrity,
+    hintCellReferenceToneForFrame,
     hintCandidateProgressSignature,
     reconcileHintCandidateProgress,
     DEV_HINT_PREVIEWS,
@@ -1093,6 +1097,54 @@ const test = (name, run) => {
     passed += 1;
     console.log(`✓ ${name}`);
 };
+
+test('colors every “this cell” reference to match its highlighted cell role', () => {
+    const referencePattern = /^this cell(?:['’]s)?$/i;
+    const observedTones = new Set();
+
+    for (const preview of DEV_HINT_PREVIEWS) {
+        const { plan } = createDevHintPreview(preview);
+        for (const frame of plan.frames) {
+            const tone = hintCellReferenceToneForFrame(frame);
+            for (const [fallback, configuredParts] of [
+                [frame.title, frame.titleParts],
+                [frame.body, frame.bodyParts],
+            ]) {
+                if (!/\bthis cell(?:['’]s)?\b/i.test(fallback)) continue;
+                const parts = colorHintCellReferences(
+                    configuredParts?.length ? configuredParts : [{ text: fallback }],
+                    tone,
+                );
+                assert.equal(parts.map(part => part.text).join(''), fallback);
+                const references = parts.filter(part => referencePattern.test(part.text));
+                assert.ok(references.length > 0, `${preview} ${frame.id} must isolate its cell reference`);
+                assert.ok(
+                    references.every(part => part.tone === tone),
+                    `${preview} ${frame.id} must use the ${tone} cell-reference tone`,
+                );
+                observedTones.add(tone);
+            }
+        }
+    }
+
+    assert.ok(observedTones.has('source'), 'blue spotlight references must be covered');
+    assert.ok(observedTones.has('remaining'), 'green result references must be covered');
+
+    const eliminatedFrame = {
+        id: 'eliminated-cell-reference-contract',
+        title: 'This cell is ruled out',
+        body: 'Check this cell.',
+        spotlightCells: [],
+        candidateMarks: [{ row: 0, col: 0, value: 1, tone: 'eliminated' }],
+        fillEliminatedCells: true,
+    };
+    const eliminatedTone = hintCellReferenceToneForFrame(eliminatedFrame);
+    assert.equal(eliminatedTone, 'removed');
+    assert.ok(colorHintCellReferences(
+        [{ text: eliminatedFrame.title }],
+        eliminatedTone,
+    ).some(part => referencePattern.test(part.text) && part.tone === 'removed'));
+});
 
 const assertLockedCandidatePlan = (grid, solution, expected) => {
     const board = makeBoard(grid);

@@ -65,7 +65,7 @@ export interface HintTextPart {
     emphasis?: boolean;
 }
 
-type HintTextTone = NonNullable<HintTextPart['tone']>;
+export type HintTextTone = NonNullable<HintTextPart['tone']>;
 
 const candidateValuePart = (
     value: number,
@@ -117,6 +117,40 @@ export interface HintVisualFrame {
     target?: HintCoordinate & { value: number };
     dimUnrelated?: boolean;
 }
+
+const CELL_REFERENCE_SPLIT = /(\bthis cell(?:['’]s)?\b)/gi;
+const CELL_REFERENCE_EXACT = /^this cell(?:['’]s)?$/i;
+
+/** Match a cell-reference phrase to the visual role of that cell on the grid. */
+export const hintCellReferenceToneForFrame = (
+    frame: HintVisualFrame,
+): HintTextTone => {
+    if (frame.target || (frame.candidateUpdateCells?.length ?? 0) > 0) {
+        return 'remaining';
+    }
+    if (
+        frame.fillEliminatedCells
+        && frame.candidateMarks?.some(mark => mark.tone === 'eliminated')
+    ) {
+        return 'removed';
+    }
+    return 'source';
+};
+
+/** Color only “this cell” while preserving every surrounding copy style. */
+export const colorHintCellReferences = (
+    parts: readonly HintTextPart[],
+    tone: HintTextTone,
+): HintTextPart[] => parts.flatMap(part => (
+    part.text
+        .split(CELL_REFERENCE_SPLIT)
+        .filter(Boolean)
+        .map(text => ({
+            ...part,
+            text,
+            tone: CELL_REFERENCE_EXACT.test(text) ? tone : part.tone,
+        }))
+));
 
 export interface HintDeduction {
     id: string;

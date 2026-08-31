@@ -1,6 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import type { HintPlan, HintTextPart } from '../../utils/hints';
+import {
+    colorHintCellReferences,
+    hintCellReferenceToneForFrame,
+    type HintPlan,
+    type HintTextPart,
+    type HintTextTone,
+} from '../../utils/hints';
 import { Icons } from '../ui/Icons';
 import { sounds } from '../../utils/sound';
 
@@ -59,8 +65,12 @@ const HINT_DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 const HintCopy: React.FC<{
     fallback: string;
     parts?: HintTextPart[];
-}> = ({ fallback, parts }) => {
-    const renderedParts = parts?.length ? parts : [{ text: fallback }];
+    cellReferenceTone: HintTextTone;
+}> = ({ fallback, parts, cellReferenceTone }) => {
+    const renderedParts = colorHintCellReferences(
+        parts?.length ? parts : [{ text: fallback }],
+        cellReferenceTone,
+    );
 
     return (
         <>
@@ -94,6 +104,7 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
     ))?.remainingDigit;
     const visibleRemainingDigit = frame.remainingDigit;
     const stripRemainingDigit = visibleRemainingDigit ?? reservedRemainingDigit;
+    const cellReferenceTone = hintCellReferenceToneForFrame(frame);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -185,12 +196,14 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
                                     <HintCopy
                                         fallback={candidateFrame.title}
                                         parts={candidateFrame.titleParts}
+                                        cellReferenceTone={hintCellReferenceToneForFrame(candidateFrame)}
                                     />
                                 </div>
                                 <div className="mt-2 text-[clamp(1rem,3.8vw,1.125rem)] font-medium leading-[1.35]">
                                     <HintCopy
                                         fallback={candidateFrame.body}
                                         parts={candidateFrame.bodyParts}
+                                        cellReferenceTone={hintCellReferenceToneForFrame(candidateFrame)}
                                     />
                                 </div>
                             </div>
@@ -208,10 +221,18 @@ export const HintTheater: React.FC<HintTheaterProps> = ({
                                 aria-atomic="true"
                             >
                                 <h2 id="hint-theater-title" className="text-[clamp(1.5rem,5.4vw,1.85rem)] font-extrabold text-t-primary tracking-tight leading-[1.1]">
-                                    <HintCopy fallback={frame.title} parts={frame.titleParts} />
+                                    <HintCopy
+                                        fallback={frame.title}
+                                        parts={frame.titleParts}
+                                        cellReferenceTone={cellReferenceTone}
+                                    />
                                 </h2>
                                 <p id="hint-theater-body" className="mt-2 text-[clamp(1rem,3.8vw,1.125rem)] font-medium leading-[1.35] text-stone-500 dark:text-stone-400">
-                                    <HintCopy fallback={frame.body} parts={frame.bodyParts} />
+                                    <HintCopy
+                                        fallback={frame.body}
+                                        parts={frame.bodyParts}
+                                        cellReferenceTone={cellReferenceTone}
+                                    />
                                 </p>
                                 {frame.accessibleDetail && (
                                     <p id="hint-theater-detail" className="sr-only">
