@@ -19,6 +19,11 @@ export const loadSudokuTools = () => {
                         DIFFICULTY_TARGETS,
                         scoreSudokuAudit
                     } from './utils/sudokuDifficultyPolicy.ts';
+                    export {
+                        hasSoftImpossiblePacing,
+                        IMPOSSIBLE_SOFT_PACING_THRESHOLDS,
+                        measureImpossiblePacing
+                    } from './utils/sudokuImpossiblePacing.ts';
                     export { Difficulty } from './types.ts';
                 `,
                 resolveDir: process.cwd(),

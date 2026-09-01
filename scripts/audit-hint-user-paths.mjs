@@ -36,6 +36,7 @@ const bundle = await build({
                 reconcileHintCandidateProgress,
             } from './utils/hints.ts';
             export { auditSudokuWithAdvancedLogic } from './utils/sudokuAdvancedAudit.ts';
+            export { hasSoftImpossiblePacing } from './utils/sudokuImpossiblePacing.ts';
             export { generateLevel } from './utils/sudoku.ts';
             export { Difficulty } from './types.ts';
         `,
@@ -58,6 +59,7 @@ const {
     boardHintSignature,
     cloneHintBoard,
     createHintPlan,
+    hasSoftImpossiblePacing,
     hintCandidateProgressSignature,
     reconcileHintCandidateProgress,
     generateLevel,
@@ -70,10 +72,21 @@ const difficulties = Object.values(Difficulty).filter(difficulty => (
 if (difficulties.length === 0) throw new Error(`Unknown difficulty "${requestedDifficulty}".`);
 
 const ALL_DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const HIGH_END_CANDIDATE_HINTS = new Set([
+    'xWing',
+    'swordfish',
+    'xyWing',
+    'simpleColoring',
+]);
 const increment = (map, key, amount = 1) => map.set(key, (map.get(key) ?? 0) + amount);
 const coordinateKey = ({ row, col }) => `${row}:${col}`;
 const coordinateSet = coordinates => new Set((coordinates ?? []).map(coordinateKey));
 const sameSet = (left, right) => left.size === right.size && [...left].every(value => right.has(value));
+
+const isHighEndCandidateHint = plan => (
+    (plan.deductions ?? []).some(deduction => HIGH_END_CANDIDATE_HINTS.has(deduction.technique))
+    || HIGH_END_CANDIDATE_HINTS.has(plan.technique)
+);
 
 const fnv1a = source => {
     let hash = 0x811c9dc5;
@@ -266,6 +279,8 @@ let deterministicChecks = 0;
 let noteVariantChecks = 0;
 let frontierChecks = 0;
 let maximumCandidateDepth = 0;
+const softImpossiblePacing = [];
+let impossiblePacingChecks = 0;
 
 const recordReferenceStall = (board) => {
     const reference = auditSudokuWithAdvancedLogic(board);
@@ -331,6 +346,14 @@ for (const difficulty of difficulties) {
         let ended = false;
         const seen = new Set();
         const record = outcomes.get(difficulty);
+        const pacing = {
+            highEndSteps: 0,
+            openingSingles: 0,
+            candidateDeductionSteps: 0,
+            middlePlacements: 0,
+            placementsAfterLastCandidateUpdate: 0,
+            candidateTechniques: [],
+        };
         record.runs += 1;
 
         for (let action = 0; action < maxActions; action += 1) {
@@ -360,6 +383,15 @@ for (const difficulty of difficulties) {
             increment(flowCounts, `${result.plan.outcome}: ${result.plan.techniqueLabel}`);
             if (result.plan.outcome === 'candidate') {
                 candidateHints += 1;
+                // Placements after the previous update become middle placements
+                // only when another update follows; otherwise they are the final run.
+                if (pacing.candidateDeductionSteps > 0) {
+                    pacing.middlePlacements += pacing.placementsAfterLastCandidateUpdate;
+                    pacing.placementsAfterLastCandidateUpdate = 0;
+                }
+                pacing.candidateDeductionSteps += 1;
+                pacing.candidateTechniques.push(result.plan.techniqueLabel);
+                if (isHighEndCandidateHint(result.plan)) pacing.highEndSteps += 1;
                 progress = applyCandidate(board, solved, progress, result.plan, context);
                 depthSincePlacement += 1;
                 continue;
@@ -376,6 +408,11 @@ for (const difficulty of difficulties) {
             maximumCandidateDepth = Math.max(maximumCandidateDepth, depthSincePlacement);
             depthSincePlacement = 0;
             place(board, result.plan.target);
+            if (pacing.candidateDeductionSteps === 0) {
+                pacing.openingSingles += 1;
+            } else {
+                pacing.placementsAfterLastCandidateUpdate += 1;
+            }
             progress = reconcileHintCandidateProgress(board, solved, progress);
 
             if (fnv1a(`${seedVersion}|notes|${difficulty}|${levelId}|${action}`) % 37 === 0) {
@@ -388,6 +425,26 @@ for (const difficulty of difficulties) {
             }
         }
         if (!ended) record.limit += 1;
+
+        if (difficulty === Difficulty.Impossible) {
+            const metrics = {
+                highEndSteps: pacing.highEndSteps,
+                openingSingles: pacing.openingSingles,
+                candidateDeductionSteps: pacing.candidateDeductionSteps,
+                middlePlacements: pacing.middlePlacements,
+                finalSingles: pacing.candidateDeductionSteps > 0
+                    ? pacing.placementsAfterLastCandidateUpdate
+                    : pacing.openingSingles,
+            };
+            impossiblePacingChecks += 1;
+            if (hasSoftImpossiblePacing(metrics)) {
+                softImpossiblePacing.push({
+                    levelId,
+                    ...metrics,
+                    candidateTechniques: pacing.candidateTechniques,
+                });
+            }
+        }
 
         const blanks = blankCoordinates(initial);
         const order = shuffled(blanks, fnv1a(`${seedVersion}|frontier|${difficulty}|${levelId}`));
@@ -425,6 +482,16 @@ const totalOutcomes = [...outcomes.values()].reduce((total, record) => ({
 assert.equal(totalOutcomes.cycle, 0, 'Canonical Hint paths must never cycle.');
 assert.equal(totalOutcomes.limit, 0, 'Canonical Hint paths must stay within the action limit.');
 assert.equal(openingReady, totalPuzzles, 'Every production puzzle needs an opening Hint.');
+assert.deepEqual(
+    softImpossiblePacing,
+    [],
+    `Impossible production Hint paths have soft pacing: ${softImpossiblePacing.map(result => (
+        `${result.levelId} (opening ${result.openingSingles}, candidate updates ` +
+        `${result.candidateDeductionSteps}, middle placements ${result.middlePlacements}, ` +
+        `final placements ${result.finalSingles}, high-end Hints ${result.highEndSteps}, ` +
+        `candidate techniques ${result.candidateTechniques.join(' → ')})`
+    )).join('; ')}`,
+);
 
 const sortedEntries = map => [...map.entries()].sort((left, right) => (
     right[1] - left[1] || `${left[0]}`.localeCompare(`${right[0]}`)
@@ -455,6 +522,9 @@ process.stdout.write(`Opening availability: ${openingReady}/${totalPuzzles}\n`);
 process.stdout.write(`Determinism checks: ${deterministicChecks.toLocaleString()}\n`);
 process.stdout.write(`Note-variant checks: ${noteVariantChecks.toLocaleString()}\n`);
 process.stdout.write(`Correct-player-state frontier checks: ${frontierChecks.toLocaleString()}\n`);
+if (impossiblePacingChecks > 0) {
+    process.stdout.write(`Impossible Hint pacing checks: ${impossiblePacingChecks.toLocaleString()}\n`);
+}
 process.stdout.write(`Elapsed: ${elapsedSeconds.toFixed(1)}s\n\n`);
 
 process.stdout.write('Canonical outcomes\n');
@@ -480,4 +550,4 @@ if (unsupportedReference.size > 0) {
     printTable(['Reference technique', 'States'], sortedEntries(unsupportedReference));
 }
 
-process.stdout.write('\nAudit completed without solution-removal, mutation, determinism, stale-plan, cycle, or candidate-progress failures.\n');
+process.stdout.write('\nAudit completed without solution-removal, mutation, determinism, stale-plan, cycle, candidate-progress, or Impossible pacing failures.\n');

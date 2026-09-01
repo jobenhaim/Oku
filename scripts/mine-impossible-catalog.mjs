@@ -25,7 +25,11 @@ const outputPath = resolve(
 const {
     generateCandidateFromSeed,
     auditSudokuPuzzle,
+    auditSudokuHumanFlow,
     auditSudokuWithAdvancedLogic,
+    hasSoftImpossiblePacing,
+    IMPOSSIBLE_SOFT_PACING_THRESHOLDS,
+    measureImpossiblePacing,
     Difficulty
 } = await loadSudokuTools();
 
@@ -70,6 +74,7 @@ const rejectionCounts = {
     unresolved: 0,
     insufficientAdvancedSteps: 0,
     noHighEndTechnique: 0,
+    softPacing: 0,
     invalidProof: 0,
     symmetry: 0,
     duplicate: 0
@@ -107,6 +112,14 @@ while (accepted.length < targetCount && attempts < maximumAttempts) {
         rejectionCounts.noHighEndTechnique++;
         continue;
     }
+    const pacing = measureImpossiblePacing(
+        advancedAudit,
+        auditSudokuHumanFlow(initial).steps.length
+    );
+    if (hasSoftImpossiblePacing(pacing)) {
+        rejectionCounts.softPacing++;
+        continue;
+    }
     if (!proofMatchesSolution(advancedAudit.proof, solved)) {
         rejectionCounts.invalidProof++;
         continue;
@@ -133,6 +146,7 @@ while (accepted.length < targetCount && attempts < maximumAttempts) {
         advancedSteps: advancedAudit.advancedSteps,
         highEndSteps: advancedAudit.highEndSteps,
         hardestTechnique: advancedAudit.hardestTechnique,
+        pacing,
         maximumSymmetry: Number(maximumSymmetry.toFixed(4)),
         techniques: advancedAudit.techniques
     });
@@ -167,6 +181,8 @@ await writeFile(
             requiresBeyondTier3: true,
             minimumAdvancedSteps: 3,
             minimumHighEndSteps: 1,
+            rejectsSoftPacing: true,
+            softPacingThresholds: IMPOSSIBLE_SOFT_PACING_THRESHOLDS,
             maximumLayoutSymmetryExclusive: 0.8,
             branchingAllowed: false
         },

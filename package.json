@@ -12,6 +12,7 @@
     "test:cloud-save": "node scripts/test-cloud-save.mjs",
     "test:auth-safety": "node scripts/test-auth-safety.mjs",
     "test:hints": "node scripts/test-hints.mjs",
+    "test:sudoku-policy": "node scripts/test-impossible-pacing-policy.mjs",
     "audit:hints": "node scripts/audit-hint-user-paths.mjs",
     "audit:sudoku": "node scripts/audit-sudoku.mjs",
     "audit:sudoku:impossible": "node scripts/audit-impossible-sudoku.mjs",

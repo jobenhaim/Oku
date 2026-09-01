@@ -3,7 +3,10 @@ import { loadSudokuTools } from './load-sudoku-tools.mjs';
 const {
     generateLevel,
     auditSudokuPuzzle,
+    auditSudokuHumanFlow,
     auditSudokuWithAdvancedLogic,
+    hasSoftImpossiblePacing,
+    measureImpossiblePacing,
     Difficulty
 } = await loadSudokuTools();
 
@@ -125,6 +128,18 @@ for (let level = 1; level <= 300; level++) {
     }
     if (advancedAudit.highEndSteps < 1) {
         failures.push(`Level ${level}: no high-end technique`);
+    }
+    const pacing = measureImpossiblePacing(
+        advancedAudit,
+        auditSudokuHumanFlow(initial).steps.length
+    );
+    if (hasSoftImpossiblePacing(pacing)) {
+        failures.push(
+            `Level ${level}: soft Impossible pacing ` +
+            `(opening ${pacing.openingSingles}, candidate steps ` +
+            `${pacing.candidateDeductionSteps}, middle placements ` +
+            `${pacing.middlePlacements}, final singles ${pacing.finalSingles})`
+        );
     }
     for (const step of advancedAudit.proof) {
         for (const placement of step.placements) {
