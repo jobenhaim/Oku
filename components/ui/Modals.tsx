@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { IAP } from '../../utils/iap';
 import type { SuccessfulIAPPurchase } from '../../utils/iap';
 import { NUMBER_COLORS } from '../../utils/constants';
+import packageInfo from '../../package.json';
 
 // ... (Privacy Policy & Terms text remain unchanged)
 const PRIVACY_POLICY_TEXT = `Privacy Policy
@@ -1037,7 +1038,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                     <div className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-700 transition-colors duration-300" />
                                     <button onClick={() => { sounds.playClick(); setActiveDoc('terms'); }} className="transition-colors duration-300 px-2 py-1">Terms of Service</button>
                                 </div>
-                                <span className="text-[9px] md:text-[11px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v4.0</span>
+                                <span className="text-[9px] md:text-[11px] text-stone-300 dark:text-stone-600 font-mono transition-colors duration-300">v{packageInfo.version}</span>
                             </div>
                         </div>
                     )}
