@@ -37,7 +37,7 @@ export interface HintCandidateBreakdown extends HintCoordinate {
     marks: HintCandidateBreakdownMark[];
 }
 
-export type HintCandidateNoteTone = 'possible' | 'locked' | 'blocked' | 'removed' | 'remaining';
+export type HintCandidateNoteTone = 'possible' | 'locked' | 'support' | 'blocked' | 'removed' | 'remaining';
 
 export interface HintCandidateNoteSet extends HintCoordinate {
     marks: Array<{ value: number; tone: HintCandidateNoteTone }>;
@@ -722,7 +722,6 @@ const makeNakedSinglePlan = (
                     accessibleDetail: `${value} is the missing number for ${describeCoordinate(target)}.`,
                     spotlightCells: [],
                     guideUnits: [guideUnit],
-                    remainingDigit: value,
                     dimUnrelated: true,
                 },
                 {
@@ -2988,13 +2987,19 @@ const makeXYWingNoteSet = (
     coordinate: HintCoordinate,
     values: readonly number[],
     emphasizedValues: readonly number[],
+    supportValues: readonly number[] = [],
 ): HintCandidateNoteSet => {
     const emphasized = new Set(emphasizedValues);
+    const supported = new Set(supportValues);
     return {
         ...coordinate,
         marks: [...values].sort((a, b) => a - b).map(value => ({
             value,
-            tone: emphasized.has(value) ? 'locked' : 'possible',
+            tone: emphasized.has(value)
+                ? 'locked'
+                : supported.has(value)
+                    ? 'support'
+                    : 'possible',
         })),
     };
 };
@@ -3167,18 +3172,18 @@ const makeXYWingPlan = (
         [match.x, match.y],
     );
     const firstWingFrameNotes: HintCandidateNoteSet[] = [
-        makeXYWingNoteSet(match.pivot, [match.x, match.y], [match.x]),
-        makeXYWingNoteSet(match.xWing, [match.x, match.z], [match.x]),
+        makeXYWingNoteSet(match.pivot, [match.x, match.y], [match.x, match.y]),
+        makeXYWingNoteSet(match.xWing, [match.x, match.z], [match.x], [match.z]),
     ];
     const secondWingFrameNotes: HintCandidateNoteSet[] = [
-        makeXYWingNoteSet(match.pivot, [match.x, match.y], [match.y]),
-        makeXYWingNoteSet(match.xWing, [match.x, match.z], []),
-        makeXYWingNoteSet(match.yWing, [match.y, match.z], [match.y]),
+        makeXYWingNoteSet(match.pivot, [match.x, match.y], [match.x, match.y]),
+        makeXYWingNoteSet(match.xWing, [match.x, match.z], [match.x], [match.z]),
+        makeXYWingNoteSet(match.yWing, [match.y, match.z], [match.y], [match.z]),
     ];
     const removalFrameNotes: HintCandidateNoteSet[] = [
-        makeXYWingNoteSet(match.pivot, [match.x, match.y], []),
-        makeXYWingNoteSet(match.xWing, [match.x, match.z], [match.z]),
-        makeXYWingNoteSet(match.yWing, [match.y, match.z], [match.z]),
+        makeXYWingNoteSet(match.pivot, [match.x, match.y], [match.x, match.y]),
+        makeXYWingNoteSet(match.xWing, [match.x, match.z], [match.x], [match.z]),
+        makeXYWingNoteSet(match.yWing, [match.y, match.z], [match.y], [match.z]),
     ];
     const eliminatedMarks: HintCandidateMark[] = match.eliminations.map(elimination => ({
         row: elimination.row,
@@ -3232,6 +3237,12 @@ const makeXYWingPlan = (
                 techniqueLabel: 'XY-Wing',
                 title: `This cell is ${match.x} or ${match.y}`,
                 body: "We don't know which one yet.",
+                titleParts: [
+                    { text: 'This cell is ' },
+                    candidateValuePart(match.x),
+                    { text: ' or ' },
+                    candidateValuePart(match.y),
+                ],
                 accessibleDetail: `The pivot at ${describeCoordinate(match.pivot)} has candidates ${match.x} and ${match.y}.`,
                 spotlightCells: [match.pivot],
                 candidateNoteSets: [pivotFrameNotes],
@@ -3242,6 +3253,17 @@ const makeXYWingPlan = (
                 techniqueLabel: 'XY-Wing',
                 title: `This wing is ${match.x} or ${match.z}`,
                 body: `The ${match.x} in both cells links them through this ${unitName(firstWingUnit)}.`,
+                titleParts: [
+                    { text: 'This wing is ' },
+                    candidateValuePart(match.x),
+                    { text: ' or ' },
+                    candidateValuePart(match.z, 'support'),
+                ],
+                bodyParts: [
+                    { text: 'The ' },
+                    candidateValuePart(match.x),
+                    { text: ` in both cells links them through this ${unitName(firstWingUnit)}.` },
+                ],
                 accessibleDetail: `The first wing at ${describeCoordinate(match.xWing)} has candidates ${match.x} and ${match.z}, and shares this ${unitName(firstWingUnit)} with the pivot at ${describeCoordinate(match.pivot)}.`,
                 spotlightCells: [match.xWing],
                 guideUnits: [{ kind: firstWingUnit.kind, index: firstWingUnit.index }],
@@ -3254,6 +3276,17 @@ const makeXYWingPlan = (
                 techniqueLabel: 'XY-Wing',
                 title: `The other wing is ${match.y} or ${match.z}`,
                 body: `The ${match.y} in both cells links them through this ${unitName(secondWingUnit)}.`,
+                titleParts: [
+                    { text: 'The other wing is ' },
+                    candidateValuePart(match.y),
+                    { text: ' or ' },
+                    candidateValuePart(match.z, 'support'),
+                ],
+                bodyParts: [
+                    { text: 'The ' },
+                    candidateValuePart(match.y),
+                    { text: ` in both cells links them through this ${unitName(secondWingUnit)}.` },
+                ],
                 accessibleDetail: `The second wing at ${describeCoordinate(match.yWing)} has candidates ${match.y} and ${match.z}, and shares this ${unitName(secondWingUnit)} with the pivot at ${describeCoordinate(match.pivot)}.`,
                 spotlightCells: [match.yWing],
                 guideUnits: [{ kind: secondWingUnit.kind, index: secondWingUnit.index }],
@@ -3270,6 +3303,29 @@ const makeXYWingPlan = (
                     : match.eliminations.length === 1
                         ? `The ${match.z} in the shaded cell sees both wings, so cross it out.`
                         : `Every shaded ${match.z} sees both wings, so cross them out.`,
+                titleParts: [
+                    { text: 'Either way, one wing must be ' },
+                    candidateValuePart(match.z, 'support'),
+                ],
+                bodyParts: match.resultKind === 'naked'
+                    ? [
+                        { text: 'The outlined cell sees both wings, so ' },
+                        candidateValuePart(match.z, 'removed'),
+                        { text: ' cannot go here. Cross it out; only ' },
+                        candidateValuePart(match.target.value, 'remaining'),
+                        { text: ' remains.' },
+                    ]
+                    : match.eliminations.length === 1
+                        ? [
+                            { text: 'The ' },
+                            candidateValuePart(match.z, 'removed'),
+                            { text: ' in the shaded cell sees both wings, so cross it out.' },
+                        ]
+                        : [
+                            { text: 'Every shaded ' },
+                            candidateValuePart(match.z, 'removed'),
+                            { text: ' sees both wings, so cross them out.' },
+                        ],
                 accessibleDetail: match.eliminations.length === 1
                     ? `If the pivot is ${match.x}, the ${match.x}/${match.z} wing must be ${match.z}. If the pivot is ${match.y}, the ${match.y}/${match.z} wing must be ${match.z}. Therefore the ${match.z} at ${describeCoordinate(match.eliminations[0])} can be crossed out because that cell sees both wings.`
                     : `If the pivot is ${match.x}, the ${match.x}/${match.z} wing must be ${match.z}. If the pivot is ${match.y}, the ${match.y}/${match.z} wing must be ${match.z}. Therefore ${match.z} can be crossed out at ${describeCoordinates(match.eliminations)} because those cells see both wings.`,
@@ -3302,6 +3358,28 @@ const makeXYWingPlan = (
                 body: match.resultKind === 'naked'
                     ? `${match.target.value} belongs in this cell.`
                     : `Every other ${match.target.value} is ruled out, so ${match.target.value} belongs in the outlined cell.`,
+                titleParts: match.resultKind === 'naked'
+                    ? [
+                        { text: 'Only ' },
+                        candidateValuePart(match.target.value, 'remaining'),
+                        { text: ' remains' },
+                    ]
+                    : [
+                        { text: 'Only one place remains for ' },
+                        candidateValuePart(match.target.value, 'remaining'),
+                    ],
+                bodyParts: match.resultKind === 'naked'
+                    ? [
+                        candidateValuePart(match.target.value, 'remaining'),
+                        { text: ' belongs in this cell.' },
+                    ]
+                    : [
+                        { text: 'Every other ' },
+                        candidateValuePart(match.target.value, 'removed'),
+                        { text: ' is ruled out, so ' },
+                        candidateValuePart(match.target.value, 'remaining'),
+                        { text: ' belongs in the outlined cell.' },
+                    ],
                 accessibleDetail: match.resultKind === 'naked'
                     ? `The XY-Wing removes ${match.z} from ${describeCoordinate(match.target)}, leaving ${match.target.value}.`
                     : `The XY-Wing leaves ${describeCoordinate(match.target)} as the only place for ${match.target.value} in this ${unitName(match.resultUnit)}.`,
@@ -5012,36 +5090,40 @@ const makeCandidateDeductionPlan = (
         const firstPivotNotes = makeXYWingNoteSet(
             pattern.pivot,
             [pattern.x, pattern.y],
-            [pattern.x],
+            [pattern.x, pattern.y],
         );
         const firstNotes = makeXYWingNoteSet(
             pattern.xWing,
             [pattern.x, pattern.z],
             [pattern.x],
+            [pattern.z],
         );
         const secondPivotNotes = makeXYWingNoteSet(
             pattern.pivot,
             [pattern.x, pattern.y],
-            [pattern.y],
+            [pattern.x, pattern.y],
         );
         const secondNotes = makeXYWingNoteSet(
             pattern.yWing,
             [pattern.y, pattern.z],
             [pattern.y],
+            [pattern.z],
         );
         const updatePivotNotes = makeXYWingNoteSet(
             pattern.pivot,
             [pattern.x, pattern.y],
-            [],
+            [pattern.x, pattern.y],
         );
         const updateFirstNotes = makeXYWingNoteSet(
             pattern.xWing,
             [pattern.x, pattern.z],
+            [pattern.x],
             [pattern.z],
         );
         const updateSecondNotes = makeXYWingNoteSet(
             pattern.yWing,
             [pattern.y, pattern.z],
+            [pattern.y],
             [pattern.z],
         );
         const removalGuides = uniqueGuideUnits(eliminations.flatMap(elimination => [
@@ -5074,7 +5156,7 @@ const makeCandidateDeductionPlan = (
                     { text: 'This wing is ' },
                     candidateValuePart(pattern.x),
                     { text: ' or ' },
-                    candidateValuePart(pattern.z, 'candidate'),
+                    candidateValuePart(pattern.z, 'support'),
                 ],
                 bodyParts: [
                     { text: 'It shares ' },
@@ -5097,7 +5179,7 @@ const makeCandidateDeductionPlan = (
                     { text: 'The other wing is ' },
                     candidateValuePart(pattern.y),
                     { text: ' or ' },
-                    candidateValuePart(pattern.z, 'candidate'),
+                    candidateValuePart(pattern.z, 'support'),
                 ],
                 bodyParts: [
                     { text: 'It shares ' },
@@ -5118,7 +5200,7 @@ const makeCandidateDeductionPlan = (
                 body: candidateUpdateBody(eliminations),
                 titleParts: [
                     { text: 'Either way, one wing must be ' },
-                    candidateValuePart(pattern.z),
+                    candidateValuePart(pattern.z, 'support'),
                 ],
                 bodyParts: candidateUpdateBodyParts(eliminations),
                 accessibleDetail: `Every outlined cell sees both wings, so candidate ${pattern.z} can be removed from ${describeCoordinates(eliminations)}.`,
@@ -5896,9 +5978,9 @@ const makeMultiStepPlan = (
         if (deduction.technique === 'xyWing') {
             const { pattern, eliminations } = deduction;
             const sourceNoteSets: HintCandidateNoteSet[] = [
-                makeXYWingNoteSet(pattern.pivot, [pattern.x, pattern.y], []),
-                makeXYWingNoteSet(pattern.xWing, [pattern.x, pattern.z], [pattern.z]),
-                makeXYWingNoteSet(pattern.yWing, [pattern.y, pattern.z], [pattern.z]),
+                makeXYWingNoteSet(pattern.pivot, [pattern.x, pattern.y], [pattern.x, pattern.y]),
+                makeXYWingNoteSet(pattern.xWing, [pattern.x, pattern.z], [pattern.x], [pattern.z]),
+                makeXYWingNoteSet(pattern.yWing, [pattern.y, pattern.z], [pattern.y], [pattern.z]),
             ];
             const eliminatedMarks: HintCandidateMark[] = eliminations.map(elimination => ({
                 row: elimination.row,
@@ -5940,22 +6022,22 @@ const makeMultiStepPlan = (
                     body: `One wing is ${pattern.x}/${pattern.z} and the other is ${pattern.y}/${pattern.z}. Either way, one wing must be ${pattern.z}.`,
                     titleParts: [
                         { text: index === 0 ? 'This ' : 'Now this ' },
-                        candidateValuePart(pattern.x, 'candidate'),
+                        candidateValuePart(pattern.x),
                         { text: '/' },
-                        candidateValuePart(pattern.y, 'candidate'),
+                        candidateValuePart(pattern.y),
                         { text: ' cell links two wings' },
                     ],
                     bodyParts: [
                         { text: 'One wing is ' },
-                        candidateValuePart(pattern.x, 'candidate'),
+                        candidateValuePart(pattern.x),
                         { text: '/' },
-                        candidateValuePart(pattern.z),
+                        candidateValuePart(pattern.z, 'support'),
                         { text: ' and the other is ' },
-                        candidateValuePart(pattern.y, 'candidate'),
+                        candidateValuePart(pattern.y),
                         { text: '/' },
-                        candidateValuePart(pattern.z),
+                        candidateValuePart(pattern.z, 'support'),
                         { text: '. Either way, one wing must be ' },
-                        candidateValuePart(pattern.z),
+                        candidateValuePart(pattern.z, 'support'),
                         { text: '.' },
                     ],
                     accessibleDetail: `The pivot at ${describeCoordinate(pattern.pivot)} sees ${describeCoordinate(pattern.xWing)} and ${describeCoordinate(pattern.yWing)}.`,

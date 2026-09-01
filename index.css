@@ -1263,6 +1263,12 @@ html, body {
   opacity: 1;
 }
 
+.hint-grid-note--support {
+  color: #b45309;
+  font-weight: 700;
+  opacity: 1;
+}
+
 .hint-grid-note--remaining {
   color: #15803d;
   font-weight: 800;
@@ -1290,6 +1296,10 @@ html, body {
 
 .dark .hint-grid-note--locked {
   color: #93c5fd;
+}
+
+.dark .hint-grid-note--support {
+  color: #fbbf24;
 }
 
 .dark .hint-grid-note--remaining {
@@ -1383,6 +1393,7 @@ html, body {
   }
 
   .hint-grid-note--locked,
+  .hint-grid-note--support,
   .hint-grid-note--remaining,
   .hint-grid-note--removed,
   .hint-copy-part--candidate,

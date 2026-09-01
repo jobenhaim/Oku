@@ -16,6 +16,7 @@ type HintNoteTone =
     | 'possible'
     | 'blocked'
     | 'locked'
+    | 'support'
     | 'removed'
     | 'remaining'
     | 'chain-a'
