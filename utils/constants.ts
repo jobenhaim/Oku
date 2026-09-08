@@ -172,18 +172,20 @@ export const STATIC_BACKGROUNDS = [
 export const ALL_BACKGROUNDS = STATIC_BACKGROUNDS;
 
 export const NUMBER_COLORS = [
+    // Preserve every existing ID and price so owned styles stay owned.
+    // Alternate warm, cool, and neutral options across the four-column Market.
     { id: 'num-default', name: 'Default', cost: 0, class: 'text-blue-600 dark:text-blue-400', uiClass: 'text-blue-600 dark:text-blue-400', bgClass: 'bg-blue-50/50 dark:bg-blue-900/10' },
+    { id: 'num-ink', name: 'Ink', cost: 100, class: 'text-slate-600 dark:text-slate-300', uiClass: 'text-slate-600 dark:text-slate-300', bgClass: 'bg-slate-50/50 dark:bg-slate-800/20' },
+    { id: 'num-forest', name: 'Forest', cost: 100, class: 'text-green-700 dark:text-green-400', uiClass: 'text-green-700 dark:text-green-400', bgClass: 'bg-green-50/50 dark:bg-green-900/10' },
     { id: 'num-purple', name: 'Purple', cost: 100, class: 'text-purple-600 dark:text-purple-400', uiClass: 'text-purple-600 dark:text-purple-400', bgClass: 'bg-purple-50/50 dark:bg-purple-900/10' },
-    { id: 'num-teal', name: 'Teal', cost: 100, class: 'text-cyan-600 dark:text-cyan-400', uiClass: 'text-cyan-600 dark:text-cyan-400', bgClass: 'bg-cyan-50/50 dark:bg-cyan-900/10' },
+    { id: 'num-teal', name: 'Teal', cost: 100, class: 'text-cyan-700 dark:text-cyan-400', uiClass: 'text-cyan-700 dark:text-cyan-400', bgClass: 'bg-cyan-50/50 dark:bg-cyan-900/10' },
+    { id: 'num-orange', name: 'Orange', cost: 100, class: 'text-orange-700 dark:text-orange-400', uiClass: 'text-orange-700 dark:text-orange-400', bgClass: 'bg-orange-50/50 dark:bg-orange-900/10' },
     { id: 'num-fuchsia', name: 'Fuchsia', cost: 100, class: 'text-pink-600 dark:text-pink-400', uiClass: 'text-pink-600 dark:text-pink-400', bgClass: 'bg-pink-50/50 dark:bg-pink-900/10' },
-    { id: 'num-orange', name: 'Orange', cost: 100, class: 'text-orange-600 dark:text-orange-400', uiClass: 'text-orange-600 dark:text-orange-400', bgClass: 'bg-orange-50/50 dark:bg-orange-900/10' },
-    // Static premium digit palettes. The first three retain the legacy IDs so
-    // existing Gold, Diamond, and Ruby purchases keep their ownership.
-    { id: 'num-shine', name: 'Sunset', cost: 250, class: 'text-palette-sunset', uiClass: 'text-palette-sunset', bgClass: 'bg-orange-50/60 dark:bg-orange-900/10' },
-    { id: 'num-rgb', name: 'Caribbean', cost: 250, class: 'text-palette-caribbean', uiClass: 'text-palette-caribbean', bgClass: 'bg-cyan-50/60 dark:bg-cyan-900/10' },
-    { id: 'num-ruby', name: 'Sapphire', cost: 250, class: 'text-palette-sapphire', uiClass: 'text-palette-sapphire', bgClass: 'bg-blue-50/60 dark:bg-blue-900/10' },
-    { id: 'num-matcha', name: 'Matcha', cost: 250, class: 'text-palette-matcha', uiClass: 'text-palette-matcha', bgClass: 'bg-lime-50/60 dark:bg-lime-900/10' },
     { id: 'num-rainbow', name: 'Rainbow', cost: 250, class: 'text-shine-rainbow', uiClass: 'text-shine-rainbow', bgClass: 'bg-stone-100/50 dark:bg-stone-800/50' },
+    { id: 'num-rgb', name: 'Caribbean', cost: 250, class: 'text-palette-caribbean', uiClass: 'text-palette-caribbean', bgClass: 'bg-cyan-50/60 dark:bg-cyan-900/10' },
+    { id: 'num-matcha', name: 'Matcha', cost: 250, class: 'text-palette-matcha', uiClass: 'text-palette-matcha', bgClass: 'bg-lime-50/60 dark:bg-lime-900/10' },
+    { id: 'num-shine', name: 'Sunset', cost: 250, class: 'text-palette-sunset', uiClass: 'text-palette-sunset', bgClass: 'bg-orange-50/60 dark:bg-orange-900/10' },
+    { id: 'num-ruby', name: 'Sapphire', cost: 250, class: 'text-palette-sapphire', uiClass: 'text-palette-sapphire', bgClass: 'bg-blue-50/60 dark:bg-blue-900/10' },
 ];
 
 export const SOUND_PACKS = [
@@ -291,7 +293,6 @@ export const SOUND_PACKS = [
 
 export const SKILLS = [
     { id: 'skill-nudge', name: 'Light', cost: 100, icon: Icons.Nudge, class: 'text-amber-500', bgClass: 'bg-amber-50/60 dark:bg-amber-900/10', description: 'Highlights the last empty cell in a row, column, or box.' },
-    { id: 'skill-focus', name: 'Focus', cost: 200, icon: Icons.Focus, class: '', bgClass: 'bg-blue-50/60 dark:bg-blue-900/10', description: 'Active skill. Temporarily hides every note for a clearer view.' },
     { id: 'skill-scribe', name: 'Guard', cost: 200, icon: Icons.Guard, class: '', bgClass: 'bg-blue-50/60 dark:bg-blue-900/10', description: 'Passive skill. Blocks notes that conflict with your current board.' },
     { id: 'skill-scan', name: 'Scan', cost: 200, icon: Icons.Scan, class: 'text-red-500', bgClass: 'bg-red-50/60 dark:bg-red-900/10', description: 'Spot errors instantly. Includes 3 free uses per puzzle.' },
 ];
@@ -315,7 +316,7 @@ export const DIAMOND_OFFERS: DiamondOffer[] = [
         title: 'Starter Pack',
         subtitle: 'Everything you need to begin',
         diamonds: 800,
-        includes: ['Focus, Guard & Scan Skills Unlocked', 'Piano Sound Pack Unlocked', 'Teal Number Style Unlocked'],
+        includes: ['Guard & Scan Skills Unlocked', 'Piano Sound Pack Unlocked', 'Teal Number Style Unlocked'],
         badge: 'BEST VALUE',
         priceLabel: '$2.99',
         type: 'starter',

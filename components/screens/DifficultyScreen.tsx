@@ -7,8 +7,14 @@ import { sounds } from '../../utils/sound';
 import { getDifficultyPoints, DIFFICULTY_DESCRIPTIONS } from '../../utils/constants';
 import { DiamondBalancePill } from '../ui/DiamondBalancePill';
 import { easeInOut } from '../../utils/animation';
+import { MainScreenHeader } from '../ui/MainScreenHeader';
+import { SavedBoardPreview } from '../ui/SavedBoardPreview';
+import { useDailyGiftClock } from '../../hooks/useDailyGiftClock';
+import { getDailyGiftState } from '../../utils/dailyGift';
 
 interface DifficultyScreenProps {
+    tabNavigation?: boolean;
+    skipEntranceAnimation?: boolean;
     points: number;
     onDifficultySelect: (diff: Difficulty) => void;
     onOpenSettings: () => void;
@@ -88,11 +94,12 @@ const DifficultyCard: React.FC<{
     contentScale?: 'normal' | 'medium' | 'large';
     layoutStyle?: React.CSSProperties;
     cascadeDelayMs?: number;
+    skipEntranceAnimation?: boolean;
     isPressed?: boolean;
     isLocked?: boolean;
     onPressStart?: () => void;
     onPressCancel?: () => void;
-}> = ({ diff, index, onSelect, isPyramidTop, contentScale = 'normal', layoutStyle, cascadeDelayMs = 0, isPressed = false, isLocked = false, onPressStart, onPressCancel }) => {
+}> = ({ diff, index, onSelect, isPyramidTop, contentScale = 'normal', layoutStyle, cascadeDelayMs = 0, skipEntranceAnimation = false, isPressed = false, isLocked = false, onPressStart, onPressCancel }) => {
     
     const completed = Storage.getCompletedCount(diff, 300);
     const isPack2Unlocked = Storage.isPack2Unlocked(diff);
@@ -111,7 +118,7 @@ const DifficultyCard: React.FC<{
 
     const currentBookStart = Math.max(0, maxLevels - 100);
     const progressAnimationDelay = cascadeDelayMs + delay + Math.round(MAIN_MENU_SLIDE_DURATION_MS * 0.5);
-    const animatedCompleted = useAnimatedCounter(completed, currentBookStart, 750, progressAnimationDelay);
+    const animatedCompleted = useAnimatedCounter(completed, skipEntranceAnimation ? completed : currentBookStart, 750, progressAnimationDelay);
     const progressPercent = Math.min((animatedCompleted / maxLevels) * 100, 100);
 
     const defaultStyle: React.CSSProperties = {
@@ -177,6 +184,8 @@ const DifficultyCard: React.FC<{
 };
 
 export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({ 
+    tabNavigation = false,
+    skipEntranceAnimation = false,
     points, 
     onDifficultySelect, 
     onOpenSettings, 
@@ -192,10 +201,11 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     onContinue,
     cascadeDelayMs = 0
 }) => {
-    const [timeLeft, setTimeLeft] = useState<string>("");
+    const giftNow = useDailyGiftClock(nextBonusClaimTime);
+    const timeLeft = getDailyGiftState(nextBonusClaimTime, giftNow).ready ? '' : 'See you tomorrow!';
     const [pressedMainMenuAction, setPressedMainMenuAction] = useState<string | null>(null);
-    const [isMainMenuInteractionLocked, setIsMainMenuInteractionLocked] = useState(true);
-    const mainMenuInteractionLockedRef = useRef(true);
+    const [isMainMenuInteractionLocked, setIsMainMenuInteractionLocked] = useState(!skipEntranceAnimation);
+    const mainMenuInteractionLockedRef = useRef(!skipEntranceAnimation);
     const pressedMainMenuActionRef = useRef<string | null>(null);
     const mainMenuPressStartedAtRef = useRef(0);
     const mainMenuCascadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -205,9 +215,9 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
     const lastPlayedGame = Storage.getLastPlayedGame();
 
     useEffect(() => {
-        mainMenuInteractionLockedRef.current = true;
-        setIsMainMenuInteractionLocked(true);
-        mainMenuCascadeTimerRef.current = setTimeout(() => {
+        mainMenuInteractionLockedRef.current = !skipEntranceAnimation;
+        setIsMainMenuInteractionLocked(!skipEntranceAnimation);
+        if (!skipEntranceAnimation) mainMenuCascadeTimerRef.current = setTimeout(() => {
             mainMenuInteractionLockedRef.current = false;
             setIsMainMenuInteractionLocked(false);
             mainMenuCascadeTimerRef.current = null;
@@ -224,7 +234,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                 clearTimeout(mainMenuActionTimerRef.current);
             }
         };
-    }, [cascadeDelayMs]);
+    }, [cascadeDelayMs, skipEntranceAnimation]);
 
     const beginMainMenuPress = (actionId: string) => {
         if (mainMenuInteractionLockedRef.current) return;
@@ -285,21 +295,6 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
         runMainMenuPressCycle(`difficulty-${diff}`, () => onDifficultySelect(diff));
     };
 
-    useEffect(() => {
-        const updateTimer = () => {
-            const now = Date.now();
-            if (now >= nextBonusClaimTime) {
-                setTimeLeft("");
-                return;
-            }
-            setTimeLeft("See you tomorrow!");
-        };
-        
-        updateTimer();
-        const interval = setInterval(updateTimer, 1000);
-        return () => clearInterval(interval);
-    }, [nextBonusClaimTime]);
-
     const visibleDifficulties = Object.values(Difficulty).filter(d => !hiddenDifficulties.includes(d));
     const isOddCount = visibleDifficulties.length % 2 !== 0;
     const isVerticalStack = visibleDifficulties.length === 2;
@@ -312,12 +307,13 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
 
     return (
         <div 
-            className="flex-1 w-full flex flex-col items-center overflow-hidden" 
+            className={`flex-1 w-full flex flex-col items-center overflow-hidden ${tabNavigation ? 'oku-tabbed-home' : ''} ${skipEntranceAnimation ? 'oku-home-instant' : ''}`}
         >
-             <div className="flex-1 w-full overflow-hidden px-6 md:px-10 lg:px-14 pb-6 md:pb-8 pt-4 md:pt-6 flex flex-col items-center min-h-0">
+             {tabNavigation && <MainScreenHeader points={points} onSettings={onOpenSettings} />}
+             <div data-navigation-scroll className={`oku-home-content flex-1 w-full px-6 md:px-10 lg:px-14 pb-6 md:pb-8 pt-4 md:pt-6 flex flex-col items-center min-h-0 ${tabNavigation ? 'overflow-y-auto hide-scrollbar' : 'overflow-hidden'}`}>
                   
                   <div
-                    className="flex flex-col items-center mb-8 md:mb-10 shrink-0 pt-4 md:pt-6 opacity-0 animate-fade-in-long"
+                    className="oku-home-logo flex flex-col items-center mb-8 md:mb-10 shrink-0 pt-4 md:pt-6 opacity-0 animate-fade-in-long"
                     style={{
                         animationDelay: `${cascadeDelayMs}ms`,
                         animationDuration: `${MAIN_MENU_FADE_DURATION_MS}ms`,
@@ -327,7 +323,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                       <span className="text-xs md:text-sm font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.4em] ml-1">Sudoku</span>
                   </div>
 
-                  <div className={`w-full max-w-md md:max-w-[620px] aspect-[1.15/1] flex flex-wrap content-center justify-center gap-3 md:gap-4 shrink-0 ${lastPlayedGame ? 'mb-1 md:mb-4' : 'mb-8 md:mb-10'}`}>
+                  <div className={`oku-home-difficulties w-full max-w-md md:max-w-[620px] aspect-[1.15/1] flex flex-wrap content-center justify-center gap-3 md:gap-4 shrink-0 ${lastPlayedGame ? 'mb-1 md:mb-4' : 'mb-8 md:mb-10'}`}>
                       {visibleDifficulties.map((diff, index) => {
                           const isPyramidTop = isOddCount && index === 0 && !isOneVisible;
                           
@@ -355,6 +351,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                           contentScale={contentScale}
                                           layoutStyle={layoutStyle}
                                           cascadeDelayMs={cascadeDelayMs}
+                                          skipEntranceAnimation={skipEntranceAnimation}
                                           isPressed={pressedMainMenuAction === `difficulty-${diff}`}
                                           isLocked={isMainMenuInteractionLocked}
                                           onPressStart={() => beginMainMenuPress(`difficulty-${diff}`)}
@@ -373,6 +370,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                                   contentScale={contentScale}
                                   layoutStyle={layoutStyle}
                                   cascadeDelayMs={cascadeDelayMs}
+                                  skipEntranceAnimation={skipEntranceAnimation}
                                   isPressed={pressedMainMenuAction === `difficulty-${diff}`}
                                   isLocked={isMainMenuInteractionLocked}
                                   onPressStart={() => beginMainMenuPress(`difficulty-${diff}`)}
@@ -391,7 +389,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                         animationDuration: `${MAIN_MENU_SLIDE_DURATION_MS}ms`,
                     }}
                   >
-                    <div className="oku-tactile-shell rounded-2xl md:rounded-[22px] w-[55%]">
+                    <div className={`oku-tactile-shell rounded-2xl md:rounded-[22px] ${tabNavigation ? 'w-[calc(95%+12px)] md:w-[calc(95%+16px)]' : 'w-[55%]'}`}>
                       <button 
                         {...getMainMenuPressHandlers('continue')}
                         onClick={(e) => { 
@@ -401,21 +399,24 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                             });
                         }}
                         disabled={isMainMenuInteractionLocked}
-                        className={`oku-difficulty-glass oku-main-menu-tactile ${pressedMainMenuAction === 'continue' ? 'oku-main-menu-tactile--pressed' : ''} relative flex items-center justify-center gap-3 w-full py-3 md:py-4 px-5 rounded-2xl md:rounded-[22px] text-blue-600 dark:text-blue-400`}
+                        aria-label={`Continue playing ${lastPlayedGame.difficulty}, Level ${lastPlayedGame.levelId}`}
+                        className={`${tabNavigation ? 'oku-continue-card' : 'oku-difficulty-glass text-blue-600 dark:text-blue-400'} oku-main-menu-tactile ${pressedMainMenuAction === 'continue' ? 'oku-main-menu-tactile--pressed' : ''} relative flex items-center gap-3 w-full py-3 md:py-4 px-4 rounded-2xl md:rounded-[22px]`}
                       >
-                          <div className="flex flex-col items-center text-center">
-                              <span className="text-sm md:text-base font-bold leading-none">Continue Game</span>
-                              <span className="text-xs md:text-sm font-semibold text-stone-500 dark:text-stone-400 leading-none mt-1.5">
-                                  {lastPlayedGame.difficulty} - {lastPlayedGame.levelId}
+                          {tabNavigation && <SavedBoardPreview board={lastPlayedGame.boardState} />}
+                          <div className={`flex flex-col min-w-0 flex-1 ${tabNavigation ? 'text-left' : 'items-center text-center'}`}>
+                              <span className="text-sm md:text-base font-bold leading-tight">{tabNavigation ? 'Continue playing' : 'Continue Game'}</span>
+                              <span className={`text-xs md:text-sm font-medium leading-snug mt-1.5 ${tabNavigation ? 'text-stone-300' : 'text-stone-500 dark:text-stone-400'}`}>
+                                  {lastPlayedGame.difficulty} · Level {lastPlayedGame.levelId}
                               </span>
                           </div>
-                          <Icons.Next className="absolute right-5 md:right-6 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-blue-600 dark:text-blue-400" />
+                          <Icons.Next className="w-4 h-4 md:w-5 md:h-5 shrink-0" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
                   )}
 
-                  {/* Footer Actions */}
+                  {!tabNavigation && <>
+                  {/* Legacy navigation retained for the rollback build flag. */}
                   <div className="w-full max-w-md md:max-w-[620px] flex flex-col gap-3 md:gap-4 shrink-0">
                       <div 
                         className="flex justify-center gap-3 md:gap-4 opacity-0 animate-slide-in-down w-full"
@@ -552,7 +553,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                           </button>
                       </div>
 
-                      <DiamondBalancePill points={points} className="md:h-12 md:min-w-[92px] md:px-4" />
+                      <DiamondBalancePill points={points} />
                       
                       <div className="oku-tactile-shell rounded-full">
                           <button
@@ -571,6 +572,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                   </div>
 
                   <div className="h-safe-bottom w-full shrink-0" />
+                  </>}
              </div>
         </div>
     );

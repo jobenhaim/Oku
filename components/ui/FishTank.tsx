@@ -429,8 +429,7 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
     return (
         <div 
             ref={containerRef}
-            // Size: w-24 h-16 (~20-25% smaller than original w-32 h-24)
-            className="w-full h-56 relative rounded-[1.75rem] overflow-hidden bg-[#e0f7fa] dark:bg-[#173b52] shadow-xl mb-6 select-none animate-pop mx-auto"
+            className="pepino-tank w-full h-56 relative rounded-[1.75rem] overflow-hidden mb-6 select-none animate-pop mx-auto"
         >
             <style>{`
                 @keyframes heart-float {
@@ -452,42 +451,22 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
                 }
             `}</style>
 
-            {/* Clean Water Gradient */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#e0f7fa] via-[#d1f4fa] to-[#b3e5fc] dark:from-[#173b52] dark:via-[#1f4d63] dark:to-[#2b6879]" />
-
-            {/* --- LAYER 1: BACKGROUND PLANTS (Behind Fish) --- */}
-            {/* Z-Index 5: Behind Fish (30) */}
-            <div className="absolute inset-x-0 bottom-0 h-full z-[5] pointer-events-none">
-                {/* Background Plants Cluster */}
-                {/* Added translate3d(0,0,0) to force layer promotion and fix vibration on iOS */}
-                <div 
-                    className="absolute bottom-4 left-[10%] w-24 h-[60%] opacity-80 mix-blend-multiply origin-bottom"
-                    style={{ transform: 'translate3d(0,0,0)' }}
-                >
-                     <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-                        <defs>
-                            <linearGradient id="plantGradientBg" x1="0.5" x2="0.5" y1="0" y2="1">
-                                <stop offset="0%" stopColor="#4ade80" /> {/* green-400 */}
-                                <stop offset="100%" stopColor="#14532d" /> {/* green-900 */}
-                            </linearGradient>
-                        </defs>
-                        
-                        {/* Leaf 2 (Left - Thicker Base) */}
-                        <g 
-                            className="origin-bottom animate-sway" 
-                            style={{ transformOrigin: '30% 100%', animationDelay: '-1.5s', willChange: 'transform' }}
-                        >
-                           <path d="M 24 100 C 24 70 30 40 25 15 L 27 15 C 33 30 40 60 36 100 Z" fill="url(#plantGradientBg)" opacity="0.8" />
-                        </g>
-
-                        {/* Leaf 3 (Right - Thicker Base) */}
-                        <g 
-                            className="origin-bottom animate-sway-slow" 
-                            style={{ transformOrigin: '70% 100%', animationDelay: '-3s', willChange: 'transform' }}
-                        >
-                           <path d="M 69 100 C 69 70 75 40 78 15 L 80 15 C 85 40 81 70 81 100 Z" fill="url(#plantGradientBg)" opacity="0.9" />
-                        </g>
-                     </svg>
+            {/* Match the shop preview's quiet water and leafy scenery. */}
+            <div className="shop-aquarium-light pointer-events-none" aria-hidden="true" />
+            <div className="absolute inset-0 z-[5] pointer-events-none" aria-hidden="true">
+                <div className="pepino-tank-plant-motion pepino-tank-plant-motion--left">
+                    <div className="shop-aquarium-plant shop-aquarium-plant--left" />
+                </div>
+                <div className="pepino-tank-plant-motion pepino-tank-plant-motion--single">
+                    <svg className="w-full h-full" viewBox="0 0 28 66">
+                        <path d="M11 66 C5 45 3 20 24 2 C18 24 25 46 15 66Z" fill="#739f87" />
+                    </svg>
+                </div>
+                <div className="pepino-tank-plant-motion pepino-tank-plant-motion--sprout">
+                    <svg className="w-full h-full" viewBox="0 0 38 45">
+                        <path d="M18 45 C5 35 2 17 4 7 C19 15 24 30 21 45Z" fill="#a2b58b" />
+                        <path d="M19 45 C15 25 24 10 35 3 C34 23 30 35 22 45Z" fill="#83a17c" />
+                    </svg>
                 </div>
             </div>
 
@@ -597,60 +576,26 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
                  )}
             </div>
 
-            {/* --- LAYER 2: FOREGROUND PLANT (In Front of Fish) --- */}
-            {/* Z-Index 35: In front of Fish (30), Behind Scenery (40) */}
-            <div className="absolute inset-x-0 bottom-0 h-full z-[35] pointer-events-none">
-                {/* Added translate3d(0,0,0) to force layer promotion and fix vibration on iOS */}
-                <div 
-                    className="absolute bottom-4 left-[10%] w-24 h-[60%] opacity-80 mix-blend-multiply origin-bottom"
-                    style={{ transform: 'translate3d(0,0,0)' }}
-                >
-                     <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-                        <defs>
-                            <linearGradient id="plantGradientFg" x1="0.5" x2="0.5" y1="0" y2="1">
-                                <stop offset="0%" stopColor="#4ade80" /> {/* green-400 */}
-                                <stop offset="100%" stopColor="#14532d" /> {/* green-900 */}
-                            </linearGradient>
-                        </defs>
-                        
-                        {/* Leaf 1 (Main Tall - Thicker Base) */}
-                        <g 
-                            className="origin-bottom animate-sway-slow" 
-                            style={{ transformOrigin: '50% 100%', willChange: 'transform' }}
-                        >
-                           <path d="M 42 100 C 42 60 50 30 48 5 L 50 5 C 50 30 58 60 58 100 Z" fill="url(#plantGradientFg)" />
-                        </g>
-                     </svg>
+            {/* In front of Pepino, so his normal swim path can take him out of sight. */}
+            <div className="absolute inset-0 z-[34] pointer-events-none" aria-hidden="true">
+                <div className="pepino-tank-plant-motion pepino-tank-plant-motion--right">
+                    <div className="shop-aquarium-plant shop-aquarium-plant--right" />
                 </div>
             </div>
-            
-            {/* --- SCENERY LAYER (Sand & Rocks) --- */}
-            {/* Z-Index 40: Frontmost Layer (Covers plant bases & fish if low) */}
-            <div className="absolute inset-x-0 bottom-0 h-20 z-40 pointer-events-none">
-                
-                {/* Background Rock (New Tall Rock) - Lighter color for depth, positioned behind */}
-                {/* Adjusted right position from 4% to 8% to move it slightly left */}
-                <div className="absolute bottom-1 right-[8%] w-16 h-14 bg-gradient-to-t from-[#a8a29e] to-[#d6d3d1] rounded-[30%_70%_70%_30%_/_30%_50%_50%_70%] rotate-[-8deg] z-0" />
-
-                {/* Left Rock */}
-                <div className="absolute bottom-2 left-[12%] w-12 h-8 bg-gradient-to-tr from-[#7d7873] to-[#a8a29e] rounded-[45%_55%_50%_50%_/_50%_50%_40%_40%] rotate-2 shadow-sm z-10" />
-                
-                {/* Right Small Rock (Foreground) */}
-                <div className="absolute bottom-1 right-[18%] w-9 h-7 bg-gradient-to-tl from-[#8a8580] to-[#b5b0ab] rounded-[50%_50%_40%_60%] -rotate-3 shadow-sm z-10" />
-                
-                {/* Center Pebble */}
-                <div className="absolute bottom-3 left-[45%] w-5 h-4 bg-gradient-to-t from-[#96918c] to-[#c2bdb8] rounded-full z-10" />
-
-                {/* Sand Layer */}
-                <svg className="absolute bottom-0 w-full h-full z-[20]" preserveAspectRatio="none" viewBox="0 0 100 100">
-                    <defs>
-                        <linearGradient id="sandGradient" x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0%" stopColor="#f7eed9" /> {/* Very Light Sand */}
-                            <stop offset="100%" stopColor="#ebe0c5" /> {/* Slightly Darker */}
-                        </linearGradient>
-                    </defs>
-                    {/* Gentle Wave: Starts around y=75 (approx 15-20px high in h-20/80px container, which is ~10% of tank) */}
-                    <path d="M0 100 L0 75 Q 30 82 50 78 T 100 72 L 100 100 Z" fill="url(#sandGradient)" />
+            <div className="pepino-tank-hideaway-rock absolute z-[35] pointer-events-none" aria-hidden="true" />
+            <div className="shop-aquarium-pebbles z-40 pointer-events-none" aria-hidden="true" />
+            <div className="absolute inset-0 z-[41] pointer-events-none" aria-hidden="true">
+                <svg className="pepino-tank-stone pepino-tank-stone--one" viewBox="0 0 34 23">
+                    <path d="M2 17 6 8Q7 5 12 4L23 2Q27 2 29 7L33 16Q34 20 28 21L9 22Q1 22 2 17Z" fill="currentColor" />
+                </svg>
+                <svg className="pepino-tank-stone pepino-tank-stone--two" viewBox="0 0 27 15">
+                    <path d="M1 11 6 5 15 2Q18 1 21 5L26 10Q28 14 22 14L5 14Q0 14 1 11Z" fill="currentColor" />
+                </svg>
+                <svg className="pepino-tank-stone pepino-tank-stone--three" viewBox="0 0 15 12">
+                    <path d="M1 8 4 3 10 1 14 6Q16 10 12 11L4 11Q0 11 1 8Z" fill="currentColor" />
+                </svg>
+                <svg className="pepino-tank-stone pepino-tank-stone--four" viewBox="0 0 25 20">
+                    <path d="M1 14 4 7Q5 4 9 3L15 1 21 5 24 14Q26 18 20 19L6 19Q0 19 1 14Z" fill="currentColor" />
                 </svg>
             </div>
 
@@ -692,8 +637,7 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
                 </div>
             )}
 
-            {/* Tank Reflection */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-white/30 to-transparent pointer-events-none rounded-bl-full" />
+
         </div>
     );
 };

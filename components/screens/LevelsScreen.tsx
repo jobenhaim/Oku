@@ -571,6 +571,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
             {/* Scrollable Content Area */}
             <div 
                 ref={scrollContainerRef}
+                data-navigation-scroll
                 className="scroll-edge-fade flex-1 w-full overflow-y-auto px-6 md:px-10 pb-6 md:pb-8 hide-scrollbar flex flex-col items-center relative"
             >
                 {renderContent()}

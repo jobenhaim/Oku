@@ -4,6 +4,7 @@ import { Difficulty, AppSettings, Board, MoveLogEntry, CellValue, HintCandidateP
 import { useSudokuBoard } from '../hooks/useSudokuBoard';
 import { useGameSkills } from '../hooks/useGameSkills';
 import { useGameTimer } from '../hooks/useGameTimer';
+import { useHoldToHideNotes } from '../hooks/useHoldToHideNotes';
 import { SudokuGrid } from './game/SudokuGrid';
 import { GameControls, type HintNotice } from './game/GameControls';
 import { HintTheater } from './game/HintTheater';
@@ -146,7 +147,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
 }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [isEraseMode, setIsEraseMode] = useState(false);
-  const [isFocusMode, setIsFocusMode] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [isRestarting, setIsRestarting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -623,6 +623,12 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       isGameLocked: () => gameFinishedRef.current,
   });
 
+  const { notesHidden, cancelNoteHold, noteHoldHandlers } = useHoldToHideNotes(
+      isPaused || isSettingsOpen || isCompleted || isEnding || isRestarting
+          || showRestartConfirm || isHintTheaterOpen || isHintPreparing || isScanning || showReplay,
+      puzzleKey,
+  );
+
   useEffect(() => {
       if (activeHint || !shouldRestoreHintFocusRef.current) return;
       shouldRestoreHintFocusRef.current = false;
@@ -703,14 +709,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           sounds.playPlacementTap();
           pulseHintCandidateUpdates(update.updatedCells);
           setIsEraseMode(false);
-          if (isFocusMode) {
-              setIsFocusMode(false);
-              enqueuePill({
-                  text: 'Notes visible',
-                  type: 'notes',
-                  holdMs: 2500,
-              }, true);
-          }
           closeHintUi(true);
           return;
       }
@@ -766,7 +764,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       applyHintCandidateUpdate,
       enqueuePill,
       hintCandidateProgress,
-      isFocusMode,
       placeNumberAt,
       presentHintNotice,
       pulseHintCandidateUpdates,
@@ -928,6 +925,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       let nativeListener: { remove: () => Promise<void> } | undefined;
 
       const saveWhenInactive = () => {
+          cancelNoteHold();
           const now = Date.now();
           // iOS can emit both native and web lifecycle events for one change.
           if (now - lastLifecycleSaveAtRef.current < 500) return;
@@ -955,7 +953,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           document.removeEventListener('visibilitychange', handleVisibilityChange);
           if (nativeListener) void nativeListener.remove();
       };
-  }, [difficulty, levelId]);
+  }, [difficulty, levelId, cancelNoteHold]);
 
   useEffect(() => {
       halfwayTrackingReadyRef.current = false;
@@ -1013,7 +1011,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       setIsEnding(false);
       setAreCompletionNumbersLocked(false);
       setIsPaused(false);
-      setIsFocusMode(false);
       setShowRestartConfirm(false);
       setReplayUrl(null);
       setShowReplay(false);
@@ -1026,7 +1023,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       halfwayShownRef.current = editableCells > 0 && filledEditableCells >= Math.ceil(editableCells / 2);
       
       setShowStartHint(true);
-      const hintTimer = setTimeout(() => setShowStartHint(false), 5000);
+      // 0.3s entrance delay + 1s fade-in + 10s fully visible.
+      const hintTimer = setTimeout(() => setShowStartHint(false), 11300);
       const trackingTimer = setTimeout(() => {
           halfwayTrackingReadyRef.current = true;
       }, 0);
@@ -1257,7 +1255,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           setScanRefillsPurchased(0);
           setShowRestartConfirm(false);
           setIsPaused(false);
-          setIsFocusMode(false);
           setIsEraseMode(false);
           setAnimatingSections(new Set());
           setNudgeCue(null);
@@ -1274,7 +1271,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
           setPillMessage(null);
 
           setShowStartHint(true);
-          window.setTimeout(() => setShowStartHint(false), 5000);
+          window.setTimeout(() => setShowStartHint(false), 11300);
           restartTimerRef.current = null;
           setIsRestarting(false);
       }, 800);
@@ -1418,7 +1415,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                   <Icons.Back className="w-6 h-6 md:w-7 md:h-7" />
               </button>
               <div className="absolute left-8 md:left-10 z-30">
-                  <DiamondBalancePill points={currentPoints} className="h-8 md:h-10 min-w-[68px] md:min-w-[76px] px-2.5 md:px-3" />
+                  <DiamondBalancePill points={currentPoints} />
               </div>
 
               {/* Center Column: Title & Timer - Absolute Centered */}
@@ -1467,7 +1464,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       </motion.div>
 
       <div 
-          className="flex-1 w-full flex flex-col items-center justify-start relative cursor-default" 
+          className="gameplay-note-hold-area flex-1 w-full flex flex-col items-center justify-start relative cursor-default select-none"
+          {...noteHoldHandlers}
           onClick={handleBackgroundClick}
       >
          {/* Fixed notification slot prevents the Sudoku grid from shifting. */}
@@ -1517,6 +1515,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
             </AnimatePresence>
 
             <div
+                data-no-note-hold
                 className="relative z-10 w-full flex justify-center"
                 onPointerDown={activeHint ? undefined : registerNudgeActivity}
                 aria-hidden={activeHint ? true : undefined}
@@ -1538,7 +1537,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                     enableDragExplore={!activeHint && !isScanning && !settings.digitFirst}
                     onCellLongPress={onCellLongPressWrapper}
                     enableCellLongPress={!activeHint && !isScanning && settings.digitFirst && isPencilMode && activeNumber !== null}
-                    hideNotes={activeHint ? true : isFocusMode}
+                    hideNotes={!!activeHint || notesHidden}
                     lockPlayerNumbers={activeHint ? true : areCompletionNumbersLocked}
                     interactive={!activeHint && !isScanning}
                     hintFrame={activeHint?.plan.frames[hintFrameIndex]}
@@ -1570,6 +1569,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
              animate={{ opacity: 1, y: 0 }}
              transition={{ duration: 0.45, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
              className="w-full max-w-[500px] md:max-w-[560px] px-2 md:px-0 mt-4 md:mt-5 relative z-[100]"
+             data-no-note-hold
              onPointerDown={registerNudgeActivity}
              onClick={(e) => e.stopPropagation()}
          >
@@ -1591,6 +1591,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
              animate={{ opacity: 1, y: 0 }}
              transition={{ duration: 0.45, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
              className="w-full max-w-md md:max-w-[540px] px-6 md:px-0 mt-10 md:mt-8 relative z-[100]"
+             data-no-note-hold
              onClick={(e) => e.stopPropagation()}
          >
              <GameControls 
@@ -1598,7 +1599,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                  canErase={settings.digitFirst || canErase}
                  isEraseMode={settings.digitFirst && isEraseMode}
                  isPencilMode={isPencilMode}
-                 isFocusMode={isFocusMode}
                  onUndo={() => {
                      if (gameFinishedRef.current || isScanning) return;
                      handleUndo(isPaused, isCompleted || isEnding);
@@ -1618,17 +1618,8 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                      if (gameFinishedRef.current || isEnding || isScanning) return;
                      sounds.playClick();
                      const nextPencilMode = !isPencilMode;
-                     const isRevealingFocusedNotes = nextPencilMode && isFocusMode;
-                     if (isRevealingFocusedNotes) {
-                         setIsFocusMode(false);
-                         enqueuePill({
-                             text: 'Notes visible',
-                             type: 'notes',
-                             holdMs: 2500
-                         }, true);
-                     }
                      setIsPencilMode(nextPencilMode);
-                     if (nextPencilMode && !isRevealingFocusedNotes && !notesReadyShownRef.current) {
+                     if (nextPencilMode && !notesReadyShownRef.current) {
                          notesReadyShownRef.current = true;
                          enqueuePill({
                              text: settings.digitFirst
@@ -1638,20 +1629,6 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                              holdMs: 4000
                          });
                      }
-                 }}
-                 onToggleFocus={() => {
-                     if (gameFinishedRef.current || isEnding || isScanning) return;
-                     sounds.playClick();
-                     const nextFocusMode = !isFocusMode;
-                     setIsFocusMode(nextFocusMode);
-                     if (nextFocusMode && isPencilMode) {
-                         setIsPencilMode(false);
-                     }
-                     enqueuePill({
-                         text: nextFocusMode ? 'Notes hidden' : 'Notes visible',
-                         type: 'notes',
-                         holdMs: 2500
-                     }, true);
                  }}
                  purchasedSkills={purchasedSkills}
                  scanUses={scanUses}
@@ -1699,15 +1676,16 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
          </motion.div>
          )}
          
-         {/* Deselect Text - Increased spacing (mt-8) */}
+         {/* Gameplay instructions: fade in together, hold for 10s, then fade out. */}
          {!activeHint && (
          <motion.div 
              initial={{ opacity: 0 }}
              animate={{ opacity: showStartHint ? 1 : 0 }}
-             transition={{ duration: 1, delay: 0.3 }}
-             className="mt-8 mb-4 pointer-events-none"
+             transition={{ duration: 1, delay: showStartHint ? 0.3 : 0 }}
+             className="mt-8 mb-4 pointer-events-none flex flex-col items-center gap-1"
          >
              <span className="text-xs font-light text-stone-500 dark:text-stone-400 tracking-wide">Tap here to deselect</span>
+             <span className="text-xs font-light text-stone-500 dark:text-stone-400 tracking-wide">Hold to hide notes</span>
          </motion.div>
          )}
       </div>

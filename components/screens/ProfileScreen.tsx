@@ -3,6 +3,7 @@ import { AchievementItem, getOtherAchievements, getPackAchievements, getProfileT
 import { PROFILE_ACCOUNT_INTRO_KEY, Storage } from '../../utils/storage';
 import { sounds } from '../../utils/sound';
 import { DiamondBalancePill } from '../ui/DiamondBalancePill';
+import { MainScreenHeader } from '../ui/MainScreenHeader';
 import { Icons } from '../ui/Icons';
 import { Difficulty } from '../../types';
 import { useTactilePress } from '../../hooks/useTactilePress';
@@ -12,6 +13,7 @@ import type { User } from '@capacitor-firebase/authentication';
 
 interface ProfileScreenProps {
     onClose: () => void;
+    onOpenSettings?: () => void;
     points: number;
     claimedRank: number;
     onTitleClaimed: (rank: number) => void;
@@ -242,23 +244,19 @@ const AchievementList: React.FC<{
     emptyDetail: string;
 }> = ({ achievements, onClaim, enteringAchievementIds, emptyTitle, emptyDetail }) => (
     achievements.length > 0 ? (
-        <div className="flex flex-col gap-2.5 md:gap-3.5 animate-fade-in-fast">
+        <div className="flex flex-col gap-2.5 md:gap-3.5">
             {achievements.map((achievement) => (
-                <motion.div
-                    key={achievement.id}
-                    layout="position"
-                    transition={{ layout: { type: 'spring', stiffness: 360, damping: 32, mass: 0.65 } }}
-                >
+                <div key={achievement.id}>
                     <AchievementRow
                         achievement={achievement}
                         onClaim={onClaim}
                         isEntering={enteringAchievementIds.has(achievement.id)}
                     />
-                </motion.div>
+                </div>
             ))}
         </div>
     ) : (
-        <div className="animate-fade-in-fast rounded-[1.25rem] border border-stone-200/80 dark:border-stone-800 bg-white/75 dark:bg-stone-900/75 px-5 md:px-7 py-7 md:py-9 text-center">
+        <div className="rounded-[1.25rem] border border-stone-200/80 dark:border-stone-800 bg-white/75 dark:bg-stone-900/75 px-5 md:px-7 py-7 md:py-9 text-center">
             <Icons.Check className="w-7 h-7 md:w-8 md:h-8 mx-auto text-emerald-400 mb-2" />
             <span className="block text-sm md:text-base font-bold text-stone-800 dark:text-stone-100">{emptyTitle}</span>
             <span className="block mt-1 text-[11px] md:text-[13px] font-medium text-stone-500 dark:text-stone-400">{emptyDetail}</span>
@@ -267,6 +265,7 @@ const AchievementList: React.FC<{
 );
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
+    onOpenSettings,
     onClose,
     points,
     claimedRank,
@@ -625,7 +624,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
     return (
         <div className="w-full h-full bg-transparent flex flex-col font-sans text-t-primary">
-            <header className="w-full max-w-md md:max-w-[700px] mx-auto flex items-center justify-between px-6 md:px-0 pt-4 md:pt-7 pb-4 relative shrink-0 z-20">
+            {onOpenSettings ? <MainScreenHeader title="Profile" points={points} onSettings={onOpenSettings} /> : <header className="w-full max-w-md md:max-w-[700px] mx-auto flex items-center justify-between px-6 md:px-0 pt-4 md:pt-7 pb-4 relative shrink-0 z-20">
                 <button onClick={onClose} aria-label="Back to menu" className="p-2 md:p-2.5 rounded-full -ml-2 text-t-icon active:scale-95 transition-transform relative z-30">
                     <Icons.Back className="w-6 h-6 md:w-7 md:h-7 text-t-icon" />
                 </button>
@@ -635,9 +634,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 </div>
 
                 <DiamondBalancePill points={points} />
-            </header>
+            </header>}
 
-            <main ref={profileScrollRef} className="achievement-scroll-container scroll-edge-fade flex-1 overflow-y-auto hide-scrollbar px-6 md:px-0 pb-8">
+            <main data-navigation-scroll ref={profileScrollRef} className="achievement-scroll-container scroll-edge-fade flex-1 overflow-y-auto hide-scrollbar px-6 md:px-0 pb-8">
                 <div className="w-full max-w-md md:max-w-[620px] mx-auto space-y-6 md:space-y-8">
                     <section className="flex flex-col items-center text-center pt-3 md:pt-5">
                         {!profile.hasEditedName && !isEditingName && (
@@ -667,7 +666,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         <div className="flex items-end justify-between px-1 gap-4">
                             <div>
                                 <span className="block text-[10px] md:text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-[0.16em]">Account</span>
-                                {!hasAccountCard && !authLoading && (
+                                {!hasAccountCard && (
                                     <span className="block mt-1 text-[12px] md:text-sm font-medium text-stone-600 dark:text-stone-300">
                                         Save your progress. Continue with:
                                     </span>
@@ -677,7 +676,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
                         <div className={`rounded-[1.4rem] border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm ${hasAccountCard ? 'px-4 py-2.5 md:px-5 md:py-3' : 'p-4 md:p-5'}`}>
                             {authLoading && !accountPreview ? (
-                                <div className="h-12 flex items-center justify-center text-xs md:text-sm font-semibold text-stone-400">
+                                <div className={`${hasAccountCard ? 'h-11 md:h-12' : 'h-12 md:h-13'} flex items-center justify-center text-xs md:text-sm font-semibold text-stone-400`}>
                                     Checking account…
                                 </div>
                             ) : hasAccountCard ? (

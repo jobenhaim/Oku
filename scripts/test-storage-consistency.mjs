@@ -66,15 +66,16 @@ const {
 
 const skillPrices = Object.fromEntries(SKILLS.map(({ name, cost }) => [name, cost]));
 assert.deepEqual(
-    { Focus: skillPrices.Focus, Guard: skillPrices.Guard, Scan: skillPrices.Scan },
-    { Focus: 200, Guard: 200, Scan: 200 },
-    'Focus, Guard, and Scan should share one accessible unlock price'
+    { Guard: skillPrices.Guard, Scan: skillPrices.Scan },
+    { Guard: 200, Scan: 200 },
+    'Guard and Scan should retain their unlock prices'
 );
+assert.equal(skillPrices.Focus, undefined, 'Focus is retired from the skill catalog');
 
 const starterOffer = DIAMOND_OFFERS.find(({ id }) => id === 'starter_pack');
 assert.ok(starterOffer, 'the Starter Pack offer should exist');
 assert.equal(starterOffer.diamonds, 800);
-assert.match(starterOffer.includes.join(' '), /Focus/);
+assert.doesNotMatch(starterOffer.includes.join(' '), /Focus/);
 assert.match(starterOffer.includes.join(' '), /Guard/);
 assert.match(starterOffer.includes.join(' '), /Scan/);
 
@@ -500,7 +501,7 @@ assert.equal(starterPurchase.notifications, 1);
 
 const assertStarterEntitlements = (data) => {
     assert.equal(data.starterPackPurchased, true);
-    for (const skillId of ['skill-focus', 'skill-scribe', 'skill-scan']) {
+    for (const skillId of ['skill-scribe', 'skill-scan']) {
         assert.ok(data.purchasedSkills.includes(skillId), `${skillId} should be owned`);
         assert.ok(data.enabledSkills.includes(skillId), `${skillId} should be enabled`);
     }
@@ -511,6 +512,8 @@ const assertStarterEntitlements = (data) => {
 };
 
 const purchasedStarter = Storage.getStoredData();
+assert.ok(!purchasedStarter.purchasedSkills.includes('skill-focus'), 'New Starter Packs must not grant retired Focus');
+assert.ok(!purchasedStarter.enabledSkills.includes('skill-focus'));
 assertStarterEntitlements(purchasedStarter);
 assert.equal(purchasedStarter.points, 825);
 assert.equal(purchasedStarter.stats.totalDiamondsEarned, 800);
@@ -529,7 +532,7 @@ assert.equal(duplicateStarter.notifications, 0);
 assert.deepEqual(Storage.getStoredData(), beforeDuplicateStarter);
 
 // Restoring a permanent Starter entitlement recovers every permanent reward,
-// including Focus, but never re-awards its 800 consumable diamonds.
+// excluding retired Focus, and never re-awards its 800 consumable diamonds.
 const starterRestoreSeed = Storage.createDefaultData();
 starterRestoreSeed.points = 7;
 await installSnapshot(starterRestoreSeed);

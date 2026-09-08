@@ -1,12 +1,17 @@
 {
   "name": "oku",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
+    "test:navigation": "node scripts/test-navigation.mjs",
+    "test:daily-gift": "node scripts/test-daily-gift.mjs",
+    "test:market-styles": "node scripts/test-market-styles.mjs",
+    "test:hold-notes": "node scripts/test-hold-notes.mjs",
+    "test:shop-layout": "node scripts/test-shop-layout.mjs",
     "test:profiles": "node scripts/test-profile-policy.mjs && node scripts/test-profile-storage.mjs",
     "test:storage-consistency": "node scripts/test-storage-consistency.mjs",
     "test:cloud-save": "node scripts/test-cloud-save.mjs",

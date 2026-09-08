@@ -819,7 +819,7 @@ function ensureStarterPackUnlocked(data: StoredData) {
   if (!data.enabledSkills) data.enabledSkills = [];
   if (!data.purchasedSoundPacks) data.purchasedSoundPacks = ['snd-zen'];
 
-  for (const skillId of ['skill-focus', 'skill-scribe', 'skill-scan']) {
+  for (const skillId of ['skill-scribe', 'skill-scan']) {
     if (!data.purchasedSkills.includes(skillId)) {
       data.purchasedSkills.push(skillId);
     }

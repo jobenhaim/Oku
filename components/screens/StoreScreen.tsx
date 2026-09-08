@@ -4,12 +4,14 @@ import { Icons } from '../ui/Icons';
 import { sounds } from '../../utils/sound';
 import { STATIC_BACKGROUNDS, NUMBER_COLORS, SKILLS, SOUND_PACKS } from '../../utils/constants';
 import { DiamondBalancePill } from '../ui/DiamondBalancePill';
+import { MainScreenHeader } from '../ui/MainScreenHeader';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTactilePress } from '../../hooks/useTactilePress';
 
 interface StoreScreenProps {
     points: number;
     onBack: () => void;
+    onOpenSettings?: () => void;
     purchasedSkills: string[];
     enabledSkills: string[];
     purchasedBackgrounds: string[];
@@ -60,6 +62,7 @@ const StoreItemWrapper: React.FC<StoreItemWrapperProps> = ({ children, delay }) 
 export const StoreScreen: React.FC<StoreScreenProps> = ({
     points,
     onBack,
+    onOpenSettings,
     purchasedSkills,
     enabledSkills,
     purchasedBackgrounds,
@@ -165,9 +168,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                     const SkillIcon = skill.icon;
                     const delay = idx * 5;
                     const iconOpticalScale =
-                        skill.id === 'skill-focus'
-                            ? 'scale-[1.38]'
-                            : skill.id === 'skill-scribe'
+                        skill.id === 'skill-scribe'
                                 ? 'scale-[1.03] translate-x-[2px]'
                                 : skill.id === 'skill-scan'
                                     ? 'scale-[0.91]'
@@ -217,7 +218,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
         <div className="mb-8 md:mb-10">
             <h2 className="text-lg md:text-xl font-bold text-t-primary mb-3 md:mb-4 ml-1">Scenes</h2>
             <div className="mb-6 md:mb-8">
-                <div className="grid grid-cols-5 md:grid-cols-6 gap-x-2 md:gap-x-3 gap-y-6 md:gap-y-7 items-start">{STATIC_BACKGROUNDS.map((bg, idx) => {
+                <div className="grid grid-cols-4 gap-x-2 md:gap-x-3 gap-y-6 md:gap-y-7 items-start">{STATIC_BACKGROUNDS.map((bg, idx) => {
                     const isPurchased = purchasedBackgrounds.includes(bg.id);
                     const isSelected = selectedBackgroundId === bg.id;
                     const delay = activeTab === 'all' ? (3 + idx) * 5 : idx * 5;
@@ -245,7 +246,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
     const renderSoundPacks = () => (
         <div className="mb-8 md:mb-10">
             <h2 className="text-lg md:text-xl font-bold text-t-primary mb-3 md:mb-4 ml-1">Sound Packs</h2>
-            <div className="grid grid-cols-5 md:grid-cols-6 gap-x-2 md:gap-x-3 gap-y-6 md:gap-y-7 items-start">{SOUND_PACKS.map((pack, idx) => {
+            <div className="grid grid-cols-4 gap-x-2 md:gap-x-3 gap-y-6 md:gap-y-7 items-start">{SOUND_PACKS.map((pack, idx) => {
                 const isPurchased = purchasedSoundPacks.includes(pack.id);
                 const isSelected = selectedSoundPackId === pack.id;
                 const isInfoActive = activeInfoId === pack.id;
@@ -283,7 +284,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                         decoding="async"
                                         className={`${isPurchased ? 'w-[42px] h-[42px]' : 'w-[32px] h-[32px]'} max-w-[70%] max-h-[70%] object-contain select-none pointer-events-none`}
                                         style={{
-                                            transform: `scale(${(isPurchased ? 1.15 : 1) * (useLargerArtwork ? 1.1 : 1)})`
+                                            transform: `scale(${(isPurchased ? 1.15 : 1.1) * (useLargerArtwork ? 1.1 : 1)})`
                                         }}
                                     />
                                 </div>
@@ -301,7 +302,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
     const renderNumbers = () => (
         <div className="mb-8 md:mb-10">
             <h2 className="text-lg md:text-xl font-bold text-t-primary mb-3 md:mb-4 ml-1">Number Styles</h2>
-            <div className="grid grid-cols-5 md:grid-cols-6 gap-x-2 md:gap-x-3 gap-y-6 md:gap-y-7 items-start">{NUMBER_COLORS.map((num, idx) => {
+            <div className="grid grid-cols-4 gap-x-2 md:gap-x-3 gap-y-6 md:gap-y-7 items-start">{NUMBER_COLORS.map((num, idx) => {
                 const isPurchased = purchasedNumberColors.includes(num.id);
                 const isSelected = selectedNumberColorId === num.id;
                 
@@ -319,7 +320,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                 <div className="flex-1 flex items-center justify-center w-full">
                                     <div
                                         className="grid grid-cols-3 grid-rows-3 place-items-center w-[38px] h-[38px] md:w-[46px] md:h-[46px]"
-                                        style={{ transform: `scale(${isPurchased ? 1.08 : 1})` }}
+                                        style={{ transform: `scale(${isPurchased ? 1.25 : 1})` }}
                                         aria-label={`${num.name} number pad preview`}
                                     >
                                         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(digit => (
@@ -371,7 +372,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
         >
              {/* Header */}
              <div className="w-full max-w-md md:max-w-[700px] flex flex-col px-6 md:px-0 pt-4 md:pt-7 pb-2 relative shrink-0 z-20 gap-4">
-                <div className="flex items-center justify-between w-full mb-2">
+                {onOpenSettings ? <div className="oku-market-header"><MainScreenHeader title="Market" points={points} onSettings={onOpenSettings} /></div> : <div className="flex items-center justify-between w-full mb-2">
                     <button onClick={onBack} aria-label="Back to menu" className="p-2 md:p-2.5 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
                         <Icons.Back className="w-6 h-6 md:w-7 md:h-7 text-t-icon" />
                     </button>
@@ -383,6 +384,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                     <DiamondBalancePill points={points} />
                 </div>
 
+                }
                 {/* Cleaner Category Tabs (Segmented Control Style) */}
                 <div className="oku-segmented-control w-full md:max-w-[620px] md:mx-auto p-1 rounded-xl flex items-center mt-2 relative">
                     {TABS.map((tab) => {
@@ -415,6 +417,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
 
              <div 
                 ref={scrollContainerRef}
+                data-navigation-scroll
                 className="scroll-edge-fade flex-1 w-full overflow-y-auto overflow-x-hidden px-6 md:px-0 pb-6 hide-scrollbar flex flex-col items-center relative"
             >
                   <div className="w-full max-w-md md:max-w-[620px] pt-6 md:pt-8">

@@ -166,7 +166,7 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
     const backgrounds = data.purchasedBackgrounds.filter((id) => id !== 'bg-default' && id !== 'bg-dyn-default').length;
     const numberStyles = data.purchasedNumberColors.filter((id) => id !== 'num-default').length;
     const soundPacks = data.purchasedSoundPacks.filter((id) => id !== 'snd-zen').length;
-    const skills = new Set(data.purchasedSkills.filter((id) => ['skill-focus', 'skill-nudge', 'skill-scribe', 'skill-scan'].includes(id))).size;
+    const skills = new Set(data.purchasedSkills.filter((id) => ['skill-nudge', 'skill-scribe', 'skill-scan'].includes(id))).size;
     const winsByDifficulty = data.stats?.gamesWonByDifficulty || {};
 
     type AchievementDefinition = Omit<AchievementItem, 'claimed' | 'ready'>;
@@ -209,7 +209,7 @@ export const getOtherAchievements = (data: StoredData): AchievementItem[] => {
         { id: 'eight-backgrounds', title: 'Scene Setter', detail: 'Get 8 scenes.', current: backgrounds, target: 8, reward: 50, category: 'collection' },
         { id: 'eight-number-styles', title: 'Number Wardrobe', detail: 'Get 8 number styles.', current: numberStyles, target: 8, reward: 50, category: 'collection' },
         { id: 'eight-sound-packs', title: 'Sound Library', detail: 'Get 8 sound packs.', current: soundPacks, target: 8, reward: 50, category: 'collection' },
-        { id: 'all-skills', title: 'Complete Toolkit', detail: 'Unlock every skill.', current: skills, target: 4, reward: 50, category: 'collection' },
+        { id: 'all-skills', title: 'Complete Toolkit', detail: 'Unlock every skill.', current: skills, target: 3, reward: 50, category: 'collection' },
     ];
 
     return definitions.map((item) => makeItem(claimedIds, item));

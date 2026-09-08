@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Difficulty, AppSettings, DiamondOffer, PepinoState, DiamondEarnSource } from './types';
 import { SudokuGame } from './components/SudokuGame';
 import { Storage } from './utils/storage';
+import { getDailyGiftState, nextLocalMidnight } from './utils/dailyGift';
+import { useDailyGiftClock } from './hooks/useDailyGiftClock';
 import { sounds } from './utils/sound';
 import { getPackCost, NUMBER_COLORS, ALL_BACKGROUNDS } from './utils/constants';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
@@ -12,6 +14,9 @@ import { BOOKS_2_ALL_PRODUCT_ID, BOOKS_3_ALL_PRODUCT_ID, BOOKS_FOREVER_PRODUCT_I
 import type { SuccessfulIAPPurchase } from './utils/iap';
 import { Auth } from './utils/auth';
 import { CloudSave, CLOUD_DATA_UPDATED_EVENT } from './utils/cloudSave';
+import { BottomNavigation } from './components/ui/BottomNavigation';
+import { useNativeNavigation, useNavigationDialog } from './hooks/useNativeNavigation';
+import { TABBED_NAVIGATION_ENABLED, tabForScreen, type MainTab } from './utils/navigation';
 
 // UI Components
 import { BookUnlockConfirmModal, PurchaseModal, ReplayModal, NotEnoughPointsModal, SettingsModal, PaymentModal, ResetConfirmModal } from './components/ui/Modals';
@@ -72,6 +77,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const [screen, setScreen] = useState<Screen>(() => (
       hintPreview ? 'game' : accountPreview ? 'profile' : 'difficulty'
   ));
+  const currentScreenRef = useRef(screen);
   const [prevScreen, setPrevScreen] = useState<Screen | null>(null);
   const [direction, setDirection] = useState<number>(0);
   const [difficultyAnimationKey, setDifficultyAnimationKey] = useState(0);
@@ -167,6 +173,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   
   const [nextBonusClaimTime, setNextBonusClaimTime] = useState(Storage.getNextBonusClaimTime());
+  const dailyGiftNow = useDailyGiftClock(nextBonusClaimTime);
+  const hasDailyGift = getDailyGiftState(nextBonusClaimTime, dailyGiftNow).ready;
   
   // Track actual dark mode state for JS logic
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -413,23 +421,27 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   }, []);
 
   const navigate = (nextScreen: Screen, dir: 'forward' | 'back' | 'none' = 'forward') => {
-      if (nextScreen === screen || isNavigatingRef.current) return;
+      const currentScreen = currentScreenRef.current;
+      if (nextScreen === currentScreen || isNavigatingRef.current) return;
 
-      if (screen === 'game' && nextScreen !== 'game') {
+      if (currentScreen === 'game' && nextScreen !== 'game') {
           closeHintPreviewSession();
       }
 
-      isNavigatingRef.current = true;
-      setIsScreenTransitioning(true);
+      // Tab switches have no screen-settle animation: keep the native bar interactive.
+      const needsSettle = dir !== 'none';
+      isNavigatingRef.current = needsSettle;
+      setIsScreenTransitioning(needsSettle);
       setDirection(dir === 'forward' ? 1 : dir === 'back' ? -1 : 0);
-      setPrevScreen(screen);
+      setPrevScreen(currentScreen);
       if (nextScreen === 'difficulty') {
           setDifficultyAnimationKey((current) => current + 1);
       }
+      currentScreenRef.current = nextScreen;
       setScreen(nextScreen);
       setPoints(Storage.getPoints());
 
-      screenTransitionTimer.current = setTimeout(() => {
+      if (needsSettle) screenTransitionTimer.current = setTimeout(() => {
           setIsScreenTransitioning(false);
           isNavigatingRef.current = false;
           screenTransitionTimer.current = null;
@@ -583,10 +595,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
     const now = Date.now();
     if (now < nextBonusClaimTime) return;
 
-    const nextDate = new Date();
-    nextDate.setDate(nextDate.getDate() + 1);
-    nextDate.setHours(0, 0, 0, 0);
-    const nextTime = nextDate.getTime();
+    const nextTime = nextLocalMidnight(now);
 
     const result = Storage.claimDailyBonus(nextTime, 10);
     if (!result.applied) return;
@@ -976,6 +985,28 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
     }
   };
 
+  const navigationDialog = useNavigationDialog();
+  const mainTab = tabForScreen(screen);
+  const hasProfileReward = hasClaimableAchievement(Storage.getStoredData(), claimedProfileRank);
+  const tabNavigationBlocked = navigationDialog || showSettings || showWelcomeGift || Boolean(purchaseCandidate || paymentOffer || pendingBookUnlock) || showNotEnoughPoints || showResetConfirm;
+  const openMainSettings = () => { sounds.playClick(); setShowSettings(true); };
+  const selectMainTab = (tab: MainTab) => {
+      if (tabNavigationBlocked || !tabForScreen(currentScreenRef.current) || isNavigatingRef.current || tab === currentScreenRef.current) return;
+      sounds.playClick();
+      navigate(tab, 'none');
+  };
+  const nativeNavigation = useNativeNavigation(TABBED_NAVIGATION_ENABLED, {
+      selected: mainTab ?? 'difficulty',
+      visible: Boolean(mainTab) && !tabNavigationBlocked,
+      enabled: !isScreenTransitioning && !tabNavigationBlocked,
+      dark: isDarkMode,
+      shopBadge: pepinoState.hasPendingGift || hasDailyGift,
+      profileBadge: hasProfileReward,
+  }, selectMainTab);
+  const navigationSpace = TABBED_NAVIGATION_ENABLED && mainTab
+      ? nativeNavigation.native ? `${nativeNavigation.bottomInset}px` : 'calc(84px + env(safe-area-inset-bottom))'
+      : '0px';
+
   return (
       <>
           {/* Main App Wrapper: Fixed, Full Viewport, No Overflow */}
@@ -1007,8 +1038,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
               <div 
                  className={`relative z-10 w-full h-full flex flex-col transition-all duration-500 ${showWelcomeGift ? 'blur-sm pointer-events-none' : ''}`}
               >
-                <div className="flex-1 relative w-full h-full overflow-hidden">
-                    {/* Old screens unmount immediately; the new screen settles in by 6px. */}
+                <div className={`flex-1 relative w-full h-full overflow-hidden ${TABBED_NAVIGATION_ENABLED && mainTab ? 'oku-navigation-overlay' : ''}`} style={{ '--oku-navigation-inset': navigationSpace } as React.CSSProperties} data-oku-screen={screen}>
+                    {/* Tab content swaps in place; only non-tab navigation uses the 6px settle. */}
                     <>
                         {screen === 'splash' && (
                             <motion.div
@@ -1029,15 +1060,17 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 key={`difficulty-${difficultyAnimationKey}`}
                                 custom={direction}
                                 variants={variants}
-                                initial="initial"
+                                initial={direction === 0 ? false : 'initial'}
                                 animate="animate"
                                 exit="exit"
                                 className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
                             >
                                 <DifficultyScreen 
+                                    tabNavigation={TABBED_NAVIGATION_ENABLED}
+                                    skipEntranceAnimation={TABBED_NAVIGATION_ENABLED && direction === 0 && prevScreen !== null}
                                     points={points}
                                     onDifficultySelect={handleDifficultySelect}
-                                    onOpenSettings={() => setShowSettings(true)}
+                                    onOpenSettings={openMainSettings}
                                     onOpenProfile={() => navigate('profile', 'forward')}
                                     onOpenStore={() => navigate('store', 'forward')}
                                     onOpenDiamondShop={() => navigate('diamondShop', 'forward')}
@@ -1069,6 +1102,10 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
                             >
                                 <DiamondShopScreen 
+                                    nextBonusClaimTime={nextBonusClaimTime}
+                                    dailyGiftNow={dailyGiftNow}
+                                    onClaimBonus={handleClaimBonus}
+                                    onOpenSettings={TABBED_NAVIGATION_ENABLED ? openMainSettings : undefined}
                                     points={points}
                                     onBack={handleDiamondShopBack}
                                     onBuyOffer={handleBuyOffer}
@@ -1139,6 +1176,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
                             >
                                 <StoreScreen 
+                                    onOpenSettings={TABBED_NAVIGATION_ENABLED ? openMainSettings : undefined}
                                     points={points}
                                     onBack={handleStoreBack}
                                     purchasedSkills={purchasedSkills}
@@ -1202,6 +1240,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 className="absolute inset-0 z-20 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
                             >
                                 <StatsScreen
+                                    onOpenSettings={TABBED_NAVIGATION_ENABLED ? openMainSettings : undefined}
                                     onBack={handleStatsBack}
                                     onEarnPoints={(amount) => handleEarnPoints(amount, 'other')}
                                     points={points}
@@ -1220,6 +1259,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 className="absolute inset-0 z-20 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
                             >
                                 <ProfileScreen
+                                    onOpenSettings={TABBED_NAVIGATION_ENABLED ? openMainSettings : undefined}
                                     onClose={handleProfileBack}
                                     points={points}
                                     claimedRank={claimedProfileRank}
@@ -1233,6 +1273,10 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                 </div>
 
                 {/* Modals & Overlays */}
+                {TABBED_NAVIGATION_ENABLED && mainTab && !nativeNavigation.native && !tabNavigationBlocked && (
+                    <BottomNavigation selected={mainTab} onSelect={selectMainTab} disabled={isScreenTransitioning}
+                        shopBadge={pepinoState.hasPendingGift || hasDailyGift} profileBadge={hasProfileReward} />
+                )}
                 {showSettings && (
                     <SettingsModal 
                         settings={settings} 

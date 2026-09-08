@@ -392,7 +392,150 @@ html, body {
   touch-action: manipulation;
 }
 
+/* Keep a held finger on the non-scrolling gameplay surface from becoming a
+   browser pan/callout, which cancels pointer events before the hold completes. */
+.gameplay-note-hold-area {
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+
 /* Safe Area Utilities */
+.oku-main-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 700px;
+  min-height: 68px;
+  padding: 12px 24px;
+  margin: 0 auto;
+  z-index: 20;
+}
+.oku-main-header h1 {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.oku-header-settings {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+.oku-header-settings:active { transform: scale(.92); background: rgb(120 113 108 / .1); }
+.oku-header-settings:focus-visible, .oku-navigation-item:focus-visible, .oku-shop-daily-gift:focus-visible {
+  outline: 2px solid #3266ff;
+  outline-offset: 2px;
+}
+.oku-market-header .oku-main-header { padding: 0; min-height: 44px; }
+.oku-tabbed-home .oku-home-content { padding-top: 0; padding-bottom: 12px; touch-action: pan-y; }
+.oku-home-instant .animate-slide-in-down,
+.oku-home-instant .animate-fade-in-long { animation: none; opacity: 1; transform: none; }
+/* Keep the viewport full-height: only the end of each scroll area clears the floating bar. */
+.oku-navigation-overlay [data-navigation-scroll] {
+  padding-bottom: calc(var(--oku-navigation-inset, 0px) + 24px);
+  scroll-padding-bottom: calc(var(--oku-navigation-inset, 0px) + 24px);
+}
+.oku-tabbed-home .oku-home-logo { padding-top: 4px; margin-bottom: clamp(18px, 4vh, 36px); }
+.oku-tabbed-home .oku-home-difficulties { aspect-ratio: auto; margin-bottom: 20px; }
+.oku-shop-daily-gift {
+  display: flex;
+  width: 100%;
+  height: 94px;
+  min-height: 94px;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  text-align: left;
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid #e7e5e4;
+  color: #292524;
+  cursor: pointer;
+}
+.dark .oku-shop-daily-gift { background: #292524; border-color: #44403c; color: #fafaf9; }
+.oku-shop-gift-icon { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; flex-shrink: 0; color: #2563eb; background: #eff6ff; }
+.dark .oku-shop-gift-icon { color: #93c5fd; background: #1e3a5f; }
+.oku-shop-gift-copy { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.oku-shop-gift-title { font-size: 18px; font-weight: 700; }
+.oku-shop-gift-status { display: flex; align-items: center; justify-content: flex-end; width: 94px; min-height: 60px; flex-shrink: 0; }
+.oku-shop-gift-action { transition: transform 50ms ease-out; }
+.oku-shop-gift-action--pressed { transform: scale(.96); }
+.oku-shop-gift-action { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 66px; min-height: 48px; padding: 7px 10px; background: linear-gradient(160deg, #f7dfa0 0%, #e9bc58 100%); color: #3b2c16; border: 1px solid #d6ab50; box-shadow: inset 0 1px 0 rgb(255 255 255 / .45); border-radius: 14px; font-weight: 700; flex-shrink: 0; }
+.oku-gift-reward { display: flex; align-items: center; gap: 3px; font-weight: 700; }
+.oku-shop-daily-gift--waiting { cursor: default; }
+.oku-shop-gift-countdown { display: flex; align-items: center; gap: 5px; flex-shrink: 0; font-size: 13px; font-weight: 700; text-align: right; color: #57534e; }
+.dark .oku-shop-gift-countdown { color: #d6d3d1; }
+.oku-gift-time { font: inherit; color: inherit; font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 359px) {
+  .oku-shop-daily-gift { padding: 12px; gap: 8px; }
+  .oku-shop-gift-icon { width: 32px; height: 36px; }
+  .oku-shop-gift-countdown { font-size: 12px; }
+}
+.oku-continue-card { background: #292524; border: 1px solid #292524; color: #fafaf9; }
+.dark .oku-continue-card { border-color: #57534e; }
+.oku-saved-board-preview { width: 72px; height: 72px; flex-shrink: 0; border-radius: 4px; pointer-events: none; }
+@media (min-width: 768px) { .oku-saved-board-preview { width: 84px; height: 84px; } }
+/* Browser/Android fallback only. iOS uses UITabBarController's own material. */
+.oku-bottom-navigation {
+  position: absolute;
+  z-index: 50;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: stretch;
+  width: calc(100% - 28px);
+  max-width: 520px;
+  height: 66px;
+  padding: 5px;
+  gap: 2px;
+  border: 1px solid rgb(255 255 255 / .9);
+  border-radius: 38px;
+  background: rgb(255 255 255 / .9);
+  box-shadow: 0 5px 24px rgb(46 40 33 / .10), inset 0 1px 0 white;
+  touch-action: manipulation;
+}
+.oku-navigation-item {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 3px;
+  border-radius: 30px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: #57534e;
+  white-space: nowrap;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+.oku-navigation-item svg { width: 23px; height: 23px; stroke-width: 1.8; }
+.oku-navigation-item[aria-current="page"] { color: #292524; background: #e7e5e4; }
+.oku-navigation-item:active { background: #e7e5e4; }
+.oku-navigation-badge { position: absolute; right: -5px; top: -1px; width: 7px; height: 7px; border-radius: 50%; background: #ef4444; border: 1px solid white; }
+.dark .oku-bottom-navigation { background: #262624; border-color: #464640; box-shadow: 0 5px 24px rgb(0 0 0 / .2); }
+.dark .oku-navigation-item { color: #bcbab6; }
+.dark .oku-navigation-item[aria-current="page"] { color: #f5f5f4; background: #44403c; }
+@media (max-height: 720px) {
+  .oku-tabbed-home .oku-home-logo { margin-bottom: 16px; padding-top: 0; }
+  .oku-tabbed-home .oku-home-logo h1 { font-size: 52px; }
+  .oku-tabbed-home .oku-home-difficulties { margin-bottom: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oku-header-settings, .oku-navigation-item { transition: none; }
+}
 .pt-safe {
   padding-top: env(safe-area-inset-top);
 }
@@ -417,9 +560,8 @@ html, body {
 
 /* TEXT EFFECTS */
 
-/* On completion, keep the exact same glyph and smoothly remove its color.
-   Using a filter also works for the clipped-gradient Rainbow style without
-   stacking a second copy of the number on top. */
+/* On completion, keep the exact same glyph and smoothly remove its color
+   without stacking a second copy of the number on top. */
 .sudoku-player-number {
   /* Keep the same filter-function list at both ends. WebKit can treat a
      transition from `none` to a filter as a discrete, instant change. */
@@ -436,126 +578,117 @@ html, body {
   filter: brightness(0) invert(0.9);
 }
 
-/* Premium palettes color each digit separately. The palette is visible across
-   the numpad, while every individual digit stays crisp, solid, and static. */
-.text-palette-sunset[data-premium-number="1"] { color: #d97706; }
-.text-palette-sunset[data-premium-number="2"] { color: #ea850f; }
-.text-palette-sunset[data-premium-number="3"] { color: #f97316; }
-.text-palette-sunset[data-premium-number="4"] { color: #fb6a24; }
-.text-palette-sunset[data-premium-number="5"] { color: #f45b35; }
-.text-palette-sunset[data-premium-number="6"] { color: #ef4444; }
-.text-palette-sunset[data-premium-number="7"] { color: #e63b55; }
-.text-palette-sunset[data-premium-number="8"] { color: #db3464; }
-.text-palette-sunset[data-premium-number="9"] { color: #be285f; }
+/* Static, solid digit palettes: identical in the Market, numpad, and board.
+   Light and dark surfaces use separate shades to keep small digits readable.
+   Legacy class names preserve existing purchases, including Rainbow. */
+/* Golden light, vivid coral, and violet dusk. */
+.text-palette-sunset { color: #9d6e00; }
+.dark .text-palette-sunset { color: #f6d335; }
+.text-palette-sunset[data-premium-number="1"] { color: #9d6e00; }
+.text-palette-sunset[data-premium-number="2"] { color: #bf5800; }
+.text-palette-sunset[data-premium-number="3"] { color: #d34200; }
+.text-palette-sunset[data-premium-number="4"] { color: #dc313c; }
+.text-palette-sunset[data-premium-number="5"] { color: #d42a70; }
+.text-palette-sunset[data-premium-number="6"] { color: #c523a0; }
+.text-palette-sunset[data-premium-number="7"] { color: #a52dda; }
+.text-palette-sunset[data-premium-number="8"] { color: #8539ea; }
+.text-palette-sunset[data-premium-number="9"] { color: #6639e8; }
+.dark .text-palette-sunset[data-premium-number="1"] { color: #f6d335; }
+.dark .text-palette-sunset[data-premium-number="2"] { color: #ffb323; }
+.dark .text-palette-sunset[data-premium-number="3"] { color: #ff8c30; }
+.dark .text-palette-sunset[data-premium-number="4"] { color: #ff6f64; }
+.dark .text-palette-sunset[data-premium-number="5"] { color: #ff6499; }
+.dark .text-palette-sunset[data-premium-number="6"] { color: #f76bc8; }
+.dark .text-palette-sunset[data-premium-number="7"] { color: #d77cf4; }
+.dark .text-palette-sunset[data-premium-number="8"] { color: #b28bff; }
+.dark .text-palette-sunset[data-premium-number="9"] { color: #959bff; }
 
-/* Caribbean stays deliberately two-toned: clear tropical water followed by
-   warm sun, without the muddy grey midpoint produced by direct RGB mixing. */
-.text-palette-caribbean[data-premium-number="1"] { color: #0369a1; }
-.text-palette-caribbean[data-premium-number="2"] { color: #0284c7; }
-.text-palette-caribbean[data-premium-number="3"] { color: #0e9dcc; }
-.text-palette-caribbean[data-premium-number="4"] { color: #0891b2; }
-.text-palette-caribbean[data-premium-number="5"] { color: #ca8a04; }
-.text-palette-caribbean[data-premium-number="6"] { color: #d97706; }
-.text-palette-caribbean[data-premium-number="7"] { color: #e66a08; }
-.text-palette-caribbean[data-premium-number="8"] { color: #ea580c; }
-.text-palette-caribbean[data-premium-number="9"] { color: #c2410c; }
+/* Ocean blue and turquoise meet sunny sand: intentional cool/warm contrast. */
+.text-palette-caribbean { color: #0069df; }
+.dark .text-palette-caribbean { color: #39a9ff; }
+.text-palette-caribbean[data-premium-number="1"] { color: #0069df; }
+.text-palette-caribbean[data-premium-number="2"] { color: #0079c3; }
+.text-palette-caribbean[data-premium-number="3"] { color: #00819d; }
+.text-palette-caribbean[data-premium-number="4"] { color: #008484; }
+.text-palette-caribbean[data-premium-number="5"] { color: #008576; }
+.text-palette-caribbean[data-premium-number="6"] { color: #00866a; }
+.text-palette-caribbean[data-premium-number="7"] { color: #947200; }
+.text-palette-caribbean[data-premium-number="8"] { color: #b56000; }
+.text-palette-caribbean[data-premium-number="9"] { color: #cf4a00; }
+.dark .text-palette-caribbean[data-premium-number="1"] { color: #39a9ff; }
+.dark .text-palette-caribbean[data-premium-number="2"] { color: #24bdf1; }
+.dark .text-palette-caribbean[data-premium-number="3"] { color: #14ced8; }
+.dark .text-palette-caribbean[data-premium-number="4"] { color: #13d6c0; }
+.dark .text-palette-caribbean[data-premium-number="5"] { color: #21dba8; }
+.dark .text-palette-caribbean[data-premium-number="6"] { color: #43de93; }
+.dark .text-palette-caribbean[data-premium-number="7"] { color: #f4d43a; }
+.dark .text-palette-caribbean[data-premium-number="8"] { color: #ffb72b; }
+.dark .text-palette-caribbean[data-premium-number="9"] { color: #ff8c3c; }
 
-.text-palette-sapphire[data-premium-number="1"] { color: #0ea5e9; }
-.text-palette-sapphire[data-premium-number="2"] { color: #0284c7; }
-.text-palette-sapphire[data-premium-number="3"] { color: #2563eb; }
-.text-palette-sapphire[data-premium-number="4"] { color: #3b82f6; }
-.text-palette-sapphire[data-premium-number="5"] { color: #4f46e5; }
-.text-palette-sapphire[data-premium-number="6"] { color: #6366f1; }
-.text-palette-sapphire[data-premium-number="7"] { color: #7c3aed; }
-.text-palette-sapphire[data-premium-number="8"] { color: #8b5cf6; }
-.text-palette-sapphire[data-premium-number="9"] { color: #a855f7; }
+/* Electric blue through violet to orchid. */
+.text-palette-sapphire { color: #007acb; }
+.dark .text-palette-sapphire { color: #36beff; }
+.text-palette-sapphire[data-premium-number="1"] { color: #007acb; }
+.text-palette-sapphire[data-premium-number="2"] { color: #0070e8; }
+.text-palette-sapphire[data-premium-number="3"] { color: #1559f5; }
+.text-palette-sapphire[data-premium-number="4"] { color: #3d4aef; }
+.text-palette-sapphire[data-premium-number="5"] { color: #603aef; }
+.text-palette-sapphire[data-premium-number="6"] { color: #7b32e5; }
+.text-palette-sapphire[data-premium-number="7"] { color: #9426d8; }
+.text-palette-sapphire[data-premium-number="8"] { color: #ae22c2; }
+.text-palette-sapphire[data-premium-number="9"] { color: #c120a6; }
+.dark .text-palette-sapphire[data-premium-number="1"] { color: #36beff; }
+.dark .text-palette-sapphire[data-premium-number="2"] { color: #42abff; }
+.dark .text-palette-sapphire[data-premium-number="3"] { color: #5b96ff; }
+.dark .text-palette-sapphire[data-premium-number="4"] { color: #7b87ff; }
+.dark .text-palette-sapphire[data-premium-number="5"] { color: #9980ff; }
+.dark .text-palette-sapphire[data-premium-number="6"] { color: #b17bfa; }
+.dark .text-palette-sapphire[data-premium-number="7"] { color: #c577ec; }
+.dark .text-palette-sapphire[data-premium-number="8"] { color: #db76d8; }
+.dark .text-palette-sapphire[data-premium-number="9"] { color: #eb78bd; }
 
-.text-palette-matcha[data-premium-number="1"] { color: #65a30d; }
-.text-palette-matcha[data-premium-number="2"] { color: #6fb316; }
-.text-palette-matcha[data-premium-number="3"] { color: #74bd22; }
-.text-palette-matcha[data-premium-number="4"] { color: #62b53a; }
-.text-palette-matcha[data-premium-number="5"] { color: #4dab4e; }
-.text-palette-matcha[data-premium-number="6"] { color: #38a361; }
-.text-palette-matcha[data-premium-number="7"] { color: #249a71; }
-.text-palette-matcha[data-premium-number="8"] { color: #15927f; }
-.text-palette-matcha[data-premium-number="9"] { color: #0d9488; }
+/* Fresh lime through leaf green to deep forest, without teal or blue. */
+.text-palette-matcha { color: #707d00; }
+.dark .text-palette-matcha { color: #c2df2a; }
+.text-palette-matcha[data-premium-number="1"] { color: #707d00; }
+.text-palette-matcha[data-premium-number="2"] { color: #528300; }
+.text-palette-matcha[data-premium-number="3"] { color: #308800; }
+.text-palette-matcha[data-premium-number="4"] { color: #128919; }
+.text-palette-matcha[data-premium-number="5"] { color: #078630; }
+.text-palette-matcha[data-premium-number="6"] { color: #07802f; }
+.text-palette-matcha[data-premium-number="7"] { color: #08752a; }
+.text-palette-matcha[data-premium-number="8"] { color: #0b6b25; }
+.text-palette-matcha[data-premium-number="9"] { color: #105d23; }
+.dark .text-palette-matcha[data-premium-number="1"] { color: #c2df2a; }
+.dark .text-palette-matcha[data-premium-number="2"] { color: #a1df30; }
+.dark .text-palette-matcha[data-premium-number="3"] { color: #7ddd36; }
+.dark .text-palette-matcha[data-premium-number="4"] { color: #56d84b; }
+.dark .text-palette-matcha[data-premium-number="5"] { color: #45d446; }
+.dark .text-palette-matcha[data-premium-number="6"] { color: #35ce44; }
+.dark .text-palette-matcha[data-premium-number="7"] { color: #2fc34a; }
+.dark .text-palette-matcha[data-premium-number="8"] { color: #32b94e; }
+.dark .text-palette-matcha[data-premium-number="9"] { color: #38af52; }
 
-.text-shine-rainbow {
-  --premium-color-1: #0f766e;
-  --premium-color-2: #14b8a6;
-  --premium-color-3: #5eead4;
-}
-
-/* Rainbow is a complete color set rather than one moving rainbow texture.
-   Each digit has a distinct, readable three-shade identity. */
-.text-shine-rainbow[data-premium-number="1"] {
-  --premium-color-1: #b91c1c;
-  --premium-color-2: #ef4444;
-  --premium-color-3: #fca5a5;
-}
-
-.text-shine-rainbow[data-premium-number="2"] {
-  --premium-color-1: #c2410c;
-  --premium-color-2: #f97316;
-  --premium-color-3: #fdba74;
-}
-
-.text-shine-rainbow[data-premium-number="3"] {
-  --premium-color-1: #a16207;
-  --premium-color-2: #eab308;
-  --premium-color-3: #fde047;
-}
-
-.text-shine-rainbow[data-premium-number="4"] {
-  --premium-color-1: #15803d;
-  --premium-color-2: #22c55e;
-  --premium-color-3: #86efac;
-}
-
-.text-shine-rainbow[data-premium-number="5"] {
-  --premium-color-1: #0f766e;
-  --premium-color-2: #14b8a6;
-  --premium-color-3: #5eead4;
-}
-
-.text-shine-rainbow[data-premium-number="6"] {
-  --premium-color-1: #1d4ed8;
-  --premium-color-2: #3b82f6;
-  --premium-color-3: #93c5fd;
-}
-
-.text-shine-rainbow[data-premium-number="7"] {
-  --premium-color-1: #4338ca;
-  --premium-color-2: #6366f1;
-  --premium-color-3: #a5b4fc;
-}
-
-.text-shine-rainbow[data-premium-number="8"] {
-  --premium-color-1: #7e22ce;
-  --premium-color-2: #a855f7;
-  --premium-color-3: #d8b4fe;
-}
-
-.text-shine-rainbow[data-premium-number="9"] {
-  --premium-color-1: #be185d;
-  --premium-color-2: #ec4899;
-  --premium-color-3: #f9a8d4;
-}
-
-.text-shine-rainbow {
-  background-image: linear-gradient(
-    135deg,
-    var(--premium-color-1) 0%,
-    var(--premium-color-2) 52%,
-    var(--premium-color-3) 100%
-  );
-  background-size: 100% 100%;
-  background-position: center;
-  background-repeat: no-repeat;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+.text-shine-rainbow { color: #c62828; }
+.dark .text-shine-rainbow { color: #fca5a5; }
+.text-shine-rainbow[data-premium-number="1"] { color: #c62828; }
+.text-shine-rainbow[data-premium-number="2"] { color: #c2410c; }
+.text-shine-rainbow[data-premium-number="3"] { color: #a16207; }
+.text-shine-rainbow[data-premium-number="4"] { color: #15803d; }
+.text-shine-rainbow[data-premium-number="5"] { color: #0f766e; }
+.text-shine-rainbow[data-premium-number="6"] { color: #0369a1; }
+.text-shine-rainbow[data-premium-number="7"] { color: #1d4ed8; }
+.text-shine-rainbow[data-premium-number="8"] { color: #7e22ce; }
+.text-shine-rainbow[data-premium-number="9"] { color: #be185d; }
+.dark .text-shine-rainbow[data-premium-number="1"] { color: #fca5a5; }
+.dark .text-shine-rainbow[data-premium-number="2"] { color: #fdba74; }
+.dark .text-shine-rainbow[data-premium-number="3"] { color: #fde047; }
+.dark .text-shine-rainbow[data-premium-number="4"] { color: #86efac; }
+.dark .text-shine-rainbow[data-premium-number="5"] { color: #5eead4; }
+.dark .text-shine-rainbow[data-premium-number="6"] { color: #7dd3fc; }
+.dark .text-shine-rainbow[data-premium-number="7"] { color: #93c5fd; }
+.dark .text-shine-rainbow[data-premium-number="8"] { color: #d8b4fe; }
+.dark .text-shine-rainbow[data-premium-number="9"] { color: #f9a8d4; }
 
 /* 3. PREMIUM GET MORE BUTTON */
 .btn-premium-blue {
@@ -1740,6 +1873,121 @@ html, body {
 }
 
 /* Pepino's tank intentionally remains outside this tactile card treatment. */
+/* Oku Shop: compact, vertically grouped purchases with a live aquarium. */
+.shop-native .shop-premium-card {
+  display: grid;
+  grid-template-columns: minmax(105px, 0.85fr) minmax(0, 1.25fr);
+  gap: 16px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid rgba(120,113,108,.13);
+  border-radius: 24px;
+  background: var(--surface);
+  text-align: left;
+}
+.shop-premium-copy { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.shop-premium-eyebrow { color: #3266ff; font-size: 10px; letter-spacing: .12em; font-weight: 700; text-transform: uppercase; }
+.shop-native .shop-premium-copy .w-6 { width: 20px; height: 20px; flex: 0 0 20px; }
+.shop-native .shop-premium-copy .text-\[13px\] { font-size: 12px; }
+.shop-native .shop-purchase-price {
+  background: #3266ff;
+  color: white;
+  border-radius: 12px;
+  padding: 10px 14px;
+  min-height: 40px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.shop-native .shop-premium-price { display: flex; flex-wrap: wrap; gap: 4px 10px; justify-content: space-between; font-size: 12px; margin-top: auto; white-space: normal; }
+.shop-native .shop-reward-tray { padding-top: 12px; border-top: 1px solid rgba(120,113,108,.13); }
+.shop-native .shop-reward-tray > div { background: transparent; padding: 2px 0; border-radius: 0; }
+.shop-native .shop-reward-tray > div + div { border-left: 1px solid rgba(120,113,108,.1); }
+.shop-native .shop-starter button { border-color: rgba(120,113,108,.13); }
+.shop-native .shop-starter button > div:last-child { background: transparent; border-top: 0; padding-top: 0; }
+.shop-native .shop-starter button > div:last-child > span { border-radius: 12px; min-height: 40px; display: flex; align-items: center; }
+.shop-native .shop-book-group,
+.shop-native .shop-diamond-group { background: var(--surface); border: 1px solid rgba(120,113,108,.13); border-radius: 24px; padding: 0 14px; }
+.shop-native .shop-book-group > .oku-shop-card-shell,
+.shop-native .shop-diamond-group > .oku-shop-card-shell { margin: 0; border-radius: 0; }
+.shop-native .shop-book-group > .oku-shop-card-shell + .oku-shop-card-shell,
+.shop-native .shop-diamond-group > .oku-shop-card-shell + .oku-shop-card-shell { border-top: 1px solid rgba(120,113,108,.13); }
+.shop-native .shop-book-group .oku-shop-card-face { border: 0; background: transparent; border-radius: 16px; padding: 12px 0; gap: 8px; }
+.shop-native .shop-book-group .oku-shop-card-face > img { width: 66px; height: 82px; margin-left: 0; object-fit: contain; padding: 3px; }
+.shop-native .shop-book-group .oku-shop-card-face > span { border-radius: 12px; min-width: 62px; align-self: center; margin-top: 0; padding: 10px; }
+.shop-native .shop-book-group .oku-shop-card-face p { font-weight: 500; }
+.shop-native .shop-book-group .oku-shop-card-face > span:not(.text-t-secondary),
+.shop-native .shop-starter button > div:last-child > span:not(.text-t-secondary) { background: #3266ff; }
+.shop-native .shop-diamond-row { border: 0; border-radius: 16px; background: transparent; min-height: 74px; padding: 12px 0; }
+.shop-native .shop-best-value { position: static; order: 2; margin-left: auto; margin-right: 8px; font-size: 8px; }
+.shop-native .shop-diamond-row > div { order: 1; }
+.shop-native .shop-diamond-row > .shop-purchase-price { order: 3; min-width: 66px; }
+.shop-native .shop-diamond-row > div > div { width: 52px; transform: scale(.85); }
+.shop-native button:focus-visible { outline: 3px solid #3266ff; outline-offset: 3px; }
+.shop-books-info::after { content: ''; position: absolute; inset: -10px; }
+.shop-aquarium {
+  position: relative;
+  min-height: 212px;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 16px;
+  background: linear-gradient(165deg, #e5f8f9 0%, #bcebf0 55%, #a4d5da 100%);
+  box-shadow: inset 0 0 0 1px rgba(48,115,128,.12);
+}
+.shop-aquarium-light { position: absolute; inset: 0; background: linear-gradient(112deg, transparent 10%, #ffffff60 11%, transparent 30%, #ffffff40 40%, transparent 60%); }
+.shop-aquarium-plant { position: absolute; bottom: 7px; width: 11px; height: 77px; background: #5f9e88; border-radius: 100% 0 100% 0; transform: rotate(-15deg); }
+.shop-aquarium-plant::before, .shop-aquarium-plant::after { content: ''; position: absolute; bottom: 0; width: 10px; height: 58px; background: #80b39a; border-radius: 100% 0 100% 0; transform: rotate(30deg); transform-origin: bottom; }
+.shop-aquarium-plant::after { height: 45px; transform: rotate(-20deg); background: #aac9a1; }
+.shop-aquarium-plant--left { left: 13px; height: 48px; opacity: .6; }
+.shop-aquarium-plant--right { right: 16px; }
+.shop-aquarium-pebbles { position: absolute; bottom: -9px; left: -5%; width: 110%; height: 24px; background: #d9d8c3; border-radius: 50% 50% 0 0; }
+.shop-aquarium-pebbles::after { content: ''; position: absolute; right: 18px; top: -7px; width: 24px; height: 14px; border-radius: 60%; background: #b2bbb4; box-shadow: -21px 3px 0 -2px #eceddd; }
+.pepino-tank { background: linear-gradient(165deg, #e5f8f9 0%, #bcebf0 55%, #a4d5da 100%); box-shadow: inset 0 0 0 1px rgba(48,115,128,.12), 0 8px 20px -14px rgba(48,115,128,.3); }
+.pepino-tank-plant-motion { position: absolute; bottom: 0; width: 42px; height: 110px; transform-origin: bottom; animation: pepino-leaf-sway 7s ease-in-out infinite alternate; }
+.pepino-tank-plant-motion--left { left: 6%; opacity: .85; animation-delay: -3s; }
+.pepino-tank-plant-motion--right { right: 12%; width: 58px; height: 181px; }
+.pepino-tank-plant-motion--single { left: 29%; bottom: 12px; width: 28px; height: 66px; animation-duration: 8s; animation-delay: -5s; }
+.pepino-tank-plant-motion--sprout { right: 34%; bottom: 12px; width: 38px; height: 45px; animation-duration: 9s; animation-delay: -2s; }
+.pepino-tank .shop-aquarium-plant--left { height: 65px; width: 14px; }
+.pepino-tank .shop-aquarium-plant--right { height: 172px; width: 21px; transform: rotate(-8deg); }
+.pepino-tank .shop-aquarium-plant::before { height: 74px; width: 13px; }
+.pepino-tank .shop-aquarium-plant::after { height: 57px; width: 12px; }
+.pepino-tank .shop-aquarium-plant--right::before { height: 144px; width: 18px; transform: rotate(14deg); }
+.pepino-tank .shop-aquarium-plant--right::after { height: 120px; width: 17px; transform: rotate(-10deg); }
+.pepino-tank-hideaway-rock { right: 5%; bottom: 10px; width: 92px; height: 72px; border-radius: 46% 54% 25% 28% / 57% 64% 30% 27%; background: linear-gradient(145deg, #c4c9bf 0%, #a4afa5 48%, #84948b 100%); box-shadow: inset 2px 3px 0 #ffffff25, 0 3px 5px -3px #52695b55; }
+.pepino-tank .shop-aquarium-pebbles { height: 27px; }
+.pepino-tank .shop-aquarium-pebbles::after { content: none; }
+.pepino-tank-stone { position: absolute; color: #9ba99b; }
+.pepino-tank-stone--one { left: 12%; bottom: 9px; width: 34px; height: 23px; transform: rotate(-7deg); }
+.pepino-tank-stone--two { left: 39%; bottom: 8px; width: 27px; height: 15px; color: #b2b7a5; transform: rotate(5deg); }
+.pepino-tank-stone--three { left: 48%; bottom: 11px; width: 15px; height: 12px; color: #919f92; transform: rotate(-12deg); }
+.pepino-tank-stone--four { right: 26%; bottom: 7px; width: 25px; height: 20px; color: #a6ada0; transform: rotate(9deg); }
+.dark .pepino-tank-stone { color: #748779; }
+.dark .pepino-tank-stone--two, .dark .pepino-tank-stone--four { color: #899580; }
+.dark .pepino-tank { background: linear-gradient(165deg, #183b48, #245965 60%, #376a6d); }
+.dark .pepino-tank-hideaway-rock { background: linear-gradient(145deg, #87958c, #63796f 48%, #455f57); }
+@keyframes pepino-leaf-sway { from { transform: rotate(-3deg); } to { transform: rotate(4deg); } }
+.shop-aquarium-fish-route { position: absolute; left: 0; top: 0; width: 42.88px; height: 25.46px; transform: translate3d(24px, 82px, 0); }
+.shop-aquarium-fish-turn { width: 100%; height: 100%; transition: transform 500ms ease; }
+.shop-aquarium-fish-drift { width: 100%; height: 100%; animation: pepino-natural-drift 4.8s ease-in-out infinite; animation-play-state: paused; }
+.shop-aquarium[data-swimming="true"] .shop-aquarium-fish-drift { animation-play-state: running; }
+.dark .shop-aquarium { background: linear-gradient(165deg, #183b48, #245965 60%, #376a6d); }
+.dark .shop-premium-eyebrow { color: #8ab4ff; }
+.dark .shop-aquarium-light { opacity: .15; }
+.dark .shop-aquarium-pebbles { background: #626f67; }
+@media (prefers-reduced-motion: reduce) {
+  .shop-aquarium-fish-drift, .pepino-tank-plant-motion { animation: none !important; }
+  .shop-aquarium-fish-turn { transition: none !important; }
+}
+@media (max-width: 360px) {
+  .shop-native .shop-premium-card { gap: 10px; padding: 11px; grid-template-columns: minmax(90px,.75fr) minmax(0,1.25fr); }
+  .shop-native .shop-book-group .oku-shop-card-face > img { width: 50px; }
+  .shop-native .shop-book-group h3 { font-size: 14px; }
+  .shop-native .shop-best-value { max-width: 44px; text-align: center; line-height: 1.2; }
+}
+
 .oku-shop-card-shell {
   position: relative;
   isolation: isolate;

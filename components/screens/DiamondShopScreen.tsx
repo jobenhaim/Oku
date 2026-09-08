@@ -5,13 +5,21 @@ import { DiamondOffer } from '../../types';
 import { Storage } from '../../utils/storage';
 import { FishTank } from '../ui/FishTank';
 import { DiamondBalancePill } from '../ui/DiamondBalancePill';
+import { MainScreenHeader } from '../ui/MainScreenHeader';
+import { DailyGiftBubble } from '../ui/DailyGiftBubble';
 import { IAP } from '../../utils/iap';
 import { useTactilePress } from '../../hooks/useTactilePress';
 import { sounds } from '../../utils/sound';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 
 interface DiamondShopScreenProps {
+    nextBonusClaimTime: number;
+    dailyGiftNow: number;
+    onClaimBonus: (e: React.MouseEvent) => void;
     points: number;
     onBack: () => void;
+    onOpenSettings?: () => void;
     onBuyOffer: (offer: DiamondOffer) => void;
     onPointsChanged: (points: number) => void;
     onRestorePurchases: () => Promise<'restored' | 'none' | 'failed'>;
@@ -52,70 +60,87 @@ const DiamondStack = ({ size }: { size: number }) => (
 
 const PremiumPepinoBackdrop = () => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const positionRef = useRef({ x: 78, y: 24 });
-    const [position, setPosition] = useState(positionRef.current);
-    const [direction, setDirection] = useState<'left' | 'right'>('left');
-    const [size, setSize] = useState({ width: 0, height: 0 });
+    const fishRef = useRef<HTMLDivElement>(null);
+    const turnRef = useRef<HTMLDivElement>(null);
+    const positionRef = useRef({ x: 45, y: 48 });
     const [canAnimate, setCanAnimate] = useState(false);
 
     useEffect(() => {
         if (!containerRef.current) return;
-
-        const updateSize = () => {
-            if (!containerRef.current) return;
-            const rect = containerRef.current.getBoundingClientRect();
-            setSize({ width: rect.width, height: rect.height });
+        let inView = false;
+        let nativeActive = true;
+        let disposed = false;
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const update = () => {
+            if (!disposed) setCanAnimate(inView && nativeActive && !document.hidden && !reducedMotion.matches);
         };
-
-        updateSize();
-        const observer = new ResizeObserver(updateSize);
+        const observer = new IntersectionObserver(([entry]) => {
+            inView = entry.isIntersecting;
+            update();
+        }, { threshold: 0.1 });
         observer.observe(containerRef.current);
-        return () => observer.disconnect();
-    }, []);
-
-    useEffect(() => {
-        if (size.width <= 0) return;
-        const readyTimer = window.setTimeout(() => setCanAnimate(true), 100);
-        return () => window.clearTimeout(readyTimer);
-    }, [size.width]);
-
-    useEffect(() => {
-        let moveTimer: number;
-
-        const move = () => {
-            const next = {
-                x: 12 + Math.random() * 76,
-                y: 14 + Math.random() * 66
-            };
-            setDirection(next.x > positionRef.current.x ? 'right' : 'left');
-            positionRef.current = next;
-            setPosition(next);
-            moveTimer = window.setTimeout(move, 4500 + Math.random() * 2500);
+        document.addEventListener('visibilitychange', update);
+        reducedMotion.addEventListener('change', update);
+        const nativeListener = Capacitor.isNativePlatform()
+            ? CapacitorApp.addListener('appStateChange', ({ isActive }) => { nativeActive = isActive; update(); })
+            : null;
+        return () => {
+            disposed = true;
+            observer.disconnect();
+            document.removeEventListener('visibilitychange', update);
+            reducedMotion.removeEventListener('change', update);
+            void nativeListener?.then(listener => listener.remove()).catch(() => {});
         };
-
-        moveTimer = window.setTimeout(move, 900);
-        return () => window.clearTimeout(moveTimer);
     }, []);
 
-    const fishX = (position.x / 100) * size.width - 27;
-    const fishY = (position.y / 100) * size.height - 17;
+    useEffect(() => {
+        const fish = fishRef.current;
+        const tank = containerRef.current;
+        if (!canAnimate || !fish || !tank) return;
+        let timer: ReturnType<typeof setTimeout>;
+        let movement: Animation | undefined;
+        const move = () => {
+            const current = positionRef.current;
+            // Match the owned Pepino's nearby roaming targets and quick turns.
+            let step = (Math.random() - 0.5) * 42;
+            if (Math.abs(step) < 10) step = step < 0 ? -10 : 10;
+            const next = {
+                x: Math.min(86, Math.max(14, current.x + step)),
+                y: Math.min(84, Math.max(28, current.y + (Math.random() - 0.5) * 28)),
+            };
+            const duration = 3000 + Math.random() * 2200;
+            const x = Math.max(6, Math.min(tank.clientWidth - fish.offsetWidth - 6, next.x / 100 * tank.clientWidth - fish.offsetWidth / 2));
+            const y = next.y / 100 * tank.clientHeight - fish.offsetHeight / 2;
+            const from = getComputedStyle(fish).transform;
+            movement?.cancel();
+            const to = `translate3d(${x}px, ${y}px, 0)`;
+            fish.style.transform = to;
+            movement = fish.animate([{ transform: from }, { transform: to }], { duration, easing: 'ease-in-out' });
+            if (turnRef.current && Math.abs(next.x - current.x) > 2) {
+                turnRef.current.style.transform = next.x > current.x ? 'scaleX(1)' : 'scaleX(-1)';
+            }
+            positionRef.current = next;
+            timer = setTimeout(move, duration - 180);
+        };
+        move();
+        return () => {
+            clearTimeout(timer);
+            // Freeze at the current position instead of finishing offscreen.
+            fish.style.transform = getComputedStyle(fish).transform;
+            movement?.cancel();
+        };
+    }, [canAnimate]);
 
     return (
-        <div ref={containerRef} className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-            <div className="absolute inset-0 bg-gradient-to-b from-[#e0f7fa] via-[#d1f4fa] to-[#b3e5fc] dark:from-[#173b52] dark:via-[#1f4d63] dark:to-[#2b6879]" />
-            <div
-                className={`absolute top-0 left-0 w-[54px] h-[34px] transition-opacity duration-300 ${size.width > 0 ? 'opacity-70' : 'opacity-0'}`}
-                style={{
-                    transform: `translate3d(${fishX}px, ${fishY}px, 0)`,
-                    transition: canAnimate ? 'transform 4000ms ease-in-out' : 'none',
-                    willChange: 'transform',
-                    WebkitBackfaceVisibility: 'hidden',
-                    backfaceVisibility: 'hidden'
-                }}
-            >
-                <div className="w-full h-full transition-transform duration-500" style={{ transform: direction === 'left' ? 'scaleX(-1)' : 'scaleX(1)' }}>
-                    <div className="w-full h-full animate-wiggle">
-                        <svg viewBox="344.5149 210.9059 74.9591 41.2278" className="w-full h-full drop-shadow-sm">
+        <div ref={containerRef} className="shop-aquarium" data-swimming={canAnimate} aria-hidden="true">
+            <div className="shop-aquarium-light" />
+            <div className="shop-aquarium-plant shop-aquarium-plant--left" />
+            <div className="shop-aquarium-plant shop-aquarium-plant--right" />
+            <div className="shop-aquarium-pebbles" />
+            <div ref={fishRef} className="shop-aquarium-fish-route">
+                <div ref={turnRef} className="shop-aquarium-fish-turn">
+                    <div className="shop-aquarium-fish-drift">
+                    <svg viewBox="344.5149 210.9059 74.9591 41.2278" className="w-full h-full drop-shadow-sm">
                             <path d="M 373.193 239.648 C 379.513 254.112 400.131 252.185 404.661 240.061 C 393.45 240.02 396.193 239.089 386.193 239.648 L 373.193 239.648 Z" fill="#ef4444" opacity="0.95" />
                             <path d="M 372.793 224.525 C 379.113 207.278 399.731 209.576 404.261 224.033 C 393.05 224.081 395.793 225.192 385.793 224.525 L 372.793 224.525 Z" fill="#ef4444" opacity="0.95" />
                             <path d="M 394.515 231.681 C 379.515 206.681 344.428 201.406 344.515 231.681 C 344.565 261.131 379.515 256.681 394.515 231.681 Z" fill="#ef4444" opacity="0.95" />
@@ -128,14 +153,17 @@ const PremiumPepinoBackdrop = () => {
                     </div>
                 </div>
             </div>
-            <div className="absolute inset-0 bg-white/[0.58] dark:bg-slate-950/[0.48]" />
         </div>
     );
 };
 
 export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
+    nextBonusClaimTime,
+    dailyGiftNow,
+    onClaimBonus,
     points,
     onBack,
+    onOpenSettings,
     onBuyOffer,
     onPointsChanged,
     onRestorePurchases,
@@ -232,76 +260,69 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
 
     return (
         <div
-            className="diamond-shop-screen flex-1 w-full flex flex-col items-center overflow-hidden relative"
+            className="diamond-shop-screen shop-native flex-1 w-full flex flex-col items-center overflow-hidden relative"
             onClick={closeBooksForeverInfo}
         >
-            <div className="w-full max-w-md md:max-w-[700px] flex items-center justify-between px-6 md:px-0 pt-4 md:pt-7 pb-4 relative shrink-0 z-20 mx-auto">
+            {onOpenSettings ? <MainScreenHeader title="Oku Shop" points={points} onSettings={onOpenSettings} /> : <div className="w-full max-w-md md:max-w-[700px] flex items-center justify-between px-6 md:px-0 pt-4 md:pt-7 pb-4 relative shrink-0 z-20 mx-auto">
                 <button onClick={onBack} aria-label="Back" className="p-2 md:p-2.5 rounded-full -ml-2 text-t-icon relative z-30 active:scale-90 transition-transform">
                     <Icons.Back className="w-6 h-6 md:w-7 md:h-7 text-t-icon" />
                 </button>
 
-                <div className="flex flex-col items-center absolute left-0 right-0 pointer-events-none z-20">
+                <div className="shop-navbar-title flex flex-col items-center absolute left-0 right-0 pointer-events-none z-20">
                     <h1 className="text-xl md:text-2xl font-bold text-t-primary leading-none">Oku Shop</h1>
                 </div>
 
                 <DiamondBalancePill points={points} />
             </div>
 
-            <div className="scroll-edge-fade flex-1 w-full overflow-y-auto px-6 md:px-0 pb-6 hide-scrollbar flex flex-col items-center relative z-10">
+            }
+            <div data-navigation-scroll className="scroll-edge-fade flex-1 w-full overflow-y-auto px-6 md:px-0 pb-6 hide-scrollbar flex flex-col items-center relative z-10">
                 <div className="w-full max-w-md md:max-w-[620px] pt-2 md:pt-4 mx-auto space-y-6 md:space-y-8">
                     {pepinoState.unlocked ? (
                         <FishTank onRewardClaim={handleRewardClaim} showIntro={shouldShowIntro()} />
                     ) : premiumOffer ? (
                         <section aria-labelledby="premium-heading">
                             <button
-                                onClick={() => handleBuyOffer(premiumOffer)}
-                                className="w-full bg-[#e0f7fa] dark:bg-[#173b52] rounded-[1.75rem] shadow-sm border border-sky-100/80 dark:border-sky-900 overflow-hidden text-left active:scale-[0.99] transition-transform relative"
+                                onPointerDown={() => shopPress.beginPress(premiumOffer.id)}
+                                onPointerCancel={() => shopPress.cancelPress(premiumOffer.id)}
+                                onPointerLeave={() => shopPress.cancelPress(premiumOffer.id)}
+                                onClick={() => shopPress.runPressCycle(premiumOffer.id, () => handleBuyOffer(premiumOffer))}
+                                className={`shop-premium-card oku-shop-card-face ${shopPress.pressedId === premiumOffer.id ? 'oku-shop-card-face--pressed' : ''}`}
                             >
                                 <PremiumPepinoBackdrop />
-
-                                <div className="p-4 md:p-6 pb-3 md:pb-5 relative z-10">
-                                    <div className="mb-3">
-                                        <div className="min-w-0">
-                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-white/95 via-violet-50/95 to-sky-50/95 border border-white/90 text-[#5f5872] mb-1.5 shadow-[0_0_12px_rgba(255,255,255,0.95),0_0_26px_rgba(139,92,246,0.32)]">
-                                                <Icons.Star className="w-3 h-3 text-violet-500 drop-shadow-[0_0_4px_rgba(139,92,246,0.7)]" />
-                                                <span className="text-[10px] font-bold uppercase tracking-[0.16em]">Oku Premium</span>
-                                            </div>
-                                            <h2 id="premium-heading" className="text-xl md:text-2xl font-bold text-t-primary leading-tight">Meet Pepino</h2>
-                                            <p className="text-[13px] md:text-sm font-medium text-t-secondary mt-0.5">A little companion for your Sudoku journey.</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-xl bg-white/80 dark:bg-slate-950/35 px-3.5 md:px-4 py-3 md:py-3.5 mb-3 md:mb-4">
-                                        <p className="text-[13px] md:text-sm font-medium text-stone-600 dark:text-stone-300 leading-relaxed">
-                                            Your purchase supports Oku, helps us make it better, and keeps the game alive.
-                                        </p>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 gap-2">
+                                <div className="shop-premium-copy">
+                                    <span className="shop-premium-eyebrow">Oku Premium</span>
+                                    <h2 id="premium-heading" className="text-xl md:text-2xl font-bold text-t-primary leading-tight">Meet Pepino</h2>
+                                    <p className="text-[13px] font-medium text-t-secondary leading-snug">Your little Sudoku companion.</p>
+                                    <div className="space-y-2 my-2">
                                         <FeatureRow icon={<Icons.Diamond className="w-3.5 h-3.5 fill-current" />}>
                                             {premiumOffer.diamonds.toLocaleString()} diamonds included
                                         </FeatureRow>
                                         <FeatureRow icon={<Icons.Gift className="w-3.5 h-3.5" />}>
-                                            A new Pepino gift after every solved puzzle
+                                            A gift after every solved puzzle
                                         </FeatureRow>
                                     </div>
-                                </div>
-
-                                <div className="relative z-10 px-4 py-3 border-t border-white/70 dark:border-sky-900/70 flex items-center justify-between bg-white/80 dark:bg-slate-950/55">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-sm font-bold text-t-primary">Unlock Pepino</span>
-                                        <Icons.Next className="w-4 h-4 text-t-secondary" />
-                                    </div>
-                                    <span className="px-3 py-1.5 rounded-full bg-blue-500 text-white text-sm font-bold shadow-sm shadow-blue-500/20">
-                                        {getPriceLabel(premiumOffer)}
+                                    <span className="shop-purchase-price shop-premium-price">
+                                        <span>Unlock Pepino</span>
+                                        <span>{getPriceLabel(premiumOffer)}</span>
                                     </span>
                                 </div>
                             </button>
                         </section>
                     ) : null}
 
+                    <DailyGiftBubble nextClaimTime={nextBonusClaimTime} now={dailyGiftNow}
+                        pressed={shopPress.pressedId === 'daily-gift'}
+                        onPointerDown={() => shopPress.beginPress('daily-gift')}
+                        onPointerCancel={() => shopPress.cancelPress('daily-gift')}
+                        onPointerLeave={() => shopPress.cancelPress('daily-gift')}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            shopPress.runPressCycle('daily-gift', () => onClaimBonus(e));
+                        }} />
+
                     {starterOffer && (
-                        <section aria-labelledby="starter-heading">
+                        <section className="shop-starter" aria-labelledby="starter-heading">
                             <div className="oku-shop-card-shell rounded-3xl">
                                 <button
                                     onPointerDown={() => !starterPackPurchased && shopPress.beginPress(starterOffer.id)}
@@ -320,19 +341,19 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                                         src="/assets/starter-pack-icon.webp"
                                                         alt=""
                                                         aria-hidden="true"
-                                                        className="w-8 h-8 object-contain shrink-0 select-none pointer-events-none"
+                                                        className="w-12 h-12 object-contain shrink-0 select-none pointer-events-none"
                                                         draggable={false}
                                                     />
                                                     <h2 id="starter-heading" className="text-lg md:text-xl font-bold text-t-primary">Starter Pack</h2>
                                                 </div>
-                                                <p className="text-[13px] md:text-sm font-medium text-t-secondary">Six rewards to begin your journey.</p>
+                                                <p className="text-[13px] md:text-sm font-medium text-t-secondary">Five rewards to get started.</p>
                                             </div>
                                             {!starterPackPurchased && (
                                                 <span className="text-[8px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/40 px-2 py-1 rounded-full shrink-0">One time</span>
                                             )}
                                         </div>
 
-                                        <div className="relative grid grid-cols-3 md:grid-cols-6 gap-1.5 md:gap-2">
+                                        <div className="shop-reward-tray relative grid grid-cols-5 gap-1.5 md:gap-2">
                                             <div className="rounded-xl bg-violet-50 dark:bg-violet-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
                                                 <div className="h-8 flex items-center justify-center">
                                                     <Icons.Diamond className="w-5 h-5 text-blue-500 fill-current" />
@@ -340,12 +361,6 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                                 <div className="text-center">
                                                     <span className="block text-[15px] font-bold text-t-primary leading-none">{starterOffer.diamonds}</span>
                                                 </div>
-                                            </div>
-                                            <div className="rounded-xl bg-indigo-50 dark:bg-indigo-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
-                                                <div className="h-8 flex items-center justify-center">
-                                                    <Icons.Focus className="w-[27px] h-[27px] scale-[1.28]" />
-                                                </div>
-                                                <span className="text-[11px] font-bold text-t-primary">Focus</span>
                                             </div>
                                             <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 px-0.5 py-3 flex flex-col items-center justify-center gap-1.5 min-w-0">
                                                 <div className="h-8 flex items-center justify-center">
@@ -394,13 +409,13 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                         </section>
                     )}
 
-                    <section aria-labelledby="books-heading">
+                    <section className="shop-books" aria-labelledby="books-heading">
                         <div className="px-1 mb-3">
                             <h2 id="books-heading" className="text-xs md:text-sm font-bold text-t-secondary uppercase tracking-widest">Book Collections</h2>
                             <p className="text-[13px] md:text-sm font-medium text-t-secondary mt-1">Open more puzzles across every difficulty.</p>
                         </div>
 
-                        <div className="flex flex-col gap-3">
+                        <div className="shop-book-group">
                             <div className="oku-shop-card-shell rounded-3xl">
                                 <button
                                     type="button"
@@ -486,9 +501,15 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     </button>
                                 </div>
                             )}
-                        </div>
 
                         <div className={`oku-shop-card-shell rounded-3xl mt-3 ${showBooksForeverInfo ? 'z-50' : ''}`}>
+                            <div
+                                className={`oku-shop-card-face ${shopPress.pressedId === 'books-forever' ? 'oku-shop-card-face--pressed' : ''} relative w-full min-h-[5.75rem] md:min-h-[7rem] rounded-3xl border-2 bg-white dark:bg-stone-800 px-4 md:px-5 py-1.5 text-left overflow-hidden flex items-center gap-2 md:gap-4 ${
+                                    booksForeverOwned
+                                        ? 'border-stone-200 dark:border-stone-700 opacity-60 cursor-default'
+                                        : 'border-blue-300 dark:border-blue-700'
+                                }`}
+                            >
                             <button
                                 type="button"
                                 onPointerDown={() => !booksForeverOwned && !isPurchasingBooksForever && shopPress.beginPress('books-forever')}
@@ -499,19 +520,28 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     shopPress.runPressCycle('books-forever', onPurchaseBooksForever);
                                 }}
                                 disabled={booksForeverOwned || isPurchasingBooksForever}
-                                className={`oku-shop-card-face ${shopPress.pressedId === 'books-forever' ? 'oku-shop-card-face--pressed' : ''} relative w-full min-h-[5.75rem] md:min-h-[7rem] rounded-3xl border-2 bg-white dark:bg-stone-800 px-4 md:px-5 py-1.5 text-left overflow-hidden flex items-center gap-2 md:gap-4 ${
-                                    booksForeverOwned
-                                        ? 'border-stone-200 dark:border-stone-700 opacity-60 cursor-default'
-                                        : 'border-blue-300 dark:border-blue-700'
-                                }`}
-                            >
+                                aria-label={`All Books Forever, ${booksForeverOwned ? 'Owned' : isPurchasingBooksForever ? 'Purchasing' : booksForeverPrice}`}
+                                className="absolute inset-0 z-10 rounded-2xl"
+                            />
                                 <img
                                     src="/assets/oku-shop/bookall.webp"
                                     alt=""
                                     className="w-20 h-20 md:w-24 md:h-24 object-contain shrink-0 -ml-2"
                                 />
                                 <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1">
                                     <h3 className="text-base md:text-lg font-bold text-t-primary leading-tight">All Books Forever</h3>
+                                    <button
+                                type="button"
+                                onClick={toggleBooksForeverInfo}
+                                aria-label="How All Books Forever works"
+                                aria-expanded={showBooksForeverInfo}
+                                aria-controls="books-forever-details"
+                                className="shop-books-info relative z-20 shrink-0 w-6 h-6 rounded-full text-stone-500 dark:text-stone-300 flex items-center justify-center active:scale-90 transition-transform"
+                            >
+                                <Icons.Info className="w-3.5 h-3.5" />
+                            </button>
+                                    </div>
                                     <p className="text-[13px] md:text-sm font-semibold text-t-secondary leading-tight mt-1">Every Book.</p>
                                     <p className="text-[13px] md:text-sm font-semibold text-t-secondary leading-tight mt-0.5">Every difficulty.</p>
                                     <p className="text-[13px] md:text-sm font-semibold text-t-secondary leading-tight mt-0.5">Forever.</p>
@@ -528,20 +558,10 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         <span className="block w-5 h-5 rounded-full border-[2.5px] border-white/40 border-t-white animate-spin" aria-hidden="true" />
                                     ) : booksForeverOwned ? 'Owned' : booksForeverPrice}
                                 </span>
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={toggleBooksForeverInfo}
-                                aria-label="How All Books Forever works"
-                                aria-expanded={showBooksForeverInfo}
-                                className="absolute right-3 bottom-2.5 z-20 w-5 h-5 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-500 dark:text-stone-300 flex items-center justify-center active:scale-90 transition-transform"
-                            >
-                                <Icons.Info className="w-3.5 h-3.5" />
-                            </button>
+                            </div>
 
                             {showBooksForeverInfo && (
-                                <div className="absolute right-0 top-full mt-2 w-52 pointer-events-none z-50">
+                                <div id="books-forever-details" role="tooltip" className="absolute right-0 top-full mt-2 w-52 pointer-events-none z-50">
                                     <div className={`origin-top ${isClosingBooksForeverInfo ? 'animate-tooltip-exit' : 'animate-tooltip-enter'}`}>
                                         <div className="bg-stone-800 text-white dark:bg-white dark:text-stone-900 text-[11px] p-3 rounded-xl shadow-xl font-medium leading-snug relative border border-stone-600/30">
                                             Unlocks every current and future Oku book across all difficulties. New books open when you complete the previous book, so your journey still unfolds in order.
@@ -551,15 +571,16 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                 </div>
                             )}
                         </div>
+                        </div>
                     </section>
 
-                    <section aria-labelledby="packs-heading">
+                    <section className="shop-diamonds" aria-labelledby="packs-heading">
                         <div className="px-1 mb-3">
                             <h2 id="packs-heading" className="text-xs md:text-sm font-bold text-t-secondary uppercase tracking-widest">Diamond Packs</h2>
                             <p className="text-[13px] md:text-sm font-medium text-t-secondary mt-1">Use diamonds for skills, scenes, sounds, and more.</p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="shop-diamond-group">
                             {diamondPacks.map((offer, index) => {
                                 const isBestValue = index === diamondPacks.length - 1;
                                 return (
@@ -569,17 +590,17 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                             onPointerCancel={() => shopPress.cancelPress(offer.id)}
                                             onPointerLeave={() => shopPress.cancelPress(offer.id)}
                                             onClick={() => shopPress.runPressCycle(offer.id, () => handleBuyOffer(offer))}
-                                            className={`oku-shop-card-face ${shopPress.pressedId === offer.id ? 'oku-shop-card-face--pressed' : ''} relative w-full h-full overflow-hidden bg-t-surface rounded-3xl p-3.5 min-h-[148px] flex flex-col items-center justify-between text-center border ${isBestValue ? 'border-blue-300 dark:border-blue-800' : 'border-stone-200/80 dark:border-stone-800'}`}
+                                            className={`oku-shop-card-face ${shopPress.pressedId === offer.id ? 'oku-shop-card-face--pressed' : ''} shop-diamond-row relative w-full overflow-hidden bg-t-surface flex items-center justify-between text-left border ${isBestValue ? 'border-blue-300 dark:border-blue-800' : 'border-stone-200/80 dark:border-stone-800'}`}
                                         >
                                             {isBestValue && (
-                                                <span className="absolute top-3 right-3 text-[8px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 px-2 py-1 rounded-full">Best value</span>
+                                                <span className="shop-best-value absolute text-[8px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 px-2 py-1 rounded-full">Best value</span>
                                             )}
-                                            <div className="relative flex flex-col items-center pt-1">
+                                            <div className="relative flex items-center gap-1">
                                                 <DiamondStack size={index + 1} />
-                                                <span className="text-2xl font-bold text-t-primary leading-none mt-1">{offer.diamonds.toLocaleString()}</span>
+                                                <span className="text-lg font-bold text-t-primary leading-none">{offer.diamonds.toLocaleString()}</span>
                                                 <span className="sr-only">diamonds</span>
                                             </div>
-                                            <span className="relative px-3 py-1.5 rounded-full text-sm font-bold bg-blue-500 text-white shadow-sm shadow-blue-500/20">
+                                            <span className="shop-purchase-price relative text-sm font-bold">
                                                 {getPriceLabel(offer)}
                                             </span>
                                         </button>
@@ -593,7 +614,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                         <button className="text-xs font-semibold text-t-secondary py-2 px-4 active:text-t-primary transition-colors" onClick={handleRestore}>
                             Restore Purchases
                         </button>
-                        <p className="text-[9px] font-medium text-stone-300 dark:text-stone-600 mt-1">Purchases are handled securely by the App Store.</p>
+                        <p className="text-[11px] font-medium text-t-secondary mt-1">Purchases are handled securely by the App Store.</p>
                     </div>
                 </div>
                 <div className="h-safe-bottom w-full shrink-0" />

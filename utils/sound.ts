@@ -1674,6 +1674,12 @@ class SoundController {
         if (!this.vibrationEnabled) return;
         Haptics.selectionChanged().catch(() => {});
     }
+
+    // A distinct press-in cue, without playing audio or repeating while held.
+    playNoteHoldHaptic() {
+        if (!this.vibrationEnabled) return;
+        Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+    }
 }
 
 export const sounds = new SoundController();

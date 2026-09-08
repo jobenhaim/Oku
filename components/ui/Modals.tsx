@@ -7,7 +7,8 @@ import { Storage } from '../../utils/storage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IAP } from '../../utils/iap';
 import type { SuccessfulIAPPurchase } from '../../utils/iap';
-import { NUMBER_COLORS } from '../../utils/constants';
+import { NUMBER_COLORS, STATIC_BACKGROUNDS } from '../../utils/constants';
+import { ScenePreview } from './ScenePreview';
 import packageInfo from '../../package.json';
 
 // ... (Privacy Policy & Terms text remain unchanged)
@@ -198,7 +199,7 @@ export const ReplayModal: React.FC<ReplayModalProps> = ({ levelId, onConfirm, on
 
     return (
         <div 
-            className={`fixed inset-0 z-[130] flex items-center justify-center bg-black/20 backdrop-blur-sm px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} 
+            data-navigation-blocking className={`fixed inset-0 z-[130] flex items-center justify-center bg-black/20 backdrop-blur-sm px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}
             onClick={() => handleAction(onCancel)}
         >
             <div className={`bg-t-surface p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-xs md:max-w-sm text-center transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} onClick={e => e.stopPropagation()}>
@@ -230,7 +231,7 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ onConfirm,
 
     return (
         <div 
-            className={`fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} 
+            data-navigation-blocking className={`fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}
             onClick={() => handleAction(onCancel)}
         >
             <div className={`bg-t-surface p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-xs md:max-w-sm text-center border border-red-100 dark:border-red-900/30 transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} onClick={e => e.stopPropagation()}>
@@ -263,6 +264,7 @@ interface PurchaseModalProps {
 export const PurchaseModal: React.FC<PurchaseModalProps> = ({ item, onConfirm, onCancel }) => {
     const [isClosing, setIsClosing] = useState(false);
     const numberStyle = item.type === 'num' ? NUMBER_COLORS.find(style => style.id === item.id) : undefined;
+    const scene = item.type === 'bg' ? STATIC_BACKGROUNDS.find(background => background.id === item.id) : undefined;
     const handleAction = (action: () => void) => {
         sounds.playClick();
         setIsClosing(true);
@@ -270,12 +272,17 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ item, onConfirm, o
     };
     return (
         <div 
-            className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/20 backdrop-blur-sm px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} 
+            data-navigation-blocking className={`fixed inset-0 z-[110] flex items-center justify-center bg-black/20 backdrop-blur-sm px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}
             onClick={() => handleAction(onCancel)}
         >
-            <div className={`bg-t-surface p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-xs md:max-w-sm text-center transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} onClick={e => e.stopPropagation()}>
+            <div className={`bg-t-surface p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-xs md:max-w-sm max-h-[calc(100dvh-32px)] overflow-y-auto text-center transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} onClick={e => e.stopPropagation()}>
                 <h3 className="text-xl md:text-2xl font-bold text-t-primary mb-2 transition-colors duration-300">Unlock {item.name}?</h3>
-                {numberStyle ? (
+                {scene ? (
+                    <div className="mt-4">
+                        <ScenePreview scene={scene} />
+                        <p className="mt-3 text-sm text-t-secondary font-medium">A little preview of your next scene.</p>
+                    </div>
+                ) : numberStyle ? (
                     <>
                         <div className="grid grid-cols-9 items-center gap-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl px-3 py-4 mt-4 mb-3" aria-label={`${item.name} number pad preview`}>
                             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(digit => (
@@ -344,7 +351,7 @@ export const BookUnlockConfirmModal: React.FC<BookUnlockConfirmModalProps> = ({
 
     return (
         <div
-            className={`fixed inset-0 z-[1000] flex items-center justify-center bg-black/30 backdrop-blur-sm px-4 ${
+            data-navigation-blocking className={`fixed inset-0 z-[1000] flex items-center justify-center bg-black/30 backdrop-blur-sm px-4 ${
                 isClosing ? 'animate-fade-out' : 'animate-fade-in'
             }`}
             onClick={() => handleAction(onCancel)}
@@ -448,7 +455,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
         if (offer.type === 'starter') {
             return (
                 <span>
-                    Includes <span className="font-bold">{offer.diamonds} Diamonds</span>, permanent access to <span className="font-bold">Focus</span>, <span className="font-bold">Guard</span>, and <span className="font-bold">Scan</span>, plus the <span className="font-bold">Piano</span> sound pack and <span className="font-bold">Teal</span> number style.
+                    Includes <span className="font-bold">{offer.diamonds} Diamonds</span>, permanent access to <span className="font-bold">Guard</span> and <span className="font-bold">Scan</span>, plus the <span className="font-bold">Piano</span> sound pack and <span className="font-bold">Teal</span> number style.
                 </span>
             );
         }
@@ -461,7 +468,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
 
     return (
         <div 
-            className={`fixed inset-0 z-[140] flex items-center justify-center bg-black/40 backdrop-blur-md px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} 
+            data-navigation-blocking className={`fixed inset-0 z-[140] flex items-center justify-center bg-black/40 backdrop-blur-md px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}
             onClick={handleCancel}
         >
             <div 
@@ -540,7 +547,7 @@ export const NotEnoughPointsModal: React.FC<NotEnoughPointsModalProps> = ({ onCl
     };
 
     return (
-        <div className={`fixed inset-0 z-[120] flex items-center justify-center bg-black/20 backdrop-blur-sm px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={() => handleAction(onClose)}>
+        <div data-navigation-blocking className={`fixed inset-0 z-[120] flex items-center justify-center bg-black/20 backdrop-blur-sm px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={() => handleAction(onClose)}>
             <div className={`bg-t-surface p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-xs md:max-w-sm text-center relative transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} onClick={e => e.stopPropagation()}>
                 <button onClick={() => handleAction(onClose)} className="absolute right-4 top-4 p-2 bg-t-surface-sec rounded-full hover:bg-stone-200 text-t-secondary active:scale-95 transition-all duration-300">
                     <Icons.Close className="w-4 h-4" />
@@ -688,7 +695,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
     };
 
     return (
-        <div className={`fixed inset-0 z-[999] bg-black/40 backdrop-blur-md flex items-end sm:items-center justify-center ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={handleClose}>
+        <div data-navigation-blocking className={`fixed inset-0 z-[999] bg-black/40 backdrop-blur-md flex items-end sm:items-center justify-center ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={handleClose}>
             
             {/* Top-Level Toast Notification (Outside Modal Content) */}
             <AnimatePresence>
@@ -714,7 +721,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                 {/* Header */}
                 <div className="flex justify-between items-center px-5 md:px-7 pt-4 md:pt-6 pb-2 md:pb-3 shrink-0 bg-t-surface z-10 transition-colors duration-300">
                     <h3 className="text-xl md:text-2xl font-bold text-t-primary transition-colors duration-300">Settings</h3>
-                    <button onClick={handleClose} className="p-1.5 md:p-2 bg-t-surface-sec rounded-full text-t-primary transition-colors duration-300"><Icons.Close className="w-5 h-5 md:w-6 md:h-6" /></button>
+                    <button onClick={handleClose} aria-label="Close settings" className="p-1.5 md:p-2 bg-t-surface-sec rounded-full text-t-primary transition-colors duration-300"><Icons.Close className="w-5 h-5 md:w-6 md:h-6" /></button>
                 </div>
                 
                 {/* Content Container - Flex-1 allows it to take space, relative for conditional rendering */}
@@ -1072,7 +1079,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
 
             {showResetPreConfirm && (
                 <div
-                    className="fixed inset-0 z-[1001] flex items-center justify-center bg-black/30 backdrop-blur-sm px-4 animate-fade-in"
+                    data-navigation-blocking className="fixed inset-0 z-[1001] flex items-center justify-center bg-black/30 backdrop-blur-sm px-4 animate-fade-in"
                     onClick={(e) => {
                         e.stopPropagation();
                         sounds.playClick();

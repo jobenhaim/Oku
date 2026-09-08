@@ -6,11 +6,13 @@ import { Icons } from '../ui/Icons';
 import { formatTimeShort, getDifficultyPoints } from '../../utils/constants';
 import { sounds } from '../../utils/sound';
 import { DiamondBalancePill } from '../ui/DiamondBalancePill';
+import { MainScreenHeader } from '../ui/MainScreenHeader';
 import { AnimatePresence, motion } from 'framer-motion';
 import { easeInOut, easeOut } from '../../utils/animation';
 
 interface StatsScreenProps {
     onBack: () => void;
+    onOpenSettings?: () => void;
     onEarnPoints?: (amount: number, source?: HTMLElement | DOMRect | null) => void;
     points: number;
 }
@@ -92,7 +94,7 @@ const cardVariants = {
     }
 };
 
-export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, points }) => {
+export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onOpenSettings, onEarnPoints, points }) => {
     // Stats State
     const [selectedDiff, setSelectedDiff] = useState<Difficulty>(Difficulty.Normal);
     const [direction, setDirection] = useState(0);
@@ -192,7 +194,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
     return (
         <div className="flex-1 w-full flex flex-col items-center overflow-hidden">
             {/* Header */}
-            <div className="w-full max-w-md md:max-w-[700px] flex items-center justify-between px-6 md:px-0 pt-4 md:pt-7 pb-4 relative shrink-0 z-20">
+            {onOpenSettings ? <MainScreenHeader title="Stats" points={points} onSettings={onOpenSettings} /> : <div className="w-full max-w-md md:max-w-[700px] flex items-center justify-between px-6 md:px-0 pt-4 md:pt-7 pb-4 relative shrink-0 z-20">
                 <button onClick={onBack} aria-label="Back to menu" className="p-2 md:p-2.5 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
                     <Icons.Back className="w-6 h-6 md:w-7 md:h-7 text-t-icon" />
                 </button>
@@ -204,8 +206,9 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onEarnPoints, 
                 <DiamondBalancePill points={points} />
             </div>
 
+            }
             {/* Content Area */}
-            <div className="flex-1 w-full overflow-y-auto overflow-x-hidden px-6 md:px-0 pb-6 hide-scrollbar flex flex-col items-center">
+            <div data-navigation-scroll className="flex-1 w-full overflow-y-auto overflow-x-hidden px-6 md:px-0 pb-6 hide-scrollbar flex flex-col items-center">
                 <div className="w-full max-w-md md:max-w-[620px] pt-2 md:pt-4">
                     
                     <motion.div 
