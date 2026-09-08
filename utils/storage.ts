@@ -785,10 +785,14 @@ function saveData(
     void queuePreferenceSet(STORAGE_KEY, stringified);
 
     const activeProfile = getActiveProfile();
-    if (options.mirrorActiveProfile !== false && activeProfile?.kind === 'account') {
-      const accountKey = getAccountProfileKey(activeProfile.uid);
-      localStorage.setItem(accountKey, stringified);
-      void queuePreferenceSet(accountKey, stringified);
+    if (options.mirrorActiveProfile !== false && activeProfile) {
+      // Hydration deliberately trusts the profile-scoped cache, not the generic
+      // slot. Keep guests just as current as accounts before notifying the UI.
+      const profileKey = activeProfile.kind === 'account'
+        ? getAccountProfileKey(activeProfile.uid)
+        : GUEST_PROFILE_KEY;
+      localStorage.setItem(profileKey, stringified);
+      void queuePreferenceSet(profileKey, stringified);
     }
 
     if (options.notify !== false) {
@@ -1137,7 +1141,13 @@ export const Storage = {
       // becomes active. Cloud saves and long-idle guest profiles may come from
       // an older app version.
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      saveData(getStoredData(), { touchModifiedAt: false });
+      // Cloud bootstrap installs incoming account data BEFORE activating its
+      // marker. Do not treat that replacement as a mutation of the old guest.
+      // An already-active account still needs its cache refreshed on cloud sync.
+      saveData(getStoredData(), {
+          touchModifiedAt: false,
+          mirrorActiveProfile: getActiveProfile()?.kind === 'account',
+      });
       await nativeSaveQueue;
   },
 

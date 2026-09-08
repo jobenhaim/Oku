@@ -35,7 +35,13 @@ const bundle = await build({
                     const values = globalThis.__okuTestPreferences;
                     export const Preferences = {
                         get: async ({ key }) => ({ value: values.get(key) ?? null }),
-                        set: async ({ key, value }) => { values.set(key, value); },
+                        set: async ({ key, value }) => {
+                            if (globalThis.__okuFailGuestWrite && key === 'oku_guest_profile_v1') {
+                                globalThis.__okuFailGuestWrite = false;
+                                throw new Error('Expected simulated guest write failure');
+                            }
+                            values.set(key, value);
+                        },
                         remove: async ({ key }) => { values.delete(key); },
                     };
                 `,
@@ -113,4 +119,92 @@ assert.equal(Storage.getStoredData().points, 0);
 assert.equal(Storage.getGuestProfile().points, 0);
 assert.deepEqual(Storage.getGuestProfile().progress, {});
 
-console.log('Profile storage transition checks passed.');
+// A real guest mutation must survive a fresh storage module and native hydration.
+const assertSnapshot = (actual, expected, message) => assert.deepEqual(JSON.parse(JSON.stringify(actual)), JSON.parse(JSON.stringify(expected)), message);
+await Storage.initializeNative();
+await Storage.initializeProfiles(null);
+assert.equal(Storage.claimWelcomeGift().applied, true);
+Storage.saveSettings({ ...Storage.getSettings(), appearance: 'dark' });
+const deadline = Date.now() + 86_400_000;
+assert.equal(Storage.claimDailyBonus(deadline, 10).applied, true);
+const board = Array.from({ length: 9 }, (_, row) => Array.from({ length: 9 }, (_, col) => ({ row, col, value: null, notes: [], isFixed: false })));
+board[0][0].value = 5;
+board[0][1].notes = [2, 7];
+Storage.saveLevelProgress({ difficulty: 'Easy', levelId: 4, status: 'in-progress', timeElapsed: 137, boardState: board, lastPlayed: Date.now(), scanUses: 3, scanRefillsPurchased: 0 });
+const latestGuest = Storage.getStoredData();
+assert.equal(latestGuest.points, 110);
+assertSnapshot(Storage.getGuestProfile(), latestGuest, 'Every guest mutation updates the isolated guest cache synchronously');
+await Storage.flushPendingWrites();
+assertSnapshot(JSON.parse(nativePreferences.get('oku_guest_profile_v1')), latestGuest);
+
+let restartNumber = 0;
+const restart = async (nativeOnly = false) => {
+    if (nativeOnly) localValues.clear();
+    const { Storage: restarted } = await import(`${moduleUrl}#restart-${++restartNumber}`);
+    await restarted.initializeNative();
+    await restarted.initializeProfiles(null);
+    return restarted;
+};
+let restarted = await restart();
+assertSnapshot(restarted.getStoredData(), latestGuest, 'Guest state survives ordinary relaunch');
+assert.equal(restarted.claimWelcomeGift().applied, false);
+assert.equal(restarted.claimDailyBonus(deadline, 10).applied, false);
+restarted = await restart(true);
+assertSnapshot(restarted.getStoredData(), latestGuest, 'Native guest cache restores settings, gifts, values and notes when WebView storage is absent');
+
+// Loading incoming account data happens before its account marker is activated.
+// That replacement is NOT guest gameplay and must never overwrite the guest.
+const incomingAccount = withIdentity(restarted.createDefaultData(), 'incoming-account', 845);
+await restarted.replaceStoredData(incomingAccount);
+assertSnapshot(restarted.getGuestProfile(), latestGuest);
+await restarted.activateAccountProfile('incoming-user');
+restarted.addPoints(5);
+await restarted.flushPendingWrites();
+assert.equal(restarted.getAccountProfile('incoming-user').points, 850);
+assertSnapshot(restarted.getGuestProfile(), latestGuest);
+await restarted.restoreGuestProfile();
+assertSnapshot(restarted.getStoredData(), latestGuest);
+restarted.addPoints(3);
+const returnedGuest = restarted.getStoredData();
+await restarted.flushPendingWrites();
+restarted = await restart(true);
+assertSnapshot(restarted.getStoredData(), returnedGuest, 'Guest edits after sign-out also survive restart');
+await restarted.initializeProfiles('incoming-user');
+assert.equal(restarted.getStoredData().points, 850);
+assertSnapshot(restarted.getGuestProfile(), returnedGuest);
+
+// A remote refresh of an ALREADY active account still updates its own cache.
+const refreshedAccount = { ...restarted.getStoredData(), points: 901 };
+await restarted.replaceStoredData(refreshedAccount);
+assert.equal(restarted.getAccountProfile('incoming-user').points, 901);
+assertSnapshot(restarted.getGuestProfile(), returnedGuest);
+
+// Bursty edits and a temporary native failure must not leave the guest mirror
+// behind. The synchronous guest copy protects restarts while retry is pending.
+await restarted.restoreGuestProfile();
+globalThis.__okuFailGuestWrite = true;
+const savedConsoleError = console.error;
+const expectedErrors = [];
+console.error = (...args) => expectedErrors.push(args);
+try {
+    for (let i = 0; i < 20; i++) restarted.addPoints(1);
+    const burstGuest = restarted.getStoredData();
+    assertSnapshot(restarted.getGuestProfile(), burstGuest);
+    await restarted.flushPendingWrites();
+    assert.equal(expectedErrors.length, 1);
+    assertSnapshot(JSON.parse(nativePreferences.get('oku_guest_profile_v1')), burstGuest);
+    globalThis.__okuFailGuestWrite = true;
+    restarted.addPoints(1);
+    const retriedGuest = restarted.getStoredData();
+    await restarted.flushPendingWrites();
+    assert.equal(expectedErrors.length, 2);
+    assertSnapshot(JSON.parse(nativePreferences.get('oku_guest_profile_v1')), retriedGuest, 'The last failed guest write is retried even without a later mutation');
+    restarted = await restart(true);
+    assertSnapshot(restarted.getStoredData(), retriedGuest);
+    assert.equal(restarted.getAccountProfile('incoming-user')?.points ?? JSON.parse(nativePreferences.get('oku_account_profile_v1:incoming-user')).points, 901);
+} finally {
+    console.error = savedConsoleError;
+    delete globalThis.__okuFailGuestWrite;
+}
+
+console.log('Profile storage: guest restart, native-only recovery, rewards, board notes, account replacement, sign-out and account isolation passed.');

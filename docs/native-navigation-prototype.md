@@ -1,6 +1,6 @@
 # Native navigation prototype — 7 September 2026
 
-Prepared as version 4.0.3 (iOS build 3) on 8 September 2026 for the requested source push. The separate guest-persistence release hold below remains open; a Git push is not App Store release approval.
+Prepared as version 4.0.3 (iOS build 3) on 8 September 2026 for the requested source push. Guest-persistence follow-up is recorded below; a Git push is not App Store release approval.
 
 ## Before-state backup
 
@@ -48,10 +48,12 @@ References: https://developer.apple.com/videos/play/wwdc2025/284/ and https://ca
 - Browser fallback tested at 390×844 and 320×568. At 320 wide, all five labels fit and targets measured about 54×54 CSS pixels, with no horizontal overflow.
 - No physical-phone, VoiceOver, older-iOS runtime, thermal/battery, or final keyboard/purchase-cancel sign-off yet.
 
-**Separate pre-existing guest persistence issue found; do not recommend release before it is addressed.** No storage code was changed by the navigation work.
+**Separate pre-existing guest persistence issue — fixed locally on 8 September; physical-device restart verification still recommended before release.** No storage code was changed by the original navigation work.
 
 Reproduction (mocked storage, also observed after relaunching the isolated simulator): initializeNative → initializeProfiles(null) → claimWelcomeGift → saveSettings(appearance: dark) → flushPendingWrites → initializeNative → initializeProfiles(null). Before reload: 100 points, gift claimed, dark theme. After reload: 0 points, gift unclaimed, light theme.
 
 Cause: `saveData` mirrors changes into the active account cache but not the active guest cache. `initializeNative` then explicitly prefers the isolated guest cache when the active marker is guest, even though it is stale. The exact same two code paths were confirmed in the pre-navigation archive. Existing regression tests did not cover this complete guest-mutation/reload sequence.
 
-Next step requires user approval: repair guest mirroring with focused regression coverage while preserving sign-out/account-isolation semantics. Do not simply pick the newest generic slot by timestamp; it may belong to an account during an interrupted sign-out.
+User-approved follow-up: `saveData` now synchronously mirrors guest mutations to the isolated guest cache and queues the same snapshot to native Preferences. `replaceStoredData` does not mirror incoming account data into a currently active guest cache; existing-account cloud refreshes still update their own account cache. Profile-scoped hydration precedence is unchanged, so an account snapshot left in the generic slot during sign-out cannot win by timestamp.
+
+Regression coverage in `scripts/test-profile-storage.mjs` reproduces the original failure and now passes: rewards/settings/board values/notes survive fresh-module restart and native-only hydration; rewards cannot be claimed twice; incoming account replacement, sign-out, return-to-guest edits and account reactivation preserve isolation; burst writes and failed native guest writes converge to the latest snapshot on flush/retry. Existing storage consistency, auth rollback and cloud concurrency suites also pass. The fix prevents future stale guest copies; it does not guess ownership of old generic snapshots or recover already-overwritten progress.
