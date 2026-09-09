@@ -86,6 +86,8 @@ assert.equal(Storage.getGuestProfile().points, 111);
 await Storage.resetAllData();
 assert.equal(Storage.getStoredData().points, 0);
 assert.equal(Storage.getGuestProfile().points, 111);
+assert.equal(Storage.getStoredData().purchaseRestoreRequired, true);
+assert.notEqual(Storage.getGuestProfile().purchaseRestoreRequired, true, 'Account reset does not suppress guest purchases');
 
 // Sign-out restores the exact guest snapshot, including its own progress.
 await Storage.restoreGuestProfile();
@@ -93,6 +95,9 @@ assert.deepEqual(Storage.getActiveProfile(), { kind: 'guest' });
 assert.equal(Storage.getStoredData().points, 111);
 assert.ok(Storage.getStoredData().progress['guest-1']);
 assert.equal(Storage.getStoredData().progress['account-1'], undefined);
+await Storage.initializeProfiles('user-1');
+assert.equal(Storage.getStoredData().purchaseRestoreRequired, true, 'Manual restore requirement survives signing back in');
+await Storage.restoreGuestProfile();
 
 // An account that signs out before its offline changes reach Firestore keeps a
 // UID-scoped local cache. Signing into that UID again must restore the account,
@@ -118,6 +123,7 @@ await Storage.resetAllData();
 assert.equal(Storage.getStoredData().points, 0);
 assert.equal(Storage.getGuestProfile().points, 0);
 assert.deepEqual(Storage.getGuestProfile().progress, {});
+assert.equal(Storage.getGuestProfile().purchaseRestoreRequired, true, 'Guest backup retains explicit reset intent');
 
 // A real guest mutation must survive a fresh storage module and native hydration.
 const assertSnapshot = (actual, expected, message) => assert.deepEqual(JSON.parse(JSON.stringify(actual)), JSON.parse(JSON.stringify(expected)), message);

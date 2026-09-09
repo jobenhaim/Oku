@@ -313,11 +313,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
              <div data-navigation-scroll className={`oku-home-content flex-1 w-full px-6 md:px-10 lg:px-14 pb-6 md:pb-8 pt-4 md:pt-6 flex flex-col items-center min-h-0 ${tabNavigation ? 'overflow-y-auto hide-scrollbar' : 'overflow-hidden'}`}>
                   
                   <div
-                    className="oku-home-logo flex flex-col items-center mb-8 md:mb-10 shrink-0 pt-4 md:pt-6 opacity-0 animate-fade-in-long"
-                    style={{
-                        animationDelay: `${cascadeDelayMs}ms`,
-                        animationDuration: `${MAIN_MENU_FADE_DURATION_MS}ms`,
-                    }}
+                    className="oku-home-logo flex flex-col items-center mb-8 md:mb-10 shrink-0 pt-4 md:pt-6"
                   >
                       <h1 className="text-6xl md:text-7xl font-bold text-stone-800 dark:text-stone-100 tracking-tight leading-none mb-1 md:mb-2">Oku</h1>
                       <span className="text-xs md:text-sm font-bold text-stone-500 dark:text-stone-400 uppercase tracking-[0.4em] ml-1">Sudoku</span>
@@ -529,11 +525,7 @@ export const DifficultyScreen: React.FC<DifficultyScreenProps> = ({
                   </div>
 
                   <div 
-                    className="w-full max-w-md md:max-w-[620px] flex items-center justify-center gap-3 md:gap-4 mt-6 md:mt-8 mb-2 opacity-0 animate-slide-in-down shrink-0"
-                    style={{
-                        animationDelay: `${mainMenuCascadeDelay(350) + cascadeDelayMs}ms`,
-                        animationDuration: `${MAIN_MENU_SLIDE_DURATION_MS}ms`,
-                    }}
+                    className="w-full max-w-md md:max-w-[620px] flex items-center justify-center gap-3 md:gap-4 mt-6 md:mt-8 mb-2 shrink-0"
                   >
                       <div className="oku-tactile-shell rounded-full">
                           <button

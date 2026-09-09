@@ -698,7 +698,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
               transactionIds: purchase.transactionIdentifier
                   ? [...purchase.ownership.transactionIds, purchase.transactionIdentifier]
                   : purchase.ownership.transactionIds
-          });
+          }, { userInitiated: true });
       } else {
           Storage.fulfillStorePurchase({
               transactionId: purchase.transactionIdentifier,
@@ -717,12 +717,12 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
       // Reconcile even when no permanent entitlement remains. This clears
       // stale local flags after a sandbox history reset or refund.
-      Storage.restorePermanentPurchases(ownership);
+      Storage.restorePermanentPurchases(ownership, { userInitiated: true });
+      refreshCommerceState();
 
       const hasPermanentPurchase = ownership.premiumOwned || ownership.starterOwned || ownership.books2AllOwned || ownership.books3AllOwned || ownership.booksForeverOwned;
       if (!hasPermanentPurchase) return 'none';
 
-      refreshCommerceState();
       return 'restored';
   };
 
@@ -747,7 +747,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
           return;
       }
 
-      Storage.restorePermanentPurchases(purchase.ownership);
+      Storage.restorePermanentPurchases(purchase.ownership, { userInitiated: true });
       refreshCommerceState();
   };
 
@@ -774,7 +774,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
           return;
       }
 
-      Storage.restorePermanentPurchases(purchase.ownership);
+      Storage.restorePermanentPurchases(purchase.ownership, { userInitiated: true });
       refreshCommerceState();
   };
 
@@ -799,7 +799,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
           return;
       }
 
-      Storage.restorePermanentPurchases(purchase.ownership);
+      Storage.restorePermanentPurchases(purchase.ownership, { userInitiated: true });
       refreshCommerceState();
   };
 
@@ -892,10 +892,6 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
 
       if (lowerCode === 'haha10000') {
           return redeem({ diamonds: 10000 });
-      }
-
-      if (lowerCode === 'hahapepino') {
-          return redeem({ unlockPepino: true });
       }
 
       if (lowerCode === 'hahadev') {
@@ -1056,13 +1052,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                         )}
 
                         {screen === 'difficulty' && (
-                            <motion.div
+                            <div
                                 key={`difficulty-${difficultyAnimationKey}`}
-                                custom={direction}
-                                variants={variants}
-                                initial={direction === 0 ? false : 'initial'}
-                                animate="animate"
-                                exit="exit"
                                 className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe"
                             >
                                 <DifficultyScreen 
@@ -1088,7 +1079,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                         navigate('game', 'forward');
                                     }}
                                 />
-                            </motion.div>
+                            </div>
                         )}
 
                         {screen === 'diamondShop' && (

@@ -240,7 +240,7 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ onConfirm,
                 </div>
                 <h3 className="text-xl md:text-2xl font-bold text-t-primary mb-2">Reset Progress?</h3>
                 <p className="text-sm md:text-base text-t-secondary font-medium mb-6 leading-relaxed">
-                    This will permanently delete all your progress, unlocks, and stats. This cannot be undone.
+                    This will permanently delete your progress, diamonds, unlocks, and stats. You can recover eligible App Store purchases using Restore Purchases in Oku Shop. Your progress and diamond balance cannot be restored.
                 </p>
                 <div className="flex flex-col gap-3">
                     <button onClick={() => handleAction(onConfirm)} className="w-full py-3.5 text-white bg-red-500 rounded-xl font-bold shadow-lg shadow-red-500/20 active:scale-95 transition-transform">

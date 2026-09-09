@@ -11,7 +11,7 @@ interface NavigationState {
     profileBadge: boolean;
 }
 interface NativeNavigationPlugin {
-    configure(state: NavigationState & { selectionId: number }): Promise<{ bottomInset: number }>;
+    configure(state: NavigationState & { selectionId: number }): Promise<{ bottomInset: number; selectionId?: number }>;
     addListener(event: 'tabSelected', callback: (event: { tab: string; selectionId: number }) => void): Promise<PluginListenerHandle>;
     addListener(event: 'layoutChanged', callback: (event: { bottomInset: number }) => void): Promise<PluginListenerHandle>;
 }
@@ -86,8 +86,17 @@ export const useNativeNavigation = (active: boolean, state: NavigationState, onS
     useEffect(() => {
         if (!ready) return;
         let disposed = false;
-        void NativeNavigation.configure({ ...state, selectionId }).then(({ bottomInset: inset }) => {
-            if (!disposed) { if (inset > 0) setBottomInset(inset); setNative(true); }
+        void NativeNavigation.configure({ ...state, selectionId }).then(({ bottomInset: inset, selectionId: nativeSelectionId }) => {
+            if (disposed) return;
+            // The native controller survives a progress reset (React remount).
+            // Catch up to its counter, then resend the current screen/visibility.
+            // Never move backwards if a newer tap arrived while awaiting this reply.
+            if (Number.isSafeInteger(nativeSelectionId) && nativeSelectionId! > latestSelectionId.current) {
+                latestSelectionId.current = nativeSelectionId!;
+                setSelectionId(nativeSelectionId!);
+            }
+            if (inset > 0) setBottomInset(inset);
+            setNative(true);
         }).catch(error => {
             console.warn('Native navigation update failed.', error);
             // Do not render duplicate web controls after a native bar was established.

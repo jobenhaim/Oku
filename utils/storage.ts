@@ -807,6 +807,11 @@ function saveData(
 
 function ensurePepinoUnlocked(data: StoredData) {
   if (data.pepino?.unlocked) return;
+  if (data.pepino && (data.pepino.unlockedAt || data.pepino.firstGiftClaimed || data.pepino.firstMessageShown)) {
+    // Reinstating access must not restart Pepino or award another first gift.
+    data.pepino.unlocked = true;
+    return;
+  }
   data.pepino = {
     unlocked: true,
     hasPendingGift: true,
@@ -1551,18 +1556,34 @@ export const Storage = {
       return { applied: true, data };
   },
 
-  restorePermanentPurchases: (ownership: PermanentPurchaseOwnership): StoredData => {
+  restorePermanentPurchases: (
+      ownership: PermanentPurchaseOwnership,
+      options: { userInitiated?: boolean } = {}
+  ): StoredData => {
       const data = getStoredData();
       if (!data.processedPurchaseTransactions) data.processedPurchaseTransactions = [];
+      if (options.userInitiated) data.purchaseRestoreRequired = false;
+      const allowRestore = data.purchaseRestoreRequired !== true;
 
-      if (ownership.premiumOwned) ensurePepinoUnlocked(data);
-      if (ownership.starterOwned) ensureStarterPackUnlocked(data);
+      if (ownership.premiumOwned) {
+          if (allowRestore) ensurePepinoUnlocked(data);
+      }
+      else if (data.pepino) data.pepino.unlocked = false;
+      if (ownership.starterOwned) {
+          if (allowRestore) ensureStarterPackUnlocked(data);
+      }
+      else data.starterPackPurchased = false;
+      // Successful ownership checks also retire legacy test/coupon access.
+      // Keep reward history, diamonds and individually usable cosmetics: older
+      // saves cannot distinguish bundle rewards from independently earned items.
       // Reconcile book access in both directions. Previously this method only
       // ever set flags to true, so a refund or cleared sandbox history could
       // never remove stale local ownership.
-      data.books2AllOwned = ownership.books2AllOwned;
-      data.books3AllOwned = ownership.books3AllOwned;
-      data.booksForeverOwned = ownership.booksForeverOwned;
+      // A progress reset must survive startup/login ownership checks. Those
+      // checks may revoke access, but must not silently undo the user's reset.
+      data.books2AllOwned = ownership.books2AllOwned && (allowRestore || Boolean(data.books2AllOwned));
+      data.books3AllOwned = ownership.books3AllOwned && (allowRestore || Boolean(data.books3AllOwned));
+      data.booksForeverOwned = ownership.booksForeverOwned && (allowRestore || Boolean(data.booksForeverOwned));
 
       for (const transactionId of ownership.transactionIds) {
           if (transactionId && !data.processedPurchaseTransactions.includes(transactionId)) {
@@ -1900,6 +1921,7 @@ export const Storage = {
     // is connected, its cloud save is reset too instead of restoring stale
     // progress on the next launch.
     const freshData = getStoredData();
+    freshData.purchaseRestoreRequired = true;
     saveData(freshData);
     if (resetGuestProfile) {
         await persistGuestProfile(freshData);
@@ -1999,6 +2021,8 @@ export const Storage = {
       const data = getStoredData();
       const normalizedCode = code.trim().toUpperCase();
       if (!normalizedCode) return { applied: false, data };
+      // Retired test code must not be re-applied by another caller or old UI.
+      if (normalizedCode === 'HAHAPEPINO') return { applied: false, data };
       if (!data.redeemedCoupons) data.redeemedCoupons = [];
       if (data.redeemedCoupons.includes(normalizedCode)) return { applied: false, data };
 

@@ -143,6 +143,8 @@ export interface StoredData {
   redeemedCoupons?: string[]; // Track redeemed coupon codes
   welcomeGiftClaimed?: boolean; // Track if the welcome gift has been claimed
   processedPurchaseTransactions?: string[]; // Prevent a Store transaction from granting rewards twice
+  /** After an intentional reset, only an explicit restore may regrant old purchases. */
+  purchaseRestoreRequired?: boolean;
   claimedAchievements?: string[]; // Achievement rewards already collected
   watchedReplayPuzzleIds?: string[]; // Count each completed puzzle only once for replay achievements
   achievementCounters?: {

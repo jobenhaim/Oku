@@ -594,6 +594,67 @@ const repeatedOwnership = await observeMutation(() => Storage.restorePermanentPu
 assert.equal(repeatedOwnership.notifications, 0);
 assert.equal(Storage.getStoredData().lastModifiedAt, ownershipModifiedAt);
 
+// Expired sandbox/coupon access is revoked, not the player's independent save.
+const noOwnership = {premiumOwned:false, starterOwned:false, books2AllOwned:false,
+    books3AllOwned:false, booksForeverOwned:false, transactionIds:[]};
+const testAccess = Storage.createDefaultData();
+testAccess.points = 123;
+testAccess.pepino = {unlocked:true, unlockedAt:1234, firstGiftClaimed:true,
+    firstMessageShown:true, hasPendingGift:false, pendingGiftCount:0};
+testAccess.starterPackPurchased = true;
+testAccess.books2AllOwned = testAccess.books3AllOwned = testAccess.booksForeverOwned = true;
+testAccess.redeemedCoupons = ['HAHAPEPINO'];
+testAccess.processedPurchaseTransactions = ['old-test-transaction'];
+testAccess.purchasedNumberColors.push('num-purple');
+await installSnapshot(testAccess);
+const beforeRevoke = Storage.getStoredData();
+const revoked = Storage.restorePermanentPurchases(noOwnership);
+assert.equal(revoked.pepino.unlocked, false);
+assert.equal(revoked.starterPackPurchased, false);
+for (const key of ['books2AllOwned','books3AllOwned','booksForeverOwned']) assert.equal(revoked[key], false);
+for (const key of ['points','progress','purchasedNumberColors','purchasedSoundPacks','purchasedSkills','processedPurchaseTransactions','redeemedCoupons']) {
+    assert.deepEqual(revoked[key], beforeRevoke[key], `${key} survives entitlement cleanup`);
+}
+assert.equal(Storage.redeemCoupon(' hahapepino ', {unlockPepino:true}).applied, false);
+assert.equal(Storage.getPepinoState().unlocked, false);
+const reinstated = Storage.restorePermanentPurchases({...noOwnership, premiumOwned:true, starterOwned:true});
+assert.equal(reinstated.pepino.unlocked, true, 'Verified premium owner retains Pepino');
+assert.equal(reinstated.pepino.pendingGiftCount, 0, 'Restoring access does not repeat the first gift');
+assert.equal(reinstated.pepino.firstGiftClaimed, true);
+assert.equal(reinstated.starterPackPurchased, true);
+assert.equal(reinstated.points, 123, 'Restores never regrant purchase diamonds');
+await Storage.resetAllData();
+assert.equal(Storage.redeemCoupon('hahapepino', {unlockPepino:true}).applied, false, 'Reset cannot reactivate the retired code');
+const allOwnership = {...noOwnership, premiumOwned:true, starterOwned:true,
+    books2AllOwned:true, books3AllOwned:true, booksForeverOwned:true};
+assert.equal(Storage.getStoredData().purchaseRestoreRequired, true);
+assert.deepEqual(Storage.getStoredData().progress, {});
+assert.equal(Storage.getStoredData().points, 0);
+for (let launch = 0; launch < 2; launch++) {
+    // Persist/reload the profile, as account/cloud/native recovery does.
+    await installSnapshot(JSON.parse(JSON.stringify(Storage.getStoredData())));
+    const autoChecked = Storage.restorePermanentPurchases(allOwnership);
+    assert.equal(autoChecked.purchaseRestoreRequired, true);
+    assert.equal(autoChecked.pepino.unlocked, false, 'Startup must not silently restore Pepino after reset');
+    assert.equal(autoChecked.starterPackPurchased, false);
+    for (const key of ['books2AllOwned','books3AllOwned','booksForeverOwned']) assert.equal(autoChecked[key], false);
+}
+// A new explicit purchase still works, without reviving other old purchases.
+Storage.fulfillStorePurchase({transactionId:'new-premium-after-reset', diamonds:0, unlock:'premium'});
+const afterNewPurchase = Storage.restorePermanentPurchases(allOwnership);
+assert.equal(afterNewPurchase.pepino.unlocked, true);
+assert.equal(afterNewPurchase.booksForeverOwned, false);
+const resetRestored = Storage.restorePermanentPurchases(allOwnership, {userInitiated:true});
+assert.equal(resetRestored.pepino.unlocked, true, 'Real purchase can restore after a progress reset');
+assert.equal(resetRestored.booksForeverOwned, true);
+assert.equal(resetRestored.starterPackPurchased, true);
+assert.equal(resetRestored.purchaseRestoreRequired, false);
+assert.equal(resetRestored.points, 0, 'Manual restore never regrants spent consumable diamonds');
+assert.deepEqual(resetRestored.progress, {}, 'Manual restore does not restore erased puzzle progress');
+await Storage.resetAllData();
+const revokedAfterReset = Storage.restorePermanentPurchases(noOwnership, {userInitiated:true});
+assert.equal(revokedAfterReset.pepino.unlocked, false, 'Manual restore cannot resurrect revoked test purchases');
+
 // Old saves did not have per-difficulty win totals. Unique completed levels
 // explain part of the legacy total; replay wins still need to survive as an
 // unclassified remainder rather than silently disappearing in migration.

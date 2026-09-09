@@ -33,8 +33,8 @@ const { BottomNavigation } = await compile('components/ui/BottomNavigation.tsx')
 const { DiamondBalancePill } = await compile('components/ui/DiamondBalancePill.tsx');
 for (const points of [0, 15715, 1000000]) {
     const balance = renderToStaticMarkup(React.createElement(DiamondBalancePill, { points }));
-    assert.match(balance, /h-7 min-w-\[54px\]/, 'Balance has one compact size across all screens');
-    assert.match(balance, /text-\[11px\]/);
+    assert.match(balance, /h-\[35px\] min-w-\[67\.5px\]/, 'Balance has one shared, 25% larger size across all screens');
+    assert.match(balance, /text-\[13\.75px\]/);
     assert.match(balance, new RegExp(`aria-label="${points} diamonds"`));
     assert.doesNotMatch(balance, /md:h-|md:min-w-/);
 }
@@ -52,6 +52,12 @@ const { DifficultyScreen } = await compile('components/screens/DifficultyScreen.
 const props = {points:1234, onDifficultySelect(){}, onOpenSettings(){}, onOpenProfile(){}, onOpenStore(){}, onOpenDiamondShop(){}, onClaimBonus(){}, onOpenStats(){}, nextBonusClaimTime:0};
 const fresh = renderToStaticMarkup(React.createElement(DifficultyScreen, {...props, tabNavigation:true}));
 assert.match(fresh, /oku-main-header/);
+const homeLogo = fresh.match(/<div class="oku-home-logo[^"]*"[^>]*>/)?.[0];
+assert.ok(homeLogo, 'Homepage displays the Oku logo');
+assert.doesNotMatch(homeLogo, /opacity-0|animate-|animation/, 'Homepage logo must appear immediately without fading');
+const appSource = readFileSync('App.tsx', 'utf8');
+const homeFrame = appSource.slice(appSource.indexOf("{screen === 'difficulty' && ("), appSource.indexOf("{screen === 'diamondShop' && ("));
+assert.doesNotMatch(homeFrame, /motion\.div|variants=|initial=/, 'Homepage controls must not inherit a screen entrance transition');
 assert.match(fresh, /aria-label="Settings"/);
 assert.doesNotMatch(fresh, /Claim daily gift|oku-shop-daily-gift/, 'Daily gift belongs in Oku Shop, not Play');
 assert.doesNotMatch(fresh, />Market<|>Oku Shop<|>Stats<|aria-label="Profile/);
@@ -71,6 +77,7 @@ for (let count = 1; count <= 6; count++) {
     assert.equal((markup.match(/oku-difficulty-card-tactile/g) || []).length, count);
 }
 const legacy = renderToStaticMarkup(React.createElement(DifficultyScreen, props));
+assert.doesNotMatch(legacy.match(/<div class="[^"]*mt-6 md:mt-8 mb-2[^"]*"/)?.[0] ?? '', /animate-|opacity-0/, 'Legacy homepage controls also appear without an entrance animation');
 assert.match(legacy, />Market</);
 assert.match(legacy, />Oku Shop</);
 const swift = readFileSync('ios/App/App/OkuNavigation.swift','utf8');
@@ -152,9 +159,16 @@ const fakeReact = {
 };
 const listeners = new Map();
 const configurations = [];
+let nativeCounter = 0;
+let nativeVisible = false;
 const bridge = {
     addListener: async (name, callback) => { listeners.set(name, callback); return {remove(){ listeners.delete(name); }}; },
-    configure: async state => { configurations.push({...state}); return {bottomInset: 96}; },
+    configure: async state => {
+        configurations.push({...state});
+        // Match Swift's stale-ack guard, including after a React-only reset.
+        if (state.selectionId >= nativeCounter) nativeVisible = state.visible;
+        return {bottomInset: nativeVisible ? 96 : 0, selectionId: nativeCounter};
+    },
 };
 const hookBuild = await build({entryPoints:['hooks/useNativeNavigation.ts'], bundle:true, platform:'node', format:'cjs', write:false,
     external:['react','@capacitor/core'], define:{'import.meta.env.VITE_OKU_NAVIGATION': '""'}});
@@ -177,7 +191,10 @@ const settle = async () => {
 };
 await settle();
 assert.equal(configurations.at(-1).selectionId, 0);
-const select = (tab, selectionId) => listeners.get('tabSelected')({tab, selectionId});
+const select = (tab, selectionId) => {
+    nativeCounter = Math.max(nativeCounter, selectionId);
+    listeners.get('tabSelected')({tab, selectionId});
+};
 select('store', 1);
 select('profile', 2);
 await settle();
@@ -205,4 +222,19 @@ select('profile', 6); // Reselect also needs an acknowledgement even without a r
 await settle();
 assert.equal(configurations.at(-1).selectionId, 6);
 assert.equal(configurations.at(-1).enabled, true);
+for (let reset = 0; reset < 2; reset++) {
+    for (const slot of slots) slot?.cleanup?.();
+    assert.equal(nativeVisible, false, 'Unmount hides the native bar');
+    slots.length = 0;
+    state = {...state, selected:'difficulty', visible:true, enabled:true};
+    rerender = true;
+    await settle();
+    assert.equal(configurations.at(-1).selectionId, nativeCounter, 'Remount catches up to retained native counter');
+    assert.equal(nativeVisible, true, 'Progress reset restores the bar without restarting the app');
+    assert.equal(configurations.at(-1).selected, 'difficulty');
+    select('store', nativeCounter + 1);
+    await settle();
+    assert.equal(configurations.at(-1).selected, 'store', 'Tabs still respond after reset');
+}
+assert.match(swift, /"selectionId": shell.selectionId/, 'Native replies report retained selection counter');
 console.log('Native bridge: rapid taps, return taps, stale events, modal rejection, reselection, and acknowledgements passed.');

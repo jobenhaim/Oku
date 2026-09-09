@@ -78,7 +78,7 @@ final class OkuTabBarController: UITabBarController, UITabBarControllerDelegate 
     private var navigationVisible = false
     private var navigationEnabled = false
     private var lastBottomInset: CGFloat = -1
-    private var selectionId = 0
+    private(set) var selectionId = 0
     private var appliedDarkMode: Bool?
     private var appliedVisibility: Bool?
 
@@ -213,7 +213,7 @@ public final class OkuNavigationPlugin: CAPPlugin, CAPBridgedPlugin {
                             dark: call.getBool("dark") ?? false,
                             shopBadge: call.getBool("shopBadge") ?? false,
                             profileBadge: call.getBool("profileBadge") ?? false)
-            call.resolve(["bottomInset": shell.bottomInset])
+            call.resolve(["bottomInset": shell.bottomInset, "selectionId": shell.selectionId])
         }
     }
 }
