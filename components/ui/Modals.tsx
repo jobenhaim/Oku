@@ -10,6 +10,7 @@ import { IAP } from '../../utils/iap';
 import type { SuccessfulIAPPurchase } from '../../utils/iap';
 import { NUMBER_COLORS, STATIC_BACKGROUNDS } from '../../utils/constants';
 import { ScenePreview } from './ScenePreview';
+import { PepinoPurchasePreview } from './PepinoPurchasePreview';
 import packageInfo from '../../package.json';
 
 // ... (Privacy Policy & Terms text remain unchanged)
@@ -449,7 +450,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
         if (offer.type === 'support') {
             return (
                 <span>
-                    Meet <span className="font-bold">Pepino</span>, a little companion who lives in a peaceful aquarium, grows with you, and brings a diamond gift after every completed game. Includes <span className="font-bold">2,500 Diamonds</span>.
+                    Get <span className="font-bold">Pepino</span>, your Sudoku companion, plus <span className="font-bold">{offer.diamonds.toLocaleString()} diamonds</span> and a diamond gift after every solved puzzle.
                 </span>
             );
         }
@@ -476,21 +477,24 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
                 className={`bg-t-surface p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-xs md:max-w-sm text-center relative overflow-hidden transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`}
                 onClick={e => e.stopPropagation()}
             >
-                {/* Header Icon */}
+                {offer.type === 'support' && status !== 'success' && status !== 'failed' ? (
+                    <PepinoPurchasePreview />
+                ) : (
                 <div className="mx-auto w-16 h-16 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center mb-4 shadow-sm transition-colors duration-300">
                     {status === 'success' ? (
                         <Icons.Check className="w-8 h-8 text-green-500 animate-pop" />
                     ) : status === 'failed' ? (
                         <Icons.Close className="w-8 h-8 text-red-500 animate-pop" />
-                    ) : offer.type === 'support' ? (
-                        <Icons.Trophy className="w-10 h-10" />
                     ) : (
                         <Icons.Diamond className="w-8 h-8 text-blue-500 fill-current" />
                     )}
                 </div>
+                )}
 
-                <h3 className="text-xl font-bold text-t-primary mb-1 transition-colors duration-300">{offer.title}</h3>
-                <p className="text-stone-500 dark:text-stone-400 font-medium mb-3 transition-colors duration-300">{offer.priceLabel}</p>
+                <h3 className={`text-xl font-bold text-t-primary transition-colors duration-300 ${offer.type === 'support' ? 'mb-3' : 'mb-1'}`}>{offer.title}</h3>
+                {offer.type !== 'support' && (
+                    <p className="text-stone-500 dark:text-stone-400 font-medium mb-3 transition-colors duration-300">{offer.priceLabel}</p>
+                )}
 
                 {/* Description Box */}
                 <div className="bg-stone-50 dark:bg-stone-900/50 p-3 rounded-xl mb-6 text-xs text-stone-600 dark:text-stone-300 leading-relaxed font-medium transition-colors duration-300">

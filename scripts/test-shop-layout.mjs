@@ -35,7 +35,7 @@ const props = {
 const render = extra => renderToStaticMarkup(React.createElement(DiamondShopScreen, {...props, ...extra}));
 const fresh = render({});
 assert.doesNotMatch(fresh, /diamonds included/);
-assert.match(fresh, /Oku is made by one developer\. Bringing Pepino home supports my work and helps Oku grow\. Thank you! ♥/);
+assert.match(fresh, /Oku is made by one developer\. By getting Pepino, you support my work and future updates\. Thank you! ♥/);
 assert.match(fresh, /Claim daily gift: 5 diamonds/);
 assert.ok(fresh.indexOf('premium-heading') < fresh.indexOf('oku-shop-daily-gift'));
 assert.ok(fresh.indexOf('oku-shop-daily-gift') < fresh.indexOf('starter-heading'));

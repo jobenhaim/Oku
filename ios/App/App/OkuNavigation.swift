@@ -1,6 +1,20 @@
 import UIKit
 import Capacitor
 import StoreKit
+import WebKit
+
+/// Keep the system's text-selection loupe off game/menu surfaces, but preserve
+/// caret movement, selection and paste while editing a real text field.
+private final class OkuTextInteractionHandler: NSObject, WKScriptMessageHandler {
+    weak var owner: OkuBridgeViewController?
+
+    init(owner: OkuBridgeViewController) { self.owner = owner }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.frameInfo.isMainFrame, let enabled = message.body as? Bool else { return }
+        owner?.webView?.configuration.preferences.isTextInteractionEnabled = enabled
+    }
+}
 
 /// One permanently mounted Capacitor bridge beneath independent native navigation.
 /// No extra WebViews, JavaScript runtimes, polling, or custom glass rendering.
@@ -8,6 +22,32 @@ final class OkuBridgeViewController: CAPBridgeViewController {
     weak var navigationShell: OkuTabBarController?
     let navigationPlugin = OkuNavigationPlugin()
     let reviewPlugin = OkuAppReviewPlugin()
+
+    override func webViewConfiguration(for instanceConfiguration: InstanceConfiguration) -> WKWebViewConfiguration {
+        let configuration = super.webViewConfiguration(for: instanceConfiguration)
+        // CSS user-select:none alone does not suppress WebKit's tap-and-hold loupe.
+        // This public preference is available before our iOS 15 deployment target.
+        configuration.preferences.isTextInteractionEnabled = false
+        configuration.userContentController.add(OkuTextInteractionHandler(owner: self), name: "okuTextInteraction")
+        let textInteractionScript = """
+        (() => {
+            const updateTextInteraction = () => {
+                const element = document.activeElement;
+                const editable = element instanceof HTMLElement && (
+                    element.isContentEditable ||
+                    element.matches('input:not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly])')
+                );
+                window.webkit.messageHandlers.okuTextInteraction.postMessage(editable);
+            };
+            document.addEventListener('focusin', updateTextInteraction, true);
+            // Focus can move straight to another field; inspect the settled target.
+            document.addEventListener('focusout', () => queueMicrotask(updateTextInteraction), true);
+            document.addEventListener('DOMContentLoaded', updateTextInteraction, { once: true });
+        })();
+        """
+        configuration.userContentController.addUserScript(WKUserScript(source: textInteractionScript, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        return configuration
+    }
 
     override func capacitorDidLoad() {
         navigationPlugin.navigationShell = navigationShell

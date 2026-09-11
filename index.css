@@ -371,6 +371,13 @@ html, body {
   overscroll-behavior: none;
 }
 
+/* Native text interaction is enabled while a field is focused. Keep editing
+   usable despite the game-wide selection lock above. */
+input, textarea, [contenteditable="true"], [contenteditable="plaintext-only"] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 #root {
   width: 100%;
   height: 100%;
@@ -1929,6 +1936,10 @@ html, body {
   background: linear-gradient(165deg, #e5f8f9 0%, #bcebf0 55%, #a4d5da 100%);
   box-shadow: inset 0 0 0 1px rgba(48,115,128,.12);
 }
+.pepino-purchase-preview { position: relative; width: 100%; margin: 0 auto 18px; pointer-events: none; }
+.pepino-purchase-tank { min-height: 150px; height: 150px; border-radius: 22px; }
+.pepino-purchase-fish { position: absolute; width: 78px; height: 43px; left: 50%; top: 67px; transform: translateX(-50%) scaleX(-1); }
+.pepino-purchase-gift { position: absolute; top: 31px; left: 50%; transform: translateX(-50%); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #fff; color: #3985ff; border: 1px solid #e5f2fa; box-shadow: 0 2px 5px #386d801a; }
 .shop-aquarium-light { position: absolute; inset: 0; background: linear-gradient(112deg, transparent 10%, #ffffff60 11%, transparent 30%, #ffffff40 40%, transparent 60%); }
 .shop-aquarium-plant { position: absolute; bottom: 7px; width: 11px; height: 77px; background: #5f9e88; border-radius: 100% 0 100% 0; transform: rotate(-15deg); }
 .shop-aquarium-plant::before, .shop-aquarium-plant::after { content: ''; position: absolute; bottom: 0; width: 10px; height: 58px; background: #80b39a; border-radius: 100% 0 100% 0; transform: rotate(30deg); transform-origin: bottom; }

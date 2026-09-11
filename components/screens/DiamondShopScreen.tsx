@@ -4,6 +4,7 @@ import { DIAMOND_OFFERS } from '../../utils/constants';
 import { DiamondOffer } from '../../types';
 import { Storage } from '../../utils/storage';
 import { FishTank } from '../ui/FishTank';
+import { PepinoArtwork } from '../ui/PepinoArtwork';
 import { DiamondBalancePill } from '../ui/DiamondBalancePill';
 import { MainScreenHeader } from '../ui/MainScreenHeader';
 import { DailyGiftBubble } from '../ui/DailyGiftBubble';
@@ -141,16 +142,7 @@ const PremiumPepinoBackdrop = () => {
             <div ref={fishRef} className="shop-aquarium-fish-route">
                 <div ref={turnRef} className="shop-aquarium-fish-turn">
                     <div className="shop-aquarium-fish-drift">
-                    <svg viewBox="344.5149 210.9059 74.9591 41.2278" className="w-full h-full drop-shadow-sm">
-                            <path d="M 373.193 239.648 C 379.513 254.112 400.131 252.185 404.661 240.061 C 393.45 240.02 396.193 239.089 386.193 239.648 L 373.193 239.648 Z" fill="#ef4444" opacity="0.95" />
-                            <path d="M 372.793 224.525 C 379.113 207.278 399.731 209.576 404.261 224.033 C 393.05 224.081 395.793 225.192 385.793 224.525 L 372.793 224.525 Z" fill="#ef4444" opacity="0.95" />
-                            <path d="M 394.515 231.681 C 379.515 206.681 344.428 201.406 344.515 231.681 C 344.565 261.131 379.515 256.681 394.515 231.681 Z" fill="#ef4444" opacity="0.95" />
-                            <path d="M 394.515 231.681 C 374.515 216.681 359.515 211.681 354.515 231.681 C 359.515 251.681 374.515 246.681 394.515 231.681 Z" fill="#b91c1c" opacity="0.15" />
-                            <ellipse cx="391.474" cy="231.681" rx="28" ry="11" fill="#dc2626" />
-                            <path d="M 401.174 234.169 C 395.84 239.502 397.84 240.836 407.174 238.169 L 401.174 234.169 Z" fill="#fca5a5" opacity="0.8" transform="matrix(0.71619296, -0.69790214, 0.69790214, 0.71619296, 0.00000291, 0.0000368)" />
-                            <circle cx="411.874" cy="230.381" r="2.5" fill="black" />
-                            <circle cx="412.874" cy="229.381" r="0.8" fill="white" opacity="0.9" />
-                        </svg>
+                        <PepinoArtwork />
                     </div>
                 </div>
             </div>
@@ -310,7 +302,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     </span>
                                 </div>
                                 <p className="shop-premium-support text-t-secondary">
-                                    Oku is made by one developer. Bringing Pepino home supports my work and helps Oku grow. Thank you! ♥
+                                    Oku is made by one developer. By getting Pepino, you support my work and future updates. Thank you! ♥
                                 </p>
                             </button>
                         </section>
