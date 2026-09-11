@@ -560,7 +560,7 @@ export const FishTank: React.FC<FishTankProps> = ({ onRewardClaim, showIntro = f
                              <div className="animate-scale-in origin-bottom">
                                 <div 
                                     onClick={handleClaim}
-                                    className="cursor-pointer hover:scale-110 transition-transform duration-200"
+                                    className="cursor-pointer"
                                 >
                                     <div className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-md border border-blue-100/50">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

@@ -34,7 +34,9 @@ const props = {
 };
 const render = extra => renderToStaticMarkup(React.createElement(DiamondShopScreen, {...props, ...extra}));
 const fresh = render({});
-assert.match(fresh, /Claim daily gift: 10 diamonds/);
+assert.doesNotMatch(fresh, /diamonds included/);
+assert.match(fresh, /Oku is made by one developer\. Bringing Pepino home supports my work and helps Oku grow\. Thank you! ♥/);
+assert.match(fresh, /Claim daily gift: 5 diamonds/);
 assert.ok(fresh.indexOf('premium-heading') < fresh.indexOf('oku-shop-daily-gift'));
 assert.ok(fresh.indexOf('oku-shop-daily-gift') < fresh.indexOf('starter-heading'));
 const claimedGift = render({nextBonusClaimTime: props.dailyGiftNow + 3_600_000});
@@ -72,8 +74,18 @@ assert.match(source, /movement\?\.cancel\(\)/);
 assert.match(source, /clearTimeout\(timer\)/);
 const css = readFileSync('index.css', 'utf8');
 assert.match(css, /\.oku-shop-daily-gift \{[^}]*height: 94px;[^}]*min-height: 94px;[^}]*box-sizing: border-box;/, 'Gift card height stays identical before and after claiming');
-assert.match(css, /\.oku-shop-gift-status \{[^}]*width: 94px;/, 'Claim and countdown reserve the same horizontal space');
+assert.match(css, /\.oku-shop-gift-status \{[^}]*width: 64px;/, 'Claim and countdown reserve the same horizontal space');
+assert.match(css, /\.oku-shop-gift-status::before \{[^}]*position: absolute;[^}]*width: 1px;[^}]*height: 44px;/, 'A subtle divider separates the timeline without changing its layout');
 const tank = readFileSync('components/ui/FishTank.tsx', 'utf8');
+for (const file of [
+    'components/screens/DiamondShopScreen.tsx',
+    'components/ui/FishTank.tsx',
+    'components/ui/DailyGiftBubble.tsx',
+    'components/ui/MainScreenHeader.tsx',
+    'components/ui/DiamondBalancePill.tsx',
+]) {
+    assert.doesNotMatch(readFileSync(file, 'utf8'), /hover:|whileHover|onMouseEnter|onMouseOver|onPointerEnter|onPointerOver/, `${file} must not add hover effects to Oku Shop`);
+}
 assert.match(tank, /className="pepino-tank /, 'Owned tank uses the matching aquarium styling');
 assert.match(tank, /shop-aquarium-light/);
 assert.match(tank, /shop-aquarium-pebbles/);

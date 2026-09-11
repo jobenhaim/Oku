@@ -1,6 +1,7 @@
 
 import { AppSettings, Board, LevelProgress, StoredData, PepinoState, Difficulty, PermanentPurchaseOwnership, StorePurchaseUnlock, DiamondEarnSource, PlayerProfile, HintCandidateProgress } from '../types';
 import { Preferences } from '@capacitor/preferences';
+import { getDailyGiftReward, nextLocalMidnight, normalizeDailyGiftClaims } from './dailyGift';
 import { getHintCost, getScanRefillCost } from './constants';
 import { hasValidHintCandidateProgressIntegrity } from './hints';
 import {
@@ -1491,22 +1492,27 @@ export const Storage = {
       return getStoredData().nextBonusClaimTime || 0;
   },
 
-  claimDailyBonus: (nextTime: number, amount: number): { applied: boolean; data: StoredData } => {
+  claimDailyBonus: (): { applied: boolean; data: StoredData } => {
       const data = getStoredData();
       const now = Date.now();
-      const normalizedNextTime = Number.isFinite(nextTime) ? Math.floor(nextTime) : 0;
-      const reward = Number.isFinite(amount) ? Math.floor(amount) : 0;
+      const claims = normalizeDailyGiftClaims(data.dailyGiftClaims);
+      const reward = getDailyGiftReward(claims);
 
       // Check the durable value, not React state, so a double tap or duplicate
       // event cannot claim twice before the UI re-renders.
-      if ((data.nextBonusClaimTime || 0) > now || normalizedNextTime <= now || reward <= 0) {
+      if (!Number.isFinite(now) || (data.nextBonusClaimTime || 0) > now
+          || (data.lastDailyGiftClaimAt || 0) >= now || claims === Number.MAX_SAFE_INTEGER) {
           return { applied: false, data };
       }
 
-      data.nextBonusClaimTime = normalizedNextTime;
+      // Reward and deadline are derived here, never supplied by a UI caller.
+      // Balance, cycle and cooldown are committed in the same saved snapshot.
+      data.nextBonusClaimTime = nextLocalMidnight(now);
+      data.dailyGiftClaims = claims + 1;
+      data.lastDailyGiftClaimAt = now;
       data.points += reward;
       recordDiamondEarning(data, reward, 'dailyGifts');
-      saveData(data);
+      if (!saveData(data)) return { applied: false, data: getStoredData() };
       return { applied: true, data };
   },
 
@@ -1903,6 +1909,7 @@ export const Storage = {
   },
 
   resetAllData: async () => {
+    const previous = getStoredData();
     const resetGuestProfile = getActiveProfile()?.kind !== 'account';
     localStorage.removeItem(STORAGE_KEY);
     // Also remove legacy just in case
@@ -1921,6 +1928,10 @@ export const Storage = {
     // is connected, its cloud save is reset too instead of restoring stale
     // progress on the next launch.
     const freshData = getStoredData();
+    // Resetting puzzles must not unlock another daily claim on the same day.
+    freshData.nextBonusClaimTime = previous.nextBonusClaimTime || 0;
+    freshData.dailyGiftClaims = normalizeDailyGiftClaims(previous.dailyGiftClaims);
+    freshData.lastDailyGiftClaimAt = previous.lastDailyGiftClaimAt || 0;
     freshData.purchaseRestoreRequired = true;
     saveData(freshData);
     if (resetGuestProfile) {

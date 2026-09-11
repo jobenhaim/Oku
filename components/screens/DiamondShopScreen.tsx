@@ -16,6 +16,7 @@ import { Capacitor } from '@capacitor/core';
 interface DiamondShopScreenProps {
     nextBonusClaimTime: number;
     dailyGiftNow: number;
+    dailyGiftClaims?: number;
     onClaimBonus: (e: React.MouseEvent) => void;
     points: number;
     onBack: () => void;
@@ -160,6 +161,7 @@ const PremiumPepinoBackdrop = () => {
 export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
     nextBonusClaimTime,
     dailyGiftNow,
+    dailyGiftClaims = 0,
     onClaimBonus,
     points,
     onBack,
@@ -296,7 +298,7 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                     <p className="text-[13px] font-medium text-t-secondary leading-snug">Your little Sudoku companion.</p>
                                     <div className="space-y-2 my-2">
                                         <FeatureRow icon={<Icons.Diamond className="w-3.5 h-3.5 fill-current" />}>
-                                            {premiumOffer.diamonds.toLocaleString()} diamonds included
+                                            {premiumOffer.diamonds.toLocaleString()} diamonds
                                         </FeatureRow>
                                         <FeatureRow icon={<Icons.Gift className="w-3.5 h-3.5" />}>
                                             A gift after every solved puzzle
@@ -307,11 +309,14 @@ export const DiamondShopScreen: React.FC<DiamondShopScreenProps> = ({
                                         <span>{getPriceLabel(premiumOffer)}</span>
                                     </span>
                                 </div>
+                                <p className="shop-premium-support text-t-secondary">
+                                    Oku is made by one developer. Bringing Pepino home supports my work and helps Oku grow. Thank you! ♥
+                                </p>
                             </button>
                         </section>
                     ) : null}
 
-                    <DailyGiftBubble nextClaimTime={nextBonusClaimTime} now={dailyGiftNow}
+                    <DailyGiftBubble nextClaimTime={nextBonusClaimTime} now={dailyGiftNow} claims={dailyGiftClaims}
                         pressed={shopPress.pressedId === 'daily-gift'}
                         onPointerDown={() => shopPress.beginPress('daily-gift')}
                         onPointerCancel={() => shopPress.cancelPress('daily-gift')}

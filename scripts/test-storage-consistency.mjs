@@ -448,27 +448,91 @@ dailySeed.points = 0;
 dailySeed.nextBonusClaimTime = 0;
 await installSnapshot(dailySeed);
 
-const nextDailyClaim = 2_000_000_000_000;
-const dailyClaim = await observeMutation(() => Storage.claimDailyBonus(nextDailyClaim, 10));
+const midnight = new Date();
+midnight.setHours(24, 0, 0, 0);
+const nextDailyClaim = midnight.getTime();
+const dailyClaim = await observeMutation(() => Storage.claimDailyBonus());
 assert.equal(didApply(dailyClaim.result), true);
 assert.equal(dailyClaim.notifications, 1);
 const claimedDaily = Storage.getStoredData();
-assert.equal(claimedDaily.points, 10);
+assert.equal(claimedDaily.points, 5);
 assert.equal(claimedDaily.nextBonusClaimTime, nextDailyClaim);
-assert.equal(claimedDaily.stats.totalDiamondsEarned, 10);
-assert.equal(claimedDaily.stats.diamondsEarnedBySource.dailyGifts, 10);
+assert.equal(claimedDaily.stats.totalDiamondsEarned, 5);
+assert.equal(claimedDaily.stats.diamondsEarnedBySource.dailyGifts, 5);
 
 const durableDailyClaim = await readNativeSnapshot();
-assert.equal(durableDailyClaim.points, 10);
+assert.equal(durableDailyClaim.points, 5);
 assert.equal(durableDailyClaim.nextBonusClaimTime, nextDailyClaim);
-assert.equal(durableDailyClaim.stats.diamondsEarnedBySource.dailyGifts, 10);
+assert.equal(durableDailyClaim.stats.diamondsEarnedBySource.dailyGifts, 5);
 
 const duplicateDailyClaim = await observeMutation(() => (
-    Storage.claimDailyBonus(nextDailyClaim + 86_400_000, 10)
+    Storage.claimDailyBonus()
 ));
 assert.equal(didApply(duplicateDailyClaim.result), false);
 assert.equal(duplicateDailyClaim.notifications, 0);
-assert.equal(Storage.getStoredData().points, 10);
+assert.equal(Storage.getStoredData().points, 5);
+
+// Cycle claims are durable, calendar-based and cannot be farmed by re-entry.
+const realDateNow = Date.now;
+let giftTime = new Date('2026-09-11T12:00:00').getTime();
+Date.now = () => giftTime;
+try {
+    const cycleSeed = Storage.createDefaultData();
+    cycleSeed.points = 0;
+    await installSnapshot(cycleSeed);
+    let total = 0;
+    const rewards = [5, 10, 15, 20, 25, 30, 50];
+    for (let claim = 0; claim < 14; claim++) {
+        const result = Storage.claimDailyBonus(0, 999999); // obsolete UI args cannot choose the award
+        total += rewards[claim % 7];
+        assert.equal(result.applied, true);
+        assert.equal(result.data.points, total);
+        assert.equal(result.data.dailyGiftClaims, claim + 1);
+        assert.equal(result.data.lastDailyGiftClaimAt, giftTime);
+        assert.equal(result.data.stats.diamondsEarnedBySource.dailyGifts, total);
+        for (let repeat = 0; repeat < 5; repeat++) assert.equal(Storage.claimDailyBonus().applied, false);
+        const durable = await readNativeSnapshot();
+        assert.equal(durable.dailyGiftClaims, claim + 1);
+        assert.equal(durable.points, total);
+        const { Storage: relaunched } = await import(`${moduleUrl}#gift-${claim}`);
+        assert.equal(relaunched.claimDailyBonus().applied, false, 'Fresh JS module must read the persisted cooldown');
+        // Some days are skipped: only successful claims advance the rewards.
+        giftTime = result.data.nextBonusClaimTime + (claim === 2 ? 4 * 86_400_000 : 0);
+    }
+    assert.equal(total, 310, 'Two seven-day cycles award 310 diamonds');
+
+    giftTime = Storage.getStoredData().lastDailyGiftClaimAt - 86_400_000;
+    assert.equal(Storage.claimDailyBonus().applied, false, 'Clock rollback must not make another claim available');
+
+    const beforeReset = Storage.getStoredData();
+    await Storage.resetAllData();
+    assert.equal(Storage.getStoredData().dailyGiftClaims, beforeReset.dailyGiftClaims);
+    assert.equal(Storage.getStoredData().nextBonusClaimTime, beforeReset.nextBonusClaimTime);
+    assert.equal(Storage.claimDailyBonus().applied, false, 'Reset progress cannot bypass the cooldown');
+
+    // Existing installations keep their old cooldown, then start at day 1.
+    const legacy = Storage.createDefaultData();
+    legacy.points = 0;
+    legacy.nextBonusClaimTime = giftTime + 3_600_000;
+    delete legacy.dailyGiftClaims;
+    await installSnapshot(legacy);
+    assert.equal(Storage.claimDailyBonus().applied, false);
+    giftTime = legacy.nextBonusClaimTime;
+    assert.equal(Storage.claimDailyBonus().data.points, 5);
+
+    const failedSeed = Storage.createDefaultData();
+    failedSeed.points = 0;
+    await installSnapshot(failedSeed);
+    const normalSet = localStorage.setItem;
+    const normalError = console.error;
+    try {
+        localStorage.setItem = () => { throw new Error('disk full'); };
+        console.error = () => {};
+        assert.equal(Storage.claimDailyBonus().applied, false);
+        assert.equal(Storage.getStoredData().points, 0);
+    } finally { localStorage.setItem = normalSet; console.error = normalError; }
+    assert.equal(Storage.claimDailyBonus().data.points, 5, 'A failed persistence attempt must not consume or duplicate the reward');
+} finally { Date.now = realDateNow; }
 
 // A coupon's reward and redeemed marker are one write. Duplicate delivery must
 // not grant the reward again.

@@ -132,13 +132,13 @@ await Storage.initializeProfiles(null);
 assert.equal(Storage.claimWelcomeGift().applied, true);
 Storage.saveSettings({ ...Storage.getSettings(), appearance: 'dark' });
 const deadline = Date.now() + 86_400_000;
-assert.equal(Storage.claimDailyBonus(deadline, 10).applied, true);
+assert.equal(Storage.claimDailyBonus().applied, true);
 const board = Array.from({ length: 9 }, (_, row) => Array.from({ length: 9 }, (_, col) => ({ row, col, value: null, notes: [], isFixed: false })));
 board[0][0].value = 5;
 board[0][1].notes = [2, 7];
 Storage.saveLevelProgress({ difficulty: 'Easy', levelId: 4, status: 'in-progress', timeElapsed: 137, boardState: board, lastPlayed: Date.now(), scanUses: 3, scanRefillsPurchased: 0 });
 const latestGuest = Storage.getStoredData();
-assert.equal(latestGuest.points, 110);
+assert.equal(latestGuest.points, 105);
 assertSnapshot(Storage.getGuestProfile(), latestGuest, 'Every guest mutation updates the isolated guest cache synchronously');
 await Storage.flushPendingWrites();
 assertSnapshot(JSON.parse(nativePreferences.get('oku_guest_profile_v1')), latestGuest);
@@ -154,7 +154,7 @@ const restart = async (nativeOnly = false) => {
 let restarted = await restart();
 assertSnapshot(restarted.getStoredData(), latestGuest, 'Guest state survives ordinary relaunch');
 assert.equal(restarted.claimWelcomeGift().applied, false);
-assert.equal(restarted.claimDailyBonus(deadline, 10).applied, false);
+assert.equal(restarted.claimDailyBonus().applied, false);
 restarted = await restart(true);
 assertSnapshot(restarted.getStoredData(), latestGuest, 'Native guest cache restores settings, gifts, values and notes when WebView storage is absent');
 

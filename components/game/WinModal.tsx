@@ -376,7 +376,7 @@ export const WinModal: React.FC<WinModalProps> = ({
                         ) : (
                             <button 
                                 onClick={onGenerateReplay}
-                                className="w-full h-14 bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-200 rounded-2xl font-bold text-[18px] active:scale-95 transition flex items-center justify-center gap-1.5 border border-stone-200/60 dark:border-white/5 hover:bg-stone-200 dark:hover:bg-white/15"
+                                className="w-full h-14 bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-200 rounded-2xl font-bold text-[18px] active:scale-95 transition flex items-center justify-center gap-1.5 border border-stone-200/60 dark:border-white/5"
                             >
                                 <Icons.Video className="w-5 h-5" /> Create Replay
                             </button>

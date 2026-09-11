@@ -248,6 +248,9 @@ const newestProgress = {
     },
 };
 storageState.data = makeSnapshot('newest-local', 333, 300, newestProgress);
+storageState.data.dailyGiftClaims = 3;
+storageState.data.lastDailyGiftClaimAt = 1_800_000_000_000;
+storageState.data.nextBonusClaimTime = 1_800_010_000_000;
 storageState.data.hintUsageByPuzzle = { 'Easy-3': 4 };
 storageState.data.starterPackPurchased = true;
 storageState.data.purchasedSkills = ['skill-focus', 'skill-scribe', 'skill-scan'];
@@ -276,6 +279,9 @@ const progressOperation = reconciliationOperations.find(({ reference }) => (
 assert.ok(profileOperation, 'the batch should contain the profile document');
 assert.ok(progressOperation, 'the same batch should contain the changed progress chunk');
 assert.equal(profileOperation.data.data.points, 333);
+assert.equal(profileOperation.data.data.dailyGiftClaims, 3, 'Cloud profile keeps the reward cycle');
+assert.equal(profileOperation.data.data.lastDailyGiftClaimAt, 1_800_000_000_000);
+assert.equal(profileOperation.data.data.nextBonusClaimTime, 1_800_010_000_000);
 assert.deepEqual(profileOperation.data.data.hintUsageByPuzzle, { 'Easy-3': 4 });
 assert.equal(profileOperation.data.data.starterPackPurchased, true);
 assert.deepEqual(profileOperation.data.data.purchasedSkills, ['skill-focus', 'skill-scribe', 'skill-scan']);

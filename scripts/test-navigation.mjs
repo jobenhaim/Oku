@@ -1,12 +1,28 @@
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { runInNewContext } from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 const require = createRequire(import.meta.url);
+// Page entry is instant; feedback triggered by an action may still animate.
+const appMotionSource = readFileSync('App.tsx', 'utf8');
+assert.doesNotMatch(appMotionSource, /initial="initial"/);
+assert.match(appMotionSource, /skipEntranceAnimation=\{true\}/);
+const statsMotionSource = readFileSync('components/screens/StatsScreen.tsx', 'utf8');
+assert.doesNotMatch(statsMotionSource, /initial="hidden"|useStatCounter|requestAnimationFrame|playCounterTick/);
+assert.match(statsMotionSource, /initial=\{false\}\s+animate="show"/);
+const gameMotionSource = readFileSync('components/SudokuGame.tsx', 'utf8');
+assert.doesNotMatch(gameMotionSource, /initial=\{\{ opacity: 0, (?:y: -20|y: 15|scale: 0\.96) \}\}/);
+for (const file of readdirSync('components', { recursive: true }).filter(file => file.endsWith('.tsx'))) {
+    const source = readFileSync(`components/${file}`, 'utf8');
+    assert.doesNotMatch(source, /hover:|whileHover|onHoverStart|onMouseEnter|onMouseOver|onPointerEnter/, `${file} must not add hover effects`);
+}
+for (const file of ['LevelsScreen.tsx', 'StoreScreen.tsx', 'ProfileScreen.tsx', 'SplashScreen.tsx']) {
+    assert.doesNotMatch(readFileSync(`components/screens/${file}`, 'utf8'), /animate-fade-in-fast|animate-pop/, `${file} must open without CSS entrance effects`);
+}
 const compile = async (entryPoint, legacy = false, savedGame = null) => {
     const result = await build({ entryPoints: [entryPoint], bundle: true, platform: 'node', format: 'cjs', write: false,
         external: ['react', 'react-dom'], define: { 'import.meta.env.VITE_OKU_NAVIGATION': JSON.stringify(legacy ? 'legacy' : '') },
@@ -107,6 +123,19 @@ for (const screen of ['Difficulty', 'Levels', 'Store', 'DiamondShop', 'Stats', '
     assert.match(readFileSync(`components/screens/${screen}Screen.tsx`, 'utf8'), /data-navigation-scroll/, `${screen} has reachable scroll content above the overlay`);
 }
 const css = readFileSync('index.css','utf8');
+assert.match(css, /\.oku-main-header \{[^}]*height: 68px;[^}]*box-sizing: border-box;[^}]*padding: 12px 24px;/, 'All main headers share fixed dimensions and padding');
+assert.match(css, /\.oku-main-header h1 \{[^}]*top: 50%;[^}]*translate\(-50%, -50%\)/, 'Screen titles share the controls\' vertical center');
+assert.doesNotMatch(css, /\.oku-market-header/, 'Market must not override shared header alignment');
+const marketSource = readFileSync('components/screens/StoreScreen.tsx', 'utf8');
+assert.match(marketSource, /\{onOpenSettings && <MainScreenHeader[^\n]*\/\>\}\s*<div/, 'Market header sits outside its category controls\' padding');
+assert.match(css, /\.oku-navigation-badge \{[^}]*right: -2px;[^}]*width: 6px; height: 6px;/, 'Web reward badges are small dots tucked next to the icon');
+assert.doesNotMatch(css.match(/\.oku-navigation-badge \{[^}]*\}/)?.[0] ?? '', /border:/, 'Reward dots have no white border');
+assert.match(swift, /shopBadge \? "●" : nil/);
+assert.match(swift, /profileBadge \? "●" : nil/);
+assert.match(swift, /state\.badgeBackgroundColor = \.clear/, 'Native reward dots have no red pill behind them');
+assert.match(swift, /\.foregroundColor: UIColor\.systemRed/);
+assert.match(swift, /UIFont\.systemFont\(ofSize: 10, weight: \.regular\)/);
+assert.match(swift, /badgePositionAdjustment = UIOffset\(horizontal: -4, vertical: 3\)/);
 assert.match(readFileSync('App.tsx','utf8'), /shopBadge: pepinoState\.hasPendingGift \|\| hasDailyGift/, 'Native shop badge includes the free daily gift');
 assert.match(readFileSync('App.tsx','utf8'), /shopBadge=\{pepinoState\.hasPendingGift \|\| hasDailyGift\}/, 'Browser shop badge includes the free daily gift');
 const instantHome = renderToStaticMarkup(React.createElement(DifficultyScreen, {...props, tabNavigation:true, skipEntranceAnimation:true}));
@@ -126,7 +155,7 @@ assert.match(profileSource, /\{!hasAccountCard && \(/, 'Reserve the guest accoun
 assert.doesNotMatch(profileSource, /!hasAccountCard && !authLoading/, 'Account loading must not collapse the subtitle space');
 assert.match(profileSource, /hasAccountCard \? 'h-11 md:h-12' : 'h-12 md:h-13'/, 'Loading and loaded account cards have matching heights');
 assert.match(profileSource, /oku-profile-title-badge/);
-assert.match(css, /animation: oku-profile-title-sweep/, 'Preserve the shiny title animation');
+assert.doesNotMatch(css, /animation: oku-profile-title-sweep/, 'Profile titles must not replay a welcome shine on entry');
 console.log('Navigation: five tabs, route visibility, badges, 1–6 difficulties, legacy rollback, native integration, and modal guards passed.');
 
 // Exercise the real hook with deterministic React scheduling and a fake native bridge.

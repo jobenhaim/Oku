@@ -194,7 +194,7 @@ const AchievementRow: React.FC<{
                                 {achievement.title}
                             </span>
                             {achievement.claimed && (
-                                <span className="achievement-claimed-mark-enter w-4 h-4 rounded-full bg-stone-300 dark:bg-stone-700 flex items-center justify-center shrink-0">
+                                <span className="w-4 h-4 rounded-full bg-stone-300 dark:bg-stone-700 flex items-center justify-center shrink-0">
                                     <Icons.Check className="w-2.5 h-2.5 text-white" />
                                 </span>
                             )}
@@ -737,7 +737,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                             )}
 
                             {authMessage && (
-                                <p className="mt-3 text-center text-[10px] md:text-xs font-medium text-stone-500 dark:text-stone-400 animate-fade-in-fast">
+                                <p className="mt-3 text-center text-[10px] md:text-xs font-medium text-stone-500 dark:text-stone-400 ">
                                     {authMessage}
                                 </p>
                             )}

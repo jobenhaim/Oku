@@ -24,3 +24,13 @@ export const getDailyGiftState = (nextClaimTime: number, now: number) => {
 export const dailyGiftRefreshDelay = (nextClaimTime: number, now: number): number => (
     Math.max(1, Math.min(60_000 - (now % 60_000), nextClaimTime > now ? nextClaimTime - now : 60_000))
 );
+export const DAILY_GIFT_REWARDS = [5, 10, 15, 20, 25, 30, 50] as const;
+
+export const normalizeDailyGiftClaims = (value: unknown): number => (
+    typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : 0
+);
+
+/** A missed day never consumes a reward or resets the cycle. */
+export const getDailyGiftReward = (claims: unknown): number => (
+    DAILY_GIFT_REWARDS[normalizeDailyGiftClaims(claims) % DAILY_GIFT_REWARDS.length]
+);

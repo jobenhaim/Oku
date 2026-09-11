@@ -4,6 +4,7 @@ import { Icons } from './Icons';
 import { sounds } from '../../utils/sound';
 import { AppSettings, DiamondOffer, Difficulty } from '../../types';
 import { Storage } from '../../utils/storage';
+import { AppReview } from '../../utils/appReview';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IAP } from '../../utils/iap';
 import type { SuccessfulIAPPurchase } from '../../utils/iap';
@@ -501,13 +502,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
                         <button 
                             ref={purchaseBtnRef}
                             onClick={handlePurchase} 
-                            className="w-full py-3.5 text-white bg-stone-800 hover:bg-stone-700 dark:bg-stone-700 dark:hover:bg-stone-600 rounded-xl font-bold shadow-lg active:scale-95 transition flex items-center justify-center gap-2"
+                            className="w-full py-3.5 text-white bg-stone-800 dark:bg-stone-700 rounded-xl font-bold shadow-lg active:scale-95 transition flex items-center justify-center gap-2"
                         >
                             <span className="tracking-wide">{status === 'failed' ? 'Retry' : 'Purchase'}</span>
                         </button>
                         <button 
                             onClick={handleCancel} 
-                            className="w-full py-3 text-t-secondary hover:text-t-primary transition-colors duration-300 font-bold"
+                            className="w-full py-3 text-t-secondary transition-colors duration-300 font-bold"
                         >
                             Cancel
                         </button>
@@ -549,7 +550,7 @@ export const NotEnoughPointsModal: React.FC<NotEnoughPointsModalProps> = ({ onCl
     return (
         <div data-navigation-blocking className={`fixed inset-0 z-[120] flex items-center justify-center bg-black/20 backdrop-blur-sm px-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={() => handleAction(onClose)}>
             <div className={`bg-t-surface p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-xs md:max-w-sm text-center relative transition-colors duration-300 ${isClosing ? '' : 'animate-pop'}`} onClick={e => e.stopPropagation()}>
-                <button onClick={() => handleAction(onClose)} className="absolute right-4 top-4 p-2 bg-t-surface-sec rounded-full hover:bg-stone-200 text-t-secondary active:scale-95 transition-all duration-300">
+                <button onClick={() => handleAction(onClose)} className="absolute right-4 top-4 p-2 bg-t-surface-sec rounded-full text-t-secondary active:scale-95 transition-all duration-300">
                     <Icons.Close className="w-4 h-4" />
                 </button>
                 
@@ -1031,6 +1032,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onToggle
                                 )}
                             </div>
 
+                            {/* Optional App Store review link, separate from the automatic prompt. */}
+                            <button onClick={() => { sounds.playClick(); void AppReview.openReviewPage(); }} className="w-full py-3 flex items-center justify-center gap-2 rounded-xl text-t-primary font-bold text-sm md:text-base">
+                                <Icons.Star className="w-4 h-4 md:w-5 md:h-5" /> Rate Oku
+                            </button>
                             {/* Danger Zone */}
                             <div className="pt-3 border-t border-t-border flex flex-col gap-2 transition-colors duration-300">
                                 <button onClick={() => { sounds.playClick(); setShowResetPreConfirm(true); }} className="w-full py-2.5 md:py-3 flex items-center justify-center gap-2 text-red-500 rounded-xl transition-colors duration-300 font-bold text-sm md:text-base">

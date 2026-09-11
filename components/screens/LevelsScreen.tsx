@@ -390,7 +390,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
         if (activeTab === 2) {
             if (!isPack2Unlocked || isBook2UnlockTransition) {
                 return (
-                    <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-md md:max-w-[700px] pb-20 md:pb-24 animate-fade-in-fast ${
+                    <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-md md:max-w-[700px] pb-20 md:pb-24  ${
                         isBook2UnlockTransition ? 'oku-book-unlock-card-fade-out pointer-events-none' : ''
                     }`}>
                         <UnlockCard 
@@ -448,7 +448,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
         if (activeTab === 3) {
             if (!isPack3Unlocked || isBook3UnlockTransition) {
                 return (
-                    <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-md md:max-w-[700px] pb-20 md:pb-24 animate-fade-in-fast ${
+                    <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-md md:max-w-[700px] pb-20 md:pb-24  ${
                         isBook3UnlockTransition ? 'oku-book-unlock-card-fade-out pointer-events-none' : ''
                     }`}>
                         <UnlockCard 
@@ -518,7 +518,7 @@ export const LevelsScreen: React.FC<LevelsScreenProps> = ({
                         <h1 className="text-xl md:text-2xl font-bold leading-none">{difficulty}</h1>
                         <p className="text-xs md:text-sm font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-[0.2em] mt-1 md:mt-1.5">Select Level</p>
                         {showTimer && globalBest !== undefined && (
-                            <div className="flex flex-col items-center animate-fade-in-fast mt-1">
+                            <div className="flex flex-col items-center  mt-1">
                                 <span className="text-[10px] font-bold text-amber-500 tracking-widest uppercase mb-px opacity-90">Best: {formatTimeShort(globalBest)}</span>
                             </div>
                         )}

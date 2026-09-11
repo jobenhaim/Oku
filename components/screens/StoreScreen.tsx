@@ -45,7 +45,6 @@ interface StoreItemWrapperProps {
 const StoreItemWrapper: React.FC<StoreItemWrapperProps> = ({ children, delay }) => {
     return (
         <div 
-            className="animate-fade-in-fast"
             style={{
                 transform: 'translateZ(0)',
                 WebkitTransform: 'translate3d(0, 0, 0)',
@@ -371,8 +370,9 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
             onClick={handleCloseInfo}
         >
              {/* Header */}
-             <div className="w-full max-w-md md:max-w-[700px] flex flex-col px-6 md:px-0 pt-4 md:pt-7 pb-2 relative shrink-0 z-20 gap-4">
-                {onOpenSettings ? <div className="oku-market-header"><MainScreenHeader title="Market" points={points} onSettings={onOpenSettings} /></div> : <div className="flex items-center justify-between w-full mb-2">
+             {onOpenSettings && <MainScreenHeader title="Market" points={points} onSettings={onOpenSettings} />}
+             <div className={`w-full max-w-md md:max-w-[700px] flex flex-col px-6 md:px-0 ${onOpenSettings ? 'pt-2' : 'pt-4 md:pt-7'} pb-2 relative shrink-0 z-20 gap-4`}>
+                {!onOpenSettings && <div className="flex items-center justify-between w-full mb-2">
                     <button onClick={onBack} aria-label="Back to menu" className="p-2 md:p-2.5 rounded-full -ml-2 text-t-icon relative z-30 active:scale-95 transition">
                         <Icons.Back className="w-6 h-6 md:w-7 md:h-7 text-t-icon" />
                     </button>
@@ -397,7 +397,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                                     flex-1 py-2 md:py-2.5 text-[11px] md:text-[13px] font-bold transition-all relative z-10
                                     ${isActive 
                                         ? 'text-stone-900 dark:text-white'
-                                        : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'
+                                        : 'text-stone-500 dark:text-stone-400'
                                     }
                                 `}
                             >

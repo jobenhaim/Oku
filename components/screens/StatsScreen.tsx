@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Difficulty, LevelProgress, StoredData } from '../../types';
 import { Storage } from '../../utils/storage';
 import { Icons } from '../ui/Icons';
@@ -8,7 +8,6 @@ import { sounds } from '../../utils/sound';
 import { DiamondBalancePill } from '../ui/DiamondBalancePill';
 import { MainScreenHeader } from '../ui/MainScreenHeader';
 import { AnimatePresence, motion } from 'framer-motion';
-import { easeInOut, easeOut } from '../../utils/animation';
 
 interface StatsScreenProps {
     onBack: () => void;
@@ -16,63 +15,6 @@ interface StatsScreenProps {
     onEarnPoints?: (amount: number, source?: HTMLElement | DOMRect | null) => void;
     points: number;
 }
-
-// Hook for 1.5s counter animation with sound feedback (delayed by 0.5s)
-const useStatCounter = (target: number, dependency: any, easing: (progress: number) => number = easeInOut, duration = 1500) => {
-    const [count, setCount] = useState(0);
-    const lastSoundValue = useRef(0);
-
-    useEffect(() => {
-        let startTime: number | null = null;
-        let animationFrame: number;
-        let disposed = false;
-
-        // Reset state on dependency change
-        setCount(0);
-        lastSoundValue.current = 0;
-
-        const animate = (time: number) => {
-            if (disposed) return;
-            if (!startTime) startTime = time;
-            const progress = Math.min((time - startTime) / duration, 1);
-            
-            const ease = easing(progress);
-            
-            const currentRaw = target * ease;
-            const currentInt = Math.floor(currentRaw);
-
-            // Play ticking sound if the integer value has changed
-            if (currentInt !== lastSoundValue.current) {
-                sounds.playCounterTick();
-                lastSoundValue.current = currentInt;
-            }
-
-            setCount(currentRaw);
-
-            if (progress < 1) {
-                if (!disposed) animationFrame = requestAnimationFrame(animate);
-            } else {
-                setCount(target);
-                // Ensure final sound if the target wasn't reached in the last step
-                if (Math.floor(target) !== lastSoundValue.current) {
-                    sounds.playCounterTick();
-                }
-            }
-        };
-
-        const timer = setTimeout(() => {
-            if (!disposed) animationFrame = requestAnimationFrame(animate);
-        }, 500);
-
-        return () => {
-            disposed = true;
-            clearTimeout(timer);
-            if (animationFrame) cancelAnimationFrame(animationFrame);
-        };
-    }, [target, dependency, easing, duration]);
-
-    return count;
-};
 
 const cardVariants = {
     enter: { opacity: 0, y: -20 },
@@ -127,13 +69,6 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onOpenSettings
     const averageTime = stats.completed > 0 ? Math.floor(stats.totalTime / stats.completed) : 0;
     const pointsPerGame = getDifficultyPoints(selectedDiff);
     const totalDiamondsEarned = stats.completed * pointsPerGame;
-    
-    // Animated Values
-    const animatedCompleted = useStatCounter(stats.completed, selectedDiff);
-    const animatedBestTime = useStatCounter(stats.bestTime === Infinity ? 0 : stats.bestTime, selectedDiff);
-    const animatedTotalTime = useStatCounter(stats.totalTime, selectedDiff);
-    const animatedAvgTime = useStatCounter(averageTime, selectedDiff);
-    const animatedEarned = useStatCounter(totalDiamondsEarned, selectedDiff, easeOut, 1000);
     
     const formatFullTime = (seconds: number) => {
         const total = Math.floor(seconds);
@@ -212,7 +147,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onOpenSettings
                 <div className="w-full max-w-md md:max-w-[620px] pt-2 md:pt-4">
                     
                     <motion.div 
-                        initial="hidden"
+                        initial={false}
                         animate="show"
                         variants={{
                             hidden: { opacity: 0 },
@@ -306,7 +241,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onOpenSettings
                                                 <Icons.Check className="w-6 h-6 md:w-7 md:h-7 stroke-[3]" />
                                             </div>
                                             <span className="text-3xl md:text-4xl font-bold text-t-primary mb-1">
-                                                {Math.floor(animatedCompleted)}
+                                                {Math.floor(stats.completed)}
                                             </span>
                                             <span className="text-xs md:text-sm font-bold text-t-secondary uppercase tracking-wider">Solved</span>
                                         </motion.div>
@@ -316,7 +251,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onOpenSettings
                                                 <Icons.Timer className="w-6 h-6 md:w-7 md:h-7 stroke-[2.4]" />
                                             </div>
                                             <span className="text-3xl md:text-4xl font-bold text-t-primary mb-1">
-                                                {stats.bestTime === Infinity ? '--' : formatTimeShort(animatedBestTime)}
+                                                {stats.bestTime === Infinity ? '--' : formatTimeShort(stats.bestTime)}
                                             </span>
                                             <span className="text-xs md:text-sm font-bold text-t-secondary uppercase tracking-wider">Best Time</span>
                                         </motion.div>
@@ -332,7 +267,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onOpenSettings
                                                 <span className="text-xs md:text-sm font-bold text-t-secondary uppercase tracking-wider">Total Time</span>
                                             </div>
                                             <span className="text-lg md:text-xl font-bold text-t-primary">
-                                                {formatFullTime(animatedTotalTime)}
+                                                {formatFullTime(stats.totalTime)}
                                             </span>
                                         </div>
                                         
@@ -344,7 +279,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onOpenSettings
                                                 <span className="text-xs md:text-sm font-bold text-t-secondary uppercase tracking-wider">Avg Time</span>
                                             </div>
                                             <span className="text-lg md:text-xl font-bold text-t-primary">
-                                                {averageTime === 0 ? '--' : formatFullTime(animatedAvgTime)}
+                                                {averageTime === 0 ? '--' : formatFullTime(averageTime)}
                                             </span>
                                         </div>
 
@@ -360,7 +295,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, onOpenSettings
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xl md:text-2xl font-bold text-t-primary">
-                                                    {Math.floor(animatedEarned).toLocaleString()}
+                                                    {Math.floor(totalDiamondsEarned).toLocaleString()}
                                                 </span>
                                                 <Icons.Diamond className="w-4 h-4 md:w-5 md:h-5 text-blue-500 fill-current" />
                                             </div>

@@ -408,7 +408,9 @@ html, body {
   flex-shrink: 0;
   width: 100%;
   max-width: 700px;
+  height: 68px;
   min-height: 68px;
+  box-sizing: border-box;
   padding: 12px 24px;
   margin: 0 auto;
   z-index: 20;
@@ -416,7 +418,9 @@ html, body {
 .oku-main-header h1 {
   position: absolute;
   left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
   pointer-events: none;
   white-space: nowrap;
 }
@@ -433,7 +437,6 @@ html, body {
   outline: 2px solid #3266ff;
   outline-offset: 2px;
 }
-.oku-market-header .oku-main-header { padding: 0; min-height: 44px; }
 .oku-tabbed-home .oku-home-content { padding-top: 0; padding-bottom: 12px; touch-action: pan-y; }
 .oku-home-instant .animate-slide-in-down,
 .oku-home-instant .animate-fade-in-long { animation: none; opacity: 1; transform: none; }
@@ -451,8 +454,8 @@ html, body {
   min-height: 94px;
   box-sizing: border-box;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
+  gap: 10px;
+  padding: 12px;
   font-family: 'Outfit', sans-serif;
   font-size: 14px;
   text-align: left;
@@ -460,26 +463,51 @@ html, body {
   background: #fff;
   border: 1px solid #e7e5e4;
   color: #292524;
-  cursor: pointer;
 }
 .dark .oku-shop-daily-gift { background: #292524; border-color: #44403c; color: #fafaf9; }
-.oku-shop-gift-icon { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; flex-shrink: 0; color: #2563eb; background: #eff6ff; }
-.dark .oku-shop-gift-icon { color: #93c5fd; background: #1e3a5f; }
-.oku-shop-gift-copy { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
-.oku-shop-gift-title { font-size: 18px; font-weight: 700; }
-.oku-shop-gift-status { display: flex; align-items: center; justify-content: flex-end; width: 94px; min-height: 60px; flex-shrink: 0; }
-.oku-shop-gift-action { transition: transform 50ms ease-out; }
+.oku-gift-timeline { flex: 1; min-width: 0; position: relative; }
+.oku-gift-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; position: relative; }
+.oku-gift-day { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; color: #a8a29e; }
+.oku-gift-day-label { font-size: clamp(8px, 2.3vw, 11px); font-weight: 600; line-height: 12px; white-space: nowrap; }
+.oku-gift-milestone { width: 24px; height: 24px; display: grid; place-items: center; background: #f5f5f4; border: 1.5px solid #d6d3d1; border-radius: 50%; box-sizing: border-box; }
+.oku-gift-milestone svg { width: 11px; height: 11px; stroke-width: 3px; }
+.oku-gift-day-amount { display: flex; align-items: center; justify-content: center; gap: 2px; font-size: 11px; line-height: 13px; font-weight: 700; }
+.oku-gift-day-amount svg { width: 7px; height: 7px; }
+.oku-gift-track { position: absolute; top: 27px; left: calc(100% / 14); right: calc(100% / 14); height: 4px; border-radius: 4px; background: #d6d3d1; overflow: hidden; }
+.oku-gift-track-fill { display: block; height: 100%; background: #deb545; border-radius: inherit; transition: width 500ms ease-in-out; }
+.oku-gift-day--active { color: #785716; }
+.oku-gift-day--active .oku-gift-milestone { background: #f5d98b; border-color: #dfb54f; }
+.oku-gift-day--active svg, .oku-gift-reward svg { color: #347cff; }
+.oku-shop-gift-status { position: relative; display: flex; align-items: center; justify-content: flex-end; width: 64px; min-height: 60px; flex-shrink: 0; }
+.oku-shop-gift-status::before { content: ''; position: absolute; left: -5px; top: 50%; transform: translateY(-50%); width: 1px; height: 44px; background: #e7e5e4; pointer-events: none; }
+.dark .oku-shop-gift-status::before { background: #44403c; }
+.oku-shop-gift-action { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 64px; height: 56px; padding: 6px 3px; background: linear-gradient(160deg, #f7dfa0 0%, #e9bc58 100%); color: #3b2c16; border: 1px solid #d6ab50; box-shadow: inset 0 1px 0 rgb(255 255 255 / .45); border-radius: 14px; font-weight: 700; flex-shrink: 0; cursor: pointer; transition: transform 50ms ease-out; }
+.oku-shop-gift-action:focus-visible { outline: 2px solid #3266ff; outline-offset: 2px; }
 .oku-shop-gift-action--pressed { transform: scale(.96); }
-.oku-shop-gift-action { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 66px; min-height: 48px; padding: 7px 10px; background: linear-gradient(160deg, #f7dfa0 0%, #e9bc58 100%); color: #3b2c16; border: 1px solid #d6ab50; box-shadow: inset 0 1px 0 rgb(255 255 255 / .45); border-radius: 14px; font-weight: 700; flex-shrink: 0; }
+.oku-shop-gift-action--waiting { background: transparent; border-color: transparent; box-shadow: none; cursor: default; }
 .oku-gift-reward { display: flex; align-items: center; gap: 3px; font-weight: 700; }
-.oku-shop-daily-gift--waiting { cursor: default; }
-.oku-shop-gift-countdown { display: flex; align-items: center; gap: 5px; flex-shrink: 0; font-size: 13px; font-weight: 700; text-align: right; color: #57534e; }
-.dark .oku-shop-gift-countdown { color: #d6d3d1; }
+.oku-gift-reward svg { width: 11px; height: 11px; }
+.oku-shop-gift-countdown { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; color: #57534e; }
+.oku-gift-clock { width: 15px; height: 15px; }
 .oku-gift-time { font: inherit; color: inherit; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dark .oku-shop-gift-countdown { color: #d6d3d1; }
+.dark .oku-gift-milestone { background: #292524; border-color: #57534e; }
+.dark .oku-gift-track { background: #57534e; }
+.dark .oku-gift-day--active { color: #f5d98b; }
+.dark .oku-gift-day--active .oku-gift-milestone { background: #f5d98b; border-color: #dfb54f; }
+.oku-gift-milestone--claimed, .dark .oku-gift-milestone--claimed { background: #a8dcae; border-color: #88c791; color: #203d28; }
+.oku-shop-daily-gift--waiting .oku-gift-track-fill { background: #d6d3d1; transition: none; }
+.dark .oku-shop-daily-gift--waiting .oku-gift-track-fill { background: #57534e; }
 @media (max-width: 359px) {
-  .oku-shop-daily-gift { padding: 12px; gap: 8px; }
-  .oku-shop-gift-icon { width: 32px; height: 36px; }
-  .oku-shop-gift-countdown { font-size: 12px; }
+  .oku-shop-daily-gift { padding: 8px; gap: 6px; }
+  .oku-shop-gift-status, .oku-shop-gift-action { width: 54px; }
+  .oku-shop-gift-status::before { left: -3px; }
+  .oku-gift-milestone { width: 20px; height: 20px; }
+  .oku-gift-track { top: 25px; }
+  .oku-gift-day-amount { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oku-gift-track-fill { transition: none; }
 }
 .oku-continue-card { background: #292524; border: 1px solid #292524; color: #fafaf9; }
 .dark .oku-continue-card { border-color: #57534e; }
@@ -524,7 +552,7 @@ html, body {
 .oku-navigation-item svg { width: 23px; height: 23px; stroke-width: 1.8; }
 .oku-navigation-item[aria-current="page"] { color: #292524; background: #e7e5e4; }
 .oku-navigation-item:active { background: #e7e5e4; }
-.oku-navigation-badge { position: absolute; right: -5px; top: -1px; width: 7px; height: 7px; border-radius: 50%; background: #ef4444; border: 1px solid white; }
+.oku-navigation-badge { position: absolute; right: -2px; top: 0; width: 6px; height: 6px; border-radius: 50%; background: #ef4444; pointer-events: none; }
 .dark .oku-bottom-navigation { background: #262624; border-color: #464640; box-shadow: 0 5px 24px rgb(0 0 0 / .2); }
 .dark .oku-navigation-item { color: #bcbab6; }
 .dark .oku-navigation-item[aria-current="page"] { color: #f5f5f4; background: #44403c; }
@@ -1794,28 +1822,7 @@ html, body {
   text-shadow: 0 1px 1px rgba(30, 58, 138, 0.2);
 }
 
-.oku-profile-title-badge::after {
-  content: '';
-  position: absolute;
-  z-index: 0;
-  top: -70%;
-  left: -52%;
-  width: 42%;
-  height: 240%;
-  pointer-events: none;
-  opacity: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(191, 219, 254, 0.16) 24%,
-    rgba(255, 255, 255, 0.78) 50%,
-    rgba(219, 234, 254, 0.2) 76%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  filter: blur(0.45px);
-  transform: translateX(-190%) skewX(-16deg);
-  animation: oku-profile-title-sweep 1600ms cubic-bezier(0.35, 0, 0.2, 1) 350ms 1 both;
-}
+
 
 .dark .oku-profile-title-badge {
   color: #eff6ff;
@@ -1827,22 +1834,7 @@ html, body {
     0 7px 16px rgba(37, 99, 235, 0.22);
 }
 
-@keyframes oku-profile-title-sweep {
-  0% {
-    opacity: 0;
-    transform: translateX(-190%) skewX(-16deg);
-  }
-  14% {
-    opacity: 0.82;
-  }
-  76% {
-    opacity: 0.76;
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(590%) skewX(-16deg);
-  }
-}
+
 
 /* Achievement rows return to their original size without a shadow track. */
 .oku-achievement-row-shell {
@@ -1886,6 +1878,7 @@ html, body {
   text-align: left;
 }
 .shop-premium-copy { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.shop-premium-support { grid-column: 1 / -1; margin: 0; padding-top: 12px; border-top: 1px solid rgba(120,113,108,.2); font-size: 12px; font-weight: 400; line-height: 1.5; }
 .shop-premium-eyebrow { color: #3266ff; font-size: 10px; letter-spacing: .12em; font-weight: 700; text-transform: uppercase; }
 .shop-native .shop-premium-copy .w-6 { width: 20px; height: 20px; flex: 0 0 20px; }
 .shop-native .shop-premium-copy .text-\[13px\] { font-size: 12px; }

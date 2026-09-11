@@ -1,15 +1,18 @@
 import UIKit
 import Capacitor
+import StoreKit
 
 /// One permanently mounted Capacitor bridge beneath independent native navigation.
 /// No extra WebViews, JavaScript runtimes, polling, or custom glass rendering.
 final class OkuBridgeViewController: CAPBridgeViewController {
     weak var navigationShell: OkuTabBarController?
     let navigationPlugin = OkuNavigationPlugin()
+    let reviewPlugin = OkuAppReviewPlugin()
 
     override func capacitorDidLoad() {
         navigationPlugin.navigationShell = navigationShell
         bridge?.registerPluginInstance(navigationPlugin)
+        bridge?.registerPluginInstance(reviewPlugin)
         webView?.scrollView.contentInsetAdjustmentBehavior = .never
     }
 }
@@ -96,6 +99,14 @@ final class OkuTabBarController: UITabBarController, UITabBarControllerDelegate 
         delegate = self
         view.backgroundColor = .clear
         tabBar.tintColor = UIColor(red: 41 / 255, green: 37 / 255, blue: 36 / 255, alpha: 1)
+        // Use a small solid glyph, not UIKit's large red pill with a white bullet.
+        // Copy existing appearances so the system's native glass stays intact.
+        let standardAppearance = tabBar.standardAppearance.copy() as! UITabBarAppearance
+        styleRewardDots(in: standardAppearance)
+        tabBar.standardAppearance = standardAppearance
+        let scrollEdgeAppearance = (tabBar.scrollEdgeAppearance ?? standardAppearance).copy() as! UITabBarAppearance
+        styleRewardDots(in: scrollEdgeAppearance)
+        tabBar.scrollEdgeAppearance = scrollEdgeAppearance
         let labels = ["Play", "Market", "Oku Shop", "Stats", "Profile"]
         let symbols = ["square.grid.3x3", "bag", "star", "chart.bar", "person.crop.circle"]
         let selectedSymbols = ["square.grid.3x3.fill", "bag.fill", "star.fill", "chart.bar.fill", "person.crop.circle.fill"]
@@ -135,12 +146,25 @@ final class OkuTabBarController: UITabBarController, UITabBarControllerDelegate 
         }
         navigationEnabled = enabled
         if tabBar.isUserInteractionEnabled != enabled { tabBar.isUserInteractionEnabled = enabled }
-        let shopBadgeValue: String? = shopBadge ? "•" : nil
-        let profileBadgeValue: String? = profileBadge ? "•" : nil
+        let shopBadgeValue: String? = shopBadge ? "●" : nil
+        let profileBadgeValue: String? = profileBadge ? "●" : nil
         if viewControllers?[2].tabBarItem.badgeValue != shopBadgeValue { viewControllers?[2].tabBarItem.badgeValue = shopBadgeValue }
         if viewControllers?[4].tabBarItem.badgeValue != profileBadgeValue { viewControllers?[4].tabBarItem.badgeValue = profileBadgeValue }
         setNavigationVisible(visible)
         reportLayout()
+    }
+
+    private func styleRewardDots(in appearance: UITabBarAppearance) {
+        for layout in [appearance.stackedLayoutAppearance, appearance.inlineLayoutAppearance, appearance.compactInlineLayoutAppearance] {
+            for state in [layout.normal, layout.selected, layout.disabled, layout.focused] {
+                state.badgeBackgroundColor = .clear
+                state.badgeTextAttributes = [
+                    .foregroundColor: UIColor.systemRed,
+                    .font: UIFont.systemFont(ofSize: 10, weight: .regular)
+                ]
+                state.badgePositionAdjustment = UIOffset(horizontal: -4, vertical: 3)
+            }
+        }
     }
 
     private func setNavigationVisible(_ visible: Bool) {
@@ -189,6 +213,74 @@ final class OkuTabBarController: UITabBarController, UITabBarControllerDelegate 
     override var childForStatusBarStyle: UIViewController? { appBridge }
     override var childForStatusBarHidden: UIViewController? { appBridge }
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask { appBridge.supportedInterfaceOrientations }
+}
+
+// Review eligibility is installation-level, not part of resettable game saves.
+@objc(OkuAppReviewPlugin)
+public final class OkuAppReviewPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "OkuAppReviewPlugin"
+    public let jsName = "OkuAppReview"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "recordCompletion", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "requestIfEligible", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "openReviewPage", returnType: CAPPluginReturnPromise)
+    ]
+    private let completedKey = "oku.review.completedPuzzles.v1"
+    private let lastRequestKey = "oku.review.lastRequestAt.v1"
+    private let cooldown: TimeInterval = 120 * 24 * 60 * 60
+
+    @objc func recordCompletion(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { [self] in
+            guard let puzzleId = call.getString("puzzleId"), !puzzleId.isEmpty else {
+                call.reject("A completed puzzle identifier is required")
+                return
+            }
+            let defaults = UserDefaults.standard
+            var completed = defaults.stringArray(forKey: completedKey) ?? []
+            // Only two unique identifiers are needed; do not retain a play history.
+            if completed.count < 2 && !completed.contains(puzzleId) {
+                completed.append(puzzleId)
+                defaults.set(completed, forKey: completedKey)
+            }
+            call.resolve()
+        }
+    }
+
+    @objc func requestIfEligible(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { [self] in
+            let defaults = UserDefaults.standard
+            let now = Date().timeIntervalSince1970
+            let lastRequest = defaults.double(forKey: lastRequestKey)
+            guard (defaults.stringArray(forKey: completedKey) ?? []).count >= 2,
+                  lastRequest == 0 || now - lastRequest >= cooldown,
+                  let controller = bridge?.viewController,
+                  controller.presentedViewController == nil,
+                  let scene = controller.view.window?.windowScene,
+                  scene.activationState == .foregroundActive else {
+                call.resolve(["requested": false])
+                return
+            }
+            // Store an attempt, not a rating: StoreKit never reports whether the
+            // sheet appeared or whether the player submitted a review.
+            defaults.set(now, forKey: lastRequestKey)
+            if #available(iOS 16.0, *) {
+                AppStore.requestReview(in: scene)
+            } else {
+                SKStoreReviewController.requestReview(in: scene)
+            }
+            call.resolve(["requested": true])
+        }
+    }
+
+    @objc func openReviewPage(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            let url = URL(string: "https://apps.apple.com/app/id6757077544?action=write-review")!
+            UIApplication.shared.open(url, options: [:]) { opened in
+                if opened { call.resolve() }
+                else { call.reject("The App Store review page could not be opened") }
+            }
+        }
+    }
 }
 
 @objc(OkuNavigationPlugin)

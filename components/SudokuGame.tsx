@@ -1403,9 +1403,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
       </AnimatePresence>
 
       <motion.div 
-          initial={{ opacity: 0, y: -20 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0 }}
           className="w-full flex justify-center px-6 md:px-0 pt-4 md:pt-7 pb-4 md:pb-5 relative z-40 shrink-0"
           aria-hidden={isHintTheaterOpen || undefined}
       >
@@ -1439,7 +1439,7 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
                               sounds.playClick();
                               handleDevSolve();
                           }}
-                          className="p-2 md:p-2.5 rounded-full transition text-red-600 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 active:scale-90"
+                          className="p-2 md:p-2.5 rounded-full transition text-red-600 dark:text-red-500 active:scale-90"
                           title="Dev Auto Solve"
                       >
                           <Icons.Dev className="w-6 h-6 md:w-7 md:h-7" />
@@ -1472,9 +1472,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
          <div className="w-full h-8 md:h-10 relative z-20" />
 
          <motion.div 
-             initial={{ opacity: 0, scale: 0.96 }}
+             initial={false}
              animate={{ opacity: 1, scale: 1 }}
-             transition={{ duration: 0.5, delay: 0.08, type: "spring", stiffness: 100, damping: 15 }}
+             transition={{ duration: 0 }}
              className={`w-full flex justify-center relative overflow-visible ${activeHint ? 'z-[310]' : ''}`}
          >
             <AnimatePresence mode="wait" onExitComplete={handlePillExitComplete}>
@@ -1565,9 +1565,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
          {/* Number Pad */}
          {!activeHint && (
          <motion.div 
-             initial={{ opacity: 0, y: 15 }}
+             initial={false}
              animate={{ opacity: 1, y: 0 }}
-             transition={{ duration: 0.45, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+             transition={{ duration: 0 }}
              className="w-full max-w-[500px] md:max-w-[560px] px-2 md:px-0 mt-4 md:mt-5 relative z-[100]"
              data-no-note-hold
              onPointerDown={registerNudgeActivity}
@@ -1587,9 +1587,9 @@ export const SudokuGame: React.FC<SudokuGameProps> = ({
          {/* Game Controls - Increased spacing (mt-10) */}
          {!activeHint && (
          <motion.div 
-             initial={{ opacity: 0, y: 15 }}
+             initial={false}
              animate={{ opacity: 1, y: 0 }}
-             transition={{ duration: 0.45, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
+             transition={{ duration: 0 }}
              className="w-full max-w-md md:max-w-[540px] px-6 md:px-0 mt-10 md:mt-8 relative z-[100]"
              data-no-note-hold
              onClick={(e) => e.stopPropagation()}

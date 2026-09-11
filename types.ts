@@ -130,6 +130,8 @@ export interface StoredData {
   selectedSoundPack: string;
   bonusClaimed?: boolean;
   nextBonusClaimTime?: number; // Timestamp for next daily bonus
+  dailyGiftClaims?: number; // Successful claims in the seven-day cycle system
+  lastDailyGiftClaimAt?: number; // Guards against moving the clock backwards
   starterPackPurchased?: boolean;
   books2AllOwned?: boolean;
   books3AllOwned?: boolean;

@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Difficulty, AppSettings, DiamondOffer, PepinoState, DiamondEarnSource } from './types';
 import { SudokuGame } from './components/SudokuGame';
 import { Storage } from './utils/storage';
-import { getDailyGiftState, nextLocalMidnight } from './utils/dailyGift';
+import { getDailyGiftState } from './utils/dailyGift';
+import { AppReview } from './utils/appReview';
 import { useDailyGiftClock } from './hooks/useDailyGiftClock';
 import { sounds } from './utils/sound';
 import { getPackCost, NUMBER_COLORS, ALL_BACKGROUNDS } from './utils/constants';
@@ -78,6 +79,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
       hintPreview ? 'game' : accountPreview ? 'profile' : 'difficulty'
   ));
   const currentScreenRef = useRef(screen);
+  const reviewAfterVictory = useRef(false);
   const [prevScreen, setPrevScreen] = useState<Screen | null>(null);
   const [direction, setDirection] = useState<number>(0);
   const [difficultyAnimationKey, setDifficultyAnimationKey] = useState(0);
@@ -173,6 +175,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   
   const [nextBonusClaimTime, setNextBonusClaimTime] = useState(Storage.getNextBonusClaimTime());
+  const [dailyGiftClaims, setDailyGiftClaims] = useState(() => Storage.getStoredData().dailyGiftClaims || 0);
   const dailyGiftNow = useDailyGiftClock(nextBonusClaimTime);
   const hasDailyGift = getDailyGiftState(nextBonusClaimTime, dailyGiftNow).ready;
   
@@ -211,6 +214,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
         setBooks3AllOwned(Boolean(data.books3AllOwned || data.booksForeverOwned));
         setBooksForeverOwned(Boolean(data.booksForeverOwned));
         setNextBonusClaimTime(data.nextBonusClaimTime || 0);
+        setDailyGiftClaims(data.dailyGiftClaims || 0);
         setPepinoState(data.pepino || {
           unlocked: false,
           hasPendingGift: false,
@@ -595,14 +599,12 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
     const now = Date.now();
     if (now < nextBonusClaimTime) return;
 
-    const nextTime = nextLocalMidnight(now);
-
-    const result = Storage.claimDailyBonus(nextTime, 10);
-    if (!result.applied) return;
-    sounds.playUniversalGiftClaim();
+    const result = Storage.claimDailyBonus();
     setNextBonusClaimTime(result.data.nextBonusClaimTime || 0);
+    setDailyGiftClaims(result.data.dailyGiftClaims || 0);
     setPoints(result.data.points);
     setStats(result.data.stats || { totalGamesWon: 0, totalDiamondsEarned: 0, perfectGames: 0 });
+    if (result.applied) sounds.playUniversalGiftClaim();
   };
   
   const initiatePurchase = (item: any, type: 'bg' | 'num' | 'skill' | 'sound') => {
@@ -985,6 +987,18 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
   const mainTab = tabForScreen(screen);
   const hasProfileReward = hasClaimableAchievement(Storage.getStoredData(), claimedProfileRank);
   const tabNavigationBlocked = navigationDialog || showSettings || showWelcomeGift || Boolean(purchaseCandidate || paymentOffer || pendingBookUnlock) || showNotEnoughPoints || showResetConfirm;
+  useEffect(() => {
+      if (!reviewAfterVictory.current || (screen !== 'levels' && screen !== 'difficulty') || tabNavigationBlocked || isScreenTransitioning) return;
+      let cancelled = false;
+      const timer = window.setTimeout(() => {
+          void AppReview.requestIfEligible(() => {
+              if (cancelled || document.visibilityState !== 'visible') return false;
+              reviewAfterVictory.current = false;
+              return true;
+          });
+      }, 800);
+      return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [screen, tabNavigationBlocked, isScreenTransitioning]);
   const openMainSettings = () => { sounds.playClick(); setShowSettings(true); };
   const selectMainTab = (tab: MainTab) => {
       if (tabNavigationBlocked || !tabForScreen(currentScreenRef.current) || isNavigatingRef.current || tab === currentScreenRef.current) return;
@@ -1035,14 +1049,14 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                  className={`relative z-10 w-full h-full flex flex-col transition-all duration-500 ${showWelcomeGift ? 'blur-sm pointer-events-none' : ''}`}
               >
                 <div className={`flex-1 relative w-full h-full overflow-hidden ${TABBED_NAVIGATION_ENABLED && mainTab ? 'oku-navigation-overlay' : ''}`} style={{ '--oku-navigation-inset': navigationSpace } as React.CSSProperties} data-oku-screen={screen}>
-                    {/* Tab content swaps in place; only non-tab navigation uses the 6px settle. */}
+                    {/* All pages open in place without an entrance animation. */}
                     <>
                         {screen === 'splash' && (
                             <motion.div
                                 key="splash"
                                 custom={direction}
                                 variants={variants}
-                                initial="initial"
+                                initial={false}
                                 animate="animate"
                                 exit="exit"
                                 className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
@@ -1058,7 +1072,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                             >
                                 <DifficultyScreen 
                                     tabNavigation={TABBED_NAVIGATION_ENABLED}
-                                    skipEntranceAnimation={TABBED_NAVIGATION_ENABLED && direction === 0 && prevScreen !== null}
+                                    skipEntranceAnimation={true}
                                     points={points}
                                     onDifficultySelect={handleDifficultySelect}
                                     onOpenSettings={openMainSettings}
@@ -1095,6 +1109,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 <DiamondShopScreen 
                                     nextBonusClaimTime={nextBonusClaimTime}
                                     dailyGiftNow={dailyGiftNow}
+                                    dailyGiftClaims={dailyGiftClaims}
                                     onClaimBonus={handleClaimBonus}
                                     onOpenSettings={TABBED_NAVIGATION_ENABLED ? openMainSettings : undefined}
                                     points={points}
@@ -1192,7 +1207,7 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                 key="game"
                                 custom={direction}
                                 variants={variants}
-                                initial="initial"
+                                initial={false}
                                 animate="animate"
                                 exit="exit"
                                 className="absolute inset-0 w-full h-full flex flex-col items-center justify-center font-sans text-t-primary overflow-hidden bg-transparent pt-safe pb-safe"
@@ -1204,6 +1219,8 @@ const OkuApp: React.FC<{ onHardReset: () => Promise<void> }> = ({ onHardReset })
                                     onBack={handleGameBack}
                                     onReturnToMenu={handleReturnToMenu}
                                     onComplete={() => {
+                                        AppReview.recordCompletion(selectedDifficulty, selectedLevel);
+                                        reviewAfterVictory.current = true;
                                         setPoints(Storage.getPoints());
                                         setPepinoState(Storage.getPepinoState());
                                     }}

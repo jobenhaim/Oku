@@ -12,7 +12,10 @@ async function compile(entryPoint, overrides = {}) {
     runInNewContext(result.outputFiles[0].text, { module, exports: module.exports, require, Date, ...overrides });
     return module.exports;
 }
-const { nextLocalMidnight, getDailyGiftState, dailyGiftRefreshDelay } = await compile('utils/dailyGift.ts');
+const { nextLocalMidnight, getDailyGiftState, dailyGiftRefreshDelay, DAILY_GIFT_REWARDS, getDailyGiftReward } = await compile('utils/dailyGift.ts');
+assert.deepEqual([...DAILY_GIFT_REWARDS], [5, 10, 15, 20, 25, 30, 50]);
+for (let i = 0; i < 21; i++) assert.equal(getDailyGiftReward(i), DAILY_GIFT_REWARDS[i % 7]);
+for (const invalid of [-1, NaN, Infinity, '6', null, 0.5]) assert.equal(getDailyGiftReward(invalid), 5);
 const originalTZ = process.env.TZ;
 try {
     for (const zone of ['UTC', 'Asia/Jerusalem', 'America/New_York', 'Asia/Kolkata']) {
@@ -56,8 +59,8 @@ assert.ok(dailyGiftRefreshDelay(deadline, now + 123) <= 60_000);
 const { DailyGiftBubble } = await compile('components/ui/DailyGiftBubble.tsx');
 const renderGift = props => renderToStaticMarkup(React.createElement(DailyGiftBubble, { now, pressed: false, ...props }));
 const ready = renderGift({ nextClaimTime: 0 });
-assert.match(ready, /Claim daily gift: 10 diamonds/);
-assert.match(ready, /\+10/);
+assert.match(ready, /Claim daily gift: 5 diamonds/);
+assert.match(ready, /\+5/);
 assert.doesNotMatch(ready, /disabled=""|oku-gift-ring/);
 const waiting = renderGift({ nextClaimTime: deadline });
 assert.match(waiting, /disabled=""/);
@@ -65,13 +68,56 @@ assert.match(waiting, /3h 30m/);
 assert.doesNotMatch(waiting, />left</);
 assert.match(waiting, /oku-gift-clock/);
 assert.doesNotMatch(waiting, /oku-gift-ring/);
-assert.doesNotMatch(waiting, /\+10/);
+assert.doesNotMatch(waiting, /\+5/);
 assert.match(renderGift({ nextClaimTime: 0, disabled: true }), /disabled=""/);
 const pressedGift = renderGift({ nextClaimTime: 0, pressed: true });
 assert.doesNotMatch(pressedGift, /oku-shop-card-face--pressed/, 'Press feedback must not resize the whole gift card');
 assert.match(pressedGift, /oku-shop-gift-action--pressed/);
 assert.match(ready, /oku-shop-gift-status/);
 assert.match(waiting, /oku-shop-gift-status/);
+assert.equal((ready.match(/<li /g) || []).length, 7);
+assert.doesNotMatch(ready, /oku-shop-gift-title|oku-shop-gift-icon/);
+for (let day = 0; day < 7; day++) {
+    assert.match(renderGift({ nextClaimTime: 0, claims: day }), new RegExp(`Claim daily gift: ${DAILY_GIFT_REWARDS[day]} diamonds, day ${day + 1}`));
+}
+assert.match(renderGift({ nextClaimTime: deadline, claims: 7 }), /Day 7: 50 diamonds, claimed/);
+assert.match(renderGift({ nextClaimTime: 0, claims: 7 }), /Claim daily gift: 5 diamonds, day 1/);
+assert.equal((renderGift({ nextClaimTime: deadline, claims: 3 }).match(/oku-gift-milestone--claimed/g) || []).length, 3, 'Claimed circles stay green during cooldown');
+assert.equal((renderGift({ nextClaimTime: deadline, claims: 7 }).match(/oku-gift-milestone--claimed/g) || []).length, 7);
+assert.doesNotMatch(renderGift({ nextClaimTime: 0, claims: 7 }), /oku-gift-milestone--claimed/, 'The new cycle clears previous green circles');
+
+// Entry progress is visual only: timers never call the reward callback and are cancelled on exit.
+let entryEffect, entryState;
+const entryTimers = new Map();
+let timerId = 0;
+const animationReact = { ...React,
+    useState: initial => [initial, value => { entryState = value; }],
+    useEffect: fn => { entryEffect = fn; },
+};
+const entryWindow = {
+    matchMedia: () => ({ matches: false }),
+    setTimeout: (fn, delay) => { const id = ++timerId; entryTimers.set(id, { fn, delay }); return id; },
+    clearTimeout: id => entryTimers.delete(id),
+};
+const animatedGift = await compile('components/ui/DailyGiftBubble.tsx', {
+    require: name => name === 'react' ? animationReact : require(name), window: entryWindow,
+});
+let claimsFromAnimation = 0;
+animatedGift.DailyGiftBubble({claims:2, nextClaimTime:0, now, pressed:false, onClick:()=>claimsFromAnimation++});
+const stopEntry = entryEffect();
+assert.equal(entryState.arrived, false);
+[...entryTimers.values()].find(timer => timer.delay === 40).fn();
+assert.equal(entryState.advanced, true);
+assert.equal(entryState.arrived, false, 'Gold lights only after the line finishes');
+[...entryTimers.values()].find(timer => timer.delay === 540).fn();
+assert.equal(entryState.arrived, true);
+assert.equal(claimsFromAnimation, 0);
+stopEntry();
+assert.equal(entryTimers.size, 0, 'Closing the shop cancels entry timers');
+entryWindow.matchMedia = () => ({ matches: true });
+entryEffect();
+assert.equal(entryState.arrived, true);
+assert.equal(entryTimers.size, 0, 'Reduced motion shows the current reward immediately');
 
 const { SavedBoardPreview } = await compile('components/ui/SavedBoardPreview.tsx');
 const board = Array.from({ length: 9 }, (_, row) => Array.from({ length: 9 }, (_, col) => ({ row, col, value: null, isFixed: false, notes: [1, 2] })));

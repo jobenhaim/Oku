@@ -1,6 +1,6 @@
 {
   "name": "oku",
-  "version": "4.0.3",
+  "version": "4.0.5",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -8,6 +8,7 @@
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "test:navigation": "node scripts/test-navigation.mjs",
+    "test:app-review": "node scripts/test-app-review.mjs",
     "test:daily-gift": "node scripts/test-daily-gift.mjs",
     "test:market-styles": "node scripts/test-market-styles.mjs",
     "test:hold-notes": "node scripts/test-hold-notes.mjs",
