@@ -35,10 +35,14 @@ assert.doesNotMatch(premium, /\$4\.99|grows with you|peaceful aquarium/);
 assert.match(premium, />Purchase</);
 assert.match(premium, />Cancel</);
 assert.ok(premium.indexOf('pepino-purchase-preview') < premium.indexOf('Oku Premium'));
-for (const type of ['starter', 'diamonds']) {
-    const other = render({ type, priceLabel: '€2.99' });
-    assert.match(other, /€2.99/);
-    assert.doesNotMatch(other, /pepino-purchase-preview/);
+for (const type of ['support', 'starter', 'pack']) {
+    for (const priceLabel of ['$0.99', '$1.99', '$2.99', '$3.99', '$4.99', '$6.99', '€2.99', '₪19.90']) {
+        const confirmation = render({ type, priceLabel });
+        assert.ok(!confirmation.includes(priceLabel), `${type} confirmation must not show ${priceLabel}`);
+        assert.match(confirmation, />Purchase</);
+        assert.match(confirmation, />Cancel</);
+        if (type !== 'support') assert.doesNotMatch(confirmation, /pepino-purchase-preview/);
+    }
 }
 const preview = readFileSync('components/ui/PepinoPurchasePreview.tsx', 'utf8');
 assert.doesNotMatch(preview, /useEffect|useState|setTimeout|setInterval|motion\.|onClick|Storage|IAP/);
@@ -49,4 +53,5 @@ assert.match(css, /\.pepino-purchase-fish \{[^}]*width: 78px;/);
 assert.match(css, /\.pepino-purchase-gift \{[^}]*border-radius: 50%;[^}]*background: #fff;[^}]*color: #3985ff;/);
 const modal = readFileSync('components/ui/Modals.tsx', 'utf8');
 assert.match(modal, /await IAP.purchase\(offer.productId\)/);
-console.log('Pepino popup: static preview, accurate copy, premium-only price removal, and unchanged purchase wiring passed.');
+assert.doesNotMatch(modal, /offer\.priceLabel/, 'Shop confirmations must not render monetary prices');
+console.log('Shop confirmations: no monetary prices, static Pepino preview, accurate copy, and unchanged purchase wiring passed.');

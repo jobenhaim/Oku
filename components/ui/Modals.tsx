@@ -491,10 +491,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ offer, onComplete, o
                 </div>
                 )}
 
-                <h3 className={`text-xl font-bold text-t-primary transition-colors duration-300 ${offer.type === 'support' ? 'mb-3' : 'mb-1'}`}>{offer.title}</h3>
-                {offer.type !== 'support' && (
-                    <p className="text-stone-500 dark:text-stone-400 font-medium mb-3 transition-colors duration-300">{offer.priceLabel}</p>
-                )}
+                <h3 className="text-xl font-bold text-t-primary mb-3 transition-colors duration-300">{offer.title}</h3>
 
                 {/* Description Box */}
                 <div className="bg-stone-50 dark:bg-stone-900/50 p-3 rounded-xl mb-6 text-xs text-stone-600 dark:text-stone-300 leading-relaxed font-medium transition-colors duration-300">
